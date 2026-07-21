@@ -1,5 +1,11 @@
 # SELFshell
-[![Demo](https://img.youtube.com/vi/7wSKNmW6L1A/maxresdefault.jpg)](https://youtu.be/7wSKNmW6L1A)
+
+<p align="center">
+  <a href="https://youtu.be/7wSKNmW6L1A">
+    <img src="https://img.youtube.com/vi/7wSKNmW6L1A/maxresdefault.jpg" alt="SELFshell demo" width="720">
+  </a>
+</p>
+
 Personal desktop environment configs built around **Hyprland + Quickshell**.
 
 > **Disclaimer:** These configs are tailored to my personal setup. Bugs or breakage may occur on your machine. Feel free to use anything you like, but at your own risk.
