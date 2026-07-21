@@ -1,0 +1,44 @@
+# quick shell
+
+Personal desktop environment configs built around **Hyprland + Quickshell**.
+
+> **Disclaimer:** These configs are tailored to my personal setup. Bugs or breakage may occur on your machine. Feel free to use anything you like, but at your own risk.
+
+## Components
+
+| Component | Role |
+|-----------|------|
+| [Hyprland](https://hyprland.org) | Wayland compositor |
+| [Quickshell](https://github.com/Quickshell/Quickshell) | QML-based shell/panel |
+| [Kitty](https://sw.kovidgoyal.net/kitty/) | Terminal emulator |
+| [Fish](https://fishshell.com) | Shell |
+| [Starship](https://starship.rs) | Prompt |
+| [Yazi](https://yazi-rs.github.io) | File manager |
+| [Fastfetch](https://github.com/fastfetch-cli/fastfetch) | System info |
+
+## Structure
+
+```
+fastfetch/   - system info config
+fish/        - shell config, functions
+hypr/        - Hyprland, hyprlock, hypridle, etc.
+kitty/       - terminal config
+quickshell/  - QML panels, popups, widgets, scripts
+starship/    - prompt config
+yazi/        - file manager config + themes
+```
+
+## Setup
+
+1. Clone to `~/.config/`:
+   ```sh
+   git clone https://github.com/YOUR_USER/quick-shell ~/.config
+   ```
+2. Copy `quickshell/scripts/.env.example` to `.env` and fill in your credentials (if using Genshin widgets).
+3. Place your wallpapers in `hypr/wp/` and `quickshell/wp/` (wp1.jpg is kept as placeholder).
+4. Review and adjust path references in configs (e.g. `hypr/hyprlock.conf`).
+
+## Notes
+
+- Lock screen splash in Ukrainian (`Парольчик..`).
+- Genshin Impact widgets require Hoyolab API credentials (see `.env.example`).

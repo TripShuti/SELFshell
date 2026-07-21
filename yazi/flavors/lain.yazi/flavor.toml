@@ -1,0 +1,177 @@
+# vim:fileencoding=utf-8:foldmethod=marker
+
+# Lain palette anchors:
+# bg0  = #000000 (backprimary)
+# bg1  = #1A1A1A (backsecondary)
+# bg2  = #2A2A2A (backtertiary)
+# bg3  = #3A3A3A (backquaternary)
+# fg0  = #CE7688 (foreprimary)
+# fg1  = #A05969 (foretertiary)
+# fg2  = #804654 (foresenary)
+# acc0 = #C1B48E (highprimary)
+# acc1 = #A49978 (hightertiary)
+
+# : Manager {{{
+[mgr]
+cwd = { fg = "#C1B48E", bold = true }
+
+hovered         = { fg = "#CE7688", bg = "#2A2A2A", bold = true }
+preview_hovered = { underline = true }
+
+find_keyword  = { fg = "#C1B48E", bg = "#000000", bold = true, italic = true, underline = true }
+find_position = { fg = "#CE7688", bg = "reset", bold = true, italic = true }
+
+marker_marked   = { fg = "#C1B48E", bg = "#C1B48E" }
+marker_selected = { fg = "#CE7688", bg = "#CE7688" }
+marker_copied   = { fg = "#FFDCB9", bg = "#FFDCB9" }
+marker_cut      = { fg = "#930006", bg = "#930006" }
+
+count_selected = { fg = "#000000", bg = "#CE7688" }
+count_copied   = { fg = "#000000", bg = "#FFDCB9" }
+count_cut      = { fg = "#000000", bg = "#930006" }
+
+border_symbol = "│"
+border_style  = { fg = "#3A3A3A" }
+# : }}}
+
+
+# : Tabs {{{
+[tabs]
+active   = { fg = "#000000", bg = "#CE7688", bold = true }
+inactive = { fg = "#A05969", bg = "#1A1A1A" }
+# : }}}
+
+
+# : Mode {{{
+[mode]
+normal_main = { fg = "#000000", bg = "#CE7688", bold = true }
+normal_alt  = { fg = "#CE7688", bg = "#1A1A1A" }
+
+select_main = { fg = "#000000", bg = "#C1B48E", bold = true }
+select_alt  = { fg = "#C1B48E", bg = "#1A1A1A" }
+
+unset_main = { fg = "#000000", bg = "#930006", bold = true }
+unset_alt  = { fg = "#930006", bg = "#1A1A1A" }
+# : }}}
+
+
+# : Status bar {{{
+[status]
+perm_sep   = { fg = "#3A3A3A" }
+perm_type  = { fg = "#C1B48E" }
+perm_read  = { fg = "#FFDCB9" }
+perm_write = { fg = "#CE7688" }
+perm_exec  = { fg = "#A49978" }
+
+progress_label  = { fg = "#CE7688", bold = true }
+progress_normal = { fg = "#C1B48E", bg = "#2A2A2A" }
+progress_error  = { fg = "#930006", bg = "#2A2A2A" }
+# : }}}
+
+
+# : Which {{{
+[which]
+mask            = { bg = "#1A1A1A" }
+cand            = { fg = "#C1B48E" }
+rest            = { fg = "#804654" }
+desc            = { fg = "#CE7688" }
+separator       = "  "
+separator_style = { fg = "#3A3A3A" }
+# : }}}
+
+
+# : Confirm {{{
+[confirm]
+border  = { fg = "#A49978" }
+title   = { fg = "#CE7688", bold = true }
+content = { fg = "#C1B48E" }
+list    = {}
+btn_yes = { fg = "#000000", bg = "#C1B48E", bold = true }
+btn_no  = { fg = "#CE7688", bold = true }
+# : }}}
+
+
+# : Spotter {{{
+[spot]
+border   = { fg = "#A49978" }
+title    = { fg = "#CE7688", bold = true }
+tbl_col  = { fg = "#C1B48E" }
+tbl_cell = { fg = "#FFDCB9", underline = true }
+# : }}}
+
+
+# : Notification {{{
+[notify]
+title_info  = { fg = "#FFDCB9" }
+title_warn  = { fg = "#C1B48E" }
+title_error = { fg = "#930006" }
+# : }}}
+
+
+# : Pick {{{
+[pick]
+border   = { fg = "#A49978" }
+active   = { fg = "#000000", bg = "#CE7688", bold = true }
+inactive = { fg = "#A05969", bg = "#1A1A1A" }
+# : }}}
+
+
+# : Input {{{
+[input]
+border   = { fg = "#A49978" }
+title    = { fg = "#C1B48E" }
+value    = { fg = "#CE7688" }
+selected = { reversed = true }
+# : }}}
+
+
+# : Completion {{{
+[cmp]
+border = { fg = "#A49978" }
+# : }}}
+
+
+# : Tasks {{{
+[tasks]
+border  = { fg = "#A49978" }
+title   = { fg = "#CE7688", bold = true }
+hovered = { fg = "#C1B48E", underline = true }
+# : }}}
+
+
+# : Help {{{
+[help]
+on      = { fg = "#C1B48E" }
+run     = { fg = "#FFDCB9" }
+desc    = { fg = "#CE7688" }
+hovered = { reversed = true, bold = true }
+footer  = { fg = "#000000", bg = "#C1B48E" }
+# : }}}
+
+
+# : File-specific styles {{{
+[filetype]
+rules = [
+	{ mime = "inode/directory", fg = "#C1B48E", bold = true },
+	{ mime = "image/*", fg = "#C1B48E" },
+	{ mime = "{audio,video}/*", fg = "#FFDCB9" },
+	{ mime = "application/{pdf,doc,rtf,odt,docx,xlsx,pptx}", fg = "#CE7688" },
+	{ url = "*.{txt,md,rst,csv,*json*,toml,yml,yaml,xml,html,ini,cfg,conf,log}", fg = "#BA6A7B" },
+	{ url = "*.{pdf,doc,docx,odt,xls,xlsx,ppt,pptx}", fg = "#CE7688" },
+	{ mime = "application/{zip,rar,7z*,tar,gzip,xz,zstd,bzip*,lzma,compress,archive,cpio,arj,xar,ms-cab*}", fg = "#A49978" },
+	{ url = "*.{zip,rar,7z,tar,gz,bz2,xz,zst,lz,lzma,iso,img}", fg = "#A49978" },
+	{ url = "*", fg = "#A05969" },
+	{ url = "*/", fg = "#C1B48E", bold = true },
+]
+# : }}}
+
+# : Icons {{
+[icon]
+# Force folder icon color to Lain ochre; overrides Yazi's default blue `if = "dir"` fallback.
+dirs = [
+	{ name = "*", text = "󰉋", fg = "#C1B48E" },
+]
+conds = [
+	{ if = "dir", text = "󰉋", fg = "#C1B48E" },
+]
+# : }}

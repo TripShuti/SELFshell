@@ -1,0 +1,66 @@
+{
+    "logo": {
+        "source": "arch_small", 
+        "padding": {
+	        "top": 1
+	}
+    },
+    "display": {
+        "separator": "  "
+    },
+    "modules": [
+	"break",
+	{
+            "type": "title",
+            "keyColor": "32"  // green
+        },
+        {
+            "type": "os",
+            "key": "os    ",
+            "keyColor": "33"  // yellow
+        },
+        {
+            "type": "kernel",
+            "key": "kernel",
+            "keyColor": "34"  // blue
+        },
+        {
+            "type": "host",
+            "format": "{5} {1}",
+            "key": "host  ",
+            "keyColor": "35"  // purple
+        },
+        {
+            "type": "packages",
+            "key": "pkgs  ",
+            "keyColor": "32"  // green
+        },
+        {
+            "type": "shell",
+            "key": "shell ",
+            "keyColor": "36"  // aqua
+        },
+        {
+            "type": "wm",
+            "key": "wm    ",
+            "keyColor": "34"  // blue
+        },
+        {
+            "type": "uptime",
+            "format": "{2}h {3}m",
+            "key": "uptime",
+            "keyColor": "33"  // yellow
+        },
+        {
+            "type": "memory",
+            "key": "memory",
+            "keyColor": "31"  // red
+        },
+        {
+            "type": "disk",
+            "key": "disk  ",
+            "keyColor": "35"  // purple
+        },
+        "break"
+    ]
+}

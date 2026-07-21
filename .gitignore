@@ -1,0 +1,14 @@
+# secrets
+.env
+*.env
+
+# personal data
+fish/fish_variables
+quickshell/calendar-tasks.json
+quickshell/launcher-usage.json
+
+# wallpapers (keep only wp1.jpg as placeholder)
+hypr/wp/*
+!hypr/wp/wp1.jpg
+quickshell/wp/*
+!quickshell/wp/wp1.jpg
