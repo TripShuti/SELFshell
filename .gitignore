@@ -12,3 +12,4 @@ hypr/wp/*
 !hypr/wp/wp1.jpg
 quickshell/wp/*
 !quickshell/wp/wp1.jpg
+*.bak
