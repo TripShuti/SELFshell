@@ -32,7 +32,7 @@ yazi/        - file manager config + themes
 
 1. Clone to `~/.config/`:
    ```sh
-   git clone https://github.com/YOUR_USER/quick-shell ~/.config
+   git clone https://github.com/TripShuti/SELFshell ~/.config
    ```
 2. Copy `quickshell/scripts/.env.example` to `.env` and fill in your credentials (if using Genshin widgets).
 3. Place your wallpapers in `hypr/wp/` and `quickshell/wp/` (wp1.jpg is kept as placeholder).
