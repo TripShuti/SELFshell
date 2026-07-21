@@ -16,6 +16,26 @@ Personal desktop environment configs built around **Hyprland + Quickshell**.
 | [Yazi](https://yazi-rs.github.io) | File manager |
 | [Fastfetch](https://github.com/fastfetch-cli/fastfetch) | System info |
 
+## Dependencies
+
+Runtime dependencies required by widgets and scripts:
+
+| Dependency | Used by | Purpose |
+|---|---|---|
+| [`NetworkManager`](https://networkmanager.dev) (`nmcli`) | Network popups | WiFi/Ethernet management |
+| [`matugen`](https://github.com/InioX/matugen) | `update-palette.py` | Dynamic color generation from wallpaper |
+| [`awww`](https://github.com/owl-from-hogvarts/awww) | `update-palette.sh` | Wallpaper setter |
+| [`cava`](https://github.com/karlstav/cava) | Audio visualizer widget | Terminal-based audio spectrum |
+| `playerctl` | MPRIS popup | Media player controls |
+| Python `requests` | `genshin_stats.py` | Hoyolab API HTTP requests |
+| Python `python-dotenv` | `genshin_stats.py` | Load credentials from `.env` |
+
+Python packages can be installed via pip:
+
+```sh
+pip install requests python-dotenv
+```
+
 ## Structure
 
 ```
@@ -28,15 +48,19 @@ starship/    - prompt config
 yazi/        - file manager config + themes
 ```
 
-## Setup
+## Quick start
 
-1. Clone to `~/.config/`:
-   ```sh
-   git clone https://github.com/TripShuti/SELFshell ~/.config
-   ```
-2. Copy `quickshell/scripts/.env.example` to `.env` and fill in your credentials (if using Genshin widgets).
-3. Place your wallpapers in `hypr/wp/` and `quickshell/wp/` (wp1.jpg is kept as placeholder).
-4. Review and adjust path references in configs (e.g. `hypr/hyprlock.conf`).
+Clone to `~/.config/`:
+
+```sh
+git clone https://github.com/TripShuti/SELFshell ~/.config
+```
+
+Then:
+
+- Copy `quickshell/scripts/.env.example` to `.env` and fill in your credentials (if using Genshin widgets).
+- Place your wallpapers in `hypr/wp/` and `quickshell/wp/` (wp1.jpg is kept as placeholder).
+- Review and adjust path references in configs (e.g. `hypr/hyprlock.conf`).
 
 ## Notes
 
