@@ -1,4 +1,4 @@
-# quick shell
+# SELFshell
 
 Personal desktop environment configs built around **Hyprland + Quickshell**.
 
