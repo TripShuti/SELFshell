@@ -36,6 +36,11 @@ AnimatedPopup {
   property bool resolved: false
   property string statusMessage: ""
   property bool statusIsError: false
+  // true, коли резолвимо профіль за SSID (а не за активним пристроєм) —
+  // потрібно, щоб правильно розпарсити вивід resolveConnProcess
+  property bool resolvingBySsid: false
+  // Кількість профілів NetworkManager, знайдених з однаковим SSID (дублікати)
+  property int duplicateProfileCount: 0
 
   property int activeTab: 0
 
@@ -53,6 +58,10 @@ AnimatedPopup {
   property string keyMgmt: ""
   property bool changingPassword: false
   property string newPassword: ""
+
+  // Автопідключення для цього конкретного профілю (не для всього пристрою)
+  property bool autoconnect: true
+  property bool autoconnectPending: false
 
   readonly property var tabNames: connKind === "ethernet" ? ["IPv4", "DNS"] : ["IPv4", "DNS", "Security"]
 
@@ -78,6 +87,9 @@ AnimatedPopup {
     changingPassword = false;
     newPassword = "";
     activeTab = 0;
+    autoconnectPending = false;
+    resolvingBySsid = false;
+    duplicateProfileCount = 0;
   }
 
   onVisibleChanged: {
@@ -107,18 +119,29 @@ AnimatedPopup {
         resolved = true;
         return;
       }
+      resolvingBySsid = false;
       resolveConnProcess.command = ["nmcli", "-t", "-f", "GENERAL.CONNECTION", "dev", "show", deviceName];
       resolveConnProcess.running = true;
       return;
     }
 
-    // Збережена Wi-Fi мережа — шукаємо профіль за SSID
+    // Збережена, але зараз не підключена Wi-Fi мережа — шукаємо профіль(і) за SSID.
+    // Якщо колись підключався до цієї мережі кількома шляхами (nmcli/GUI/повторний
+    // конект після "forget"), NetworkManager міг створити ДЕКІЛЬКА профілів з тим
+    // самим SSID ("MyWifi", "MyWifi 1", ...). Беремо не перший-ліпший, а той,
+    // яким реально користувались останнім (за connection.timestamp).
     if (network.name) {
+      resolvingBySsid = true;
       resolveConnProcess.command = ["bash", "-c",
+        "SSID=" + escapeShell(network.name) + "; " +
+        "nmcli -t -f NAME,TYPE con show | awk -F: '$2==\"802-11-wireless\"{print $1}' | " +
         "while IFS= read -r c; do " +
         "s=$(nmcli -t -f 802-11-wireless.ssid con show \"$c\" 2>/dev/null); s=${s#*:}; " +
-        "if [ \"$s\" = " + escapeShell(network.name) + " ]; then echo \"$c\"; break; fi; " +
-        "done < <(nmcli -t -f NAME,TYPE con show | awk -F: '$2==\"802-11-wireless\"{print $1}')"
+        "if [ \"$s\" = \"$SSID\" ]; then " +
+        "ts=$(nmcli -t -f connection.timestamp con show \"$c\" 2>/dev/null); ts=${ts#*:}; " +
+        "echo \"${ts:-0}|$c\"; " +
+        "fi; " +
+        "done | sort -t'|' -k1,1nr"
       ];
       resolveConnProcess.running = true;
     }
@@ -133,11 +156,26 @@ AnimatedPopup {
     id: resolveConnProcess
     stdout: StdioCollector {
       onStreamFinished: {
-        var name = root.extractResolvedName(text);
+        var name = "";
+        root.duplicateProfileCount = 0;
+
+        if (root.resolvingBySsid) {
+          // Формат: "timestamp|connName" по одному на рядок, найновіший — перший
+          // (список вже відсортований у самому bash-скрипті через sort -k1,1nr)
+          var lines = text.split("\n").filter(l => l.trim().length > 0);
+          root.duplicateProfileCount = lines.length;
+          if (lines.length > 0) {
+            var idx = lines[0].indexOf("|");
+            name = idx >= 0 ? lines[0].substring(idx + 1).trim() : lines[0].trim();
+          }
+        } else {
+          name = root.extractResolvedName(text);
+        }
+
         if (name.length > 0 && name !== "--") {
           root.connectionName = name;
           fetchSettingsProcess.command = ["nmcli", "-t", "-f",
-            "ipv4.method,ipv4.addresses,ipv4.gateway,ipv4.dns,ipv4.ignore-auto-dns,802-11-wireless-security.key-mgmt",
+            "ipv4.method,ipv4.addresses,ipv4.gateway,ipv4.dns,ipv4.ignore-auto-dns,802-11-wireless-security.key-mgmt,connection.autoconnect",
             "con", "show", name];
           fetchSettingsProcess.running = true;
         } else {
@@ -177,6 +215,8 @@ AnimatedPopup {
             root.dnsManual = (val === "yes");
           } else if (key === "802-11-wireless-security.key-mgmt") {
             root.keyMgmt = val || "none (Open)";
+          } else if (key === "connection.autoconnect") {
+            root.autoconnect = (val !== "no");
           }
         }
         root.resolved = true;
@@ -226,6 +266,34 @@ AnimatedPopup {
         root.statusIsError = true;
       }
     }
+  }
+
+  // Автопідключення — вмикається/вимикається миттєво, без кнопки Apply
+  Process {
+    id: autoconnectProcess
+    onExited: (exitCode, exitStatus) => {
+      root.autoconnectPending = false;
+      if (exitCode === 0) {
+        root.statusMessage = root.autoconnect ? "Автопідключення увімкнено" : "Автопідключення вимкнено";
+        root.statusIsError = false;
+      } else {
+        // Відкат UI, якщо nmcli не спрацював
+        root.autoconnect = !root.autoconnect;
+        root.statusMessage = "Не вдалося змінити автопідключення (код " + exitCode + ")";
+        root.statusIsError = true;
+      }
+    }
+  }
+
+  // Перемикає автопідключення для цього конкретного профілю з'єднання
+  function toggleAutoconnect() {
+    if (autoconnectPending || connectionName.length === 0) return;
+    autoconnect = !autoconnect;
+    autoconnectPending = true;
+    statusMessage = "Застосовую...";
+    statusIsError = false;
+    autoconnectProcess.command = ["nmcli", "con", "mod", connectionName, "connection.autoconnect", autoconnect ? "yes" : "no"];
+    autoconnectProcess.running = true;
   }
 
   // Формує команду nmcli для застосування IPv4 та DNS
@@ -311,6 +379,65 @@ AnimatedPopup {
       text: "Шукаю профіль з'єднання..."
       color: Palette.mutedAlt
       font.family: Palette.font; font.pixelSize: 12
+    }
+
+    // Попередження: знайдено кілька профілів NetworkManager з однаковим SSID.
+    // Це трапляється після повторних "forget"+reconnect чи підключення через
+    // різні застосунки — беремо найновіший за connection.timestamp, але варто
+    // прибрати зайві профілі вручну (nmcli con delete "<ім'я>"), щоб уникнути
+    // плутанини надалі.
+    Text {
+      Layout.fillWidth: true
+      visible: root.resolved && root.duplicateProfileCount > 1
+      text: "⚠ Знайдено " + root.duplicateProfileCount + " профілі NetworkManager з таким SSID. Використовую найновіший (\"" + root.connectionName + "\"). Варто видалити зайві через nmcli con delete."
+      color: Palette.yellow
+      font.family: Palette.font; font.pixelSize: 10
+      wrapMode: Text.WordWrap
+    }
+
+    // Автопідключення — застосовується миттєво, незалежно від активної вкладки
+    RowLayout {
+      Layout.fillWidth: true
+      spacing: 8
+      visible: root.resolved && root.connectionName.length > 0
+
+      Text {
+        text: "Автопідключення"
+        color: Palette.textLight
+        font.family: Palette.font; font.pixelSize: 12
+        Layout.fillWidth: true
+      }
+
+      Rectangle {
+        id: autoconnectToggleBg
+        property bool isHovered: false
+        width: 36; height: 22; radius: 11
+        opacity: root.autoconnectPending ? 0.6 : 1
+        color: root.autoconnect ? Palette.widgetFg : Palette.bg2
+        Behavior on color { ColorAnimation { duration: 150 } }
+        border.width: isHovered ? 1 : 0
+        border.color: Palette.hoverOverlay
+        Behavior on border.width { NumberAnimation { duration: 120 } }
+
+        Rectangle {
+          x: root.autoconnect ? parent.width - width - 2 : 2
+          width: 18; height: 18; radius: 9
+          color: root.autoconnect ? Palette.bg1 : Palette.gray
+          anchors.verticalCenter: parent.verticalCenter
+          Behavior on x { NumberAnimation { duration: 150 } }
+          Behavior on color { ColorAnimation { duration: 150 } }
+        }
+
+        MouseArea {
+          anchors.fill: parent
+          hoverEnabled: true
+          cursorShape: Qt.PointingHandCursor
+          enabled: !root.autoconnectPending
+          onEntered: autoconnectToggleBg.isHovered = true
+          onExited: autoconnectToggleBg.isHovered = false
+          onClicked: root.toggleAutoconnect()
+        }
+      }
     }
 
     // Вкладки

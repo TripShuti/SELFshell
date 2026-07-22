@@ -247,16 +247,42 @@ AnimatedPopup {
               opacity: device.devLoading ? 0.5 : 1
             }
 
-            Text {
-              text: {
-                if (device.devConnected) return "Connected"
-                if (device.devLoading) return modelData.state === BluetoothDeviceState.Connecting ? "Connecting..." : "Disconnecting..."
-                if (modelData.paired) return "Paired"
-                return modelData.address
+            RowLayout {
+              spacing: 4
+
+              Text {
+                text: {
+                  if (device.devConnected) return "Connected"
+                  if (device.devLoading) return modelData.state === BluetoothDeviceState.Connecting ? "Connecting..." : "Disconnecting..."
+                  if (modelData.paired) return "Paired"
+                  return modelData.address
+                }
+                color: device.devConnected ? Palette.accent : Palette.mutedAlt
+                font.family: Palette.font; font.pixelSize: 10
+                opacity: device.devLoading ? 0.5 : 1
               }
-              color: device.devConnected ? Palette.accent : Palette.mutedAlt
-              font.family: Palette.font; font.pixelSize: 10
-              opacity: device.devLoading ? 0.5 : 1
+
+              // Рівень заряду пристрою (навушники, миша тощо), якщо девайс його повідомляє
+              Text {
+                visible: device.devConnected && modelData.batteryAvailable
+                text: "• " + batteryIcon(modelData.battery) + " " + Math.round((modelData.battery || 0) * 100) + "%"
+                color: batteryColor(modelData.battery)
+                font.family: Palette.font; font.pixelSize: 13
+                opacity: device.devLoading ? 0.5 : 1
+
+                function batteryIcon(level) {
+                  var pct = (level || 0) * 100
+                  if (pct <= 15) return "\uF244"
+                  if (pct <= 50) return "\uF243"
+                  if (pct <= 80) return "\uF242"
+                  return "\uF240"
+                }
+
+                function batteryColor(level) {
+                  var pct = (level || 0) * 100
+                  return pct <= 15 ? Palette.danger : Palette.mutedAlt
+                }
+              }
             }
           }
 

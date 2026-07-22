@@ -437,6 +437,7 @@ color: hovered ? Palette.hoverOverlay : Palette.bgLayer
       }
 
       delegate: Item {
+        id: networkItem
         required property var modelData
         width: ListView.view.width
         height: 48
@@ -465,10 +466,26 @@ color: hovered ? Palette.hoverOverlay : Palette.bgLayer
                 color: modelData.connected ? Palette.accent : Palette.mutedAlt
                 font.family: Palette.font; font.pixelSize: 10
               }
-              Text {
-                text: "• Signal: " + root.signalBars(modelData.signalStrength) + "/4"
-                color: Palette.mutedAlt
-                font.family: Palette.font; font.pixelSize: 10
+              // Графічні bars сили сигналу замість тексту "Signal: N/4"
+              RowLayout {
+                spacing: 1
+                Layout.alignment: Qt.AlignVCenter
+
+                Repeater {
+                  model: 4
+
+                  delegate: Rectangle {
+                    required property int index
+                    readonly property int activeBars: root.signalBars(networkItem.modelData.signalStrength)
+
+                    width: 3
+                    height: 4 + index * 3
+                    radius: 1
+                    color: index < activeBars ? Palette.accent : Palette.bg2
+                    Layout.alignment: Qt.AlignBottom
+                    Behavior on color { ColorAnimation { duration: 150 } }
+                  }
+                }
               }
             }
           }
