@@ -159,6 +159,12 @@ AnimatedPopup {
 
   onVisibleChanged: {
     if (visible) {
+      initDate()
+      selectedDate = ""
+      selectedLabel = ""
+      dayTasks = []
+      taskInput.text = ""
+
       var pos = anchorItem.mapToItem(window.contentItem, 0, 0)
       var popupX = pos.x + (anchorItem.width - implicitWidth) / 2
       anchor.rect = Qt.rect(popupX, pos.y + anchorItem.height + 4, implicitWidth, implicitHeight)

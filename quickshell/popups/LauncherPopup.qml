@@ -120,6 +120,10 @@ AnimatedPopup {
   Component.onCompleted: {
     anchor.window = window
     loadProc.running = true
+    Qt.callLater(function() {
+      root.visible = true
+      root.visible = false
+    })
   }
 
   onVisibleChanged: {
@@ -133,8 +137,8 @@ AnimatedPopup {
         )
       }
       Qt.callLater(function() {
+        searchField.text = ""
         searchField.forceActiveFocus()
-        searchField.selectAll()
         filterApps()
       })
     }
