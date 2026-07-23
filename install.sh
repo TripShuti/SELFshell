@@ -2,16 +2,15 @@
 # ============================================================
 # install.sh — SELFshell setup for Arch Linux
 #
-# Installs dependencies, copies quickshell config to a named
-# subdirectory (~/.config/quickshell/SELFshell), and offers to
-# copy hypr/kitty/fish/yazi/starship configs with backups.
+# Installs dependencies, copies quickshell config to
+# ~/.config/quickshell/, and offers to copy hypr/kitty/fish/
+# yazi/starship configs with backups.
 # Also offers AUR helper (yay) + greetd/greeter setup.
 # ============================================================
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SHELL_NAME="SELFshell"
-QS_CONFIG_DIR="$HOME/.config/quickshell/$SHELL_NAME"
+QS_CONFIG_DIR="$HOME/.config/quickshell"
 
 # --- Packages from official Arch repos ---
 PACMAN_DEPS=(
@@ -87,12 +86,17 @@ sudo systemctl enable --now bluetooth.service
 
 sudo usermod -aG lp "$USER" 2>/dev/null || true
 rfkill unblock bluetooth 2>/dev/null || true
+if command -v bluetoothctl &>/dev/null; then
+  if ! bluetoothctl list 2>/dev/null | grep -q .; then
+    warn "No Bluetooth adapter found. This is expected in a VM."
+  fi
+fi
 if ! systemctl is-active --quiet bluetooth.service; then
   warn "bluetooth.service failed to start. Check 'rfkill list' and linux-firmware."
   systemctl status bluetooth.service --no-pager 2>&1 || true
 fi
 
-# --- Step 2: quickshell config (named directory, safe) ---
+# --- Step 2: quickshell config ---
 if [ -e "$QS_CONFIG_DIR" ]; then
   warn "$QS_CONFIG_DIR already exists."
   read -rp "Overwrite? [y/N] " confirm
@@ -103,8 +107,8 @@ if [ -e "$QS_CONFIG_DIR" ]; then
   rm -rf "$QS_CONFIG_DIR"
 fi
 
-mkdir -p "$(dirname "$QS_CONFIG_DIR")"
-cp -r "$REPO_DIR/quickshell" "$QS_CONFIG_DIR"
+mkdir -p "$QS_CONFIG_DIR"
+cp -r "$REPO_DIR/quickshell/." "$QS_CONFIG_DIR"
 info "Copied to $QS_CONFIG_DIR"
 
 if [ ! -f "$QS_CONFIG_DIR/scripts/.env" ] && [ -f "$QS_CONFIG_DIR/scripts/.env.example" ]; then
@@ -178,17 +182,8 @@ if [[ "$setup_autostart" =~ ^[Yy]$ ]]; then
     read -rp "Install sysc-greet-hyprland (TUI greeter via greetd)? [y/N] " use_greeter
     if [[ "$use_greeter" =~ ^[Yy]$ ]]; then
       "$aur_helper" -S sysc-greet-hyprland
-      sudo mkdir -p /etc/greetd
-      sudo tee /etc/greetd/config.toml > /dev/null << GRETTEOF
-[terminal]
-vt = 1
-
-[default_session]
-command = "Hyprland"
-user = "$USER"
-GRETTEOF
-      sudo systemctl enable greetd.service
-      info "greetd.service enabled. Hyprland will start automatically via sysc-greet-hyprland."
+      info "Package post_install set up greetd config and greeter user."
+      info "Reboot to see the greeter."
     fi
   else
     warn "No AUR helper found — skipping sysc-greet-hyprland installation."
@@ -217,6 +212,8 @@ fi
 
 # --- Final ---
 echo
-info "Done. Reboot your system — after login you will have a fully working SELFshell desktop."
+info "Done."
+echo
+info "Reboot now — after login you will have a fully working SELFshell desktop."
 echo
 info "If something is missing, check $QS_CONFIG_DIR/Config.js to tweak widgets."
