@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
 # ============================================================
-# install.sh — встановлення SELFshell на Arch Linux
+# install.sh — SELFshell setup for Arch Linux
 #
-# За замовчуванням: ставить залежності через pacman + кладе
-# quickshell-конфіг в ІМЕНОВАНИЙ конфіг (~/.config/quickshell/SELFshell),
-# а НЕ в базовий ~/.config/quickshell/ — щоб не конфліктувати з
-# уже наявним у людини шелом. Ethernet/hypr/kitty/fish/yazi/starship
-# конфіги копіюються тільки за окремим підтвердженням і з бекапом.
+# Installs dependencies, copies quickshell config to a named
+# subdirectory (~/.config/quickshell/SELFshell), and offers to
+# copy hypr/kitty/fish/yazi/starship configs with backups.
+# Also offers AUR helper (yay) + greetd/greeter setup.
 # ============================================================
 set -euo pipefail
 
@@ -14,7 +13,7 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SHELL_NAME="SELFshell"
 QS_CONFIG_DIR="$HOME/.config/quickshell/$SHELL_NAME"
 
-# --- Пакети з офіційних репозиторіїв Arch (extra/core), без AUR ---
+# --- Packages from official Arch repos ---
 PACMAN_DEPS=(
   hyprland
   quickshell
@@ -31,6 +30,26 @@ PACMAN_DEPS=(
   python-gobject
   matugen
   ttf-jetbrains-mono-nerd
+
+  # extra essentials required by configs
+  hyprlock
+  hypridle
+  hyprsunset
+  awww
+  grim
+  slurp
+  wl-clipboard
+  socat
+  fastfetch
+  yt-dlp
+  libnotify
+  pipewire
+  wireplumber
+  pipewire-pulse
+  linux-firmware
+  python-requests
+  python-dotenv
+  xdg-desktop-portal-hyprland
 )
 
 info()  { echo -e "\033[1;36m[i]\033[0m $*"; }
@@ -38,42 +57,47 @@ warn()  { echo -e "\033[1;33m[!]\033[0m $*"; }
 error() { echo -e "\033[1;31m[x]\033[0m $*" >&2; }
 
 if ! command -v pacman &>/dev/null; then
-  error "pacman не знайдено. Цей скрипт розрахований тільки на Arch Linux (і похідні на pacman)."
+  error "pacman not found. This script is for Arch Linux only."
   exit 1
 fi
 
-# --- Крок 1: перевірка залежностей ---
-info "Перевіряю залежності через pacman..."
+# --- Step 1: pacman dependencies ---
+info "Checking pacman dependencies..."
 missing=()
 for pkg in "${PACMAN_DEPS[@]}"; do
   pacman -Qi "$pkg" &>/dev/null || missing+=("$pkg")
 done
 
 if [ ${#missing[@]} -gt 0 ]; then
-  warn "Бракує пакетів: ${missing[*]}"
-  read -rp "Встановити їх через 'sudo pacman -S'? [y/N] " confirm
+  warn "Missing packages: ${missing[*]}"
+  read -rp "Install via 'sudo pacman -S'? [y/N] " confirm
   if [[ "$confirm" =~ ^[Yy]$ ]]; then
     sudo pacman -S --needed "${missing[@]}"
   else
-    warn "Пропускаю встановлення залежностей. Шел може не запуститись без них."
+    warn "Skipping dependency installation. The shell may not work."
   fi
 else
-  info "Усі pacman-залежності вже встановлені."
+  info "All pacman dependencies are already installed."
 fi
 
-# Пакет встановлено — це не означає, що демон запущений. Без цього
-# кроку NetManager/BtManager в шелі будуть порожні навіть на щойно
-# встановленій системі.
-info "Вмикаю та запускаю NetworkManager і bluetooth..."
+# --- Enable system services (NetworkManager, Bluetooth) ---
+info "Enabling and starting NetworkManager and bluetooth..."
 sudo systemctl enable --now NetworkManager.service
 sudo systemctl enable --now bluetooth.service
 
-# --- Крок 2: named quickshell config (безпечно, нічого не перезаписує) ---
+sudo usermod -aG lp "$USER" 2>/dev/null || true
+rfkill unblock bluetooth 2>/dev/null || true
+if ! systemctl is-active --quiet bluetooth.service; then
+  warn "bluetooth.service failed to start. Check 'rfkill list' and linux-firmware."
+  systemctl status bluetooth.service --no-pager 2>&1 || true
+fi
+
+# --- Step 2: quickshell config (named directory, safe) ---
 if [ -e "$QS_CONFIG_DIR" ]; then
-  warn "$QS_CONFIG_DIR вже існує."
-  read -rp "Перезаписати? [y/N] " confirm
+  warn "$QS_CONFIG_DIR already exists."
+  read -rp "Overwrite? [y/N] " confirm
   if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
-    error "Перервано користувачем."
+    error "Aborted by user."
     exit 1
   fi
   rm -rf "$QS_CONFIG_DIR"
@@ -81,28 +105,25 @@ fi
 
 mkdir -p "$(dirname "$QS_CONFIG_DIR")"
 cp -r "$REPO_DIR/quickshell" "$QS_CONFIG_DIR"
-info "Скопійовано в $QS_CONFIG_DIR"
+info "Copied to $QS_CONFIG_DIR"
 
 if [ ! -f "$QS_CONFIG_DIR/scripts/.env" ] && [ -f "$QS_CONFIG_DIR/scripts/.env.example" ]; then
   cp "$QS_CONFIG_DIR/scripts/.env.example" "$QS_CONFIG_DIR/scripts/.env"
-  warn "Створено scripts/.env з .env.example — заповни своїми HoYoLAB-даними, якщо потрібен Genshin-віджет"
-  warn "(або просто вимкни enableGenshinWidget в $QS_CONFIG_DIR/Config.js)"
+  warn "Created scripts/.env from .env.example — fill in your HoYoLAB data if you need the Genshin widget"
+  warn "(or disable enableGenshinWidget in $QS_CONFIG_DIR/Config.js)"
 fi
 
-# qs-bt-agent — BlueZ pairing agent, потрібен для показу PIN/confirm запитів
-# при спарюванні. Без нього BtManager в шелі бачить пристрої, але не може
-# їх запарувати. Ставимо як systemd user-сервіс (агент реєструється на
-# системній D-Bus, root не потрібен).
+# qs-bt-agent — BlueZ pairing agent as a systemd user service
 chmod +x "$QS_CONFIG_DIR/qs-bt-agent"
 mkdir -p "$HOME/.config/systemd/user"
 cp "$QS_CONFIG_DIR/qs-bt-agent.service" "$HOME/.config/systemd/user/qs-bt-agent.service"
 systemctl --user daemon-reload
-systemctl --user enable --now qs-bt-agent.service
-info "qs-bt-agent встановлено як systemd user-сервіс (systemctl --user status qs-bt-agent)"
+systemctl --user enable --now qs-bt-agent.service 2>/dev/null || systemctl --user enable qs-bt-agent.service
+info "qs-bt-agent installed as systemd user service (systemctl --user status qs-bt-agent)"
 
-# --- Крок 3 (опційно): решта дотфайлів — hypr/kitty/fish/yazi/starship ---
+# --- Step 3 (optional): dotfiles — hypr/kitty/fish/yazi/starship ---
 echo
-read -rp "Скопіювати також hypr/kitty/fish/yazi/starship конфіги? Це ІНВАЗИВНО і зробить бекап існуючих. [y/N] " with_dotfiles
+read -rp "Copy hypr/kitty/fish/yazi/starship configs too? Existing ones will be backed up. [y/N] " with_dotfiles
 if [[ "$with_dotfiles" =~ ^[Yy]$ ]]; then
   ts="$(date +%Y%m%d-%H%M%S)"
   for dir in hypr kitty fish yazi starship; do
@@ -112,62 +133,74 @@ if [[ "$with_dotfiles" =~ ^[Yy]$ ]]; then
     if [ -e "$target" ]; then
       backup="$target.bak-$ts"
       mv "$target" "$backup"
-      warn "Існуючий $target збережено як $backup"
+      warn "Existing $target backed up to $backup"
     fi
     cp -r "$src" "$target"
-    info "Встановлено ~/.config/$dir"
+    info "Installed ~/.config/$dir"
   done
+
+  if command -v ya &>/dev/null && [ -f "$HOME/.config/yazi/package.toml" ]; then
+    info "Installing Yazi plugins..."
+    ya pack -i 2>/dev/null || true
+  fi
 else
-  info "Пропускаю hypr/kitty/fish/yazi/starship — встановлено тільки quickshell-шел."
+  info "Skipping hypr/kitty/fish/yazi/starship — only quickshell shell installed."
 fi
 
-# --- Фінал ---
+# --- Step 4: AUR helper (yay) ---
 echo
-info "Готово. Запусти шел командою:"
-echo "    quickshell -c $SHELL_NAME"
-echo
-info "Щоб шел стартував разом з Hyprland, додай у hyprland.conf:"
-echo "    exec-once = quickshell -c $SHELL_NAME"
-echo
-info "Щоб вимкнути окремі віджети (Genshin, Bluetooth тощо) без правки QML —"
-info "редагуй $QS_CONFIG_DIR/Config.js"
+aur_helper=""
+for h in yay paru; do
+  command -v "$h" &>/dev/null && aur_helper="$h" && break
+done
 
-# --- Крок 4 (опційно): автозапуск Hyprland при вході ---
-# На чистому Arch немає greeter/display manager за замовчуванням — після
-# встановлення система падає в голий TTY-логін, і Hyprland сам не стартує.
+if [ -z "$aur_helper" ]; then
+  info "No AUR helper (yay/paru) found."
+  read -rp "Install yay from AUR? [y/N] " install_yay
+  if [[ "$install_yay" =~ ^[Yy]$ ]]; then
+    sudo pacman -S --needed --noconfirm base-devel git
+    git clone https://aur.archlinux.org/yay.git /tmp/yay-build
+    (cd /tmp/yay-build && makepkg -si --noconfirm)
+    rm -rf /tmp/yay-build
+    aur_helper="yay"
+  fi
+else
+  info "Found AUR helper: $aur_helper"
+fi
+
+# --- Step 5: display manager / autostart ---
 echo
-info "На чистому Arch нема display manager — після входу система лишається в TTY."
-read -rp "Налаштувати автозапуск Hyprland при вході? [y/N] " setup_autostart
+info "On a bare Arch there is no display manager. After login you get a TTY."
+read -rp "Set up automatic Hyprland startup? [y/N] " setup_autostart
 if [[ "$setup_autostart" =~ ^[Yy]$ ]]; then
-  aur_helper=""
-  for h in yay paru; do
-    command -v "$h" &>/dev/null && aur_helper="$h" && break
-  done
-
   use_greeter="n"
   if [ -n "$aur_helper" ]; then
-    read -rp "Знайдено '$aur_helper'. Встановити sysc-greet-hyprland (TUI-greeter, AUR)? [y/N] " use_greeter
+    read -rp "Install sysc-greet-hyprland (TUI greeter via greetd)? [y/N] " use_greeter
     if [[ "$use_greeter" =~ ^[Yy]$ ]]; then
       "$aur_helper" -S sysc-greet-hyprland
+      sudo mkdir -p /etc/greetd
+      sudo tee /etc/greetd/config.toml > /dev/null << GRETTEOF
+[terminal]
+vt = 1
+
+[default_session]
+command = "Hyprland"
+user = "$USER"
+GRETTEOF
       sudo systemctl enable greetd.service
-      warn "Пакет поставлено. Онови /etc/greetd/config.toml вручну під свій запуск"
-      warn "(initial_session command = \"Hyprland\", user = \"$USER\") — це системний"
-      warn "конфіг, install.sh навмисно не редагує /etc за тебе. Деталі:"
-      warn "https://nomadcxx.github.io/sysc-greet/compositors/hyprland/"
+      info "greetd.service enabled. Hyprland will start automatically via sysc-greet-hyprland."
     fi
   else
-    warn "AUR-хелпер (yay/paru) не знайдено — пропускаю встановлення sysc-greet-hyprland."
-    warn "Постав його сам, якщо хочеш TUI-greeter: yay -S sysc-greet-hyprland"
+    warn "No AUR helper found — skipping sysc-greet-hyprland installation."
   fi
 
   if [[ ! "$use_greeter" =~ ^[Yy]$ ]]; then
-    info "Без greeter'а: додаю автозапуск Hyprland на tty1 через fish (без зайвих пакетів)."
+    info "Without greeter: adding Hyprland autostart on tty1 via fish config."
     fish_config="$HOME/.config/fish/config.fish"
     if [ -f "$fish_config" ] && ! grep -q "exec Hyprland" "$fish_config"; then
       cat >> "$fish_config" << 'FISHEOF'
 
-# Автостарт Hyprland при вході на tty1, якщо немає display manager
-# і Wayland-сесія ще не запущена.
+# Autostart Hyprland on tty1 when no display manager is present
 if status is-login
     and status is-interactive
     and test -z "$WAYLAND_DISPLAY"
@@ -175,9 +208,15 @@ if status is-login
     exec Hyprland
 end
 FISHEOF
-      info "Додано в $fish_config"
+      info "Added to $fish_config"
     else
-      info "Автозапуск вже налаштований або $fish_config не знайдено — пропускаю."
+      info "Autostart already configured or $fish_config not found — skipping."
     fi
   fi
 fi
+
+# --- Final ---
+echo
+info "Done. Reboot your system — after login you will have a fully working SELFshell desktop."
+echo
+info "If something is missing, check $QS_CONFIG_DIR/Config.js to tweak widgets."
