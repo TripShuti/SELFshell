@@ -8,7 +8,7 @@
 
 Personal desktop environment configs built around **Hyprland + Quickshell**.
 
-> **Disclaimer:** These configs are tailored to my personal setup. Bugs or breakage may occur on your machine. Feel free to use anything you like, but at your own risk.
+> **Disclaimer:** Bugs or breakage may occur on your machine. Feel free to use anything you like, but at your own risk.
 
 ## Components
 
@@ -22,39 +22,22 @@ Personal desktop environment configs built around **Hyprland + Quickshell**.
 | [Yazi](https://yazi-rs.github.io) | File manager |
 | [Fastfetch](https://github.com/fastfetch-cli/fastfetch) | System info |
 
-## Dependencies
-
-Runtime dependencies required by widgets and scripts:
-
-| Dependency | Used by | Purpose |
-|---|---|---|
-| [`NetworkManager`](https://networkmanager.dev) (`nmcli`) | Network popups | WiFi/Ethernet management |
-| [`matugen`](https://github.com/InioX/matugen) | `update-palette.py` | Dynamic color generation from wallpaper |
-| [`awww`](https://github.com/owl-from-hogvarts/awww) | `update-palette.sh` | Wallpaper setter |
-| [`cava`](https://github.com/karlstav/cava) | Audio visualizer widget | Terminal-based audio spectrum |
-| `playerctl` | MPRIS popup | Media player controls |
-| Python `requests` | `genshin_stats.py` | Hoyolab API HTTP requests |
-| Python `python-dotenv` | `genshin_stats.py` | Load credentials from `.env` |
-
-Python packages can be installed via pip:
+## Quick start for fresh installed Arch
+I haven't tested it on any exist setup, but I assume everything works fine there too.
 
 ```sh
-pip install requests python-dotenv
+git clone https://github.com/TripShuti/SELFshell
+cd SELFshell
+chmod +x install.sh
+./install.sh
+# follow the prompts, then reboot
 ```
 
-## Structure
+The script installs all dependencies, copies configs, sets up Bluetooth
+and optionally configures a display manager (`sysc-greet-hyprland` from AUR)
+for automatic Hyprland startup.
 
-```
-fastfetch/   - system info config
-fish/        - shell config, functions
-hypr/        - Hyprland, hyprlock, hypridle, etc.
-kitty/       - terminal config
-quickshell/  - QML panels, popups, widgets, scripts
-starship/    - prompt config
-yazi/        - file manager config + themes
-```
-
-## Quick start
+### Manual setup (without install.sh)
 
 Clone to `~/.config/`:
 
@@ -63,12 +46,43 @@ git clone https://github.com/TripShuti/SELFshell ~/.config
 ```
 
 Then:
-
 - Copy `quickshell/scripts/.env.example` to `.env` and fill in your credentials (if using Genshin widgets).
-- Place your wallpapers in `hypr/wp/` and `quickshell/wp/` (wp1.jpg is kept as placeholder).
-- Review and adjust path references in configs (e.g. `hypr/hyprlock.conf`).
+- Place your wallpapers in `hypr/wp/` and `quickshell/wp/`.
+- Review and adjust path references in configs.
+- Ensure all dependencies listed in `install.sh` (`PACMAN_DEPS`) are installed.
+
+## Dependencies
+
+All runtime dependencies are handled by `install.sh`. See the `PACMAN_DEPS`
+array in the script for the complete list. Key packages:
+
+| Package | Purpose |
+|---|---|
+| `hyprland quickshell` | Compositor & shell |
+| `kitty fish starship yazi` | Terminal, shell, prompt, file manager |
+| `networkmanager bluez bluez-utils` | Network & Bluetooth |
+| `pipewire wireplumber pipewire-pulse` | Audio |
+| `hyprlock hypridle hyprsunset` | Lock screen, idle, blue-light |
+| `matugen awww` | Color generation & wallpaper |
+| `grim slurp wl-clipboard` | Screenshots & clipboard |
+| `python-requests python-dotenv` | Genshin Impact widget (Hoyolab API) |
+
+## Structure
+
+```
+fastfetch/   - system info config
+fish/        - shell config, functions, yt-dlp wrapper
+hypr/        - Hyprland (lua), hyprlock, hypridle, hyprsunset configs
+install.sh   - automated setup script
+kitty/       - terminal config
+quickshell/  - QML panels, popups, widgets, scripts, qs-bt-agent
+starship/    - prompt config
+yazi/        - file manager config, keybindings, themes
+```
 
 ## Notes
 
+- Quickshell config lives in `~/.config/quickshell/`.
 - Lock screen splash in Ukrainian (`Парольчик..`).
-- Genshin Impact widgets require Hoyolab API credentials (see `.env.example`).
+- Genshin Impact widgets require Hoyolab API credentials (see `quickshell/scripts/.env.example`).
+- Bluetooth pairing agent (`qs-bt-agent`) is installed as a systemd user service.
