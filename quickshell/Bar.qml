@@ -6,6 +6,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Notifications
 import "Palette.js" as Palette
+import "Config.js" as Config
 import QtQuick
 import QtQuick.Layouts
 import "widgets"
@@ -90,24 +91,29 @@ PanelWindow {
 
       LauncherWidget {
         id: launcherWidget
+        visible: Config.enableLauncherWidget
         Layout.alignment: Qt.AlignVCenter
       }
 
       Separator {
+        visible: Config.enableLauncherWidget && Config.enableWorkspacesWidget
         Layout.alignment: Qt.AlignVCenter
       }
 
       Workspaces {
         id: workspacesRow
+        visible: Config.enableWorkspacesWidget
         Layout.alignment: Qt.AlignVCenter
       }
 
       Separator {
+        visible: Config.enableWorkspacesWidget && Config.enableMprisWidget
         Layout.alignment: Qt.AlignVCenter
       }
 
       MprisWidget {
         id: mprisWidget
+        visible: Config.enableMprisWidget
         Layout.fillHeight: true
         cavBars: cavaMonitor.bars
       }
@@ -133,23 +139,28 @@ PanelWindow {
 
       ClockWidget {
         id: clockWidget
+        visible: Config.enableClockWidget
       }
 
       Separator {
+        visible: Config.enableClockWidget && Config.enableTimerWidget
         Layout.alignment: Qt.AlignVCenter
       }
 
       TimerWidget {
         id: timerWidget
+        visible: Config.enableTimerWidget
         Layout.alignment: Qt.AlignVCenter
       }
 
       Separator {
+        visible: Config.enableTimerWidget && Config.enableGenshinWidget
         Layout.alignment: Qt.AlignVCenter
       }
 
       GenshinWidget {
         id: genshinWidget
+        visible: Config.enableGenshinWidget
         Layout.alignment: Qt.AlignVCenter
         resinText: genshinMonitor.resinText
         resinClass: genshinMonitor.resinClass
@@ -177,25 +188,30 @@ PanelWindow {
 
       KeyboardLayout {
         id: kbLayout
+        visible: Config.enableKeyboardWidget
         Layout.alignment: Qt.AlignVCenter
       }
 
       Separator {
+        visible: Config.enableKeyboardWidget && Config.enableAudioWidget
         Layout.alignment: Qt.AlignVCenter
       }
 
       Audio {
         id: audioWidget
+        visible: Config.enableAudioWidget
         Layout.fillHeight: true
       }
 
       Separator {
+        visible: Config.enableAudioWidget && Config.enableControlWidget
         Layout.alignment: Qt.AlignVCenter
       }
 
 
       ControlWidget {
         id: controlWidget
+        visible: Config.enableControlWidget
         Layout.alignment: Qt.AlignVCenter
         unread: controlPopup.unread
       }

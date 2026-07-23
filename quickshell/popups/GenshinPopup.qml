@@ -11,6 +11,8 @@ import QtQuick.Layouts
 // Попап Genshin Impact — смола, дейліки, боси, чекін
 AnimatedPopup {
   id: root
+  bgOpacity: 0.94  // збережено індивідуальне значення, яке було локально в цьому попапі
+  cornerRadius: 6  // теж було індивідуальним значенням цього попапу
 
   required property QtObject anchorItem
   required property QtObject window
@@ -103,15 +105,6 @@ AnimatedPopup {
     }
   }
 
-  // Тло попапа
-  Rectangle {
-    anchors.fill: parent
-    radius: 6
-    color: Palette.bg0H
-    opacity: 0.94
-    border.width: 1
-    border.color: Palette.bg2
-  }
 
   ColumnLayout {
     id: layout

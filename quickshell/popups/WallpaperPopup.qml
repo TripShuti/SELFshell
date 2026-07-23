@@ -11,6 +11,7 @@ import "../Palette.js" as Palette
 // Вибір шпалер — сітка мініатюр з можливістю встановити
 AnimatedPopup {
   id: root
+  bgOpacity: 0.88  // збережено індивідуальне значення, яке було локально в цьому попапі
 
   required property QtObject window
 
@@ -37,13 +38,6 @@ AnimatedPopup {
     }
   }
 
-  // Тло попапа
-  Rectangle {
-    anchors.fill: parent
-    radius: 12
-    color: Palette.bg0H
-    opacity: 0.88
-  }
 
   // Отримує список файлів шпалер з директорії wp/
   Process {

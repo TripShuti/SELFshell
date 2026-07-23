@@ -12,6 +12,8 @@ import QtQuick.Layouts
 // Календар з сіткою днів та списком задач
 AnimatedPopup {
   id: root
+  bgOpacity: 0.84  // збережено індивідуальне значення, яке було локально в цьому попапі
+  cornerRadius: 8  // теж було індивідуальним значенням цього попапу
 
   required property QtObject anchorItem
   required property QtObject window
@@ -159,27 +161,12 @@ AnimatedPopup {
 
   onVisibleChanged: {
     if (visible) {
-      initDate()
-      selectedDate = ""
-      selectedLabel = ""
-      dayTasks = []
-      taskInput.text = ""
-
       var pos = anchorItem.mapToItem(window.contentItem, 0, 0)
       var popupX = pos.x + (anchorItem.width - implicitWidth) / 2
       anchor.rect = Qt.rect(popupX, pos.y + anchorItem.height + 4, implicitWidth, implicitHeight)
     }
   }
 
-  // Тло календаря
-  Rectangle {
-    anchors.fill: parent
-    radius: 8
-    color: Palette.bg0H
-    opacity: 0.84
-    border.width: 1
-    border.color: Palette.bg2
-  }
 
   ColumnLayout {
     id: layout

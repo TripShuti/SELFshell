@@ -3,6 +3,7 @@
 // ============================================================
 import Quickshell
 import Quickshell.Io
+import "../Config.js" as Config
 import QtQuick
 
 // Монітор Genshin Impact — періодично опитує API, оновлює дані
@@ -95,5 +96,8 @@ Item {
     onTriggered: { root.refreshStatus = "idle"; root.refreshMessage = "" }
   }
 
-  Component.onCompleted: proc.running = true
+  Component.onCompleted: {
+    // Не спавнити python-луп даремно, якщо GenshinWidget вимкнено
+    if (Config.enableGenshinMonitor) proc.running = true
+  }
 }

@@ -2,39 +2,39 @@
 
 var font = "JetBrainsMonoNL Nerd Font";
 
-var fg       = "#dee3e5";
-var gray     = "#899294";
-var green    = "#23bcd0";
+var fg       = "#f1dedc";
+var gray     = "#a08c8a";
+var green    = "#ff897d";
 var red      = "#ffb4ab";
 
-var bg0H     = "#2e3132";
-var bg1      = "#393c3d";
-var bg2      = "#505354";
-var muted    = "#bfc8ca";
-var light    = "#e1e3e3";
-var bright   = "#eff1f1";
+var bg0H     = "#362f2e";
+var bg1      = "#413a39";
+var bg2      = "#59504f";
+var muted    = "#d8c2bf";
+var light    = "#ede0de";
+var bright   = "#fbeeec";
 
-var yellow   = "#bbc6ea";
-var blue     = "#b1cbd0";
-var purple   = "#96b0b5";
-var orange   = "#23bcd0";
-var aqua     = "#9faace";
+var yellow   = "#e0c38c";
+var blue     = "#e7bdb8";
+var purple   = "#caa29d";
+var orange   = "#ff897d";
+var aqua     = "#c3a873";
 
-var widgetFg = "#b9dde3";
-var audioVolume = "#bbc6ea";
+var widgetFg = "#f7cdc8";
+var audioVolume = "#e0c38c";
 
 var hoverOverlay = "#14ffffff";
 var pressOverlay = "#1fffffff";
 
-var bgAlpha  = "#992e3132";
-var hoverBg  = "#993c4041";
-var baseOverlay = "#992e3132";
-var softOverlay = "#a62e3132";
+var bgAlpha  = "#99362f2e";
+var hoverBg  = "#99463d3c";
+var baseOverlay = "#99362f2e";
+var softOverlay = "#a6362f2e";
 
-var accent   = "#82d3e1";
-var textLight = "#eff1f1";
-var mutedAlt = "#a2aaac";
+var accent   = "#ffb4ab";
+var textLight = "#fbeeec";
+var mutedAlt = "#b8a5a3";
 var danger   = "#ffb4ab";
-var bgLayer  = "#992d3334";
-var sepBg    = "#9982d3e1";
-var outlineVariant = "#66505354";
+var bgLayer  = "#993a302f";
+var sepBg    = "#99ffb4ab";
+var outlineVariant = "#6659504f";

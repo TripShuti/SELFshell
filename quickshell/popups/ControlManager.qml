@@ -13,6 +13,8 @@ import "../Palette.js" as Palette
 // Центр керування — сповіщення, швидкі перемикачі та кнопки живлення
 AnimatedPopup {
   id: root
+  bgOpacity: 0.70  // збережено індивідуальне значення, яке було локально в цьому попапі
+  cornerRadius: 8  // теж було індивідуальним значенням цього попапу
 
   required property QtObject anchorItem
   required property QtObject window
@@ -67,17 +69,6 @@ AnimatedPopup {
       var r = window.itemRect(anchorItem)
       anchor.rect = Qt.rect(r.x, r.y + r.height + 4, implicitWidth, implicitHeight)
     }
-  }
-
-  // Додаткове тло під контентом
-  Rectangle {
-    id: bg
-    anchors.fill: parent
-    radius: 8
-    color: Palette.bg0H
-    opacity: 0.70
-    border.width: 1
-    border.color: Palette.bg2
   }
 
   ColumnLayout {

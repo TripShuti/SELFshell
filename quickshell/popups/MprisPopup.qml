@@ -10,6 +10,8 @@ import QtQuick.Layouts
 // Попап медіаплеєра — поточний трек, керування, візуалізатор
 AnimatedPopup {
   id: root
+  bgOpacity: 0.94  // збережено індивідуальне значення, яке було локально в цьому попапі
+  cornerRadius: 14  // теж було індивідуальним значенням цього попапу
 
   required property QtObject anchorItem
   required property QtObject window
@@ -23,25 +25,6 @@ AnimatedPopup {
   property var cavBars: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 
   property bool artError: false
-
-  property real currentPosition: 0
-  property real currentLength: 0
-
-  // Періодичне опитування позиції (MPRIS не гарантує регулярних оновлень Position)
-  Timer {
-    interval: 1000
-    running: root.player?.isPlaying ?? false
-    repeat: true
-    onTriggered: {
-      currentPosition = root.player?.position ?? 0
-      currentLength = root.player?.length ?? 1
-    }
-  }
-
-  onPlayerChanged: {
-    currentPosition = root.player?.position ?? 0
-    currentLength = root.player?.length ?? 1
-  }
 
   // Знаходить плеєр за назвою або перший доступний
   function findAndSetPlayer() {
@@ -102,15 +85,6 @@ AnimatedPopup {
     }
   }
 
-  // Тло попапа
-  Rectangle {
-    anchors.fill: parent
-    radius: 14
-    color: Palette.bg0H
-    opacity: 0.94
-    border.width: 1
-    border.color: Palette.bg2
-  }
 
   ColumnLayout {
     id: layout
@@ -335,7 +309,7 @@ AnimatedPopup {
 
       // Поточний час
       Text {
-        text: formatTime(root.currentPosition)
+        text: formatTime(root.player?.position ?? 0)
         color: Palette.gray
         font.family: Palette.font; font.pixelSize: 9
       }
@@ -350,12 +324,7 @@ AnimatedPopup {
 
         // Заповнення
         Rectangle {
-          width: {
-            var len = root.currentLength
-            var pos = root.currentPosition
-            if (len <= 0 || isNaN(len) || isNaN(pos)) return 0
-            return parent.width * Math.min(pos / len, 1)
-          }
+          width: parent.width * Math.min((root.player?.position ?? 0) / (root.player?.length ?? 1), 1)
           color: root.player?.isPlaying ? Palette.green : Palette.gray
           height: parent.height; radius: 2.5
           Behavior on width { NumberAnimation { duration: 300; easing.type: Easing.Linear } }
@@ -376,9 +345,7 @@ AnimatedPopup {
           hoverEnabled: true
           onClicked: mouse => {
             if (root.player?.canSeek) {
-              var pos = (mouse.x / width) * root.player.length
-              root.player.position = pos
-              root.currentPosition = pos
+              root.player.position = (mouse.x / width) * root.player.length
             }
           }
         }
@@ -386,7 +353,7 @@ AnimatedPopup {
 
       // Загальна довжина
       Text {
-        text: formatTime(root.currentLength)
+        text: formatTime(root.player?.length ?? 0)
         color: Palette.gray
         font.family: Palette.font; font.pixelSize: 9
       }

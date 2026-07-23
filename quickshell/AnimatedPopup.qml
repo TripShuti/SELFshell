@@ -11,8 +11,10 @@ PopupWindow {
   id: root
 
   // Налаштовувані кольори та параметри анімації
-  property color bgColor: Palette.baseOverlay
-  property color bgColorSoft: Palette.softOverlay
+  property color bgColor: Palette.bg0H
+  property real bgOpacity: 0.88
+  property real bgLighten: 1.5
+  property real cornerRadius: 12
   property color borderColor: Palette.bg2
   property real enterScale: 0.85
   property real overshootAmount: 2.5
@@ -37,23 +39,30 @@ PopupWindow {
     root.visible = !root.visible
   }
 
-  // Зовнішнє м'яке сяйво навколо контейнера
+  // Зовнішнє м'яке сяйво навколо контейнера.
+  // Раніше виходило на -3px за межі container через anchors.margins,
+  // але сама Wayland-поверхня (PopupWindow) має розмір рівно container-а —
+  // ці зайві пікселі обрізались поверхнею під прямим кутом, лишаючи
+  // гострі "недорізані" клинки заокругленого сяйва по кутах попапу.
   Rectangle {
     id: outerGlow
     anchors.fill: container
-    anchors.margins: -3
-    radius: container.radius + 3
+    radius: container.radius
     color: root.borderColor
     opacity: 0.10
     scale: container.scale
     transformOrigin: root.transformOrigin
   }
 
-  // Контейнер з градієнтом та border
+  // Контейнер — тільки трансформація (масштаб/зсув/fade) і рамка.
+  // Сам по собі прозорий: реальний фон живе в окремому bgRect нижче,
+  // щоб анімація входу/виходу не конфліктувала зі стабільною
+  // непрозорістю фону (раніше обидві боролись за container.opacity).
   Rectangle {
     id: container
     anchors.fill: parent
-    radius: 12
+    radius: root.cornerRadius
+    color: "transparent"
     border.width: 1
     border.color: root.borderColor
     opacity: 0.50
@@ -62,10 +71,19 @@ PopupWindow {
     clip: true
     transform: Translate { id: animY; y: 0 }
 
-    gradient: Gradient {
-      orientation: Gradient.Vertical
-      GradientStop { position: 0.0; color: root.bgColorSoft }
-      GradientStop { position: 1.0; color: root.bgColor }
+    // Реальний фон попапу — єдина спільна точка керування для ВСІХ
+    // попапів. Змінюєш bgColor/bgOpacity/bgLighten тут в AnimatedPopup —
+    // застосовується одразу до кожного попапу, без дублікатів по файлах.
+    Rectangle {
+      id: bgRect
+      anchors.fill: parent
+      radius: parent.radius
+      opacity: root.bgOpacity
+      gradient: Gradient {
+        orientation: Gradient.Vertical
+        GradientStop { position: 0.0; color: Qt.lighter(root.bgColor, root.bgLighten) }
+        GradientStop { position: 1.0; color: root.bgColor }
+      }
     }
 
     // Внутрішній border (тонка обводка всередині контейнера)

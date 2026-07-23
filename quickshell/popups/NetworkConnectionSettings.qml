@@ -13,6 +13,7 @@ import QtQuick.Layouts
 // Працює через nmcli (con mod + con up)
 AnimatedPopup {
   id: root
+  bgOpacity: 0.88  // збережено індивідуальне значення, яке було локально в цьому попапі
 
   required property QtObject window
 
@@ -336,13 +337,6 @@ AnimatedPopup {
     passwordProcess.running = true;
   }
 
-  // --- Інтерфейс ---
-  Rectangle {
-    anchors.fill: parent
-    radius: 12
-    color: Palette.bg0H
-    opacity: 0.88
-  }
 
   ColumnLayout {
     x: 12

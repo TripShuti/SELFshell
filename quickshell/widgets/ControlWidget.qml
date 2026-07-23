@@ -19,7 +19,7 @@ Item {
 
   Text {
     id: txt
-    text: "󰭩"
+    text: ""
     color: {
       if (root.unread > 0) return Palette.green
       if (root.hovered) return Palette.light

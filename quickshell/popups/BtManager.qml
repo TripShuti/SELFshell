@@ -13,6 +13,7 @@ import QtQuick.Layouts
 // Менеджер Bluetooth — адаптер, видимість, список пристроїв
 AnimatedPopup {
   id: root
+  bgOpacity: 0.88  // збережено індивідуальне значення, яке було локально в цьому попапі
 
   required property QtObject window
 
@@ -47,13 +48,6 @@ AnimatedPopup {
     }
   }
 
-  // Тло менеджера
-  Rectangle {
-    anchors.fill: parent
-    radius: 12
-    color: Palette.bg0H
-    opacity: 0.88
-  }
 
   ColumnLayout {
     id: layout
@@ -267,7 +261,7 @@ AnimatedPopup {
                 visible: device.devConnected && modelData.batteryAvailable
                 text: "• " + batteryIcon(modelData.battery) + " " + Math.round((modelData.battery || 0) * 100) + "%"
                 color: batteryColor(modelData.battery)
-                font.family: Palette.font; font.pixelSize: 13
+                font.family: Palette.font; font.pixelSize: 10
                 opacity: device.devLoading ? 0.5 : 1
 
                 function batteryIcon(level) {

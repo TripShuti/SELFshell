@@ -12,6 +12,7 @@ import QtQuick.Layouts
 // Менеджер мереж — Wi-Fi та Ethernet з'єднання, сканування, налаштування
 AnimatedPopup {
   id: root
+  bgOpacity: 0.88  // збережено індивідуальне значення, яке було локально в цьому попапі
 
   required property QtObject window
 
@@ -113,13 +114,6 @@ AnimatedPopup {
 
   Component.onCompleted: anchor.window = window
 
-  // Тло менеджера
-  Rectangle {
-    anchors.fill: parent
-    radius: 12
-    color: Palette.bg0H
-    opacity: 0.88
-  }
 
   ColumnLayout {
     id: layout

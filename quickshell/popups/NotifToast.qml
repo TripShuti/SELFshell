@@ -105,7 +105,11 @@ PopupWindow {
     opacity: 0
     scale: 0.85
     clip: true
-    color: Palette.bg0H
+    gradient: Gradient {
+      orientation: Gradient.Vertical
+      GradientStop { position: 0.0; color: Qt.lighter(Palette.bg0H, 1.16) }
+      GradientStop { position: 1.0; color: Palette.bg0H }
+    }
 
     // Підсвітка верхнього краю
     Rectangle {

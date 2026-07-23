@@ -11,6 +11,7 @@ import QtQuick.Layouts
 // Мікшер аудіо — список пристроїв виведення та потоків відтворення
 AnimatedPopup {
   id: root
+  bgOpacity: 0.88  // збережено індивідуальне значення, яке було локально в цьому попапі
 
   required property QtObject anchorItem
   required property QtObject window
@@ -29,13 +30,6 @@ AnimatedPopup {
     }
   }
 
-  // Тло мікшера
-  Rectangle {
-    anchors.fill: parent
-    radius: 12
-    color: Palette.bg0H
-    opacity: 0.88
-  }
 
   ColumnLayout {
     id: layout
