@@ -3,12 +3,13 @@
 // ============================================================
 import Quickshell
 import Quickshell.Io
-import "../Config.js" as Config
 import QtQuick
 
 // Монітор Genshin Impact — періодично опитує API, оновлює дані
 Item {
   id: root
+
+  required property QtObject appConfig
 
   property string resinText: "\uF737 0/200"
   property string tooltip: "Завантаження..."
@@ -96,8 +97,6 @@ Item {
     onTriggered: { root.refreshStatus = "idle"; root.refreshMessage = "" }
   }
 
-  Component.onCompleted: {
-    // Не спавнити python-луп даремно, якщо GenshinWidget вимкнено
-    if (Config.enableGenshinMonitor) proc.running = true
-  }
+  property bool monitorEnabled: appConfig ? appConfig.genshinEnabled : false
+  onMonitorEnabledChanged: proc.running = monitorEnabled
 }

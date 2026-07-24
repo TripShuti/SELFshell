@@ -6,6 +6,8 @@ import QtQuick
 
 // Вертикальний роздільник між секціями панелі
 Item {
+  implicitWidth: 5
+  implicitHeight: 16
   width: 5
   height: 16
 

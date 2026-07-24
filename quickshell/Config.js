@@ -1,28 +1,17 @@
 .pragma library
+var launcherEnabled = true;
+var workspacesEnabled = true;
+var mprisEnabled = true;
+var clockEnabled = true;
+var timerEnabled = true;
+var genshinEnabled = true;
+var keyboardEnabled = true;
+var audioEnabled = true;
+var controlEnabled = true;
+var btEnabled = false;
+var netEnabled = false;
+var trayEnabled = false;
+var leftOrder = ["launcher","sep-2","workspaces","sep-7","mpris"];
+var centerOrder = ["timer","sep-5","clock","sep-6","genshin"];
+var rightOrder = ["tray","bt","net","keyboard","sep-10","audio","sep-1","control"];
 
-// ============================================================
-// Config.js — глобальні перемикачі віджетів/попапів.
-// Той самий патерн, що Palette.js: редагуєш значення тут,
-// зберігаєш файл — Quickshell hot-reload підхопить зміну.
-// Призначено для того, щоб хтось інший міг вимкнути особисті/
-// нішеві модулі (Genshin тощо), не редагуючи Bar.qml напряму.
-// ============================================================
-
-// --- Ліва пігулка ---
-var enableLauncherWidget = true;
-var enableWorkspacesWidget = true;
-var enableMprisWidget = true;
-
-// --- Центральна пігулка ---
-var enableClockWidget = true;
-var enableTimerWidget = true;
-var enableGenshinWidget = true;   // нішева фіча: статистика Genshin Impact з HoYoLAB
-
-// --- Права пігулка ---
-var enableKeyboardWidget = true;
-var enableAudioWidget = true;
-var enableControlWidget = true;   // control center: нотифікації, живлення, швидкі дії
-
-// --- Фонові монітори (мають сенс тільки якщо відповідний віджет увімкнено) ---
-var enableCavaMonitor = enableMprisWidget;      // аудіо-візуалізація в MprisWidget
-var enableGenshinMonitor = enableGenshinWidget; // поллінг HoYoLAB для GenshinWidget

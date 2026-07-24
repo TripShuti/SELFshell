@@ -21,17 +21,6 @@ Item {
     precision: SystemClock.Seconds
   }
 
-  // Тінь тексту (світіння при наведенні)
-  Text {
-    anchors.centerIn: label
-    text: label.text
-    color: Palette.widgetFg
-    font: label.font
-    opacity: root.hovered ? 0.35 : 0
-    scale: 1.08
-    Behavior on opacity { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
-  }
-
   Text {
     id: label
     anchors.centerIn: parent
@@ -41,8 +30,10 @@ Item {
     font.pixelSize: 14
     verticalAlignment: Text.AlignVCenter
     horizontalAlignment: Text.AlignHCenter
+    scale: root.hovered ? 1.15 : 1.0
 
     Behavior on color { ColorAnimation { duration: 220 } }
+    Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutBack; easing.overshoot: 2.5 } }
   }
 
   MouseArea {

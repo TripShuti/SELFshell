@@ -2,12 +2,13 @@
 // CavaMonitor.qml — аудіо-візуалізатор (cava)
 // ============================================================
 import Quickshell.Io
-import "../Config.js" as Config
 import QtQuick
 
 // Монітор аудіо-візуалізації — читає дані з cava та згладжує
 Item {
   id: root
+
+  required property QtObject appConfig
 
   readonly property int barCount: 28
   property var bars: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
@@ -43,8 +44,6 @@ Item {
     stdout: lineParser
   }
 
-  Component.onCompleted: {
-    // Не спавнити cava даремно, якщо MprisWidget (єдиний споживач цих даних) вимкнено
-    if (Config.enableCavaMonitor) cavaProcess.running = true
-  }
+  property bool monitorEnabled: appConfig ? appConfig.mprisEnabled : false
+  onMonitorEnabledChanged: cavaProcess.running = monitorEnabled
 }

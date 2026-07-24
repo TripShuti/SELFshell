@@ -5,45 +5,60 @@ import Quickshell.Hyprland
 import "../Palette.js" as Palette
 import QtQuick
 
-
-// Віджет робочих столів — номери з кольоровою індикацією
-Row {
+Item {
   id: root
 
-  spacing: 4
+  signal clicked()
+  property bool hovered: false
 
-  Repeater {
-    model: Hyprland.workspaces
+  implicitHeight: parent?.height ?? 36
+  implicitWidth: row.implicitWidth
 
-    delegate: Item {
-      required property HyprlandWorkspace modelData
+  Row {
+    id: row
+    anchors.verticalCenter: parent.verticalCenter
+    spacing: 4
 
-      // Колір: фокус → акцент, urgent → червоний, активний → світлий, неактивний → muted
-      readonly property color dotColor: modelData.focused ? Palette.green
-        : (modelData.urgent ? Palette.red : (modelData.active ? Palette.light : Palette.muted))
+    Repeater {
+      model: Hyprland.workspaces
 
-      width: 20
-      height: 28
+      delegate: Item {
+        required property HyprlandWorkspace modelData
 
-      Text {
-        anchors.centerIn: parent
-        text: modelData.id
-        color: parent.dotColor
-        font.family: Palette.font
-        font.pixelSize: 12
-        font.bold: modelData.focused
-        scale: modelData.focused ? 1.15 : 1.0
+        readonly property color dotColor: modelData.focused ? Palette.green
+          : (modelData.urgent ? Palette.red : (modelData.active ? Palette.light : Palette.muted))
 
-        Behavior on color { ColorAnimation { duration: 220 } }
-        Behavior on scale {
-          NumberAnimation { duration: 220; easing.type: Easing.OutBack; easing.overshoot: 2.2 }
+        width: 20
+        height: 28
+
+        Text {
+          anchors.centerIn: parent
+          text: modelData.id
+          color: parent.dotColor
+          font.family: Palette.font
+          font.pixelSize: 12
+          font.bold: modelData.focused
+          scale: modelData.focused ? 1.15 : 1.0
+
+          Behavior on color { ColorAnimation { duration: 220 } }
+          Behavior on scale {
+            NumberAnimation { duration: 220; easing.type: Easing.OutBack; easing.overshoot: 2.2 }
+          }
+        }
+
+        MouseArea {
+          anchors.fill: parent
+          onClicked: modelData.activate()
         }
       }
-
-      MouseArea {
-        anchors.fill: parent
-        onClicked: modelData.activate()
-      }
     }
+  }
+
+  MouseArea {
+    anchors.fill: parent
+    hoverEnabled: true
+    onEntered: root.hovered = true
+    onExited: root.hovered = false
+    propagateComposedEvents: true
   }
 }
