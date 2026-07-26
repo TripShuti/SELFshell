@@ -1,0 +1,69 @@
+// ============================================================
+// fastfetch/config.jsonc — конфігурація системної інформації
+// ============================================================
+{
+    "logo": {
+        "source": "arch_small", 
+        "padding": {
+	        "top": 1
+	}
+    },
+    "display": {
+        "separator": "  "
+    },
+    "modules": [
+	"break",
+	{
+            "type": "title",
+            "keyColor": "32"  // зелений
+        },
+        {
+            "type": "os",
+            "key": "os    ",
+            "keyColor": "33"  // жовтий
+        },
+        {
+            "type": "kernel",
+            "key": "kernel",
+            "keyColor": "34"  // синій
+        },
+        {
+            "type": "host",
+            "format": "{5} {1}",
+            "key": "host  ",
+            "keyColor": "35"  // фіолетовий
+        },
+        {
+            "type": "packages",
+            "key": "pkgs  ",
+            "keyColor": "32"  // зелений
+        },
+        {
+            "type": "shell",
+            "key": "shell ",
+            "keyColor": "36"  // блакитний
+        },
+        {
+            "type": "wm",
+            "key": "wm    ",
+            "keyColor": "34"  // синій
+        },
+        {
+            "type": "uptime",
+            "format": "{2}h {3}m",
+            "key": "uptime",
+            "keyColor": "33"  // жовтий
+        },
+        {
+            "type": "memory",
+            "key": "memory",
+            "keyColor": "31"  // червоний
+        },
+        {
+            "type": "disk",
+            "key": "disk  ",
+            "keyColor": "35"  // фіолетовий
+        },
+        "break"
+    ]
+}

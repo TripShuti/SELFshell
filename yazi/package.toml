@@ -1,0 +1,22 @@
+[plugin]
+deps = []
+
+[[flavor.deps]]
+use = "identityapproved/lain"
+rev = "e2a3bb2"
+hash = "992f7d08d6093732621ff49022ef6053"
+
+[[flavor.deps]]
+use = "dangooddd/kanagawa"
+rev = "04985d1"
+hash = "c69a63981e254a3a06a11c2bf0e6af1d"
+
+[[flavor.deps]]
+use = "kmlupreti/ayu-dark"
+rev = "00804da"
+hash = "d2ce8358c59ea6e8552091075b3a191c"
+
+[[flavor.deps]]
+use = "Chromium-3-Oxide/everforest-medium"
+rev = "e1ead7b"
+hash = "f7dc46200e53da5e94858630184a9220"

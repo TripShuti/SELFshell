@@ -1,0 +1,166 @@
+// ============================================================
+// TimerWidget.qml — таймер на панелі
+// ============================================================
+import Quickshell
+import Quickshell.Io
+import "../Palette.js" as Palette
+import QtQuick
+
+// Віджет таймера на панелі — відлік, нагадування, керування колесом
+Item {
+  id: root
+
+  // Необов'язковий конфіг — якщо appConfig.timerSoundPath заданий і файл існує,
+  // матиме пріоритет над своїм звуком з assets/. Прибери "?" / required, якщо
+  // конфіг завжди передається ззовні, як у GenshinMonitor.
+  property QtObject appConfig: null
+
+  property bool timerRunning: false
+  property int timerDuration: 25
+  property int timerRemaining: 0
+  property string timerClass: "idle"
+
+  readonly property string displayText: {
+    if (timerClass === "done") return "\uF253 00:00"
+    if (timerRunning) {
+      var m = Math.floor(timerRemaining / 60)
+      var s = timerRemaining % 60
+      return "\uF017 " + String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0")
+    }
+    return "\uF017 " + String(timerDuration).padStart(2, "0") + ":00"
+  }
+
+  implicitWidth: txt.implicitWidth
+  implicitHeight: parent?.height ?? 36
+
+  // --- Шляхи до звуку ---
+  // 1. Кастомний шлях з конфігу (якщо користувач задав свій)
+  // 2. Свій звук, що йде в комплекті з репозиторієм (assets/sounds/)
+  // 3. Системний freedesktop-звук як останній фолбек
+  readonly property string _customSound: (appConfig && appConfig.timerSoundPath) ? appConfig.timerSoundPath : ""
+  readonly property string _bundledSound: Qt.resolvedUrl("../assets/sounds/timer-done.ogg").toString().replace("file://", "")
+  readonly property string _systemFallbackSound: "/usr/share/sounds/freedesktop/stereo/complete.oga"
+
+  function _buildNotifyCommand() {
+    // Екранування шляхів через одинарні лапки на випадок пробілів у назвах файлів
+    var custom = root._customSound.replace(/'/g, "'\\''")
+    var bundled = root._bundledSound.replace(/'/g, "'\\''")
+    var sysFallback = root._systemFallbackSound.replace(/'/g, "'\\''")
+
+    return "notify-send -a 'SELFshell' -u critical 'Timer' 'Time is up!' & " +
+      "SOUND=''; " +
+      "for f in '" + custom + "' '" + bundled + "' '" + sysFallback + "'; do " +
+      "  [ -n \"$f\" ] && [ -f \"$f\" ] && SOUND=\"$f\" && break; " +
+      "done; " +
+      "if [ -n \"$SOUND\" ]; then " +
+      "  PLAYER=''; " +
+      "  command -v paplay >/dev/null 2>&1 && PLAYER='paplay'; " +
+      "  [ -z \"$PLAYER\" ] && command -v pw-play >/dev/null 2>&1 && PLAYER='pw-play'; " +
+      "  [ -z \"$PLAYER\" ] && command -v ffplay >/dev/null 2>&1 && PLAYER='ffplay -nodisp -autoexit -loglevel quiet'; " +
+      "  if [ -n \"$PLAYER\" ]; then " +
+      "    echo \"[TimerWidget] Граю через '$PLAYER': $SOUND\" >&2; " +
+      "    for i in 1 2 3; do $PLAYER \"$SOUND\" 2>/dev/null; sleep 0.5; done; " +
+      "  else " +
+      "    echo '[TimerWidget] Жоден плеєр (paplay/pw-play/ffplay) не знайдено в PATH' >&2; " +
+      "  fi; " +
+      "else " +
+      "  echo \"[TimerWidget] Не знайдено файл. Перевірені шляхи: '" + custom + "' | '" + bundled + "' | '" + sysFallback + "'\" >&2; " +
+      "fi"
+  }
+
+  // Лічильник з інтервалом 1 секунда
+  Timer {
+    id: countdown
+    interval: 1000
+    repeat: true
+    triggeredOnStart: false
+    onTriggered: {
+      root.timerRemaining -= 1
+      if (root.timerRemaining <= 0) {
+        countdown.stop()
+        root.timerRunning = false
+        root.timerRemaining = 0
+        root.timerClass = "done"
+        notifyProc.running = true
+      }
+    }
+  }
+
+  // Сповіщення та звук при завершенні
+  Process {
+    id: notifyProc
+    command: ["sh", "-c", root._buildNotifyCommand()]
+    stderr: SplitParser {
+      splitMarker: "\n"
+      onRead: data => { if (data) console.warn(data) }
+    }
+  }
+
+  // Старт / стоп / підтвердження завершення
+  function toggle() {
+    if (root.timerClass === "done") {
+      // Перший клік після завершення лише прибирає блимання, не стартує новий відлік
+      root.timerClass = "idle"
+      root.timerRemaining = 0
+      return
+    }
+    if (root.timerRunning) {
+      countdown.stop()
+      root.timerRunning = false
+      root.timerClass = "idle"
+      root.timerRemaining = 0
+    } else {
+      root.timerClass = "running"
+      root.timerRunning = true
+      root.timerRemaining = root.timerDuration * 60
+      countdown.start()
+    }
+  }
+
+  // Збільшити тривалість
+  function durUp() {
+    if (!root.timerRunning) {
+      root.timerDuration += 1
+    }
+  }
+
+  // Зменшити тривалість
+  function durDown() {
+    if (!root.timerRunning && root.timerDuration > 1) {
+      root.timerDuration -= 1
+    }
+  }
+
+  Text {
+    id: txt
+    text: root.displayText
+    color: root.timerClass === "running" ? Palette.green
+         : root.timerClass === "done" ? Palette.red
+         :  Palette.widgetFg
+    font.family: Palette.font
+    font.pixelSize: 13
+    anchors.verticalCenter: parent.verticalCenter
+
+    Behavior on color { ColorAnimation { duration: 220 } }
+
+    // Блимання при завершенні
+    SequentialAnimation on opacity {
+      running: root.timerClass === "done"
+      loops: Animation.Infinite
+      NumberAnimation { to: 0.4; duration: 600; easing.type: Easing.InOutSine }
+      NumberAnimation { to: 1.0; duration: 600; easing.type: Easing.InOutSine }
+    }
+  }
+
+  MouseArea {
+    anchors.fill: parent
+    acceptedButtons: Qt.LeftButton
+    onClicked: root.toggle()
+    onWheel: wheel => {
+      if (wheel.angleDelta.y > 0)
+        root.durUp()
+      else
+        root.durDown()
+    }
+  }
+}

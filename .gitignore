@@ -1,0 +1,25 @@
+# ============================================================
+# .gitignore — ігноровані файли репозиторію
+# ============================================================
+# секрети
+.env
+*.env
+
+# персональні дані
+fish/fish_variables
+quickshell/calendar-tasks.json
+quickshell/launcher-usage.json
+
+# шпалери (залишаємо лише wp1.jpg як заглушку)
+hypr/wp/*
+!hypr/wp/wp1.jpg
+quickshell/wp/*
+!quickshell/wp/wp1.jpg
+*.bak
+docs/
+quickshell/scripts/.genshin_requests.log
+quickshell/scripts/.genshin_state.json
+
+# згенеровані персональні налаштування
+quickshell/Palette.js
+quickshell/control-state.json
