@@ -7,14 +7,17 @@ import Quickshell
 import Quickshell.Networking
 import "../Palette.js" as Palette
 
+// Віджет мережі на панелі — іконка дротової/Wi-Fi мережі з рівнем сигналу
 Item {
   id: root
 
   signal clicked()
   property bool hovered: false
 
+  // Список мережевих пристроїв від Quickshell.Networking
   readonly property var networkDevices: Networking.devices ? Networking.devices.values : []
 
+  // Пошук дротового пристрою
   readonly property var wiredDevice: {
     for (let i = 0; i < networkDevices.length; i++) {
       let dev = networkDevices[i];
@@ -23,6 +26,7 @@ Item {
     return null;
   }
 
+  // Пошук Wi-Fi пристрою
   readonly property var wifiDevice: {
     for (let i = 0; i < networkDevices.length; i++) {
       if (networkDevices[i] && networkDevices[i].type === DeviceType.Wifi) {
@@ -32,6 +36,7 @@ Item {
     return null;
   }
 
+  // Поточна підключена Wi-Fi мережа
   readonly property var connectedWifi: {
     if (!wifiDevice || !wifiDevice.networks) return null;
     let nets = wifiDevice.networks.values;
@@ -45,22 +50,27 @@ Item {
   readonly property bool hasWifi: connectedWifi != null
   readonly property bool wifiOn: Networking.wifiEnabled
 
+  // Рівень сигналу (0-1)
   readonly property real signalStrength: hasWifi ? (connectedWifi.signalStrength || 0) : 0
 
+  // Кількість смужок сигналу (0-4)
   readonly property int signalBars: {
     var pct = Math.max(0, Math.min(100, Math.round((signalStrength || 0) * 100)));
     if (pct <= 0) return 0;
     return Math.max(1, Math.min(4, Math.ceil(pct / 25)));
   }
 
+  // Іконки для різної кількості смужок сигналу
   readonly property var wifiIcons: ["󰤭", "󰤯", "󰤟", "󰤢", "󰤨"]
 
+  // Вибір іконки: дротова → Wi-Fi (за рівнем сигналу) → порожньо
   readonly property string mainIcon: {
     if (hasWired) return "󰈀";
     if (hasWifi) return root.wifiIcons[signalBars];
     return "󰤭";
   }
 
+  // Колір іконки: зелений при ховері, звичайний при підключенні, тьмяний без мережі
   readonly property color iconColor: {
     if (root.hovered) return Palette.green;
     if (hasWired || hasWifi) return Palette.fg;
@@ -70,6 +80,7 @@ Item {
   implicitWidth: row.implicitWidth
   implicitHeight: parent?.height ?? 36
 
+  // Іконка мережі
   RowLayout {
     id: row
     anchors.verticalCenter: parent.verticalCenter
@@ -88,6 +99,7 @@ Item {
 
   }
 
+  // Клік — відкриття меню мережі
   MouseArea {
     anchors.fill: parent
     hoverEnabled: true

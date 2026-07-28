@@ -7,6 +7,7 @@ import Quickshell
 import Quickshell.Services.SystemTray
 import "../Palette.js" as Palette
 
+// Віджет системного трею на панелі — іконки фонового процесів (Telegram, Slack тощо)
 Item {
   id: root
 
@@ -16,11 +17,13 @@ Item {
   implicitWidth: trayRow.implicitWidth
   implicitHeight: parent?.height ?? 36
 
+  // Рядок іконок системного трею
   RowLayout {
     id: trayRow
     anchors.verticalCenter: parent.verticalCenter
     spacing: 6
 
+    // Кожна іконка — окремий елемент системного трею
     Repeater {
       model: SystemTray.items
       delegate: Image {
@@ -30,6 +33,7 @@ Item {
 
         Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutBack; easing.overshoot: 2.5 } }
 
+        // ЛКМ — активувати, ПКМ — контекстне меню
         MouseArea {
           anchors.fill: parent
           acceptedButtons: Qt.LeftButton | Qt.RightButton
@@ -42,6 +46,7 @@ Item {
     }
   }
 
+  // Збільшення іконок при наведенні
   MouseArea {
     anchors.fill: parent
     hoverEnabled: true

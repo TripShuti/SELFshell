@@ -75,9 +75,9 @@ fish/        - shell config, functions, yt-dlp wrapper
 hypr/        - Hyprland (lua module system) & hyprsunset configs
 install.sh   - automated setup script
 kitty/       - terminal config
-quickshell/  - QML panels, popups, widgets, scripts, lockscreen, qs-bt-agent
-             - lockscreen.qml / LockContext.qml / LockSurface.qml — PAM-based lock screen
-             - IdleManager.qml / DimOverlay.qml — idle handling (dim, lock, DPMS, suspend)
+quickshell/  - QML panels, popups, widgets, scripts, qs-bt-agent
+             - LockContext.qml / LockSurface.qml — PAM-based lock screen (embedded in shell.qml)
+             - IdleManager.qml — idle handling (dim, lock, DPMS, suspend)
              - pam/password.conf — PAM config for lock screen auth
 starship/    - prompt config
 yazi/        - file manager config, keybindings, themes
@@ -86,6 +86,6 @@ yazi/        - file manager config, keybindings, themes
 ## Notes
 
 - Quickshell config lives in `~/.config/quickshell/`.
-- Lock screen is a custom QML implementation (`lockscreen.qml`) with PAM auth, replacing hyprlock/hypridle. Place a wallpaper at `quickshell/wp/current.jpg` for the lock screen background.
+- Lock screen is a custom QML implementation (embedded in `shell.qml` via `WlSessionLock`) with PAM auth, replacing hyprlock/hypridle. Place a wallpaper at `quickshell/wp/current.jpg` for the lock screen background.
 - Genshin Impact widgets require Hoyolab API credentials (see `quickshell/scripts/.env.example`).
 - Bluetooth pairing agent (`qs-bt-agent`) is installed as a systemd user service.

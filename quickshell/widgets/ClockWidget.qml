@@ -6,7 +6,7 @@ import "../Palette.js" as Palette
 import QtQuick
 
 
-// Віджет годинника на панелі — показує поточний час
+// Віджет годинника на панелі — показує поточний час (HH:mm)
 Item {
   id: root
 
@@ -16,11 +16,13 @@ Item {
   implicitWidth: label.implicitWidth
   implicitHeight: label.implicitHeight
 
+  // Системний годинник з точністю до секунд (оновлюється кожну секунду)
   SystemClock {
     id: clock
     precision: SystemClock.Seconds
   }
 
+  // Текст часу — збільшується при наведенні
   Text {
     id: label
     anchors.centerIn: parent
@@ -36,6 +38,7 @@ Item {
     Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutBack; easing.overshoot: 2.5 } }
   }
 
+  // Клік — відкриття календаря
   MouseArea {
     anchors.fill: parent
     hoverEnabled: true
