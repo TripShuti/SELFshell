@@ -51,7 +51,7 @@ AnimatedPopup {
     switch (action) {
       case "shutdown": cmd = ["/usr/bin/systemctl", "poweroff"]; break
       case "reboot":   cmd = ["/usr/bin/systemctl", "reboot"]; break
-      case "suspend":  cmd = ["/usr/bin/systemctl", "suspend"]; break
+      case "suspend":  cmd = ["sh", "-c", "qs ipc call lockscreen lock && /usr/bin/systemctl suspend"]; break
       case "logout":   cmd = ["/usr/bin/hyprctl", "dispatch", "exit"]; break
       case "lock":     cmd = ["qs", "ipc", "call", "lockscreen", "lock"]; break
     }

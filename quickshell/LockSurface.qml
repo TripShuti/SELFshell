@@ -212,7 +212,7 @@ Rectangle {
     spacing: 24
 
     property var actions: [
-      { icon: "\uF186", tooltip: "Suspend", cmd: ["systemctl", "suspend"] },
+      { icon: "\uF186", tooltip: "Suspend", cmd: ["sh", "-c", "qs ipc call lockscreen lock && systemctl suspend"] },
       { icon: "\uF021", tooltip: "Reboot", cmd: ["reboot"] },
       { icon: "\uF011", tooltip: "Shutdown", cmd: ["shutdown", "now"] }
     ]

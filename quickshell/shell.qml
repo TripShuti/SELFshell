@@ -1,55 +1,87 @@
-// ============================================================
-// shell.qml — кореневий компонент: панель, idle-менеджер,
-// затемнювач, IPC для запуску lockscreen окремим процесом
-// ============================================================
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
+import Quickshell.Wayland
 import QtQuick
 
 ShellRoot {
-  // --- Idle-менеджер (заміна hypridle) ---
+  LockContext { id: lockContext }
+
+  WlSessionLock {
+    id: sessionLock
+    locked: lockContext.locked
+
+    WlSessionLockSurface {
+      LockSurface {
+        anchors.fill: parent
+        context: lockContext
+      }
+    }
+  }
+
+  Connections {
+    target: lockContext
+    function onUnlocked() {
+      lockContext.locked = false
+    }
+  }
+
   IdleManager { id: idleManager }
 
   Connections {
     target: idleManager
     function onLockRequested() {
-      launchLockscreen()
+      lockContext.locked = true
     }
     function onSuspendRequested() {
+      lockContext.locked = true
       suspendProc.command = ["systemctl", "suspend"]
       suspendProc.running = true
     }
   }
 
-  // --- IPC для зовнішнього виклику (SUPER+L, ControlManager) ---
   IpcHandler {
     target: "lockscreen"
 
     function lock(): void {
-      launchLockscreen()
+      lockContext.locked = true
     }
 
     function toggle(): void {
-      launchLockscreen()
+      lockContext.locked = !lockContext.locked
     }
   }
 
-  // Запускає lockscreen окремим процесом.
-  // Після розблокування lockscreen.qml сам викликає Qt.quit() —
-  // це єдиний правильний спосіб для ext-session-lock-v1.
-  function launchLockscreen() {
-    lockProc.command = ["quickshell", "-n", "-p", "/home/trip/.config/quickshell/lockscreen.qml"]
-    lockProc.running = true
+  // Лочимо екран ПЕРЕД сном (для lid close, power button — шляхів,
+  // які ми не контролюємо). Слухаємо PrepareForSleep(true) від logind.
+  StdioCollector {
+    id: sleepCollector
+    waitForEnd: false
+    onDataChanged: {
+      if (text.includes("boolean true"))
+        lockContext.locked = true
+    }
   }
 
-  Process { id: lockProc; onExited: running = false }
-  Process { id: suspendProc; onExited: running = false }
+  Process {
+    id: sleepMonitor
+    command: ["sh", "-c",
+      "dbus-monitor --system "
+      + "'type=signal,sender=org.freedesktop.login1,"
+      + "interface=org.freedesktop.login1.Manager,"
+      + "member=PrepareForSleep' 2>/dev/null "
+      + "| grep --line-buffered 'boolean true'"]
+    stdout: sleepCollector
+    running: true
+  }
 
-  // --- Панель на кожен монітор ---
+  Process {
+    id: suspendProc
+    onExited: running = false
+  }
+
   Variants {
     model: Quickshell.screens
-
     Bar {}
   }
 }
