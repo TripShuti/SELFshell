@@ -1,8 +1,14 @@
+// ============================================================
+// LockContext.qml — PAM-авторизація та спільний стан
+// lockscreen для всіх моніторів
+// ============================================================
 import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Pam
 
+// Спільний стан для всіх LockSurface: поточний текст пароля,
+// статус авторизації, лічильник невдалих спроб, ім'я користувача
 Scope {
   id: root
 
@@ -26,12 +32,14 @@ Scope {
     }
   }
 
+  // Спроба розблокувати: запускає PAM-автентифікацію
   function tryUnlock() {
     if (currentText === "") return
     unlockInProgress = true
     pam.start()
   }
 
+  // Визначає ім'я поточного користувача при старті
   StdioCollector {
     id: userCollector
     waitForEnd: true

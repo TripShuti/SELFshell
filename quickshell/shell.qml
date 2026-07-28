@@ -1,3 +1,7 @@
+// ============================================================
+// shell.qml — кореневий компонент: панель, idle-менеджер,
+// вбудований lockscreen через WlSessionLock, моніторинг сну
+// ============================================================
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
@@ -26,6 +30,7 @@ ShellRoot {
     }
   }
 
+  // --- Idle-менеджер (заміна hypridle) ---
   IdleManager { id: idleManager }
 
   Connections {
@@ -40,6 +45,7 @@ ShellRoot {
     }
   }
 
+  // --- IPC для зовнішнього виклику (SUPER+L, ControlManager) ---
   IpcHandler {
     target: "lockscreen"
 
@@ -80,6 +86,7 @@ ShellRoot {
     onExited: running = false
   }
 
+  // --- Панель на кожен монітор ---
   Variants {
     model: Quickshell.screens
     Bar {}
