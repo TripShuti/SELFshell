@@ -469,6 +469,7 @@ function moveToPillAt(name, targetPill, targetIndex) {
     id: notifServer
     actionsSupported: true
     bodySupported: true
+    imageSupported: true
 
     onNotification: (notif) => {
       notif.tracked = true

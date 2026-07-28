@@ -38,21 +38,17 @@ hl.config({
     },
 
     decoration = {
-        rounding       = 2,
-        rounding_power = 2,
-        active_opacity   = 0.980,
-        inactive_opacity = 0.950,
-        shadow = {
-            enabled      = true,
-            range        = 4,
-            render_power = 3,
-            color        = "rgba(1a1a1aee)",
-        },
         blur = {
-            enabled  = true,
-            size     = 2,
-            passes   = 2,
-            vibrancy = 1,
+        enabled = true,
+        popups = true,
+
+        vibrancy = 0.35,
+        vibrancy_darkness = 0.2,
+        passes = 3,
+        size = 6,
+        noise = 0.02,
+        contrast = 1.05,
+        brightness = 1.0,
         },
     },
 

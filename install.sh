@@ -31,8 +31,6 @@ PACMAN_DEPS=(
   ttf-jetbrains-mono-nerd
 
   # додаткові пакунки, необхідні для конфігів
-  hyprlock
-  hypridle
   hyprsunset
   awww
   grim

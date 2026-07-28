@@ -53,7 +53,7 @@ AnimatedPopup {
       case "reboot":   cmd = ["/usr/bin/systemctl", "reboot"]; break
       case "suspend":  cmd = ["/usr/bin/systemctl", "suspend"]; break
       case "logout":   cmd = ["/usr/bin/hyprctl", "dispatch", "exit"]; break
-      case "lock":     cmd = ["/usr/bin/hyprlock"]; break
+      case "lock":     cmd = ["qs", "ipc", "call", "lockscreen", "lock"]; break
     }
     powerProc.command = cmd
     powerProc.running = true

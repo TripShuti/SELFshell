@@ -48,6 +48,7 @@ Then:
 - Copy `quickshell/scripts/.env.example` to `.env` and fill in your credentials (if using Genshin widgets).
 - Place your wallpapers in `hypr/wp/` and `quickshell/wp/`.
 - Review and adjust path references in configs.
+- Place a wallpaper in `quickshell/wp/current.jpg` for the lock screen background.
 - Ensure all dependencies listed in `install.sh` (`PACMAN_DEPS`) are installed.
 
 ## Dependencies
@@ -61,7 +62,7 @@ array in the script for the complete list. Key packages:
 | `kitty fish starship yazi` | Terminal, shell, prompt, file manager |
 | `networkmanager bluez bluez-utils` | Network & Bluetooth |
 | `pipewire wireplumber pipewire-pulse` | Audio |
-| `hyprlock hypridle hyprsunset` | Lock screen, idle, blue-light |
+| `hyprsunset` | Blue-light filter |
 | `matugen awww` | Color generation & wallpaper |
 | `grim slurp wl-clipboard` | Screenshots & clipboard |
 | `python-requests python-dotenv` | Genshin Impact widget (Hoyolab API) |
@@ -71,10 +72,13 @@ array in the script for the complete list. Key packages:
 ```
 fastfetch/   - system info config
 fish/        - shell config, functions, yt-dlp wrapper
-hypr/        - Hyprland (lua), hyprlock, hypridle, hyprsunset configs
+hypr/        - Hyprland (lua module system) & hyprsunset configs
 install.sh   - automated setup script
 kitty/       - terminal config
-quickshell/  - QML panels, popups, widgets, scripts, qs-bt-agent
+quickshell/  - QML panels, popups, widgets, scripts, lockscreen, qs-bt-agent
+             - lockscreen.qml / LockContext.qml / LockSurface.qml — PAM-based lock screen
+             - IdleManager.qml / DimOverlay.qml — idle handling (dim, lock, DPMS, suspend)
+             - pam/password.conf — PAM config for lock screen auth
 starship/    - prompt config
 yazi/        - file manager config, keybindings, themes
 ```
@@ -82,6 +86,6 @@ yazi/        - file manager config, keybindings, themes
 ## Notes
 
 - Quickshell config lives in `~/.config/quickshell/`.
-- Lock screen splash in Ukrainian (`Парольчик..`).
+- Lock screen is a custom QML implementation (`lockscreen.qml`) with PAM auth, replacing hyprlock/hypridle. Place a wallpaper at `quickshell/wp/current.jpg` for the lock screen background.
 - Genshin Impact widgets require Hoyolab API credentials (see `quickshell/scripts/.env.example`).
 - Bluetooth pairing agent (`qs-bt-agent`) is installed as a systemd user service.

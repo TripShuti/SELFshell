@@ -8,6 +8,7 @@ hl.bind(s.mainMod .. " + Print", hl.dsp.exec_cmd("sh -c 'grim -g \"$(slurp)\" - 
 
 hl.bind("Pause",                hl.dsp.exec_cmd("systemctl suspend"))
 hl.bind(s.mainMod .. " + Escape", hl.dsp.exec_cmd("~/.config/wofi/powermenu.sh"))
+hl.bind(s.mainMod .. " + L",    hl.dsp.exec_cmd("qs ipc call lockscreen toggle"))
 
 hl.bind(s.mainMod .. " + W", hl.dsp.exec_cmd(s.browser))
 hl.bind(s.mainMod .. " + Q", hl.dsp.exec_cmd(s.terminal))

@@ -5,10 +5,12 @@
 # ============================================================
 WALLPAPER="$1"
 DIR="$(cd "$(dirname "$0")" && pwd)"
+CURRENT="$HOME/.config/quickshell/wp/current.jpg"
 
-awww img "$WALLPAPER"
+cp "$WALLPAPER" "$CURRENT"
+awww img "$CURRENT"
 
-/usr/bin/python3 "$DIR/update-palette.py" "$WALLPAPER"
+/usr/bin/python3 "$DIR/update-palette.py" "$CURRENT"
 
 setsid bash -c "
   sleep 1.5
