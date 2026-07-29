@@ -7,19 +7,16 @@ import Quickshell
 import Quickshell.Bluetooth
 import "../Palette.js" as Palette
 
-// Віджет Bluetooth на панелі — іконка + рівень батареї підключеного пристрою
 Item {
   id: root
 
   signal clicked()
   property bool hovered: false
 
-  // Адаптер Bluetooth за замовчуванням
   property BluetoothAdapter adapter: Bluetooth.defaultAdapter
 
   readonly property bool btEnabled: adapter?.enabled ?? false
 
-  // Пошук підключеного пристрою
   readonly property var connectedDevice: {
     if (!adapter || !adapter.devices) return null;
     let devs = adapter.devices.values;
@@ -36,13 +33,11 @@ Item {
   implicitWidth: row.implicitWidth
   implicitHeight: parent?.height ?? 36
 
-  // Іконка Bluetooth + процент батареї
   RowLayout {
     id: row
     anchors.verticalCenter: parent.verticalCenter
     spacing: 4
 
-    // Іконка: лого BT або батарея залежно від рівня
     Text {
       text: root.hasBattery
             ? batteryIcon(root.connectedDevice.battery)
@@ -61,7 +56,6 @@ Item {
       Behavior on color { ColorAnimation { duration: 220 } }
       Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutBack; easing.overshoot: 2.5 } }
 
-      // Вибір іконки батареї за рівнем
       function batteryIcon(level) {
         var pct = (level || 0) * 100
         if (pct <= 15) return "\uF244"
@@ -70,14 +64,12 @@ Item {
         return "\uF240"
       }
 
-      // Колір батареї: червоний якщо ≤15%
       function batteryColor(level) {
         var pct = (level || 0) * 100
         return pct <= 15 ? Palette.danger : Palette.fg
       }
     }
 
-    // Процент батареї (показується тільки якщо пристрій підтримує)
     Text {
       visible: root.hasBattery
       text: batteryLevel + "%"
@@ -97,7 +89,6 @@ Item {
     }
   }
 
-  // Клік — відкриття BT-менеджера
   MouseArea {
     anchors.fill: parent
     hoverEnabled: true

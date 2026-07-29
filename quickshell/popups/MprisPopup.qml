@@ -20,7 +20,7 @@ AnimatedPopup {
   implicitHeight: layout.implicitHeight + 4
   transformOrigin: Item.Top
 
-  property string preferredPlayer: "feishin"
+  property string preferredPlayer: "subtui"
   property var player: null
   property var cavBars: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 

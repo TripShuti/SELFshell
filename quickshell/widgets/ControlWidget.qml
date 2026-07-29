@@ -5,7 +5,7 @@ import "../Palette.js" as Palette
 import QtQuick
 
 
-// Віджет центру керування на панелі — іконка з лічильником непрочитаних сповіщень
+// Віджет центру сповіщень — іконка + лічильник непрочитаних
 Item {
   id: root
 
@@ -17,7 +17,6 @@ Item {
   implicitWidth: txt.implicitWidth
   implicitHeight: parent?.height ?? 36
 
-  // Іконка + колір залежно від наявності сповіщень та ховера
   Text {
     id: txt
     text: ""
@@ -34,7 +33,7 @@ Item {
     Behavior on color { ColorAnimation { duration: 220 } }
     Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutBack; easing.overshoot: 2.5 } }
 
-    // Блимання при непрочитаних сповіщеннях
+    // Блимання при непрочитаних
     SequentialAnimation on opacity {
       running: root.unread > 0
       loops: Animation.Infinite
@@ -43,7 +42,6 @@ Item {
     }
   }
 
-  // Клік — відкриття ControlManager
   MouseArea {
     anchors.fill: parent
     hoverEnabled: true

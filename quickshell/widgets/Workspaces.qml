@@ -5,7 +5,6 @@ import Quickshell.Hyprland
 import "../Palette.js" as Palette
 import QtQuick
 
-// Віджет робочих столів Hyprland на панелі — номери з кольоровим кодуванням стану
 Item {
   id: root
 
@@ -15,27 +14,23 @@ Item {
   implicitHeight: parent?.height ?? 36
   implicitWidth: row.implicitWidth
 
-  // Рядок номерів робочих столів
   Row {
     id: row
     anchors.verticalCenter: parent.verticalCenter
     spacing: 4
 
-    // Кожен робочий стіл — номер з кольором залежно від стану
     Repeater {
       model: Hyprland.workspaces
 
       delegate: Item {
         required property HyprlandWorkspace modelData
 
-        // Колір: зелений — фокус, червоний — термінове, світлий — активний, сірий — порожній
         readonly property color dotColor: modelData.focused ? Palette.green
           : (modelData.urgent ? Palette.red : (modelData.active ? Palette.light : Palette.muted))
 
         width: 20
         height: 28
 
-        // Номер робочого столу
         Text {
           anchors.centerIn: parent
           text: modelData.id
@@ -51,7 +46,6 @@ Item {
           }
         }
 
-        // Клік — перехід на робочий стіл
         MouseArea {
           anchors.fill: parent
           onClicked: modelData.activate()
@@ -60,7 +54,6 @@ Item {
     }
   }
 
-  // Збільшення при наведенні на весь віджет
   MouseArea {
     anchors.fill: parent
     hoverEnabled: true

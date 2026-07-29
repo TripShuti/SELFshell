@@ -5,7 +5,7 @@ import "../Palette.js" as Palette
 import QtQuick
 
 
-// Кнопка відкриття лаунчера на панелі — іконка з анімацією при наведенні
+// Кнопка відкриття лаунчера на панелі
 Item {
   id: root
 
@@ -16,7 +16,6 @@ Item {
   implicitWidth: 28
   implicitHeight: parent?.height ?? 28
 
-  // Іконка лаунчера (гліф) — збільшується та підсвічується при ховері
   Text {
     anchors.centerIn: parent
     text: "\uDB82\uDCC7"
@@ -28,7 +27,6 @@ Item {
     Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutBack; easing.overshoot: 2.5 } }
   }
 
-  // Область кліку з відстеженням наведення
   MouseArea {
     anchors.fill: parent
     hoverEnabled: true

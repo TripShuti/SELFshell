@@ -1,7 +1,3 @@
-// ============================================================
-// shell.qml — кореневий компонент: панель, idle-менеджер,
-// вбудований lockscreen через WlSessionLock, моніторинг сну
-// ============================================================
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
@@ -30,7 +26,6 @@ ShellRoot {
     }
   }
 
-  // --- Idle-менеджер (заміна hypridle) ---
   IdleManager { id: idleManager }
 
   Connections {
@@ -45,7 +40,6 @@ ShellRoot {
     }
   }
 
-  // --- IPC для зовнішнього виклику (SUPER+L, ControlManager) ---
   IpcHandler {
     target: "lockscreen"
 
@@ -71,7 +65,12 @@ ShellRoot {
 
   Process {
     id: sleepMonitor
-    command: ["sh", "-c",
+    command: ["systemd-inhibit",
+      "--what=sleep",
+      "--mode=delay",
+      "--who=quickshell-lockscreen",
+      "--why=Lock screen before suspend",
+      "sh", "-c",
       "dbus-monitor --system "
       + "'type=signal,sender=org.freedesktop.login1,"
       + "interface=org.freedesktop.login1.Manager,"
@@ -79,6 +78,22 @@ ShellRoot {
       + "| grep --line-buffered 'boolean true'"]
     stdout: sleepCollector
     running: true
+
+    // Якщо пайплайн з якоїсь причини помре (гикання D-Bus сесії тощо) —
+    // перезапускаємо, а не лишаємось мовчки без захисту до рестарту
+    // quickshell. Невелика затримка перед рестартом, щоб не спамити
+    // спробами, якщо причина смерті постійна (наприклад dbus взагалі
+    // недоступний).
+    onExited: (exitCode) => {
+      console.warn("sleepMonitor exited (code " + exitCode + "), restarting in 2s")
+      restartTimer.start()
+    }
+  }
+
+  Timer {
+    id: restartTimer
+    interval: 2000
+    onTriggered: sleepMonitor.running = true
   }
 
   Process {
@@ -86,7 +101,6 @@ ShellRoot {
     onExited: running = false
   }
 
-  // --- Панель на кожен монітор ---
   Variants {
     model: Quickshell.screens
     Bar {}
