@@ -2,7 +2,7 @@
 // MprisWidget.qml — віджет медіаплеєра на панелі
 // ============================================================
 import Quickshell.Services.Mpris
-import "../Palette.js" as Palette
+import "../core"
 import QtQuick
 import QtQuick.Layouts
 
@@ -11,6 +11,7 @@ import QtQuick.Layouts
 Item {
   id: root
 
+  required property QtObject window
   signal clicked()
 
   property string preferredPlayer: "subtui"
@@ -69,8 +70,8 @@ Item {
     // Іконка play/pause
     Text {
       text: root.player?.isPlaying ? "\uF04B" : "\uF04C"
-      color: root.player?.isPlaying ? Palette.green : Palette.fg
-      font.family: Palette.font; font.pixelSize: 10
+      color: root.player?.isPlaying ? window.palette.green : window.palette.fg
+      font.family: window.palette.font; font.pixelSize: 10
       Layout.alignment: Qt.AlignVCenter
       Behavior on color { ColorAnimation { duration: 220 } }
     }
@@ -78,8 +79,8 @@ Item {
     // Назва треку (текст, що біжить)
     Text {
       text: root.player?.trackTitle ?? ""
-      color: root.player?.isPlaying ? Palette.green : Palette.fg
-      font.family: Palette.font; font.pixelSize: 12
+      color: root.player?.isPlaying ? window.palette.green : window.palette.fg
+      font.family: window.palette.font; font.pixelSize: 12
       elide: Text.ElideRight
       Layout.fillWidth: true
       Layout.alignment: Qt.AlignVCenter
@@ -104,7 +105,7 @@ Item {
           height: Math.max(2, raw * 20)
           radius: 1
           anchors.bottom: parent.bottom
-          color: raw > 0.65 ? Palette.green : (raw > 0.3 ? Palette.audioVolume : Palette.muted)
+          color: raw > 0.65 ? window.palette.green : (raw > 0.3 ? window.palette.audioVolume : window.palette.muted)
 
           Behavior on height {
             NumberAnimation { duration: 130; easing.type: Easing.OutBack; easing.overshoot: 0.6 }

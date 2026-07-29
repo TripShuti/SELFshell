@@ -3,7 +3,7 @@
 // ============================================================
 import Quickshell
 import Quickshell.Io
-import "../Palette.js" as Palette
+import "../core"
 import QtQuick
 import QtQuick.Layouts
 
@@ -18,6 +18,7 @@ PopupWindow {
   property var toastNotification: null
   property QtObject anchorWindow: null
   property bool muted: false
+  readonly property QtObject palette: anchorWindow ? anchorWindow.palette : null
 
 
   color: "transparent"
@@ -116,7 +117,7 @@ PopupWindow {
     radius: container.radius + 3
     color: "transparent"
     border.width: 1
-    border.color: Palette.green
+    border.color: anchorWindow.palette.green
     opacity: container.opacity * 0.2
     scale: container.scale
   }
@@ -128,21 +129,21 @@ PopupWindow {
     implicitHeight: toastLayout.implicitHeight + 16
     radius: 6
     border.width: 1
-    border.color: Palette.green
+    border.color: anchorWindow.palette.green
     opacity: 0
     scale: 0.85
     clip: true
     gradient: Gradient {
       orientation: Gradient.Vertical
-      GradientStop { position: 0.0; color: Qt.lighter(Palette.bg0H, 1.16) }
-      GradientStop { position: 1.0; color: Palette.bg0H }
+      GradientStop { position: 0.0; color: Qt.lighter(anchorWindow.palette.bg0H, 1.16) }
+      GradientStop { position: 1.0; color: anchorWindow.palette.bg0H }
     }
 
     // Підсвітка верхнього краю
     Rectangle {
       anchors { top: parent.top; left: parent.left; right: parent.right }
       height: 1
-      color: Palette.hoverOverlay
+      color: anchorWindow.palette.hoverOverlay
     }
 
 ColumnLayout {
@@ -154,16 +155,16 @@ ColumnLayout {
   // Назва додатка
   Text {
     text: root.toastAppName
-    color: Palette.green
-    font.family: Palette.font; font.pixelSize: 16; font.bold: true
+    color: anchorWindow.palette.green
+    font.family: anchorWindow.palette.font; font.pixelSize: 16; font.bold: true
     visible: root.toastAppName !== ""
   }
 
   // Заголовок сповіщення
   Text {
     text: root.toastSummary
-    color: Palette.fg
-    font.family: Palette.font; font.pixelSize: 13; font.bold: true
+    color: anchorWindow.palette.fg
+    font.family: anchorWindow.palette.font; font.pixelSize: 13; font.bold: true
     wrapMode: Text.WordWrap
     Layout.fillWidth: true
     maximumLineCount: 2
@@ -173,8 +174,8 @@ ColumnLayout {
   // Тіло сповіщення
   Text {
     text: root.toastBody
-    color: Palette.gray
-    font.family: Palette.font; font.pixelSize: 12
+    color: anchorWindow.palette.gray
+    font.family: anchorWindow.palette.font; font.pixelSize: 12
     wrapMode: Text.WordWrap
     Layout.fillWidth: true
     maximumLineCount: 3

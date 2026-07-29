@@ -5,11 +5,12 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Bluetooth
-import "../Palette.js" as Palette
+import "../core"
 
 Item {
   id: root
 
+  required property QtObject window
   signal clicked()
   property bool hovered: false
 
@@ -44,12 +45,12 @@ Item {
             : ""
 
       color: {
-        if (root.hovered) return Palette.green
+        if (root.hovered) return window.palette.green
         if (root.hasBattery) return batteryColor(root.connectedDevice.battery)
-        return root.btEnabled && root.connectedDevice ? Palette.accent : Palette.mutedAlt
+        return root.btEnabled && root.connectedDevice ? window.palette.accent : window.palette.mutedAlt
       }
 
-      font.family: Palette.font
+      font.family: window.palette.font
       font.pixelSize: 14
       scale: root.hovered ? 1.2 : 1.0
 
@@ -66,7 +67,7 @@ Item {
 
       function batteryColor(level) {
         var pct = (level || 0) * 100
-        return pct <= 15 ? Palette.danger : Palette.fg
+        return pct <= 15 ? window.palette.danger : window.palette.fg
       }
     }
 
@@ -75,12 +76,12 @@ Item {
       text: batteryLevel + "%"
 
       color: {
-        if (root.hovered) return Palette.green
+        if (root.hovered) return window.palette.green
         var pct = root.connectedDevice ? root.connectedDevice.battery * 100 : 0
-        return pct <= 15 ? Palette.danger : Palette.fg
+        return pct <= 15 ? window.palette.danger : window.palette.fg
       }
 
-      font.family: Palette.font
+      font.family: window.palette.font
       font.pixelSize: 12
       scale: root.hovered ? 1.15 : 1.0
 

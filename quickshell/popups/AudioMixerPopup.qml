@@ -4,7 +4,6 @@
 import Quickshell
 import Quickshell.Services.Pipewire
 import "../core"
-import "../Palette.js" as Palette
 import QtQuick
 import QtQuick.Layouts
 
@@ -15,6 +14,7 @@ AnimatedPopup {
 
   required property QtObject anchorItem
   required property QtObject window
+  palette: window.palette
 
   implicitWidth: 320
   implicitHeight: layout.implicitHeight + 16
@@ -41,8 +41,8 @@ AnimatedPopup {
     // Заголовок пристроїв виведення
     Text {
       text: "Output Devices"
-      color: Palette.green
-      font.family: Palette.font; font.pixelSize: 12; font.bold: true
+      color: window.palette.green
+      font.family: window.palette.font; font.pixelSize: 12; font.bold: true
     }
 
     // Список аудіо-пристроїв (sinks)
@@ -64,8 +64,8 @@ AnimatedPopup {
           // Назва пристрою
           Text {
             text: modelData.description || modelData.name || modelData.nickname
-            color: Palette.fg
-            font.family: Palette.font; font.pixelSize: 12
+            color: window.palette.fg
+            font.family: window.palette.font; font.pixelSize: 12
             elide: Text.ElideRight
             Layout.preferredWidth: 80
           }
@@ -75,14 +75,14 @@ AnimatedPopup {
             Layout.fillWidth: true
             height: 6
             radius: 3
-            color: Palette.bgAlpha
+            color: window.palette.bgAlpha
             Layout.alignment: Qt.AlignVCenter
 
             Rectangle {
               width: parent.width * Math.min(modelData.audio?.volume ?? 0, 1)
               height: parent.height
               radius: 3
-              color: modelData.audio?.muted ? Palette.muted : Palette.green
+              color: modelData.audio?.muted ? window.palette.muted : window.palette.green
               Behavior on width { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
             }
 
@@ -101,13 +101,13 @@ AnimatedPopup {
           Rectangle {
             property bool hovered: false
             width: 24; height: 24; radius: 4
-            color: modelData.audio?.muted ? Palette.red : (hovered ? Palette.hoverBg : Palette.bgAlpha)
+            color: modelData.audio?.muted ? window.palette.red : (hovered ? window.palette.hoverBg : window.palette.bgAlpha)
             Behavior on color { ColorAnimation { duration: 150 } }
             Text {
               anchors.centerIn: parent
               text: modelData.audio?.muted ? "\uF026" : "\uF028"
-              color: modelData.audio?.muted ? Palette.baseOverlay : Palette.fg
-              font.family: Palette.font; font.pixelSize: 12
+              color: modelData.audio?.muted ? window.palette.baseOverlay : window.palette.fg
+              font.family: window.palette.font; font.pixelSize: 12
             }
             MouseArea {
               anchors.fill: parent
@@ -124,13 +124,13 @@ AnimatedPopup {
           Rectangle {
             property bool hovered: false
             width: 24; height: 24; radius: 4
-            color: Pipewire.defaultAudioSink === modelData ? Palette.green : (hovered ? Palette.hoverBg : Palette.bgAlpha)
+            color: Pipewire.defaultAudioSink === modelData ? window.palette.green : (hovered ? window.palette.hoverBg : window.palette.bgAlpha)
             Behavior on color { ColorAnimation { duration: 150 } }
             Text {
               anchors.centerIn: parent
               text: "\uF00C"
-              color: Pipewire.defaultAudioSink === modelData ? Palette.baseOverlay : Palette.muted
-              font.family: Palette.font; font.pixelSize: 12
+              color: Pipewire.defaultAudioSink === modelData ? window.palette.baseOverlay : window.palette.muted
+              font.family: window.palette.font; font.pixelSize: 12
             }
             MouseArea {
               anchors.fill: parent
@@ -154,15 +154,15 @@ AnimatedPopup {
     Rectangle {
       Layout.fillWidth: true
       height: 1
-      color: Palette.green
+      color: window.palette.green
       opacity: 0.3
     }
 
     // Заголовок потоків відтворення
     Text {
       text: "Playback Streams"
-      color: Palette.green
-      font.family: Palette.font; font.pixelSize: 12; font.bold: true
+      color: window.palette.green
+      font.family: window.palette.font; font.pixelSize: 12; font.bold: true
     }
 
     // Список аудіо-потоків (streams)
@@ -187,8 +187,8 @@ AnimatedPopup {
               var n = modelData.nickname || modelData.name || modelData.description
               return n || "Stream"
             }
-            color: Palette.fg
-            font.family: Palette.font; font.pixelSize: 12
+            color: window.palette.fg
+            font.family: window.palette.font; font.pixelSize: 12
             elide: Text.ElideRight
             Layout.preferredWidth: 80
           }
@@ -198,14 +198,14 @@ AnimatedPopup {
             Layout.fillWidth: true
             height: 6
             radius: 3
-            color: Palette.bgAlpha
+            color: window.palette.bgAlpha
             Layout.alignment: Qt.AlignVCenter
 
             Rectangle {
               width: parent.width * Math.min(modelData.audio?.volume ?? 0, 1)
               height: parent.height
               radius: 3
-              color: modelData.audio?.muted ? Palette.muted : Palette.green
+              color: modelData.audio?.muted ? window.palette.muted : window.palette.green
               Behavior on width { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
             }
 
@@ -223,13 +223,13 @@ AnimatedPopup {
           Rectangle {
             property bool hovered: false
             width: 24; height: 24; radius: 4
-            color: modelData.audio?.muted ? Palette.red : (hovered ? Palette.hoverBg : Palette.bgAlpha)
+            color: modelData.audio?.muted ? window.palette.red : (hovered ? window.palette.hoverBg : window.palette.bgAlpha)
             Behavior on color { ColorAnimation { duration: 150 } }
             Text {
               anchors.centerIn: parent
               text: modelData.audio?.muted ? "\uF026" : "\uF028"
-              color: modelData.audio?.muted ? Palette.baseOverlay : Palette.fg
-              font.family: Palette.font; font.pixelSize: 12
+              color: modelData.audio?.muted ? window.palette.baseOverlay : window.palette.fg
+              font.family: window.palette.font; font.pixelSize: 12
             }
             MouseArea {
               anchors.fill: parent

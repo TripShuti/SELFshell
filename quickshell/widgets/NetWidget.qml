@@ -5,11 +5,12 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Networking
-import "../Palette.js" as Palette
+import "../core"
 
 Item {
   id: root
 
+  required property QtObject window
   signal clicked()
   property bool hovered: false
 
@@ -62,9 +63,9 @@ Item {
   }
 
   readonly property color iconColor: {
-    if (root.hovered) return Palette.green;
-    if (hasWired || hasWifi) return Palette.fg;
-    return Palette.mutedAlt;
+    if (root.hovered) return window.palette.green;
+    if (hasWired || hasWifi) return window.palette.fg;
+    return window.palette.mutedAlt;
   }
 
   implicitWidth: row.implicitWidth
@@ -78,7 +79,7 @@ Item {
     Text {
       text: root.mainIcon
       color: root.iconColor
-      font.family: Palette.font
+      font.family: window.palette.font
       font.pixelSize: 14
       scale: root.hovered ? 1.2 : 1.0
 

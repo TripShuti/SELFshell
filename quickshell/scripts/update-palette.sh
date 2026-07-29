@@ -1,7 +1,7 @@
 #!/bin/bash
 # ============================================================
 # update-palette.sh — генерує палітру з шпалери через matugen
-# + оновлює Palette.js, перезапускає quickshell
+# + оновлює palette.json, сповіщає quickshell через IPC
 # ============================================================
 WALLPAPER="$1"
 DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -12,11 +12,5 @@ awww img "$CURRENT"
 
 /usr/bin/python3 "$DIR/update-palette.py" "$CURRENT"
 
-setsid bash -c "
-  sleep 1.5
-  killall -q quickshell
-  sleep 0.5
-  nohup quickshell &>/dev/null &
-" &>/dev/null &
-
-sleep 0.2
+# Повідомляємо quickshell про зміну палітри
+quickshell ipc call palette-reload reload 2>/dev/null || true

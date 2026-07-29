@@ -1,7 +1,7 @@
 // ============================================================
 // ControlWidget.qml — кнопка центру сповіщень на панелі
 // ============================================================
-import "../Palette.js" as Palette
+import "../core"
 import QtQuick
 
 
@@ -9,6 +9,7 @@ import QtQuick
 Item {
   id: root
 
+  required property QtObject window
   signal clicked()
 
   property int unread: 0
@@ -21,11 +22,11 @@ Item {
     id: txt
     text: ""
     color: {
-      if (root.unread > 0) return Palette.green
-      if (root.hovered) return Palette.light
-      return Palette.widgetFg
+      if (root.unread > 0) return window.palette.green
+      if (root.hovered) return window.palette.light
+      return window.palette.widgetFg
     }
-    font.family: Palette.font
+    font.family: window.palette.font
     font.pixelSize: 19
     anchors.verticalCenter: parent.verticalCenter
     scale: root.hovered ? 1.18 : 1.0

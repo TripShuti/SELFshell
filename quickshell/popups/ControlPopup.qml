@@ -8,7 +8,6 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import "../core"
-import "../Palette.js" as Palette
 import "../scripts/ControlState.js" as State
 
 // Центр керування — сповіщення, швидкі перемикачі та кнопки живлення
@@ -19,6 +18,7 @@ AnimatedPopup {
 
   required property QtObject anchorItem
   required property QtObject window
+  palette: window.palette
 
   implicitWidth: 320
   implicitHeight: 460
@@ -215,7 +215,6 @@ AnimatedPopup {
     saveStateTimer.restart()
   }
 
-  
   Timer {
     id: saveStateTimer
     interval: 500
@@ -275,15 +274,15 @@ AnimatedPopup {
         Layout.fillWidth: true
         implicitHeight: 24
         radius: 6
-        color: netArea.containsMouse ? Palette.bg2 : Palette.bg1
+        color: netArea.containsMouse ? window.palette.bg2 : window.palette.bg1
         Behavior on color { ColorAnimation { duration: 120 } }
 
         Text {
           anchors.centerIn: parent
           text: "󰖩"
-          color: netArea.containsMouse ? Palette.green : Palette.gray
+          color: netArea.containsMouse ? window.palette.green : window.palette.gray
           Behavior on color { ColorAnimation { duration: 120 } }
-          font.family: Palette.font; font.pixelSize: 13
+          font.family: window.palette.font; font.pixelSize: 13
         }
 
         MouseArea {
@@ -299,15 +298,15 @@ AnimatedPopup {
         Layout.fillWidth: true
         implicitHeight: 24
         radius: 6
-        color: btArea.containsMouse ? Palette.bg2 : Palette.bg1
+        color: btArea.containsMouse ? window.palette.bg2 : window.palette.bg1
         Behavior on color { ColorAnimation { duration: 120 } }
 
         Text {
           anchors.centerIn: parent
           text: ""
-          color: btArea.containsMouse ? Palette.green : Palette.gray
+          color: btArea.containsMouse ? window.palette.green : window.palette.gray
           Behavior on color { ColorAnimation { duration: 120 } }
-          font.family: Palette.font; font.pixelSize: 13
+          font.family: window.palette.font; font.pixelSize: 13
         }
 
         MouseArea {
@@ -323,15 +322,15 @@ AnimatedPopup {
         Layout.fillWidth: true
         implicitHeight: 24
         radius: 6
-        color: wallArea.containsMouse ? Palette.bg2 : Palette.bg1
+        color: wallArea.containsMouse ? window.palette.bg2 : window.palette.bg1
         Behavior on color { ColorAnimation { duration: 120 } }
 
         Text {
           anchors.centerIn: parent
           text: "\uF03E"
-          color: wallArea.containsMouse ? Palette.green : Palette.gray
+          color: wallArea.containsMouse ? window.palette.green : window.palette.gray
           Behavior on color { ColorAnimation { duration: 120 } }
-          font.family: Palette.font; font.pixelSize: 13
+          font.family: window.palette.font; font.pixelSize: 13
         }
 
         MouseArea {
@@ -347,15 +346,15 @@ AnimatedPopup {
         Layout.fillWidth: true
         implicitHeight: 24
         radius: 6
-        color: settingsArea.containsMouse ? Palette.bg2 : Palette.bg1
+        color: settingsArea.containsMouse ? window.palette.bg2 : window.palette.bg1
         Behavior on color { ColorAnimation { duration: 120 } }
 
         Text {
           anchors.centerIn: parent
           text: ""
-          color: settingsArea.containsMouse ? Palette.green : Palette.gray
+          color: settingsArea.containsMouse ? window.palette.green : window.palette.gray
           Behavior on color { ColorAnimation { duration: 120 } }
-          font.family: Palette.font; font.pixelSize: 13
+          font.family: window.palette.font; font.pixelSize: 13
         }
 
         MouseArea {
@@ -374,7 +373,7 @@ AnimatedPopup {
       gradient: Gradient {
         orientation: Gradient.Horizontal
         GradientStop { position: 0.0; color: "transparent" }
-        GradientStop { position: 0.5; color: Palette.bg2 }
+        GradientStop { position: 0.5; color: window.palette.bg2 }
         GradientStop { position: 1.0; color: "transparent" }
       }
     }
@@ -387,8 +386,8 @@ AnimatedPopup {
 
       Text {
         text: "\uF185"
-        color: Palette.yellow
-        font.family: Palette.font
+        color: window.palette.yellow
+        font.family: window.palette.font
         font.pixelSize: 14
         Layout.alignment: Qt.AlignVCenter
       }
@@ -403,13 +402,13 @@ AnimatedPopup {
           anchors.right: parent.right
           height: 6
           radius: 3
-          color: Palette.bgAlpha
+          color: window.palette.bgAlpha
 
           Rectangle {
             width: parent.width * (Math.max(0, Math.min(root.brightness, 100)) / 100)
             height: parent.height
             radius: 3
-            color: Palette.yellow
+            color: window.palette.yellow
             Behavior on width { NumberAnimation { duration: 350; easing.type: Easing.OutSine } }
           }
         }
@@ -433,8 +432,8 @@ AnimatedPopup {
       Text {
         id: pctText
         text: root.brightness + "%"
-        color: Palette.textLight
-        font.family: Palette.font
+        color: window.palette.textLight
+        font.family: window.palette.font
         font.pixelSize: 11
         Layout.preferredWidth: 32
         horizontalAlignment: Text.AlignRight
@@ -455,8 +454,8 @@ AnimatedPopup {
 
       Text {
         text: "\uF186"
-        color: root.readingTemp < 6400 ? Palette.orange : Palette.gray
-        font.family: Palette.font
+        color: root.readingTemp < 6400 ? window.palette.orange : window.palette.gray
+        font.family: window.palette.font
         font.pixelSize: 14
         Layout.alignment: Qt.AlignVCenter
       }
@@ -471,14 +470,14 @@ AnimatedPopup {
           anchors.right: parent.right
           height: 6
           radius: 3
-          color: Palette.bgAlpha
+          color: window.palette.bgAlpha
 
           Rectangle {
             readonly property real fill: Math.max(0, Math.min(1, (6500 - root.readingTemp) / 3000))
             width: parent.width * fill
             height: parent.height
             radius: 3
-            color: Palette.orange
+            color: window.palette.orange
             Behavior on width { NumberAnimation { duration: 250; easing.type: Easing.OutSine } }
           }
         }
@@ -501,8 +500,8 @@ AnimatedPopup {
 
       Text {
         text: root.readingTemp >= 6500 ? "OFF" : root.readingTemp + "K"
-        color: root.readingTemp < 6400 ? Palette.orange : Palette.textLight
-        font.family: Palette.font
+        color: root.readingTemp < 6400 ? window.palette.orange : window.palette.textLight
+        font.family: window.palette.font
         font.pixelSize: 11
         Layout.preferredWidth: 36
         horizontalAlignment: Text.AlignRight
@@ -517,7 +516,7 @@ AnimatedPopup {
       gradient: Gradient {
         orientation: Gradient.Horizontal
         GradientStop { position: 0.0; color: "transparent" }
-        GradientStop { position: 0.5; color: Palette.bg2 }
+        GradientStop { position: 0.5; color: window.palette.bg2 }
         GradientStop { position: 1.0; color: "transparent" }
       }
     }
@@ -544,7 +543,7 @@ AnimatedPopup {
           width: notifList.width
           height: delLayout.implicitHeight + 12
           radius: 6
-          color: hovered ? Palette.bg2 : Palette.bg1
+          color: hovered ? window.palette.bg2 : window.palette.bg1
           Behavior on color { ColorAnimation { duration: 120 } }
 
           HoverHandler { onHoveredChanged: parent.hovered = hovered }
@@ -557,7 +556,7 @@ AnimatedPopup {
             anchors.left: parent.left
             anchors.leftMargin: 2
             radius: 2
-            color: Palette.yellow
+            color: window.palette.yellow
           }
 
           RowLayout {
@@ -575,14 +574,14 @@ AnimatedPopup {
 
               Text {
                 text: notif.appName
-                color: Palette.green
-                font.family: Palette.font; font.pixelSize: 14; font.bold: true
+                color: window.palette.green
+                font.family: window.palette.font; font.pixelSize: 14; font.bold: true
               }
 
               Text {
                 text: notif.summary
-                color: Palette.fg
-                font.family: Palette.font; font.pixelSize: 12; font.bold: true
+                color: window.palette.fg
+                font.family: window.palette.font; font.pixelSize: 12; font.bold: true
                 wrapMode: Text.WordWrap
                 Layout.fillWidth: true
                 maximumLineCount: 1
@@ -591,8 +590,8 @@ AnimatedPopup {
 
               Text {
                 text: notif.body
-                color: Palette.gray
-                font.family: Palette.font; font.pixelSize: 12
+                color: window.palette.gray
+                font.family: window.palette.font; font.pixelSize: 12
                 wrapMode: Text.WordWrap
                 Layout.fillWidth: true
                 maximumLineCount: 3
@@ -604,15 +603,15 @@ AnimatedPopup {
             // Кнопка закриття сповіщення
             Rectangle {
               implicitWidth: 18; implicitHeight: 18; radius: 9
-              color: closeArea.containsMouse ? Palette.red : Palette.bg1
+              color: closeArea.containsMouse ? window.palette.red : window.palette.bg1
               Behavior on color { ColorAnimation { duration: 120 } }
 
               Text {
                 anchors.centerIn: parent
                 text: "\uF00D"
-                color: closeArea.containsMouse ? Palette.bg0H : Palette.gray
+                color: closeArea.containsMouse ? window.palette.bg0H : window.palette.gray
                 Behavior on color { ColorAnimation { duration: 120 } }
-                font.family: Palette.font; font.pixelSize: 9
+                font.family: window.palette.font; font.pixelSize: 9
               }
 
               MouseArea {
@@ -635,15 +634,15 @@ AnimatedPopup {
         Text {
           Layout.alignment: Qt.AlignHCenter
           text: "\uF0F3"
-          color: Palette.gray
-          font.family: Palette.font; font.pixelSize: 22
+          color: window.palette.gray
+          font.family: window.palette.font; font.pixelSize: 22
         }
 
         Text {
           Layout.alignment: Qt.AlignHCenter
           text: "No notifications"
-          color: Palette.gray
-          font.family: Palette.font; font.pixelSize: 12
+          color: window.palette.gray
+          font.family: window.palette.font; font.pixelSize: 12
         }
       }
     }
@@ -656,14 +655,14 @@ AnimatedPopup {
 
       Rectangle {
         implicitWidth: 24; implicitHeight: 24; radius: 6
-        color: clearArea.containsMouse ? Palette.bg2 : Palette.bg1
+        color: clearArea.containsMouse ? window.palette.bg2 : window.palette.bg1
         Behavior on color { ColorAnimation { duration: 120 } }
 
         Text {
           anchors.centerIn: parent
           text: "\uF12D"
-          color: Palette.gray
-          font.family: Palette.font; font.pixelSize: 11
+          color: window.palette.gray
+          font.family: window.palette.font; font.pixelSize: 11
         }
 
         MouseArea {
@@ -676,15 +675,15 @@ AnimatedPopup {
 
       Rectangle {
         implicitWidth: 24; implicitHeight: 24; radius: 6
-        color: root.muted ? Qt.rgba(Palette.red.r, Palette.red.g, Palette.red.b, 0.15)
-             : (muteArea.containsMouse ? Palette.bg2 : Palette.bg1)
+        color: root.muted ? Qt.rgba(window.palette.red.r, window.palette.red.g, window.palette.red.b, 0.15)
+             : (muteArea.containsMouse ? window.palette.bg2 : window.palette.bg1)
         Behavior on color { ColorAnimation { duration: 120 } }
 
         Text {
           anchors.centerIn: parent
           text: root.muted ? "\uF1F6" : "\uF0F3"
-          color: root.muted ? Palette.red : Palette.gray
-          font.family: Palette.font; font.pixelSize: 11
+          color: root.muted ? window.palette.red : window.palette.gray
+          font.family: window.palette.font; font.pixelSize: 11
           Behavior on color { ColorAnimation { duration: 120 } }
         }
 
@@ -704,7 +703,7 @@ AnimatedPopup {
       gradient: Gradient {
         orientation: Gradient.Horizontal
         GradientStop { position: 0.0; color: "transparent" }
-        GradientStop { position: 0.5; color: Palette.bg2 }
+        GradientStop { position: 0.5; color: window.palette.bg2 }
         GradientStop { position: 1.0; color: "transparent" }
       }
     }
@@ -715,11 +714,11 @@ AnimatedPopup {
       spacing: 8
 
       property var actions: [
-        { icon: "\uF023", tooltip: "Lock",     action: "lock",     accent: Palette.blue },
-        { icon: "\uF186", tooltip: "Suspend",  action: "suspend",  accent: Palette.purple },
-        { icon: "\uF2F5", tooltip: "Logout",   action: "logout",   accent: Palette.orange },
-        { icon: "\uF021", tooltip: "Reboot",   action: "reboot",   accent: Palette.yellow },
-        { icon: "\uF011", tooltip: "Shutdown", action: "shutdown", accent: Palette.red }
+        { icon: "\uF023", tooltip: "Lock",     action: "lock",     accent: window.palette.blue },
+        { icon: "\uF186", tooltip: "Suspend",  action: "suspend",  accent: window.palette.purple },
+        { icon: "\uF2F5", tooltip: "Logout",   action: "logout",   accent: window.palette.orange },
+        { icon: "\uF021", tooltip: "Reboot",   action: "reboot",   accent: window.palette.yellow },
+        { icon: "\uF011", tooltip: "Shutdown", action: "shutdown", accent: window.palette.red }
       ]
 
       Repeater {
@@ -734,14 +733,14 @@ AnimatedPopup {
           Layout.preferredWidth: 48
           implicitHeight: 36
           radius: 6
-          color: hovered ? Palette.bg2 : Palette.bg1
+          color: hovered ? window.palette.bg2 : window.palette.bg1
           Behavior on color { ColorAnimation { duration: 150 } }
 
           Text {
             anchors.centerIn: parent
             text: act.icon
-            color: Palette.fg
-            font.family: Palette.font; font.pixelSize: 16
+            color: window.palette.fg
+            font.family: window.palette.font; font.pixelSize: 16
             Behavior on color { ColorAnimation { duration: 150 } }
           }
 

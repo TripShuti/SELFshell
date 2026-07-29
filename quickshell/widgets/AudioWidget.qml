@@ -2,7 +2,7 @@
 // AudioWidget.qml — віджет гучності на панелі
 // ============================================================
 import Quickshell.Services.Pipewire
-import "../Palette.js" as Palette
+import "../core"
 import QtQuick
 
 
@@ -10,6 +10,7 @@ import QtQuick
 Item {
   id: root
 
+  required property QtObject window
   signal clicked()
 
   implicitWidth: 120
@@ -74,7 +75,7 @@ Item {
     }
     height: root.hovered ? 8 : 6
     radius: height / 2
-    color: Palette.bgAlpha
+    color: window.palette.bgAlpha
     clip: true
 
     Behavior on height { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
@@ -87,8 +88,8 @@ Item {
 
       gradient: Gradient {
         orientation: Gradient.Horizontal
-        GradientStop { position: 0.0; color: Palette.audioVolume }
-        GradientStop { position: 1.0; color: root.audio?.muted ? Palette.muted : Palette.green }
+        GradientStop { position: 0.0; color: window.palette.audioVolume }
+        GradientStop { position: 1.0; color: root.audio?.muted ? window.palette.muted : window.palette.green }
       }
 
       Behavior on width { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }

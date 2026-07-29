@@ -2,7 +2,7 @@
 # ============================================================
 # update-palette.py — генерація палітри та тем зі шпалер
 # ============================================================
-# Генерує Palette.js, kitty тему, fish кольори, starship та yazi тему
+# Генерує data/palette.json, kitty тему, fish кольори, starship та yazi тему
 # на основі поточних шпалер через matugen
 
 import sys, json, subprocess, re, os
@@ -75,53 +75,29 @@ bgLayer    = alpha(blend(col("background"), col("on_surface"), 0.15), 0.6)
 sepBg      = alpha(col("primary"), 0.6)
 outlineVariant = alpha(bg2, 0.4)
 
-# --- Генерація Palette.js ---
+# --- Генерація data/palette.json (для PaletteService) ---
 
-pal = f""".pragma library
-
-var font = "JetBrainsMonoNL Nerd Font";
-
-var fg       = "{fg}";
-var gray     = "{gray}";
-var green    = "{green}";
-var red      = "{red}";
-
-var bg0H     = "{bg0H}";
-var bg1      = "{bg1}";
-var bg2      = "{bg2}";
-var muted    = "{muted}";
-var light    = "{light}";
-var bright   = "{bright}";
-
-var yellow   = "{yellow}";
-var blue     = "{blue}";
-var purple   = "{purple}";
-var orange   = "{orange}";
-var aqua     = "{aqua}";
-
-var widgetFg = "{widgetFg}";
-var audioVolume = "{audioVolume}";
-
-var hoverOverlay = "{alpha('#ffffff', 0.08)}";
-var pressOverlay = "{alpha('#ffffff', 0.12)}";
-
-var bgAlpha  = "{alpha(bg0H, 0.6)}";
-var hoverBg  = "{alpha(blend(bg0H, gray, 0.15), 0.6)}";
-var baseOverlay = "{alpha(bg0H, 0.6)}";
-var softOverlay = "{alpha(bg0H, 0.65)}";
-
-var accent   = "{accent}";
-var textLight = "{textLight}";
-var mutedAlt = "{mutedAlt}";
-var danger   = "{danger}";
-var bgLayer  = "{bgLayer}";
-var sepBg    = "{sepBg}";
-var outlineVariant = "{outlineVariant}";
-"""
+palette_json = json.dumps({
+    "font": "JetBrainsMonoNL Nerd Font",
+    "fg": fg, "gray": gray, "green": green, "red": red,
+    "bg0H": bg0H, "bg1": bg1, "bg2": bg2,
+    "muted": muted, "light": light, "bright": bright,
+    "yellow": yellow, "blue": blue, "purple": purple, "orange": orange, "aqua": aqua,
+    "widgetFg": widgetFg, "audioVolume": audioVolume,
+    "hoverOverlay": alpha('#ffffff', 0.08), "pressOverlay": alpha('#ffffff', 0.12),
+    "bgAlpha": alpha(bg0H, 0.6),
+    "hoverBg": alpha(blend(bg0H, gray, 0.15), 0.6),
+    "baseOverlay": alpha(bg0H, 0.6), "softOverlay": alpha(bg0H, 0.65),
+    "accent": accent, "textLight": textLight, "mutedAlt": mutedAlt,
+    "danger": danger, "bgLayer": bgLayer, "sepBg": sepBg, "outlineVariant": outlineVariant,
+}, indent=2)
 
 qs_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-with open(os.path.join(qs_dir, "Palette.js"), "w") as f:
-    f.write(pal)
+
+palette_json_path = os.path.join(qs_dir, "data", "palette.json")
+os.makedirs(os.path.dirname(palette_json_path), exist_ok=True)
+with open(palette_json_path, "w") as f:
+    f.write(palette_json)
 
 # --- Генерація kitty current-theme.conf ---
 

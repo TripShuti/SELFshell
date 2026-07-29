@@ -5,11 +5,12 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Services.SystemTray
-import "../Palette.js" as Palette
+import "../core"
 
 Item {
   id: root
 
+  required property QtObject window
   signal clicked()
   property bool hovered: false
 

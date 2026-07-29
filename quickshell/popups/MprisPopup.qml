@@ -3,7 +3,6 @@
 // ============================================================
 import Quickshell.Services.Mpris
 import "../core"
-import "../Palette.js" as Palette
 import QtQuick
 import QtQuick.Layouts
 
@@ -15,6 +14,7 @@ AnimatedPopup {
 
   required property QtObject anchorItem
   required property QtObject window
+  palette: window.palette
 
   implicitWidth: 400
   implicitHeight: layout.implicitHeight + 4
@@ -104,14 +104,14 @@ AnimatedPopup {
       // Іконка
       Text {
         text: "\uF001"
-        color: Palette.green
-        font.family: Palette.font; font.pixelSize: 12
+        color: window.palette.green
+        font.family: window.palette.font; font.pixelSize: 12
       }
 
       Text {
         text: "Now Playing"
-        color: Palette.green
-        font.family: Palette.font; font.pixelSize: 14; font.bold: true
+        color: window.palette.green
+        font.family: window.palette.font; font.pixelSize: 14; font.bold: true
       }
 
       Item { Layout.fillWidth: true }
@@ -120,7 +120,7 @@ AnimatedPopup {
       Rectangle {
         visible: root.player != null && root.player.identity !== ""
         radius: 8
-        color: Palette.bg1
+        color: window.palette.bg1
         implicitWidth: idLabel.implicitWidth + 16
         implicitHeight: 18
 
@@ -128,8 +128,8 @@ AnimatedPopup {
           id: idLabel
           anchors.centerIn: parent
           text: root.player?.identity ?? ""
-          color: Palette.gray
-          font.family: Palette.font; font.pixelSize: 9
+          color: window.palette.gray
+          font.family: window.palette.font; font.pixelSize: 9
         }
       }
     }
@@ -141,7 +141,7 @@ AnimatedPopup {
       gradient: Gradient {
         orientation: Gradient.Horizontal
         GradientStop { position: 0.0; color: "transparent" }
-        GradientStop { position: 0.5; color: Palette.bg2 }
+        GradientStop { position: 0.5; color: window.palette.bg2 }
         GradientStop { position: 1.0; color: "transparent" }
       }
     }
@@ -155,9 +155,9 @@ AnimatedPopup {
       // Обкладинка альбому
       Rectangle {
         width: 80; height: 80; radius: 1
-        color: Palette.bg1
+        color: window.palette.bg1
         border.width: 1
-        border.color: root.player?.isPlaying ? Palette.green : Palette.bg2
+        border.color: root.player?.isPlaying ? window.palette.green : window.palette.bg2
         Behavior on border.color { ColorAnimation { duration: 200 } }
 
         Image {
@@ -178,8 +178,8 @@ AnimatedPopup {
         Text {
           anchors.centerIn: parent
           text: "\uF025"
-          color: Palette.gray
-          font.family: Palette.font; font.pixelSize: 28
+          color: window.palette.gray
+          font.family: window.palette.font; font.pixelSize: 28
           visible: root.player == null || root.player.trackArtUrl === "" || artImg.status === Image.Error
         }
 
@@ -187,9 +187,9 @@ AnimatedPopup {
         Rectangle {
           visible: root.player?.isPlaying ?? false
           width: 10; height: 10; radius: 5
-          color: Palette.green
+          color: window.palette.green
           border.width: 2
-          border.color: Palette.bg0H
+          border.color: window.palette.bg0H
           anchors.right: parent.right
           anchors.bottom: parent.bottom
           anchors.margins: -2
@@ -211,8 +211,8 @@ AnimatedPopup {
 
         Text {
           text: root.player?.trackTitle ?? "No track"
-          color: root.player?.isPlaying ? Palette.green : Palette.fg
-          font.family: Palette.font; font.pixelSize: 14; font.bold: true
+          color: root.player?.isPlaying ? window.palette.green : window.palette.fg
+          font.family: window.palette.font; font.pixelSize: 14; font.bold: true
           elide: Text.ElideRight
           Layout.fillWidth: true
           wrapMode: Text.WordWrap
@@ -221,8 +221,8 @@ AnimatedPopup {
 
         Text {
           text: root.player?.trackArtist ?? ""
-          color: Palette.fg
-          font.family: Palette.font; font.pixelSize: 11
+          color: window.palette.fg
+          font.family: window.palette.font; font.pixelSize: 11
           elide: Text.ElideRight
           Layout.fillWidth: true
           visible: root.player != null && root.player.trackArtist !== ""
@@ -230,8 +230,8 @@ AnimatedPopup {
 
         Text {
           text: root.player?.trackAlbum ?? ""
-          color: Palette.gray
-          font.family: Palette.font; font.pixelSize: 10
+          color: window.palette.gray
+          font.family: window.palette.font; font.pixelSize: 10
           elide: Text.ElideRight
           Layout.fillWidth: true
           visible: root.player != null && root.player.trackAlbum !== ""
@@ -251,13 +251,13 @@ AnimatedPopup {
       Rectangle {
         property bool hovered: false
         width: 20; height: 20; radius: 4
-        color: root.player?.shuffle ? Palette.green : (hovered ? Palette.bg2 : "transparent")
+        color: root.player?.shuffle ? window.palette.green : (hovered ? window.palette.bg2 : "transparent")
         Behavior on color { ColorAnimation { duration: 150 } }
         Text {
           anchors.centerIn: parent
           text: "\uF074"
-          color: root.player?.shuffle ? Palette.bg0H : Palette.gray
-          font.family: Palette.font; font.pixelSize: 10
+          color: root.player?.shuffle ? window.palette.bg0H : window.palette.gray
+          font.family: window.palette.font; font.pixelSize: 10
         }
         visible: root.player != null && root.player.shuffleSupported
         MouseArea {
@@ -273,13 +273,13 @@ AnimatedPopup {
       Rectangle {
         property bool hovered: false
         width: 20; height: 20; radius: 4
-        color: root.player?.loopState !== MprisLoopState.None ? Palette.green : (hovered ? Palette.bg2 : "transparent")
+        color: root.player?.loopState !== MprisLoopState.None ? window.palette.green : (hovered ? window.palette.bg2 : "transparent")
         Behavior on color { ColorAnimation { duration: 150 } }
         Text {
           anchors.centerIn: parent
           text: root.player?.loopState === MprisLoopState.Track ? "\uF01E" : "\uF0E2"
-          color: root.player?.loopState !== MprisLoopState.None ? Palette.bg0H : Palette.gray
-          font.family: Palette.font; font.pixelSize: 10
+          color: root.player?.loopState !== MprisLoopState.None ? window.palette.bg0H : window.palette.gray
+          font.family: window.palette.font; font.pixelSize: 10
         }
         visible: root.player != null && root.player.loopSupported
         MouseArea {
@@ -310,8 +310,8 @@ AnimatedPopup {
       // Поточний час
       Text {
         text: formatTime(root.player?.position ?? 0)
-        color: Palette.gray
-        font.family: Palette.font; font.pixelSize: 9
+        color: window.palette.gray
+        font.family: window.palette.font; font.pixelSize: 9
       }
 
       // Трек прогресу
@@ -319,13 +319,13 @@ AnimatedPopup {
         id: progTrack
         Layout.fillWidth: true
         height: 5; radius: 2.5
-        color: Palette.bg1
+        color: window.palette.bg1
         Layout.alignment: Qt.AlignVCenter
 
         // Заповнення
         Rectangle {
           width: parent.width * Math.min((root.player?.position ?? 0) / (root.player?.length ?? 1), 1)
-          color: root.player?.isPlaying ? Palette.green : Palette.gray
+          color: root.player?.isPlaying ? window.palette.green : window.palette.gray
           height: parent.height; radius: 2.5
           Behavior on width { NumberAnimation { duration: 300; easing.type: Easing.Linear } }
         }
@@ -334,7 +334,7 @@ AnimatedPopup {
         Rectangle {
           visible: progArea.containsMouse
           width: 10; height: 10; radius: 5
-          color: Palette.yellow
+          color: window.palette.yellow
           anchors.verticalCenter: parent.verticalCenter
           x: Math.min(Math.max(progArea.mouseX - 5, 0), parent.width - 10)
         }
@@ -354,8 +354,8 @@ AnimatedPopup {
       // Загальна довжина
       Text {
         text: formatTime(root.player?.length ?? 0)
-        color: Palette.gray
-        font.family: Palette.font; font.pixelSize: 9
+        color: window.palette.gray
+        font.family: window.palette.font; font.pixelSize: 9
       }
     }
 
@@ -381,9 +381,9 @@ AnimatedPopup {
 
           height: vheight
           radius: 1
-          color: ratio > 0.7 ? Palette.green :
-                 ratio > 0.4 ? Palette.purple :
-                 Palette.gray
+          color: ratio > 0.7 ? window.palette.green :
+                 ratio > 0.4 ? window.palette.purple :
+                 window.palette.gray
 
           Behavior on color { ColorAnimation { duration: 220 } }
           Behavior on height {
@@ -406,12 +406,12 @@ AnimatedPopup {
       Rectangle {
         property bool hovered: false
         width: 28; height: 28; radius: 14
-        color: hovered ? Palette.bg2 : Palette.bg1
+        color: hovered ? window.palette.bg2 : window.palette.bg1
         Behavior on color { ColorAnimation { duration: 150 } }
         Text {
           anchors.centerIn: parent
           text: "\uF04A"
-          color: Palette.fg; font.family: Palette.font; font.pixelSize: 12
+          color: window.palette.fg; font.family: window.palette.font; font.pixelSize: 12
         }
         MouseArea {
           anchors.fill: parent
@@ -426,14 +426,14 @@ AnimatedPopup {
       Rectangle {
         property bool hovered: false
         width: 36; height: 36; radius: 18
-        color: Palette.green
+        color: window.palette.green
         border.width: hovered ? 2 : 0
-        border.color: Palette.fg
+        border.color: window.palette.fg
         Behavior on color { ColorAnimation { duration: 150 } }
         Text {
           anchors.centerIn: parent
           text: root.player?.isPlaying ? "\uF04C" : "\uF04B"
-          color: Palette.bg0H; font.family: Palette.font; font.pixelSize: 14
+          color: window.palette.bg0H; font.family: window.palette.font; font.pixelSize: 14
         }
         MouseArea {
           anchors.fill: parent
@@ -448,12 +448,12 @@ AnimatedPopup {
       Rectangle {
         property bool hovered: false
         width: 28; height: 28; radius: 14
-        color: hovered ? Palette.bg2 : Palette.bg1
+        color: hovered ? window.palette.bg2 : window.palette.bg1
         Behavior on color { ColorAnimation { duration: 150 } }
         Text {
           anchors.centerIn: parent
           text: "\uF04E"
-          color: Palette.fg; font.family: Palette.font; font.pixelSize: 12
+          color: window.palette.fg; font.family: window.palette.font; font.pixelSize: 12
         }
         MouseArea {
           anchors.fill: parent
@@ -478,15 +478,15 @@ AnimatedPopup {
       Text {
         Layout.alignment: Qt.AlignHCenter
         text: "\uF001"
-        color: Palette.gray
-        font.family: Palette.font; font.pixelSize: 22
+        color: window.palette.gray
+        font.family: window.palette.font; font.pixelSize: 22
       }
 
       Text {
         Layout.alignment: Qt.AlignHCenter
         text: "No player detected"
-        color: Palette.gray
-        font.family: Palette.font; font.pixelSize: 12
+        color: window.palette.gray
+        font.family: window.palette.font; font.pixelSize: 12
       }
     }
   }

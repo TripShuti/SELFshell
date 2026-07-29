@@ -6,12 +6,12 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import "../core"
-import "../Palette.js" as Palette
 
 AnimatedPopup {
   id: root
 
   required property QtObject window
+  palette: window.palette
 
   implicitWidth: 800
   implicitHeight: contentColumn.implicitHeight + 30
@@ -46,7 +46,7 @@ AnimatedPopup {
   // - позиція вставки визначається через updateHoverZone() при кожному русі миші
   // - commitDrag() або переносить ім'я в інший масив (moveToPillAt), або
   //   вимикає віджет (кидання в poolZone = disabled-зона)
-  // - після коміту cfg.saveToFile() записує новий Config.js
+  // - після коміту cfg.saveToFile() записує новий config.json
   //
   // ghost — візуальний "привид" того, що тягнуть, летить за курсором
 
@@ -158,8 +158,8 @@ AnimatedPopup {
         Layout.fillWidth: true
         Text {
           text: "\u2699 Settings"
-          color: Palette.fg
-          font.family: Palette.font
+          color: window.palette.fg
+          font.family: window.palette.font
           font.pixelSize: 14
           font.bold: true
         }
@@ -169,8 +169,8 @@ AnimatedPopup {
 
       Text {
         text: "Bar layout — drag widgets between pills, or down to the pool to disable"
-        color: Palette.gray
-        font.family: Palette.font
+        color: window.palette.gray
+        font.family: window.palette.font
         font.pixelSize: 10
         wrapMode: Text.WordWrap
         Layout.fillWidth: true
@@ -186,12 +186,12 @@ AnimatedPopup {
           spacing: 4
           RowLayout {
             Layout.fillWidth: true
-            Text { text: "Left"; color: Palette.gray; font.family: Palette.font; font.pixelSize: 9; font.bold: true }
+            Text { text: "Left"; color: window.palette.gray; font.family: window.palette.font; font.pixelSize: 9; font.bold: true }
             Item { Layout.fillWidth: true }
             Rectangle {
               implicitWidth: 16; implicitHeight: 16; radius: 3
-              color: Palette.bg2
-              Text { anchors.centerIn: parent; text: "+"; color: Palette.fg; font.pixelSize: 10; font.bold: true }
+              color: window.palette.bg2
+              Text { anchors.centerIn: parent; text: "+"; color: window.palette.fg; font.pixelSize: 10; font.bold: true }
               MouseArea {
                 anchors.fill: parent; cursorShape: Qt.PointingHandCursor
                 onClicked: { cfg.addSep("left"); cfg.saveToFile() }
@@ -206,12 +206,12 @@ AnimatedPopup {
           spacing: 4
           RowLayout {
             Layout.fillWidth: true
-            Text { text: "Center"; color: Palette.gray; font.family: Palette.font; font.pixelSize: 9; font.bold: true }
+            Text { text: "Center"; color: window.palette.gray; font.family: window.palette.font; font.pixelSize: 9; font.bold: true }
             Item { Layout.fillWidth: true }
             Rectangle {
               implicitWidth: 16; implicitHeight: 16; radius: 3
-              color: Palette.bg2
-              Text { anchors.centerIn: parent; text: "+"; color: Palette.fg; font.pixelSize: 10; font.bold: true }
+              color: window.palette.bg2
+              Text { anchors.centerIn: parent; text: "+"; color: window.palette.fg; font.pixelSize: 10; font.bold: true }
               MouseArea {
                 anchors.fill: parent; cursorShape: Qt.PointingHandCursor
                 onClicked: { cfg.addSep("center"); cfg.saveToFile() }
@@ -226,12 +226,12 @@ AnimatedPopup {
           spacing: 4
           RowLayout {
             Layout.fillWidth: true
-            Text { text: "Right"; color: Palette.gray; font.family: Palette.font; font.pixelSize: 9; font.bold: true }
+            Text { text: "Right"; color: window.palette.gray; font.family: window.palette.font; font.pixelSize: 9; font.bold: true }
             Item { Layout.fillWidth: true }
             Rectangle {
               implicitWidth: 16; implicitHeight: 16; radius: 3
-              color: Palette.bg2
-              Text { anchors.centerIn: parent; text: "+"; color: Palette.fg; font.pixelSize: 10; font.bold: true }
+              color: window.palette.bg2
+              Text { anchors.centerIn: parent; text: "+"; color: window.palette.fg; font.pixelSize: 10; font.bold: true }
               MouseArea {
                 anchors.fill: parent; cursorShape: Qt.PointingHandCursor
                 onClicked: { cfg.addSep("right"); cfg.saveToFile() }
@@ -248,7 +248,7 @@ AnimatedPopup {
         gradient: Gradient {
           orientation: Gradient.Horizontal
           GradientStop { position: 0.0; color: "transparent" }
-          GradientStop { position: 0.5; color: Palette.bg2 }
+          GradientStop { position: 0.5; color: window.palette.bg2 }
           GradientStop { position: 1.0; color: "transparent" }
         }
       }
@@ -256,7 +256,7 @@ AnimatedPopup {
       ColumnLayout {
         Layout.fillWidth: true
         spacing: 4
-        Text { text: "Pool (disabled)"; color: Palette.gray; font.family: Palette.font; font.pixelSize: 9; font.bold: true }
+        Text { text: "Pool (disabled)"; color: window.palette.gray; font.family: window.palette.font; font.pixelSize: 9; font.bold: true }
         DnDZone {
           id: poolZone
           pillName: "pool"
@@ -278,9 +278,9 @@ AnimatedPopup {
       clip: true
 
       radius: 6
-      color: root.dragHoverZoneItem === zone ? Qt.lighter(Palette.bg1, 1.15) : Palette.bg1
+      color: root.dragHoverZoneItem === zone ? Qt.lighter(window.palette.bg1, 1.15) : window.palette.bg1
       border.width: 1
-      border.color: root.dragHoverZoneItem === zone ? Palette.green : Palette.bg2
+      border.color: root.dragHoverZoneItem === zone ? window.palette.green : window.palette.bg2
       Behavior on color { ColorAnimation { duration: 120 } }
       Behavior on border.color { ColorAnimation { duration: 120 } }
 
@@ -338,7 +338,7 @@ AnimatedPopup {
         radius: root.dragActive && cfg.isSep(root.dragName) ? 1 : 4
         color: "transparent"
         border.width: 1
-        border.color: Palette.green
+        border.color: window.palette.green
         opacity: 0.5
         width: root.dragActive && cfg.isSep(root.dragName) ? 6 : zone.chipW
         height: zone.chipH
@@ -385,9 +385,9 @@ AnimatedPopup {
           Behavior on y { enabled: !root.dragActive; NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
 
           radius: _isSep ? 2 : 4
-          color: _isSep ? "transparent" : (chipArea.pressed ? Palette.bg2 : Palette.bgAlpha)
+          color: _isSep ? "transparent" : (chipArea.pressed ? window.palette.bg2 : window.palette.bgAlpha)
           border.width: _isSep ? 0 : 1
-          border.color: _isDragged ? Palette.accent : Palette.bg2
+          border.color: _isDragged ? window.palette.accent : window.palette.bg2
 
           Rectangle {
             visible: _isSep
@@ -395,7 +395,7 @@ AnimatedPopup {
             width: 2
             height: 12
             radius: 1
-            color: Palette.mutedAlt
+            color: window.palette.mutedAlt
             opacity: 0.5
           }
 
@@ -403,8 +403,8 @@ AnimatedPopup {
             visible: !_isSep
             anchors.centerIn: parent
             text: root.displayNames[chip.modelData] ?? chip.modelData
-            color: _isDragged ? Palette.mutedAlt : Palette.fg
-            font.family: Palette.font
+            color: _isDragged ? window.palette.mutedAlt : window.palette.fg
+            font.family: window.palette.font
             font.pixelSize: 9
             elide: Text.ElideRight
             width: parent.width - 6
@@ -443,17 +443,17 @@ AnimatedPopup {
     width: 64
     height: 20
     radius: 4
-    color: Palette.green
+    color: window.palette.green
     opacity: 0.85
     border.width: 1
-    border.color: Palette.bg0H
+    border.color: window.palette.bg0H
 
     Text {
       visible: ghost.text !== ""
       anchors.centerIn: parent
       text: ghost.text
-      color: Palette.bg0H
-      font.family: Palette.font
+      color: window.palette.bg0H
+      font.family: window.palette.font
       font.pixelSize: 9
       font.bold: true
       elide: Text.ElideRight

@@ -4,7 +4,6 @@
 import Quickshell
 import Quickshell.Io
 import "../core"
-import "../Palette.js" as Palette
 import QtQuick
 import QtQuick.Layouts
 
@@ -16,6 +15,7 @@ AnimatedPopup {
 
   required property QtObject anchorItem
   required property QtObject window
+  palette: window.palette
 
   implicitWidth: 400
   implicitHeight: layout.implicitHeight + 16
@@ -94,10 +94,10 @@ AnimatedPopup {
           var obj = JSON.parse(text)
           signBtn.text = obj.ok ? "✓" : "✗"
           signFeedback.text = obj.msg
-          signFeedback.color = obj.ok ? Palette.green : Palette.red
+          signFeedback.color = obj.ok ? window.palette.green : window.palette.red
         } catch (e) {
           signFeedback.text = "Error: " + e
-          signFeedback.color = Palette.red
+          signFeedback.color = window.palette.red
         }
         signBtn.enabled = true
         signSpinner.visible = false
@@ -119,8 +119,8 @@ AnimatedPopup {
 
       Text {
         text: "Genshin Impact"
-        color: Palette.green
-        font.family: Palette.font; font.pixelSize: 13; font.bold: true
+        color: window.palette.green
+        font.family: window.palette.font; font.pixelSize: 13; font.bold: true
       }
 
       Item { Layout.fillWidth: true }
@@ -132,7 +132,7 @@ AnimatedPopup {
         Rectangle {
           id: refreshBtn
           implicitWidth: 20; implicitHeight: 20; radius: 6
-          color: refreshArea.containsMouse ? Palette.bg2 : Palette.bg1
+          color: refreshArea.containsMouse ? window.palette.bg2 : window.palette.bg1
           enabled: root.refreshStatus !== "loading"
           Layout.alignment: Qt.AlignVCenter
           Behavior on color { ColorAnimation { duration: 120 } }
@@ -141,10 +141,10 @@ AnimatedPopup {
             id: refreshIcon
             anchors.centerIn: parent
             text: "⟳"
-            font.family: Palette.font; font.pixelSize: 13
-            color: root.refreshStatus === "error" ? Palette.red
-                 : root.refreshStatus === "ok" ? Palette.green
-                 : Palette.gray
+            font.family: window.palette.font; font.pixelSize: 13
+            color: root.refreshStatus === "error" ? window.palette.red
+                 : root.refreshStatus === "ok" ? window.palette.green
+                 : window.palette.gray
             Behavior on color { ColorAnimation { duration: 200 } }
 
             RotationAnimator on rotation {
@@ -179,8 +179,8 @@ AnimatedPopup {
         // Текст смоли
         Text {
           text: root.resinDisplayText
-          color: root.resinClass === "critical" ? Palette.red : Palette.green
-          font.family: Palette.font; font.pixelSize: 13
+          color: root.resinClass === "critical" ? window.palette.red : window.palette.green
+          font.family: window.palette.font; font.pixelSize: 13
           font.bold: true
         }
       }
@@ -191,8 +191,8 @@ AnimatedPopup {
       id: refreshFeedback
       visible: root.refreshMessage !== ""
       text: root.refreshMessage
-      color: root.refreshStatus === "error" ? Palette.red : Palette.green
-      font.family: Palette.font; font.pixelSize: 10
+      color: root.refreshStatus === "error" ? window.palette.red : window.palette.green
+      font.family: window.palette.font; font.pixelSize: 10
       opacity: visible ? 1 : 0
       Layout.alignment: Qt.AlignRight
       Behavior on opacity { NumberAnimation { duration: 200 } }
@@ -205,7 +205,7 @@ AnimatedPopup {
       gradient: Gradient {
         orientation: Gradient.Horizontal
         GradientStop { position: 0.0; color: "transparent" }
-        GradientStop { position: 0.5; color: Palette.bg2 }
+        GradientStop { position: 0.5; color: window.palette.bg2 }
         GradientStop { position: 1.0; color: "transparent" }
       }
     }
@@ -222,8 +222,8 @@ AnimatedPopup {
         delegate: Text {
           required property var modelData
           text: modelData.text
-          color: Palette.fg
-          font.family: Palette.font; font.pixelSize: 13
+          color: window.palette.fg
+          font.family: window.palette.font; font.pixelSize: 13
           wrapMode: Text.NoWrap
           elide: Text.ElideRight
           Layout.fillWidth: true
@@ -239,7 +239,7 @@ AnimatedPopup {
       gradient: Gradient {
         orientation: Gradient.Horizontal
         GradientStop { position: 0.0; color: "transparent" }
-        GradientStop { position: 0.5; color: Palette.bg2 }
+        GradientStop { position: 0.5; color: window.palette.bg2 }
         GradientStop { position: 1.0; color: "transparent" }
       }
     }
@@ -254,14 +254,14 @@ AnimatedPopup {
         implicitWidth: checkinLabel.implicitWidth + 20
         implicitHeight: 22
         radius: 6
-        color: root.isSigned ? Qt.rgba(Palette.green.r, Palette.green.g, Palette.green.b, 0.15) : Palette.bg1
+        color: root.isSigned ? Qt.rgba(window.palette.green.r, window.palette.green.g, window.palette.green.b, 0.15) : window.palette.bg1
 
         Text {
           id: checkinLabel
           anchors.centerIn: parent
           text: root.isSigned ? "\uF00C Check-in" : "\uF00D Check-in"
-          color: root.isSigned ? Palette.green : Palette.gray
-          font.family: Palette.font; font.pixelSize: 11
+          color: root.isSigned ? window.palette.green : window.palette.gray
+          font.family: window.palette.font; font.pixelSize: 11
         }
       }
 
@@ -269,8 +269,8 @@ AnimatedPopup {
       Text {
         id: signSpinner
         text: "⟳"
-        color: Palette.green
-        font.family: Palette.font; font.pixelSize: 12; font.bold: true
+        color: window.palette.green
+        font.family: window.palette.font; font.pixelSize: 12; font.bold: true
         visible: false
         Layout.alignment: Qt.AlignVCenter
 
@@ -290,7 +290,7 @@ AnimatedPopup {
         implicitWidth: 72
         implicitHeight: 24
         radius: 6
-        color: signBtn.enabled ? (signArea.containsMouse ? Palette.bg2 : Palette.bg1) : Palette.bg1
+        color: signBtn.enabled ? (signArea.containsMouse ? window.palette.bg2 : window.palette.bg1) : window.palette.bg1
         Behavior on color { ColorAnimation { duration: 120 } }
 
         property string text: "Check-in"
@@ -298,8 +298,8 @@ AnimatedPopup {
         Text {
           anchors.centerIn: parent
           text: parent.text
-          color: parent.enabled ? Palette.fg : Palette.gray
-          font.family: Palette.font; font.pixelSize: 11
+          color: parent.enabled ? window.palette.fg : window.palette.gray
+          font.family: window.palette.font; font.pixelSize: 11
         }
 
         MouseArea {
@@ -322,7 +322,7 @@ AnimatedPopup {
     // Результат чекіну
     Text {
       id: signFeedback
-      font.family: Palette.font; font.pixelSize: 11
+      font.family: window.palette.font; font.pixelSize: 11
       wrapMode: Text.WordWrap
       Layout.fillWidth: true
       lineHeight: 1.3

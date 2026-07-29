@@ -3,13 +3,14 @@
 // ============================================================
 import Quickshell
 import Quickshell.Io
-import "../Palette.js" as Palette
+import "../core"
 import QtQuick
 
 // Віджет таймера на панелі — відлік, нагадування, керування колесом
 Item {
   id: root
 
+  required property QtObject window
   // Необов'язковий конфіг — якщо appConfig.timerSoundPath заданий і файл існує,
   // матиме пріоритет над своїм звуком з assets/. Прибери "?" / required, якщо
   // конфіг завжди передається ззовні, як у GenshinMonitor.
@@ -134,10 +135,10 @@ Item {
   Text {
     id: txt
     text: root.displayText
-    color: root.timerClass === "running" ? Palette.green
-         : root.timerClass === "done" ? Palette.red
-         :  Palette.widgetFg
-    font.family: Palette.font
+    color: root.timerClass === "running" ? window.palette.green
+         : root.timerClass === "done" ? window.palette.red
+         :  window.palette.widgetFg
+    font.family: window.palette.font
     font.pixelSize: 13
     anchors.verticalCenter: parent.verticalCenter
 

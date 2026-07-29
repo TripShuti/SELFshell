@@ -5,7 +5,6 @@
 import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Notifications
-import "Palette.js" as Palette
 import "core"
 import QtQuick
 import QtQuick.Layouts
@@ -54,6 +53,8 @@ PanelWindow {
   color: "transparent"
   exclusiveZone: 36
 
+  required property QtObject palette
+
   // Спільний стан конфігурації (видимість, порядок) — зберігається в config.json
   readonly property AppConfig appConfig: AppConfig {}
 
@@ -72,7 +73,7 @@ PanelWindow {
       radius: pillBg.radius + 2
       color: "transparent"
       border.width: 1
-      border.color: Palette.hoverBg
+      border.color: root.palette.hoverBg
       opacity: 0.1
     }
 
@@ -81,15 +82,15 @@ PanelWindow {
       id: pillBg
       anchors.fill: parent
       clip: true
-      color: Palette.bgAlpha
+      color: root.palette.bgAlpha
       opacity: 1
       border.width: 0
-      border.color: Palette.outlineVariant
+      border.color: root.palette.outlineVariant
 
       gradient: Gradient {
         orientation: Gradient.Vertical
-        GradientStop { position: 0.0; color: Qt.lighter(Palette.baseOverlay, 1.18) }
-        GradientStop { position: 1.0; color: Palette.bgAlpha }
+        GradientStop { position: 0.0; color: Qt.lighter(root.palette.baseOverlay, 1.18) }
+        GradientStop { position: 1.0; color: root.palette.bgAlpha }
       }
 
       Behavior on opacity { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
@@ -103,18 +104,18 @@ PanelWindow {
   // Loader, а не завантажений ним item. Для тих двох, кому реально
   // потрібен fillHeight (Mpris/Audio), сам item заповнює Loader через
   // anchors.fill: parent.
-  Component { id: launcherComp;   LauncherWidget { anchors.fill: parent } }
-  Component { id: workspacesComp; WorkspacesWidget { } }
-  Component { id: mprisComp;      MprisWidget { anchors.fill: parent; cavBars: cavaMonitor.bars } }
-  Component { id: clockComp;      ClockWidget { } }
-  Component { id: timerComp;      TimerWidget { anchors.fill: parent } }
-  Component { id: genshinComp;    GenshinWidget { anchors.fill: parent; resinText: genshinMonitor.resinText; resinClass: genshinMonitor.resinClass } }
-  Component { id: keyboardComp;   KeyboardLayoutWidget { anchors.fill: parent } }
-  Component { id: audioComp;      AudioWidget { anchors.fill: parent } }
-  Component { id: controlComp;    ControlWidget { anchors.fill: parent; unread: controlPopup.unread } }
-  Component { id: btComp;         BluetoothWidget { anchors.fill: parent } }
-  Component { id: netComp;        NetWidget { anchors.fill: parent } }
-  Component { id: trayComp;       TrayWidget { anchors.fill: parent } }
+  Component { id: launcherComp;   LauncherWidget { window: root; anchors.fill: parent } }
+  Component { id: workspacesComp; WorkspacesWidget { window: root } }
+  Component { id: mprisComp;      MprisWidget { window: root; anchors.fill: parent; cavBars: cavaMonitor.bars } }
+  Component { id: clockComp;      ClockWidget { window: root } }
+  Component { id: timerComp;      TimerWidget { window: root; anchors.fill: parent } }
+  Component { id: genshinComp;    GenshinWidget { window: root; anchors.fill: parent; resinText: genshinMonitor.resinText; resinClass: genshinMonitor.resinClass } }
+  Component { id: keyboardComp;   KeyboardLayoutWidget { window: root; anchors.fill: parent } }
+  Component { id: audioComp;      AudioWidget { window: root; anchors.fill: parent } }
+  Component { id: controlComp;    ControlWidget { window: root; anchors.fill: parent; unread: controlPopup.unread } }
+  Component { id: btComp;         BluetoothWidget { window: root; anchors.fill: parent } }
+  Component { id: netComp;        NetWidget { window: root; anchors.fill: parent } }
+  Component { id: trayComp;       TrayWidget { window: root; anchors.fill: parent } }
 
   readonly property var widgetComponents: ({
     launcher: launcherComp, workspaces: workspacesComp, mpris: mprisComp,
@@ -170,6 +171,7 @@ PanelWindow {
           }
           Separator {
             Layout.alignment: Qt.AlignVCenter
+            pal: root.palette
             visible: root.appConfig.isSep(modelData)
           }
         }
@@ -209,6 +211,7 @@ PanelWindow {
           }
           Separator {
             Layout.alignment: Qt.AlignVCenter
+            pal: root.palette
             visible: root.appConfig.isSep(modelData)
           }
         }
@@ -250,6 +253,7 @@ PanelWindow {
           }
           Separator {
             Layout.alignment: Qt.AlignVCenter
+            pal: root.palette
             visible: root.appConfig.isSep(modelData)
           }
         }

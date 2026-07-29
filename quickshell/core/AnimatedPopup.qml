@@ -2,7 +2,6 @@
 // AnimatedPopup.qml — базове анімоване попап-вікно для всіх
 // спливаючих панелей
 // ============================================================
-import "../Palette.js" as Palette
 import Quickshell
 import QtQuick
 
@@ -10,12 +9,14 @@ import QtQuick
 PopupWindow {
   id: root
 
+  property QtObject palette: null
+
   // Налаштовувані кольори та параметри анімації
-  property color bgColor: Palette.bg0H
+  property color bgColor: palette ? palette.bg0H : "#34302a"
   property real bgOpacity: 0.88
   property real bgLighten: 1.5
   property real cornerRadius: 12
-  property color borderColor: Palette.bg2
+  property color borderColor: palette ? palette.bg2 : "#57514b"
   property real enterScale: 0.85
   property real overshootAmount: 2.5
   property int enterDuration: 350
@@ -104,7 +105,7 @@ PopupWindow {
       gradient: Gradient {
         orientation: Gradient.Horizontal
         GradientStop { position: 0.0; color: "transparent" }
-        GradientStop { position: 0.5; color: Palette.hoverOverlay }
+        GradientStop { position: 0.5; color: palette ? palette.hoverOverlay : "#14ffffff" }
         GradientStop { position: 1.0; color: "transparent" }
       }
     }

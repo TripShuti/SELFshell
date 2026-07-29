@@ -6,7 +6,6 @@ import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
 import Quickshell
 import Quickshell.Io
-import "../Palette.js" as Palette
 
 // Поверхня блокування для одного монітора.
 // Інстанціюється WlSessionLock через WlSessionLockSurface.
@@ -14,6 +13,7 @@ Rectangle {
   id: root
 
   required property QtObject context
+  required property QtObject palette
 
   readonly property string wallpaperSource: Qt.resolvedUrl("../wp/current.jpg")
 
@@ -61,8 +61,8 @@ Rectangle {
       topMargin: 120
     }
     text: Qt.formatDateTime(clock.date, "HH:mm")
-    color: Palette.textLight
-    font.family: Palette.font
+    color: root.palette.textLight
+    font.family: root.palette.font
     font.pixelSize: 120
     font.weight: Font.Normal
     style: Text.Outline
@@ -83,8 +83,8 @@ Rectangle {
       topMargin: 8
     }
     text: Qt.formatDateTime(clock.date, "dddd, d MMMM")
-    color: Palette.muted
-    font.family: Palette.font
+    color: root.palette.muted
+    font.family: root.palette.font
     font.pixelSize: 24
     style: Text.Outline
     styleColor: "#30000000"
@@ -104,8 +104,8 @@ Rectangle {
       bottomMargin: 32
     }
     text: root.context.userName
-    color: Palette.fg
-    font.family: Palette.font
+    color: root.palette.fg
+    font.family: root.palette.font
     font.pixelSize: 20
     opacity: 0.8
   }
@@ -124,10 +124,10 @@ Rectangle {
       implicitWidth: 280
       implicitHeight: 46
       radius: 23
-      color: Palette.bg0H
+      color: root.palette.bg0H
       opacity: hiddenInput.activeFocus ? 0.7 : 0.5
       border.width: hiddenInput.activeFocus ? 1 : 0
-      border.color: Palette.mutedAlt
+      border.color: root.palette.mutedAlt
       Behavior on opacity { NumberAnimation { duration: 200 } }
 
       // Прихований TextInput — тільки приймає введення
@@ -154,8 +154,8 @@ Rectangle {
 
           delegate: Text {
             text: "\u25CF"
-            color: Palette.textLight
-            font.family: Palette.font
+            color: root.palette.textLight
+            font.family: root.palette.font
             font.pixelSize: 12
 
             NumberAnimation on scale { from: 0; to: 1; duration: 400; easing.type: Easing.OutCubic }
@@ -172,8 +172,8 @@ Rectangle {
       text: root.context.failCount > 3
         ? "Too many attempts. Try again later."
         : "Incorrect password"
-      color: Palette.danger
-      font.family: Palette.font
+      color: root.palette.danger
+      font.family: root.palette.font
       font.pixelSize: 14
       opacity: visible ? 1 : 0
 
@@ -191,8 +191,8 @@ Rectangle {
       Layout.alignment: Qt.AlignHCenter
       visible: root.context.unlockInProgress
       text: "Unlocking..."
-      color: Palette.muted
-      font.family: Palette.font
+      color: root.palette.muted
+      font.family: root.palette.font
       font.pixelSize: 13
     }
   }
@@ -230,8 +230,8 @@ Rectangle {
           Text {
             anchors.centerIn: parent
             text: act.icon
-            color: btnArea.containsMouse ? Palette.textLight : Palette.mutedAlt
-            font.family: Palette.font
+            color: btnArea.containsMouse ? root.palette.textLight : root.palette.mutedAlt
+            font.family: root.palette.font
             font.pixelSize: 24
             Behavior on color { ColorAnimation { duration: 150 } }
           }

@@ -4,7 +4,6 @@
 import Quickshell
 import Quickshell.Io
 import "../core"
-import "../Palette.js" as Palette
 import "../scripts/CalendarTasks.js" as Tasks
 import QtQuick
 import QtQuick.Layouts
@@ -17,6 +16,7 @@ AnimatedPopup {
 
   required property QtObject anchorItem
   required property QtObject window
+  palette: window.palette
 
   implicitWidth: 280
   implicitHeight: layout.implicitHeight + 16
@@ -165,12 +165,12 @@ AnimatedPopup {
       Rectangle {
         property bool hovered: false
         width: 26; height: 26; radius: 4
-        color: hovered ? Palette.hoverBg : Palette.bgAlpha
+        color: hovered ? window.palette.hoverBg : window.palette.bgAlpha
         Behavior on color { ColorAnimation { duration: 150 } }
         Text {
           anchors.centerIn: parent
-          text: "\uF053"; color: Palette.fg
-          font.family: Palette.font; font.pixelSize: 14
+          text: "\uF053"; color: window.palette.fg
+          font.family: window.palette.font; font.pixelSize: 14
         }
         MouseArea {
           anchors.fill: parent
@@ -186,19 +186,19 @@ AnimatedPopup {
         Layout.fillWidth: true
         horizontalAlignment: Text.AlignHCenter
         text: monthNames[currentMonth] + " " + currentYear
-        color: Palette.fg; font.family: Palette.font; font.pixelSize: 14; font.bold: true
+        color: window.palette.fg; font.family: window.palette.font; font.pixelSize: 14; font.bold: true
       }
 
       // Кнопка вперед
       Rectangle {
         property bool hovered: false
         width: 26; height: 26; radius: 4
-        color: hovered ? Palette.hoverBg : Palette.bgAlpha
+        color: hovered ? window.palette.hoverBg : window.palette.bgAlpha
         Behavior on color { ColorAnimation { duration: 150 } }
         Text {
           anchors.centerIn: parent
-          text: "\uF054"; color: Palette.fg
-          font.family: Palette.font; font.pixelSize: 14
+          text: "\uF054"; color: window.palette.fg
+          font.family: window.palette.font; font.pixelSize: 14
         }
         MouseArea {
           anchors.fill: parent
@@ -220,7 +220,7 @@ AnimatedPopup {
           Layout.fillWidth: true
           Layout.preferredWidth: (root.implicitWidth - 32) / 7
           horizontalAlignment: Text.AlignHCenter
-          text: modelData; color: Palette.muted; font.family: Palette.font; font.pixelSize: 12
+          text: modelData; color: window.palette.muted; font.family: window.palette.font; font.pixelSize: 12
         }
       }
     }
@@ -250,8 +250,8 @@ AnimatedPopup {
           radius: 4
 
           // Колір комірки: вибрана → акцент, сьогодні → bg2, інакше прозорий
-          color: isSelected ? Palette.accent
-               : isToday ? Palette.bg2
+          color: isSelected ? window.palette.accent
+               : isToday ? window.palette.bg2
                : "transparent"
 
           ColumnLayout {
@@ -262,20 +262,20 @@ AnimatedPopup {
             Text {
               Layout.alignment: Qt.AlignHCenter
               text: isInside ? dayNum : ""
-              color: isSelected ? Palette.bg0H
-                   : isToday ? Palette.fg
-                   : isInside ? Palette.fg
+              color: isSelected ? window.palette.bg0H
+                   : isToday ? window.palette.fg
+                   : isInside ? window.palette.fg
                    : "transparent"
-              font.family: Palette.font; font.pixelSize: 13
+              font.family: window.palette.font; font.pixelSize: 13
             }
 
             // Точка-індикатор наявності задач
             Rectangle {
               Layout.alignment: Qt.AlignHCenter
               width: 4; height: 4; radius: 2
-              color: isSelected ? Palette.bg0H
-                   : isToday ? Palette.accent
-                   : Palette.accent
+              color: isSelected ? window.palette.bg0H
+                   : isToday ? window.palette.accent
+                   : window.palette.accent
               visible: hasTasks
               opacity: 0.7
             }
@@ -300,7 +300,7 @@ AnimatedPopup {
       gradient: Gradient {
         orientation: Gradient.Horizontal
         GradientStop { position: 0.0; color: "transparent" }
-        GradientStop { position: 0.5; color: Palette.bg2 }
+        GradientStop { position: 0.5; color: window.palette.bg2 }
         GradientStop { position: 1.0; color: "transparent" }
       }
       Layout.topMargin: 4
@@ -310,8 +310,8 @@ AnimatedPopup {
     // Вибрана дата
     Text {
       text: selectedLabel
-      color: Palette.green
-      font.family: Palette.font; font.pixelSize: 13; font.bold: true
+      color: window.palette.green
+      font.family: window.palette.font; font.pixelSize: 13; font.bold: true
       visible: selectedDate !== ""
     }
 
@@ -326,9 +326,9 @@ AnimatedPopup {
         Layout.fillWidth: true
         implicitHeight: 28
         radius: 4
-        color: Palette.bg1
+        color: window.palette.bg1
         border.width: 1
-        border.color: taskInput.activeFocus ? Palette.green : Palette.bg2
+        border.color: taskInput.activeFocus ? window.palette.green : window.palette.bg2
 
         TextInput {
           id: taskInput
@@ -336,8 +336,8 @@ AnimatedPopup {
           anchors.leftMargin: 6
           anchors.rightMargin: 6
           verticalAlignment: Text.AlignVCenter
-          color: Palette.fg
-          font.family: Palette.font; font.pixelSize: 12
+          color: window.palette.fg
+          font.family: window.palette.font; font.pixelSize: 12
           clip: true
 
           onAccepted: root.addTask()
@@ -349,14 +349,14 @@ AnimatedPopup {
         implicitWidth: 30
         implicitHeight: 28
         radius: 4
-        color: taskInput.text.trim() !== "" && maAdd.containsMouse ? Palette.green : Palette.bg2
+        color: taskInput.text.trim() !== "" && maAdd.containsMouse ? window.palette.green : window.palette.bg2
         Behavior on color { ColorAnimation { duration: 120 } }
 
         Text {
           anchors.centerIn: parent
           text: "\u271A"
-          color: taskInput.text.trim() !== "" ? Palette.baseOverlay : Palette.gray
-          font.family: Palette.font; font.pixelSize: 14
+          color: taskInput.text.trim() !== "" ? window.palette.baseOverlay : window.palette.gray
+          font.family: window.palette.font; font.pixelSize: 14
         }
 
         MouseArea {
@@ -397,16 +397,16 @@ AnimatedPopup {
             // Чекбокс виконання
             Rectangle {
               width: 16; height: 16; radius: 4
-              color: modelData.done ? Palette.green : Palette.bgAlpha
+              color: modelData.done ? window.palette.green : window.palette.bgAlpha
               border.width: 1
-              border.color: modelData.done ? Palette.green : Palette.muted
+              border.color: modelData.done ? window.palette.green : window.palette.muted
               Layout.alignment: Qt.AlignVCenter
 
               Text {
                 anchors.centerIn: parent
                 text: "\u2713"
-                color: Palette.baseOverlay
-                font.family: Palette.font; font.pixelSize: 10
+                color: window.palette.baseOverlay
+                font.family: window.palette.font; font.pixelSize: 10
                 visible: modelData.done
               }
 
@@ -422,11 +422,11 @@ AnimatedPopup {
               Layout.fillWidth: true
               Layout.alignment: Qt.AlignVCenter
               text: modelData.text
-              color: modelData.done ? Palette.muted : Palette.fg
-              font.family: Palette.font; font.pixelSize: 12
+              color: modelData.done ? window.palette.muted : window.palette.fg
+              font.family: window.palette.font; font.pixelSize: 12
               elide: Text.ElideRight
               style: modelData.done ? Text.Sunken : Text.Normal
-              styleColor: modelData.done ? Palette.muted : "transparent"
+              styleColor: modelData.done ? window.palette.muted : "transparent"
               leftPadding: 2
 
               MouseArea {
@@ -440,15 +440,15 @@ AnimatedPopup {
             Rectangle {
               property bool hovered: false
               width: 22; height: 22; radius: 4
-              color: hovered ? Palette.red : Palette.bg2
+              color: hovered ? window.palette.red : window.palette.bg2
               Behavior on color { ColorAnimation { duration: 120 } }
               Layout.alignment: Qt.AlignVCenter
 
               Text {
                 anchors.centerIn: parent
                 text: "x"
-                color: hovered ? Palette.textLight : Palette.fg
-                font.family: Palette.font; font.pixelSize: 12; font.bold: true
+                color: hovered ? window.palette.textLight : window.palette.fg
+                font.family: window.palette.font; font.pixelSize: 12; font.bold: true
               }
 
               MouseArea {

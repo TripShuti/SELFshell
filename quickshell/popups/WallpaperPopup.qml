@@ -6,7 +6,6 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import "../core"
-import "../Palette.js" as Palette
 
 // Вибір шпалер — сітка мініатюр з можливістю встановити
 AnimatedPopup {
@@ -14,6 +13,7 @@ AnimatedPopup {
   bgOpacity: 0.88  // збережено індивідуальне значення, яке було локально в цьому попапі
 
   required property QtObject window
+  palette: window.palette
 
   implicitWidth: 780
   implicitHeight: 210
@@ -43,7 +43,7 @@ AnimatedPopup {
   Process {
     id: listProc
     stdout: listCollector
-    command: ["sh", "-c", "ls $HOME/.config/quickshell/wp/*.{jpg,jpeg,png} 2>/dev/null"]
+    command: ["sh", "-c", "ls -t $HOME/.config/quickshell/wp/*.{jpg,jpeg,png} 2>/dev/null | grep -v /current.jpg"]
   }
 
   StdioCollector {
@@ -84,23 +84,23 @@ AnimatedPopup {
 
       Text {
         text: statusText !== "" ? statusText : "\uF03E  Wallpapers"
-        color: Palette.green
-        font.family: Palette.font; font.pixelSize: 14; font.bold: true
+        color: window.palette.green
+        font.family: window.palette.font; font.pixelSize: 14; font.bold: true
         elide: Text.ElideRight
         Layout.fillWidth: true
       }
 
       Rectangle {
         implicitWidth: 22; implicitHeight: 22; radius: 4
-        color: closeArea.containsMouse ? Palette.bg2 : Palette.bg1
+        color: closeArea.containsMouse ? window.palette.bg2 : window.palette.bg1
         Behavior on color { ColorAnimation { duration: 100 } }
 
         Text {
           anchors.centerIn: parent
           text: "\uF00D"
-          color: closeArea.containsMouse ? Palette.fg : Palette.gray
+          color: closeArea.containsMouse ? window.palette.fg : window.palette.gray
           Behavior on color { ColorAnimation { duration: 120 } }
-          font.family: Palette.font; font.pixelSize: 11
+          font.family: window.palette.font; font.pixelSize: 11
         }
 
         MouseArea {
@@ -119,7 +119,7 @@ AnimatedPopup {
       gradient: Gradient {
         orientation: Gradient.Horizontal
         GradientStop { position: 0.0; color: "transparent" }
-        GradientStop { position: 0.5; color: Palette.bg2 }
+        GradientStop { position: 0.5; color: window.palette.bg2 }
         GradientStop { position: 1.0; color: "transparent" }
       }
     }
@@ -147,9 +147,9 @@ AnimatedPopup {
 
           delegate: Rectangle {
             width: 200; height: 140; radius: 6
-            color: Palette.bg1
+            color: window.palette.bg1
             border.width: 1
-            border.color: ma.containsMouse ? Palette.green : "transparent"
+            border.color: ma.containsMouse ? window.palette.green : "transparent"
             Behavior on border.color { ColorAnimation { duration: 120 } }
 
             Image {

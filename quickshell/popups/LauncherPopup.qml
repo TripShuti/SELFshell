@@ -9,7 +9,6 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import "../scripts/LauncherUsage.js" as Usage
 import "../core"
-import "../Palette.js" as Palette
 
 // Лаунчер додатків — пошук, список, сортування за частотою запуску
 AnimatedPopup {
@@ -17,6 +16,7 @@ AnimatedPopup {
 
   required property QtObject anchorItem
   required property QtObject window
+  palette: window.palette
 
   property string searchText: ""
   property var entries: []
@@ -141,8 +141,8 @@ AnimatedPopup {
       // Іконка пошуку
       Text {
         text: "\uDB82\uDCC7"
-        color: Palette.mutedAlt
-        font.family: Palette.font; font.pixelSize: 16
+        color: window.palette.mutedAlt
+        font.family: window.palette.font; font.pixelSize: 16
       }
 
       // Поле введення
@@ -150,18 +150,18 @@ AnimatedPopup {
         id: searchField
         Layout.fillWidth: true
         placeholderText: "Search applications..."
-        placeholderTextColor: Palette.gray
-        color: Palette.fg
-        font.family: Palette.font; font.pixelSize: 14
+        placeholderTextColor: window.palette.gray
+        color: window.palette.fg
+        font.family: window.palette.font; font.pixelSize: 14
         focus: true
         selectByMouse: true
 
         background: Rectangle {
-          color: Palette.bg1
+          color: window.palette.bg1
           radius: 4
           antialiasing: true
           border.width: 1
-          border.color: searchField.activeFocus ? Palette.green : "transparent"
+          border.color: searchField.activeFocus ? window.palette.green : "transparent"
 
           Behavior on border.color { ColorAnimation { duration: 220 } }
         }
@@ -193,7 +193,7 @@ AnimatedPopup {
       gradient: Gradient {
         orientation: Gradient.Horizontal
         GradientStop { position: 0.0; color: "transparent" }
-        GradientStop { position: 0.5; color: Palette.bg2 }
+        GradientStop { position: 0.5; color: window.palette.bg2 }
         GradientStop { position: 1.0; color: "transparent" }
       }
     }
@@ -210,7 +210,7 @@ AnimatedPopup {
         height: 24
         gradient: Gradient {
           GradientStop { position: 0.0; color: "transparent" }
-          GradientStop { position: 1.0; color: Palette.softOverlay }
+          GradientStop { position: 1.0; color: window.palette.softOverlay }
         }
         visible: listView.contentHeight > listView.height
       }
@@ -240,7 +240,7 @@ AnimatedPopup {
             anchors.fill: parent
             radius: 8
             antialiasing: true
-            color: isCurrent ? Palette.bg2 : (ma.containsMouse ? Palette.bg2 : Palette.bg1)
+            color: isCurrent ? window.palette.bg2 : (ma.containsMouse ? window.palette.bg2 : window.palette.bg1)
             opacity: 0.85
             Behavior on color { ColorAnimation { duration: 120 } }
 
@@ -255,7 +255,7 @@ AnimatedPopup {
               anchors.leftMargin: 2
               radius: 2
               antialiasing: true
-              color: Palette.green
+              color: window.palette.green
             }
 
             RowLayout {
@@ -287,17 +287,17 @@ AnimatedPopup {
 
                 Text {
                   text: modelData.name || ""
-                  color: isCurrent ? Palette.green : Palette.fg
+                  color: isCurrent ? window.palette.green : window.palette.fg
                   Behavior on color { ColorAnimation { duration: 120 } }
-                  font.family: Palette.font; font.pixelSize: 13; font.bold: true
+                  font.family: window.palette.font; font.pixelSize: 13; font.bold: true
                   elide: Text.ElideRight
                   Layout.fillWidth: true
                 }
 
                 Text {
                   text: modelData.genericName || ""
-                  color: Palette.mutedAlt
-                  font.family: Palette.font; font.pixelSize: 10
+                  color: window.palette.mutedAlt
+                  font.family: window.palette.font; font.pixelSize: 10
                   elide: Text.ElideRight
                   Layout.fillWidth: true
                   visible: modelData.genericName !== ""
@@ -331,15 +331,15 @@ AnimatedPopup {
         Text {
           Layout.alignment: Qt.AlignHCenter
           text: "\uF002"
-          color: Palette.mutedAlt
-          font.family: Palette.font; font.pixelSize: 22
+          color: window.palette.mutedAlt
+          font.family: window.palette.font; font.pixelSize: 22
         }
 
         Text {
           Layout.alignment: Qt.AlignHCenter
           text: root.searchText.trim() === "" ? "No applications found" : "No results for \"" + root.searchText.trim() + "\""
-          color: Palette.mutedAlt
-          font.family: Palette.font; font.pixelSize: 12
+          color: window.palette.mutedAlt
+          font.family: window.palette.font; font.pixelSize: 12
         }
       }
     }

@@ -2,12 +2,13 @@
 // WorkspacesWidget.qml — робочі столи Hyprland на панелі
 // ============================================================
 import Quickshell.Hyprland
-import "../Palette.js" as Palette
+import "../core"
 import QtQuick
 
 Item {
   id: root
 
+  required property QtObject window
   signal clicked()
   property bool hovered: false
 
@@ -25,8 +26,8 @@ Item {
       delegate: Item {
         required property HyprlandWorkspace modelData
 
-        readonly property color dotColor: modelData.focused ? Palette.green
-          : (modelData.urgent ? Palette.red : (modelData.active ? Palette.light : Palette.muted))
+        readonly property color dotColor: modelData.focused ? window.palette.green
+          : (modelData.urgent ? window.palette.red : (modelData.active ? window.palette.light : window.palette.muted))
 
         width: 20
         height: 28
@@ -35,7 +36,7 @@ Item {
           anchors.centerIn: parent
           text: modelData.id
           color: parent.dotColor
-          font.family: Palette.font
+          font.family: window.palette.font
           font.pixelSize: 12
           font.bold: modelData.focused
           scale: modelData.focused ? 1.15 : 1.0

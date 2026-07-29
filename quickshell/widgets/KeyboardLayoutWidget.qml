@@ -2,13 +2,14 @@
 // KeyboardLayoutWidget.qml — розкладка клавіатури на панелі
 // ============================================================
 import Quickshell.Io
-import "../Palette.js" as Palette
+import "../core"
 import QtQuick
 
 // Віджет розкладки клавіатури — показує поточну мову (UA, RU, US тощо)
 Item {
   id: root
 
+  required property QtObject window
   property string layout: "US"
 
   readonly property string displayText: {
@@ -85,8 +86,8 @@ Item {
   Text {
     id: txt
     text: root.displayText
-    color: Palette.widgetFg
-    font.family: Palette.font
+    color: window.palette.widgetFg
+    font.family: window.palette.font
     font.pixelSize: 12
     anchors.verticalCenter: parent.verticalCenter
   }

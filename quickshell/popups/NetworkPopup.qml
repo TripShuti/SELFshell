@@ -5,7 +5,6 @@ import Quickshell
 import Quickshell.Networking
 import Quickshell.Io
 import "../core"
-import "../Palette.js" as Palette
 import QtQuick
 import QtQuick.Layouts
 
@@ -15,6 +14,7 @@ AnimatedPopup {
   bgOpacity: 0.88  // збережено індивідуальне значення, яке було локально в цьому попапі
 
   required property QtObject window
+  palette: window.palette
 
   implicitWidth: 380
   implicitHeight: layout.implicitHeight + 16
@@ -135,15 +135,15 @@ AnimatedPopup {
 
         Text {
           text: "Wired"
-          color: Palette.accent
-          font.family: Palette.font; font.pixelSize: 16; font.bold: true
+          color: window.palette.accent
+          font.family: window.palette.font; font.pixelSize: 16; font.bold: true
           Layout.fillWidth: true
         }
         
         Text {
           text: root.wiredDevice?.connected ? "Connected" : "Disconnected"
-          color: root.wiredDevice?.connected ? Palette.accent : Palette.mutedAlt
-          font.family: Palette.font; font.pixelSize: 14
+          color: root.wiredDevice?.connected ? window.palette.accent : window.palette.mutedAlt
+          font.family: window.palette.font; font.pixelSize: 14
         }
       }
 
@@ -154,8 +154,8 @@ AnimatedPopup {
 
         Text {
           text: root.wiredDevice?.name || "Wired Interface"
-          color: Palette.textLight
-          font.family: Palette.font; font.pixelSize: 14
+          color: window.palette.textLight
+          font.family: window.palette.font; font.pixelSize: 14
           Layout.fillWidth: true
           elide: Text.ElideRight
         }
@@ -165,15 +165,15 @@ AnimatedPopup {
           id: settingsBtn
           property bool hovered: false
           implicitWidth: settingsLabel.implicitWidth + 12; height: 24; radius: 4
-color: hovered ? Palette.hoverOverlay : Palette.bgLayer
+color: hovered ? window.palette.hoverOverlay : window.palette.bgLayer
             Behavior on color { ColorAnimation { duration: 150 } }
 
             Text {
               id: settingsLabel
             anchors.centerIn: parent
             text: "Settings"
-            color: Palette.textLight
-            font.family: Palette.font; font.pixelSize: 10
+            color: window.palette.textLight
+            font.family: window.palette.font; font.pixelSize: 10
           }
 
           MouseArea {
@@ -191,15 +191,15 @@ color: hovered ? Palette.hoverOverlay : Palette.bgLayer
           id: wiredActionBtn
           property bool hovered: false
           implicitWidth: wiredActionLabel.implicitWidth + 12; height: 24; radius: 4
-          color: root.wiredDevice?.connected ? (hovered ? Palette.hoverOverlay : Palette.bgLayer) : (hovered ? Palette.hoverOverlay : Palette.bgLayer)
+          color: root.wiredDevice?.connected ? (hovered ? window.palette.hoverOverlay : window.palette.bgLayer) : (hovered ? window.palette.hoverOverlay : window.palette.bgLayer)
           Behavior on color { ColorAnimation { duration: 150 } }
 
           Text {
             id: wiredActionLabel
             anchors.centerIn: parent
             text: root.wiredDevice?.connected ? "Disconnect" : "Connect"
-            color: Palette.textLight
-            font.family: Palette.font; font.pixelSize: 10
+            color: window.palette.textLight
+            font.family: window.palette.font; font.pixelSize: 10
           }
           
           MouseArea {
@@ -227,7 +227,7 @@ color: hovered ? Palette.hoverOverlay : Palette.bgLayer
     Rectangle {
       Layout.fillWidth: true
       height: 1
-      color: Palette.accent
+      color: window.palette.accent
       opacity: 0.3
       visible: root.wiredDevice !== null && root.wifiDevice !== null && root.pendingNetwork === null
     }
@@ -240,8 +240,8 @@ color: hovered ? Palette.hoverOverlay : Palette.bgLayer
 
       Text {
         text: "Wi-Fi"
-        color: Palette.accent
-        font.family: Palette.font; font.pixelSize: 16; font.bold: true
+        color: window.palette.accent
+        font.family: window.palette.font; font.pixelSize: 16; font.bold: true
         Layout.fillWidth: true
       }
 
@@ -250,16 +250,16 @@ color: hovered ? Palette.hoverOverlay : Palette.bgLayer
         id: wifiToggleBg
         property bool isHovered: false
         width: 36; height: 22; radius: 11
-        color: root.wifiEnabled ? Palette.accent : Palette.bg2
+        color: root.wifiEnabled ? window.palette.accent : window.palette.bg2
         Behavior on color { ColorAnimation { duration: 150 } }
         border.width: isHovered ? 1 : 0
-        border.color: Palette.hoverOverlay
+        border.color: window.palette.hoverOverlay
         Behavior on border.width { NumberAnimation { duration: 120 } }
 
         Rectangle {
           x: root.wifiEnabled ? parent.width - width - 2 : 2
           width: 18; height: 18; radius: 9
-          color: root.wifiEnabled ? Palette.bg1 : Palette.gray
+          color: root.wifiEnabled ? window.palette.bg1 : window.palette.gray
           anchors.verticalCenter: parent.verticalCenter
           Behavior on x { NumberAnimation { duration: 150 } }
           Behavior on color { ColorAnimation { duration: 150 } }
@@ -284,8 +284,8 @@ color: hovered ? Palette.hoverOverlay : Palette.bgLayer
 
       Text {
         text: "Connect to: " + (root.pendingNetwork?.name || "")
-        color: Palette.accent
-        font.family: Palette.font; font.pixelSize: 14; font.bold: true
+        color: window.palette.accent
+        font.family: window.palette.font; font.pixelSize: 14; font.bold: true
       }
 
       // Поле пароля
@@ -293,16 +293,16 @@ color: hovered ? Palette.hoverOverlay : Palette.bgLayer
         Layout.fillWidth: true
         height: 32
         radius: 6
-        color: Palette.bgLayer
+        color: window.palette.bgLayer
         border.width: 1
-        border.color: Palette.accent
+        border.color: window.palette.accent
 
         TextInput {
           id: passwordInput
           anchors.fill: parent
           anchors.margins: 8
-          color: Palette.textLight
-          font.family: Palette.font; font.pixelSize: 12
+          color: window.palette.textLight
+          font.family: window.palette.font; font.pixelSize: 12
           echoMode: TextInput.Password
           focus: true
           Component.onCompleted: forceActiveFocus()
@@ -316,8 +316,8 @@ color: hovered ? Palette.hoverOverlay : Palette.bgLayer
 
         Rectangle {
           implicitWidth: 70; height: 24; radius: 4
-          color: Palette.bgLayer
-          Text { anchors.centerIn: parent; text: "Cancel"; color: Palette.mutedAlt; font.family: Palette.font; font.pixelSize: 11 }
+          color: window.palette.bgLayer
+          Text { anchors.centerIn: parent; text: "Cancel"; color: window.palette.mutedAlt; font.family: window.palette.font; font.pixelSize: 11 }
           MouseArea {
             anchors.fill: parent
             cursorShape: Qt.PointingHandCursor
@@ -330,8 +330,8 @@ color: hovered ? Palette.hoverOverlay : Palette.bgLayer
 
         Rectangle {
           implicitWidth: 70; height: 24; radius: 4
-          color: Palette.accent
-          Text { anchors.centerIn: parent; text: "Connect"; color: Palette.bgLayer; font.family: Palette.font; font.pixelSize: 11; font.bold: true }
+          color: window.palette.accent
+          Text { anchors.centerIn: parent; text: "Connect"; color: window.palette.bgLayer; font.family: window.palette.font; font.pixelSize: 11; font.bold: true }
           MouseArea {
             anchors.fill: parent
             cursorShape: Qt.PointingHandCursor
@@ -355,8 +355,8 @@ color: hovered ? Palette.hoverOverlay : Palette.bgLayer
 
       Text {
         text: "Available Networks"
-        color: Palette.mutedAlt
-        font.family: Palette.font; font.pixelSize: 12
+        color: window.palette.mutedAlt
+        font.family: window.palette.font; font.pixelSize: 12
         Layout.fillWidth: true
       }
 
@@ -364,7 +364,7 @@ color: hovered ? Palette.hoverOverlay : Palette.bgLayer
         id: scanBtn
         property bool hovered: false
         implicitWidth: scanLabel.implicitWidth + 16; height: 24; radius: 4
-        color: root.scanning ? Palette.sepBg : (hovered ? Palette.hoverOverlay : Palette.bgLayer)
+        color: root.scanning ? window.palette.sepBg : (hovered ? window.palette.hoverOverlay : window.palette.bgLayer)
         Behavior on color { ColorAnimation { duration: 150 } }
 
         // Пульсація під час сканування
@@ -379,8 +379,8 @@ color: hovered ? Palette.hoverOverlay : Palette.bgLayer
           id: scanLabel
           anchors.centerIn: parent
           text: root.scanning ? "Scanning..." : "Scan"
-          color: Palette.textLight
-          font.family: Palette.font; font.pixelSize: 11
+          color: window.palette.textLight
+          font.family: window.palette.font; font.pixelSize: 11
         }
         
         MouseArea {
@@ -402,7 +402,7 @@ color: hovered ? Palette.hoverOverlay : Palette.bgLayer
     Rectangle {
       Layout.fillWidth: true
       height: 1
-      color: Palette.accent
+      color: window.palette.accent
       opacity: 0.3
       visible: root.wifiEnabled && root.wifiDevice !== null && root.pendingNetwork === null
     }
@@ -447,8 +447,8 @@ color: hovered ? Palette.hoverOverlay : Palette.bgLayer
 
             Text {
               text: modelData.name || "Hidden Network"
-              color: Palette.textLight
-              font.family: Palette.font; font.pixelSize: 12
+              color: window.palette.textLight
+              font.family: window.palette.font; font.pixelSize: 12
               elide: Text.ElideRight
               Layout.fillWidth: true
             }
@@ -457,8 +457,8 @@ color: hovered ? Palette.hoverOverlay : Palette.bgLayer
               spacing: 6
               Text {
                 text: modelData.connected ? "Connected" : (modelData.known ? "Saved" : (modelData.security ? "Secured" : "Open"))
-                color: modelData.connected ? Palette.accent : Palette.mutedAlt
-                font.family: Palette.font; font.pixelSize: 10
+                color: modelData.connected ? window.palette.accent : window.palette.mutedAlt
+                font.family: window.palette.font; font.pixelSize: 10
               }
               // Графічні bars сили сигналу замість тексту "Signal: N/4"
               RowLayout {
@@ -475,7 +475,7 @@ color: hovered ? Palette.hoverOverlay : Palette.bgLayer
                     width: 3
                     height: 4 + index * 3
                     radius: 1
-                    color: index < activeBars ? Palette.accent : Palette.bg2
+                    color: index < activeBars ? window.palette.accent : window.palette.bg2
                     Layout.alignment: Qt.AlignBottom
                     Behavior on color { ColorAnimation { duration: 150 } }
                   }
@@ -489,14 +489,14 @@ color: hovered ? Palette.hoverOverlay : Palette.bgLayer
             id: gearBtn
             property bool hovered: false
             width: 24; height: 24; radius: 4
-            color: hovered ? Palette.hoverOverlay : Palette.bgLayer
+            color: hovered ? window.palette.hoverOverlay : window.palette.bgLayer
             visible: modelData.known
 
             Text {
               anchors.centerIn: parent
               text: "\u2699"
-              color: Palette.textLight
-              font.family: Palette.font; font.pixelSize: 11
+              color: window.palette.textLight
+              font.family: window.palette.font; font.pixelSize: 11
             }
             MouseArea {
               anchors.fill: parent
@@ -513,14 +513,14 @@ color: hovered ? Palette.hoverOverlay : Palette.bgLayer
             id: forgetBtn
             property bool hovered: false
             width: 24; height: 24; radius: 4
-            color: hovered ? Palette.hoverOverlay : Palette.bgLayer
+            color: hovered ? window.palette.hoverOverlay : window.palette.bgLayer
             visible: modelData.known && !modelData.connected
             
             Text {
               anchors.centerIn: parent
               text: "\u2716"
-              color: Palette.danger
-              font.family: Palette.font; font.pixelSize: 10
+              color: window.palette.danger
+              font.family: window.palette.font; font.pixelSize: 10
             }
             MouseArea {
               anchors.fill: parent
@@ -541,15 +541,15 @@ color: hovered ? Palette.hoverOverlay : Palette.bgLayer
             id: actionBtn
             property bool hovered: false
             implicitWidth: actionLabel.implicitWidth + 12; height: 24; radius: 4
-            color: modelData.connected ? (hovered ? Palette.hoverOverlay : Palette.bgLayer) : (modelData.known ? (hovered ? Palette.widgetFg : Palette.accent) : (hovered ? Palette.hoverOverlay : Palette.bgLayer))
+            color: modelData.connected ? (hovered ? window.palette.hoverOverlay : window.palette.bgLayer) : (modelData.known ? (hovered ? window.palette.widgetFg : window.palette.accent) : (hovered ? window.palette.hoverOverlay : window.palette.bgLayer))
             Behavior on color { ColorAnimation { duration: 150 } }
 
             Text {
               id: actionLabel
               anchors.centerIn: parent
               text: modelData.connected ? "Disconnect" : "Connect"
-              color: modelData.known && !modelData.connected ? Palette.bgLayer : Palette.textLight
-              font.family: Palette.font; font.pixelSize: 10
+              color: modelData.known && !modelData.connected ? window.palette.bgLayer : window.palette.textLight
+              font.family: window.palette.font; font.pixelSize: 10
             }
             
             MouseArea {
@@ -576,8 +576,8 @@ color: hovered ? Palette.hoverOverlay : Palette.bgLayer
     // Стан: мереж не знайдено
     Text {
       text: "No networks found"
-      color: Palette.mutedAlt
-      font.family: Palette.font; font.pixelSize: 12
+      color: window.palette.mutedAlt
+      font.family: window.palette.font; font.pixelSize: 12
       visible: root.wifiEnabled && root.wifiDevice !== null && root.pendingNetwork === null &&
                (!root.wifiDevice.networks || root.wifiDevice.networks.values.length === 0)
     }
@@ -585,8 +585,8 @@ color: hovered ? Palette.hoverOverlay : Palette.bgLayer
     // Стан: адаптер недоступний
     Text {
       text: "Network adapter not available"
-      color: Palette.danger
-      font.family: Palette.font; font.pixelSize: 12
+      color: window.palette.danger
+      font.family: window.palette.font; font.pixelSize: 12
       visible: root.wifiDevice === null && root.wiredDevice === null
     }
   }

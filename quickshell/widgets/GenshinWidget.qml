@@ -1,7 +1,7 @@
 // ============================================================
 // GenshinWidget.qml — віджет Genshin Impact на панелі
 // ============================================================
-import "../Palette.js" as Palette
+import "../core"
 import QtQuick
 import QtQuick.Layouts
 
@@ -9,6 +9,7 @@ import QtQuick.Layouts
 Item {
   id: root
 
+  required property QtObject window
   signal clicked()
 
   property string resinText: "\uF737 0/200"
@@ -53,8 +54,8 @@ Item {
     Text {
       id: txt
       text: root.resinDisplayText
-      color: root.resinClass === "critical" ? Palette.orange : Palette.blue
-      font.family: Palette.font
+      color: root.resinClass === "critical" ? window.palette.orange : window.palette.blue
+      font.family: window.palette.font
       font.pixelSize: 12
       Layout.alignment: Qt.AlignVCenter
 

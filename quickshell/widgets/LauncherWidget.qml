@@ -1,7 +1,7 @@
 // ============================================================
 // LauncherWidget.qml — кнопка лаунчера на панелі
 // ============================================================
-import "../Palette.js" as Palette
+import "../core"
 import QtQuick
 
 
@@ -9,6 +9,7 @@ import QtQuick
 Item {
   id: root
 
+  required property QtObject window
   property bool hovered: false
 
   signal clicked()
@@ -19,8 +20,8 @@ Item {
   Text {
     anchors.centerIn: parent
     text: "\uDB82\uDCC7"
-    color: root.hovered ? Palette.green : Palette.widgetFg
-    font.family: Palette.font; font.pixelSize: 18
+    color: root.hovered ? window.palette.green : window.palette.widgetFg
+    font.family: window.palette.font; font.pixelSize: 18
     scale: root.hovered ? 1.2 : 1.0
 
     Behavior on color { ColorAnimation { duration: 220 } }

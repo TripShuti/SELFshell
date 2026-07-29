@@ -2,7 +2,7 @@
 // ClockWidget.qml — годинник на панелі
 // ============================================================
 import Quickshell
-import "../Palette.js" as Palette
+import "../core"
 import QtQuick
 
 
@@ -10,6 +10,7 @@ import QtQuick
 Item {
   id: root
 
+  required property QtObject window
   signal clicked()
   property bool hovered: false
 
@@ -25,8 +26,8 @@ Item {
     id: label
     anchors.centerIn: parent
     text: Qt.formatDateTime(clock.date, "HH:mm")
-    color:  Palette.widgetFg
-    font.family: Palette.font
+    color:  window.palette.widgetFg
+    font.family: window.palette.font
     font.pixelSize: 14
     verticalAlignment: Text.AlignVCenter
     horizontalAlignment: Text.AlignHCenter

@@ -9,6 +9,8 @@ import "core"
 import QtQuick
 
 ShellRoot {
+  PaletteService { id: paletteService }
+
   LockContext { id: lockContext }
 
   WlSessionLock {
@@ -19,6 +21,7 @@ ShellRoot {
       LockSurface {
         anchors.fill: parent
         context: lockContext
+        palette: paletteService
       }
     }
   }
@@ -42,6 +45,11 @@ ShellRoot {
       suspendProc.command = ["systemctl", "suspend"]
       suspendProc.running = true
     }
+  }
+
+  IpcHandler {
+    target: "palette-reload"
+    function reload(): void { paletteService.reload() }
   }
 
   IpcHandler {
@@ -107,6 +115,6 @@ ShellRoot {
 
   Variants {
     model: Quickshell.screens
-    Bar {}
+    Bar { palette: paletteService }
   }
 }
