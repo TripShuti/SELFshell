@@ -15,7 +15,7 @@ Rectangle {
 
   required property QtObject context
 
-  readonly property string wallpaperSource: "file:///home/trip/.config/quickshell/wp/current.jpg"
+  readonly property string wallpaperSource: Qt.resolvedUrl("../wp/current.jpg")
 
   color: "#000000"
 
