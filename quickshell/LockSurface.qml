@@ -53,7 +53,6 @@ Rectangle {
     opacity: 0.35
   }
 
-  // Годинник
   Text {
     id: clockText
     anchors {
@@ -77,7 +76,6 @@ Rectangle {
     }
   }
 
-  // Дата
   Text {
     anchors {
       horizontalCenter: parent.horizontalCenter
@@ -99,7 +97,6 @@ Rectangle {
     }
   }
 
-  // Ім'я користувача
   Text {
     anchors {
       horizontalCenter: parent.horizontalCenter
@@ -113,7 +110,6 @@ Rectangle {
     opacity: 0.8
   }
 
-  // Поле пароля
   ColumnLayout {
     id: passwordLayout
     anchors {
@@ -169,7 +165,6 @@ Rectangle {
       }
     }
 
-    // Повідомлення про помилку
     Text {
       id: failureText
       Layout.alignment: Qt.AlignHCenter
@@ -202,7 +197,6 @@ Rectangle {
     }
   }
 
-  // Кнопки живлення (внизу по центру)
   RowLayout {
     anchors {
       horizontalCenter: parent.horizontalCenter

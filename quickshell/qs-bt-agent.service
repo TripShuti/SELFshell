@@ -1,3 +1,6 @@
+# ============================================================
+# qs-bt-agent.service — systemd unit для BlueZ pairing agent
+# ============================================================
 [Unit]
 Description=BlueZ pairing agent for SELFshell (NoInputNoOutput)
 After=bluetooth.service

@@ -1,3 +1,4 @@
+// Config.js — налаштування панелі: порядок та видимість віджетів
 .pragma library
 var launcherEnabled = true;
 var workspacesEnabled = true;
