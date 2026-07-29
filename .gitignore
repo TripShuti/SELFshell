@@ -24,5 +24,5 @@ quickshell/scripts/.genshin_state.json
 # згенеровані персональні налаштування
 quickshell/Palette.js
 quickshell/data/config.json
-quickshell/control-state.json
+quickshell/data/control-state.json
 quickshell/data/palette.json
