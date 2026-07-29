@@ -3,7 +3,7 @@
 // ============================================================
 import Quickshell
 import Quickshell.Services.Pipewire
-import "../"
+import "../core"
 import "../Palette.js" as Palette
 import QtQuick
 import QtQuick.Layouts

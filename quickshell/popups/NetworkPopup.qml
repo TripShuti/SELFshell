@@ -1,10 +1,10 @@
 // ============================================================
-// NetManager.qml — менеджер мереж: Wi-Fi, Ethernet, сканування
+// NetworkPopup.qml — менеджер мереж: Wi-Fi, Ethernet, сканування
 // ============================================================
 import Quickshell
 import Quickshell.Networking
 import Quickshell.Io
-import "../"
+import "../core"
 import "../Palette.js" as Palette
 import QtQuick
 import QtQuick.Layouts
@@ -27,7 +27,7 @@ AnimatedPopup {
   property string settingsConnKind: "wifi"
   property string settingsDeviceName: ""
 
-  NetworkConnectionSettings {
+  NetworkConnectionSettingsPopup {
     id: connectionSettings
     window: root.window
     network: root.settingsNetwork

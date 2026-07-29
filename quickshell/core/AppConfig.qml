@@ -12,7 +12,7 @@ Item {
 
   FileView {
     id: configFile
-    path: Qt.resolvedUrl("config.json")
+    path: Qt.resolvedUrl("../data/config.json")
     blockLoading: true
   }
 

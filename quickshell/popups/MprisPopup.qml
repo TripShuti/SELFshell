@@ -2,7 +2,7 @@
 // MprisPopup.qml — медіаплеєр: трек, керування, візуалізатор
 // ============================================================
 import Quickshell.Services.Mpris
-import "../"
+import "../core"
 import "../Palette.js" as Palette
 import QtQuick
 import QtQuick.Layouts

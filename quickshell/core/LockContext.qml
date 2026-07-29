@@ -53,7 +53,7 @@ Scope {
 
   PamContext {
     id: pam
-    configDirectory: "pam"
+    configDirectory: "../pam"
     config: "password.conf"
 
     onPamMessage: {

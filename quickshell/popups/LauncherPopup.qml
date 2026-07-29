@@ -8,7 +8,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import "../scripts/LauncherUsage.js" as Usage
-import "../"
+import "../core"
 import "../Palette.js" as Palette
 
 // Лаунчер додатків — пошук, список, сортування за частотою запуску
@@ -90,7 +90,7 @@ AnimatedPopup {
   // пишеться при кожному запуску додатку
   FileView {
     id: usageFile
-    path: Qt.resolvedUrl("../launcher-usage.json")
+    path: Qt.resolvedUrl("../data/launcher-usage.json")
     blockLoading: true
   }
 

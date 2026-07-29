@@ -40,7 +40,7 @@ Item {
   // Процес cava з конфігом
   Process {
     id: cavaProcess
-    command: ["sh", "-c", "stdbuf -oL cava -p $HOME/.config/quickshell/cava-vis.conf"]
+    command: ["sh", "-c", "stdbuf -oL cava -p $HOME/.config/quickshell/services/cava-vis.conf"]
     stdout: lineParser
   }
 

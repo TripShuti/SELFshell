@@ -1,10 +1,10 @@
 // ============================================================
-// NetworkConnectionSettings.qml — налаштування IPv4, DNS,
+// NetworkConnectionSettingsPopup.qml — налаштування IPv4, DNS,
 // безпеки Wi-Fi через nmcli
 // ============================================================
 import Quickshell
 import Quickshell.Io
-import "../"
+import "../core"
 import "../Palette.js" as Palette
 import QtQuick
 import QtQuick.Layouts

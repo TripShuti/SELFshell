@@ -5,7 +5,7 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
-import "../"
+import "../core"
 import "../Palette.js" as Palette
 
 // Вибір шпалер — сітка мініатюр з можливістю встановити

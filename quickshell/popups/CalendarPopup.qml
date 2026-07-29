@@ -3,7 +3,7 @@
 // ============================================================
 import Quickshell
 import Quickshell.Io
-import "../"
+import "../core"
 import "../Palette.js" as Palette
 import "../scripts/CalendarTasks.js" as Tasks
 import QtQuick
@@ -124,7 +124,7 @@ AnimatedPopup {
   // Файл персистентності задач — читається при старті, пишеться при змінах
   FileView {
     id: tasksFile
-    path: Qt.resolvedUrl("../calendar-tasks.json")
+    path: Qt.resolvedUrl("../data/calendar-tasks.json")
     blockLoading: true
   }
 

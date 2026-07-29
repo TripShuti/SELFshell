@@ -6,7 +6,7 @@ import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
 import Quickshell
 import Quickshell.Io
-import "Palette.js" as Palette
+import "../Palette.js" as Palette
 
 // Поверхня блокування для одного монітора.
 // Інстанціюється WlSessionLock через WlSessionLockSurface.

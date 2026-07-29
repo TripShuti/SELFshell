@@ -1,10 +1,10 @@
 // ============================================================
-// BtManager.qml — менеджер Bluetooth: адаптер, пристрої,
+// BluetoothPopup.qml — менеджер Bluetooth: адаптер, пристрої,
 // сканування
 // ============================================================
 import Quickshell
 import Quickshell.Bluetooth
-import "../"
+import "../core"
 import "../Palette.js" as Palette
 import QtQuick
 import QtQuick.Layouts

@@ -75,10 +75,11 @@ fish/        - shell config, functions, yt-dlp wrapper
 hypr/        - Hyprland (lua module system) & hyprsunset configs
 install.sh   - automated setup script
 kitty/       - terminal config
-quickshell/  - QML panels, popups, widgets, scripts, qs-bt-agent
-             - LockContext.qml / LockSurface.qml — PAM-based lock screen (embedded in shell.qml)
-             - IdleManager.qml — idle handling (dim, lock, DPMS, suspend)
+quickshell/  - QML panels, core, popups, widgets, monitors, scripts, data, services
+             - core/ — shell infrastructure (AppConfig, IdleManager, LockScreen, etc.)
              - pam/password.conf — PAM config for lock screen auth
+             - data/ — persisted state (config.json, calendar-tasks, etc.)
+             - services/ — system services (qs-bt-agent, cava-vis.conf)
 starship/    - prompt config
 yazi/        - file manager config, keybindings, themes
 ```

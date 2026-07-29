@@ -7,7 +7,7 @@ After=bluetooth.service
 Requires=bluetooth.service
 
 [Service]
-ExecStart=/usr/bin/python3 %h/.config/quickshell/qs-bt-agent
+ExecStart=/usr/bin/python3 %h/.config/quickshell/services/qs-bt-agent
 Restart=on-failure
 RestartSec=2
 

@@ -2,7 +2,7 @@
 // AnimatedPopup.qml — базове анімоване попап-вікно для всіх
 // спливаючих панелей
 // ============================================================
-import "Palette.js" as Palette
+import "../Palette.js" as Palette
 import Quickshell
 import QtQuick
 

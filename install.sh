@@ -116,9 +116,9 @@ if [ ! -f "$QS_CONFIG_DIR/scripts/.env" ] && [ -f "$QS_CONFIG_DIR/scripts/.env.e
 fi
 
 # qs-bt-agent — агент парування BlueZ як systemd user-сервіс
-chmod +x "$QS_CONFIG_DIR/qs-bt-agent"
+chmod +x "$QS_CONFIG_DIR/services/qs-bt-agent"
 mkdir -p "$HOME/.config/systemd/user"
-cp "$QS_CONFIG_DIR/qs-bt-agent.service" "$HOME/.config/systemd/user/qs-bt-agent.service"
+cp "$QS_CONFIG_DIR/services/qs-bt-agent.service" "$HOME/.config/systemd/user/qs-bt-agent.service"
 systemctl --user daemon-reload
 systemctl --user enable --now qs-bt-agent.service 2>/dev/null || systemctl --user enable qs-bt-agent.service
 info "qs-bt-agent installed as systemd user service (systemctl --user status qs-bt-agent)"

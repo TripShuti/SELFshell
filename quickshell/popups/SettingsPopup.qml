@@ -5,7 +5,7 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
-import "../"
+import "../core"
 import "../Palette.js" as Palette
 
 AnimatedPopup {

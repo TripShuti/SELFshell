@@ -6,6 +6,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Notifications
 import "Palette.js" as Palette
+import "core"
 import QtQuick
 import QtQuick.Layouts
 import "widgets"
@@ -103,13 +104,13 @@ PanelWindow {
   // потрібен fillHeight (Mpris/Audio), сам item заповнює Loader через
   // anchors.fill: parent.
   Component { id: launcherComp;   LauncherWidget { anchors.fill: parent } }
-  Component { id: workspacesComp; Workspaces { } }
+  Component { id: workspacesComp; WorkspacesWidget { } }
   Component { id: mprisComp;      MprisWidget { anchors.fill: parent; cavBars: cavaMonitor.bars } }
   Component { id: clockComp;      ClockWidget { } }
   Component { id: timerComp;      TimerWidget { anchors.fill: parent } }
   Component { id: genshinComp;    GenshinWidget { anchors.fill: parent; resinText: genshinMonitor.resinText; resinClass: genshinMonitor.resinClass } }
-  Component { id: keyboardComp;   KeyboardLayout { anchors.fill: parent } }
-  Component { id: audioComp;      Audio { anchors.fill: parent } }
+  Component { id: keyboardComp;   KeyboardLayoutWidget { anchors.fill: parent } }
+  Component { id: audioComp;      AudioWidget { anchors.fill: parent } }
   Component { id: controlComp;    ControlWidget { anchors.fill: parent; unread: controlPopup.unread } }
   Component { id: btComp;         BluetoothWidget { anchors.fill: parent } }
   Component { id: netComp;        NetWidget { anchors.fill: parent } }
@@ -270,13 +271,13 @@ PanelWindow {
     visible: false
   }
 
-  BtManager {
+  BluetoothPopup {
     id: btPopup
     window: root
     visible: false
   }
 
-  NetManager {
+  NetworkPopup {
     id: netPopup
     window: root
     visible: false
@@ -327,7 +328,7 @@ PanelWindow {
   }
 
   // Центр керування (сповіщення, швидкі дії)
-  ControlManager {
+  ControlPopup {
     id: controlPopup
     window: root
     anchorItem: root.controlWidget

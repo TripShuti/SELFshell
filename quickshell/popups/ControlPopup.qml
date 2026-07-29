@@ -1,5 +1,5 @@
 // ============================================================
-// ControlManager.qml — центр керування: сповіщення, швидкі дії,
+// ControlPopup.qml — центр керування: сповіщення, швидкі дії,
 // кнопки живлення
 // ============================================================
 import QtQuick
@@ -7,7 +7,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
-import "../"
+import "../core"
 import "../Palette.js" as Palette
 import "../scripts/ControlState.js" as State
 
@@ -200,7 +200,7 @@ AnimatedPopup {
   // — читається при старті, пишеться через 500ms після зміни
   FileView {
     id: stateFile
-    path: Qt.resolvedUrl("../control-state.json")
+    path: Qt.resolvedUrl("../data/control-state.json")
     blockLoading: true
   }
 

@@ -8,8 +8,8 @@
 # персональні дані
 fish/fish_variables
 quickshell/AGENTS.md
-quickshell/calendar-tasks.json
-quickshell/launcher-usage.json
+quickshell/data/calendar-tasks.json
+quickshell/data/launcher-usage.json
 
 # шпалери (залишаємо лише wp1.jpg як заглушку)
 hypr/wp/*
@@ -23,4 +23,5 @@ quickshell/scripts/.genshin_state.json
 
 # згенеровані персональні налаштування
 quickshell/Palette.js
-quickshell/control-state.json
+quickshell/data/config.json
+quickshell/data/control-state.json

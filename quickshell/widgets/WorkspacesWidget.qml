@@ -1,5 +1,5 @@
 // ============================================================
-// Workspaces.qml — робочі столи Hyprland на панелі
+// WorkspacesWidget.qml — робочі столи Hyprland на панелі
 // ============================================================
 import Quickshell.Hyprland
 import "../Palette.js" as Palette
