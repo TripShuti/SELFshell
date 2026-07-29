@@ -1,7 +1,6 @@
 // ============================================================
 // KeyboardLayout.qml — розкладка клавіатури на панелі
 // ============================================================
-import Quickshell
 import Quickshell.Io
 import "../Palette.js" as Palette
 import QtQuick
@@ -11,7 +10,6 @@ Item {
   id: root
 
   property string layout: "US"
-  property string kbName: ""
 
   readonly property string displayText: {
     var l = root.layout
@@ -40,19 +38,16 @@ Item {
           var keyboards = obj.keyboards ?? []
           for (var i = 0; i < keyboards.length; ++i) {
             if (keyboards[i].active_keymap && keyboards[i].main === true) {
-              root.kbName = keyboards[i].name
               root.layout = keyboards[i].active_keymap; return
             }
           }
           for (var i = 0; i < keyboards.length; ++i) {
             var k = keyboards[i]
             if (k.active_keymap && k.name.indexOf("keyboard") < 0 && k.name.indexOf("system") < 0 && k.name.indexOf("consumer") < 0) {
-              root.kbName = k.name
               root.layout = k.active_keymap; return
             }
           }
           if (keyboards.length > 0 && keyboards[0].active_keymap) {
-            root.kbName = keyboards[0].name
             root.layout = keyboards[0].active_keymap
           }
         } catch (e) {}

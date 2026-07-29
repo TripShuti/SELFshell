@@ -196,11 +196,17 @@ AnimatedPopup {
     onTriggered: root._doSetHyprsunset()
   }
 
+  // Файл персистентності стану (яскравість, температура, muted)
+  // — читається при старті, пишеться через 500ms після зміни
+  FileView {
+    id: stateFile
+    path: Qt.resolvedUrl("../control-state.json")
+    blockLoading: true
+  }
+
   // --- Збереження стану ---
   function saveState() {
-    var escaped = State.serialize().replace(/'/g, "'\\''")
-    saveStateProc.command = ["sh", "-c", "echo '" + escaped + "' > $HOME/.config/quickshell/control-state.json"]
-    saveStateProc.running = true
+    stateFile.setText(State.serialize())
   }
 
   function toggleMuted() {
@@ -210,33 +216,6 @@ AnimatedPopup {
   }
 
   
-  StdioCollector {
-    id: loadStateCollector
-    waitForEnd: true
-    onDataChanged: {
-      if (loadStateCollector.text) {
-        try { State.setData(JSON.parse(loadStateCollector.text)) } catch(e) { State.setData({}) }
-        var savedBright = State.getBrightness()
-        var savedTemp = State.getReadingTemp()
-        var savedMuted = State.getMuted()
-        if (savedBright >= 0) root.setBrightness(savedBright)
-        if (savedTemp < 6500) root.setReadingTemp(savedTemp)
-        root.muted = savedMuted
-      }
-    }
-  }
-
-  Process {
-    id: loadStateProc
-    command: ["sh", "-c", "cat $HOME/.config/quickshell/control-state.json"]
-    stdout: loadStateCollector
-  }
-
-  Process {
-    id: saveStateProc
-    onExited: running = false
-  }
-
   Timer {
     id: saveStateTimer
     interval: 500
@@ -254,7 +233,19 @@ AnimatedPopup {
     for (var i = 0; i < toDismiss.length; ++i) if (toDismiss[i]) toDismiss[i].dismiss()
   }
 
-  Component.onCompleted: { anchor.window = window; root.refreshBrightness(); root.ensureHyprsunset(); loadStateProc.running = true }
+  function loadSavedState() {
+    var text = stateFile.text()
+    if (!text) return
+    try { State.setData(JSON.parse(text)) } catch(e) { State.setData({}) }
+    var savedBright = State.getBrightness()
+    var savedTemp = State.getReadingTemp()
+    var savedMuted = State.getMuted()
+    if (savedBright >= 0) root.setBrightness(savedBright)
+    if (savedTemp < 6500) root.setReadingTemp(savedTemp)
+    root.muted = savedMuted
+  }
+
+  Component.onCompleted: { anchor.window = window; root.refreshBrightness(); root.ensureHyprsunset(); loadSavedState() }
 
   onVisibleChanged: {
     if (visible) {

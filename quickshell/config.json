@@ -1,0 +1,38 @@
+{
+  "launcherEnabled": true,
+  "workspacesEnabled": true,
+  "mprisEnabled": true,
+  "clockEnabled": true,
+  "timerEnabled": true,
+  "genshinEnabled": true,
+  "keyboardEnabled": true,
+  "audioEnabled": true,
+  "controlEnabled": true,
+  "btEnabled": false,
+  "netEnabled": false,
+  "trayEnabled": false,
+  "leftOrder": [
+    "launcher",
+    "sep-2",
+    "workspaces",
+    "sep-7",
+    "mpris"
+  ],
+  "centerOrder": [
+    "clock",
+    "sep-5",
+    "timer",
+    "sep-6",
+    "genshin"
+  ],
+  "rightOrder": [
+    "net",
+    "tray",
+    "bt",
+    "keyboard",
+    "sep-10",
+    "audio",
+    "sep-1",
+    "control"
+  ]
+}

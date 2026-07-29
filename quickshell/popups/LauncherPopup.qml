@@ -86,40 +86,23 @@ AnimatedPopup {
     }
   }
 
+  // Файл персистентності статистики запусків — читається при старті,
+  // пишеться при кожному запуску додатку
+  FileView {
+    id: usageFile
+    path: Qt.resolvedUrl("../launcher-usage.json")
+    blockLoading: true
+  }
+
   // Зберігає статистику запусків у файл
   function saveUsage() {
-    var json = Usage.serialize()
-    var escaped = json.replace(/'/g, "'\\''")
-    saveProc.command = ["sh", "-c", "echo '" + escaped + "' > $HOME/.config/quickshell/launcher-usage.json"]
-    saveProc.running = true
-  }
-
-  Process {
-    id: saveProc
-    onExited: running = false
-  }
-
-  // Завантажує статистику при старті
-  StdioCollector {
-    id: loadCollector
-    waitForEnd: true
-    onDataChanged: {
-      if (loadCollector.text) {
-        try { Usage.setData(JSON.parse(loadCollector.text)) } catch(e) { Usage.setData({}) }
-      }
-      filterApps()
-    }
-  }
-
-  Process {
-    id: loadProc
-    command: ["sh", "-c", "cat $HOME/.config/quickshell/launcher-usage.json"]
-    stdout: loadCollector
+    usageFile.setText(Usage.serialize())
   }
 
   Component.onCompleted: {
     anchor.window = window
-    loadProc.running = true
+    try { Usage.setData(JSON.parse(usageFile.text() || "{}")) } catch(e) { Usage.setData({}) }
+    filterApps()
     Qt.callLater(function() {
       root.visible = true
       root.visible = false

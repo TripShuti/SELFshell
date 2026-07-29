@@ -121,42 +121,24 @@ AnimatedPopup {
     refreshTasks()
   }
 
+  // Файл персистентності задач — читається при старті, пишеться при змінах
+  FileView {
+    id: tasksFile
+    path: Qt.resolvedUrl("../calendar-tasks.json")
+    blockLoading: true
+  }
+
   // Зберігає задачі у файл
   function saveTasksJson() {
-    var json = Tasks.serialize()
-    var escaped = json.replace(/'/g, "'\\''")
-    saveProc.command = ["sh", "-c", "echo '" + escaped + "' > $HOME/.config/quickshell/calendar-tasks.json"]
-    saveProc.running = true
-  }
-
-  // Завантажує задачі при старті
-  StdioCollector {
-    id: loadCollector
-    waitForEnd: true
-    onDataChanged: {
-      if (loadCollector.text) {
-        try { Tasks.setData(JSON.parse(loadCollector.text)) } catch(e) { Tasks.setData({}) }
-        root.tasksVersion++
-      }
-    }
-  }
-
-  Process {
-    id: loadProc
-    command: ["sh", "-c", "cat $HOME/.config/quickshell/calendar-tasks.json"]
-    stdout: loadCollector
-  }
-
-  Process {
-    id: saveProc
-    onExited: running = false
+    tasksFile.setText(Tasks.serialize())
   }
 
   Component.onCompleted: {
     anchor.window = window
     initDate()
     Tasks.setSaveCallback(function() { saveTasksJson() })
-    loadProc.running = true
+    try { Tasks.setData(JSON.parse(tasksFile.text() || "{}")) } catch(e) { Tasks.setData({}) }
+    root.tasksVersion++
   }
 
   onVisibleChanged: {
