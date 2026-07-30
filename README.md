@@ -133,8 +133,5 @@ yazi/        - file manager config, keybindings, themes
 
 ## Notes
 
-- Quickshell config lives in `~/.config/quickshell/`.
-- Lock screen is a custom QML implementation (embedded in `shell.qml` via `WlSessionLock`) with PAM auth, replacing hyprlock/hypridle. Place a wallpaper at `quickshell/wp/current.jpg` for the lock screen background.
 - Genshin Impact widgets require Hoyolab API credentials (see `quickshell/scripts/.env.example`).
 - Bluetooth pairing agent (`qs-bt-agent`) is installed as a systemd user service.
-- See `quickshell/data/` for description of config formats.
