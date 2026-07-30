@@ -1,8 +1,9 @@
 # SELFshell
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/f2b255d3-7bb4-4c7b-878d-dbde78fb7897" alt="SELFshell demo" width="720">
+  <img src="https://github.com/user-attachments/assets/d5b6e3ae-7b14-4cb0-9859-dc3385b5374c" alt="SELFshell demo" width="720">
 </p>
+
 
 
 Personal desktop environment configs built around **Hyprland + Quickshell**.
