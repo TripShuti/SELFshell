@@ -9,6 +9,48 @@ Personal desktop environment configs built around **Hyprland + Quickshell**.
 
 > **Disclaimer:** Bugs or breakage may occur on your machine. Feel free to use anything you like, but at your own risk.
 
+## Features
+
+### Desktop Core
+- Custom QML **lock screen** with PAM authentication (`ext-session-lock-v1`)
+- Built-in **idle manager** — locks after 5min, DPMS off after 6min, suspend after 15min; pauses during media playback
+- Per-monitor bar instances via `Quickshell.screens`
+
+### Top Bar
+- 12 built-in widgets: Launcher, Workspaces, Clock, Timer, MPRIS (with cava visualizer), Genshin resin, Audio, Control Center, Bluetooth, Network, Keyboard Layout, System Tray
+- Three configurable "pill" sections (left / center / right)
+- Drag-and-drop widget reordering and enable/disable via Settings popup
+
+### Popups & Menus
+- **Application Launcher** — frequency-sorted search
+- **Calendar** — month grid with task management (add / complete / delete)
+- **Audio Mixer** — PipeWire sink and application volumes
+- **Control Center** — notifications, brightness (ddcutil), reading mode (hyprsunset), power actions
+- **Media Player** — MPRIS controls with cava audio visualization (28 bars)
+- **Network & Bluetooth** managers with connection details
+- **Wallpaper Picker** — grid view, applies palette on selection
+- **Notification Toasts** — animated, with sound, clickable
+
+### Genshin Impact
+- Real-time resin tracking with local regeneration calculation (1 resin / 8 min)
+- HoYoLAB API sync for resin, expeditions, teapot coins, daily commissions
+- Auto-sync at high resin (≥198) and rate-limit protection
+- Pulsing visual indicator at critical resin (≥190)
+
+### Hardware Control
+- Monitor brightness via `ddcutil` with sub-stepping
+- Blue-light filter via `hyprsunset` (3500K–6500K)
+- Power actions: Shutdown, Reboot, Suspend, Logout, Lock
+
+### Dynamic Theming
+- Wallpaper-based color palette via `matugen`
+- Live palette reload (no restart required)
+- Palette drives all QML UI, plus auto-generates terminal (Kitty), prompt (Starship), and file manager (Yazi) colors
+
+### Persistence
+- All state persisted through `Quickshell.Io.FileView` — no shell-level I/O
+- Config, calendar tasks, control center state, launcher usage saved to JSON
+
 ## Components
 
 | Component | Role |
@@ -46,7 +88,7 @@ git clone https://github.com/TripShuti/SELFshell ~/.config
 
 Then:
 - Copy `quickshell/scripts/.env.example` to `.env` and fill in your credentials (if using Genshin widgets).
-- Place your wallpapers in `hypr/wp/` and `quickshell/wp/`.
+- Place your wallpapers in `quickshell/wp/`.
 - Review and adjust path references in configs.
 - Place a wallpaper in `quickshell/wp/current.jpg` for the lock screen background.
 - Ensure all dependencies listed in `install.sh` (`PACMAN_DEPS`) are installed.
@@ -75,11 +117,16 @@ fish/        - shell config, functions, yt-dlp wrapper
 hypr/        - Hyprland (lua module system) & hyprsunset configs
 install.sh   - automated setup script
 kitty/       - terminal config
-quickshell/  - QML panels, core, popups, widgets, monitors, scripts, data, services
+quickshell/  - QML panels, core, popups, widgets, monitors, scripts, data, assets, services
              - core/ — shell infrastructure (AppConfig, IdleManager, LockScreen, etc.)
-             - pam/password.conf — PAM config for lock screen auth
+             - monitors/ — background data monitors (Cava, Genshin)
+             - widgets/ — panel widgets (12 total)
+             - popups/ — popup windows (12 total)
+             - scripts/ — helper scripts (palette, Genshin, etc.)
              - data/ — persisted state (config.json, calendar-tasks, etc.)
+             - assets/ — icons, sounds
              - services/ — system services (qs-bt-agent, cava-vis.conf)
+             - pam/password.conf — PAM config for lock screen auth
 starship/    - prompt config
 yazi/        - file manager config, keybindings, themes
 ```
@@ -90,3 +137,4 @@ yazi/        - file manager config, keybindings, themes
 - Lock screen is a custom QML implementation (embedded in `shell.qml` via `WlSessionLock`) with PAM auth, replacing hyprlock/hypridle. Place a wallpaper at `quickshell/wp/current.jpg` for the lock screen background.
 - Genshin Impact widgets require Hoyolab API credentials (see `quickshell/scripts/.env.example`).
 - Bluetooth pairing agent (`qs-bt-agent`) is installed as a systemd user service.
+- See `quickshell/data/` for description of config formats.
