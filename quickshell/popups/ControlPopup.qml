@@ -13,8 +13,6 @@ import "../scripts/ControlState.js" as State
 // Центр керування — сповіщення, швидкі перемикачі та кнопки живлення
 AnimatedPopup {
   id: root
-  bgOpacity: 0.70  // збережено індивідуальне значення, яке було локально в цьому попапі
-  cornerRadius: 8  // теж було індивідуальним значенням цього попапу
 
   required property QtObject anchorItem
   required property QtObject window

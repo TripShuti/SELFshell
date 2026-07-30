@@ -11,7 +11,6 @@ import QtQuick.Layouts
 // Менеджер мереж — Wi-Fi та Ethernet з'єднання, сканування, налаштування
 AnimatedPopup {
   id: root
-  bgOpacity: 0.88  // збережено індивідуальне значення, яке було локально в цьому попапі
 
   required property QtObject window
   palette: window.palette

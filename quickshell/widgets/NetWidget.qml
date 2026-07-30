@@ -7,12 +7,11 @@ import Quickshell
 import Quickshell.Networking
 import "../core"
 
-Item {
+// Віджет мережі на панелі — іконка Wi-Fi/Ethernet
+HoverItem {
   id: root
 
   required property QtObject window
-  signal clicked()
-  property bool hovered: false
 
   readonly property var networkDevices: Networking.devices ? Networking.devices.values : []
 
@@ -76,24 +75,11 @@ Item {
     anchors.verticalCenter: parent.verticalCenter
     spacing: 4
 
-    Text {
+    HoverText {
       text: root.mainIcon
+      palette: window.palette
+      hoverScale: 1.2
       color: root.iconColor
-      font.family: window.palette.font
-      font.pixelSize: 14
-      scale: root.hovered ? 1.2 : 1.0
-
-      Behavior on color { ColorAnimation { duration: 220 } }
-      Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutBack; easing.overshoot: 2.5 } }
     }
-
-  }
-
-  MouseArea {
-    anchors.fill: parent
-    hoverEnabled: true
-    onEntered: root.hovered = true
-    onExited: root.hovered = false
-    onClicked: root.clicked()
   }
 }

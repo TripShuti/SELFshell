@@ -10,8 +10,6 @@ import QtQuick.Layouts
 // Попап Genshin Impact — смола, дейліки, боси, чекін
 AnimatedPopup {
   id: root
-  bgOpacity: 0.94  // збережено індивідуальне значення, яке було локально в цьому попапі
-  cornerRadius: 6  // теж було індивідуальним значенням цього попапу
 
   required property QtObject anchorItem
   required property QtObject window

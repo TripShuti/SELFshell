@@ -9,8 +9,6 @@ import QtQuick.Layouts
 // Попап медіаплеєра — поточний трек, керування, візуалізатор
 AnimatedPopup {
   id: root
-  bgOpacity: 0.94  // збережено індивідуальне значення, яке було локально в цьому попапі
-  cornerRadius: 14  // теж було індивідуальним значенням цього попапу
 
   required property QtObject anchorItem
   required property QtObject window
@@ -95,49 +93,11 @@ AnimatedPopup {
     anchors.bottomMargin: 13
     spacing: 6
 
-    // Заголовок
-    RowLayout {
-      Layout.fillWidth: true
-      Layout.topMargin: 5
-      spacing: 6
-
-      // Іконка
-      Text {
-        text: "\uF001"
-        color: window.palette.green
-        font.family: window.palette.font; font.pixelSize: 12
-      }
-
-      Text {
-        text: "Now Playing"
-        color: window.palette.green
-        font.family: window.palette.font; font.pixelSize: 14; font.bold: true
-      }
-
-      Item { Layout.fillWidth: true }
-
-      // Бейдж з назвою плеєра
-      Rectangle {
-        visible: root.player != null && root.player.identity !== ""
-        radius: 8
-        color: window.palette.bg1
-        implicitWidth: idLabel.implicitWidth + 16
-        implicitHeight: 18
-
-        Text {
-          id: idLabel
-          anchors.centerIn: parent
-          text: root.player?.identity ?? ""
-          color: window.palette.gray
-          font.family: window.palette.font; font.pixelSize: 9
-        }
-      }
-    }
 
     // Роздільник
     Rectangle {
       Layout.fillWidth: true
-      height: 1
+      height: 5
       gradient: Gradient {
         orientation: Gradient.Horizontal
         GradientStop { position: 0.0; color: "transparent" }
@@ -392,6 +352,7 @@ AnimatedPopup {
         }
       }
     }
+
 
     // Кнопки керування
     RowLayout {

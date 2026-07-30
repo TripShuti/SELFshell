@@ -7,6 +7,7 @@ import Quickshell
 import Quickshell.Bluetooth
 import "../core"
 
+// Віджет Bluetooth на панелі — іконка + батарея
 Item {
   id: root
 
@@ -42,7 +43,7 @@ Item {
     Text {
       text: root.hasBattery
             ? batteryIcon(root.connectedDevice.battery)
-            : ""
+            : "\uF293"
 
       color: {
         if (root.hovered) return window.palette.green

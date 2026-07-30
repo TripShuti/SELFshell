@@ -58,52 +58,11 @@ PanelWindow {
   // Спільний стан конфігурації (видимість, порядок) — зберігається в config.json
   readonly property AppConfig appConfig: AppConfig {}
 
-  // Пігулка — контейнер з градієнтом для групи віджетів
-  component Pill: Item {
-    id: pillRoot
-    property alias pillColor: pillBg.color
-    property alias radius: pillBg.radius
-    default property alias data: pillBg.data
-    property real glowStrength: 0.16
-
-    // Зовнішнє сяйво навколо пігулки
-    Rectangle {
-      anchors.fill: pillBg
-      anchors.margins: -2
-      radius: pillBg.radius + 2
-      color: "transparent"
-      border.width: 1
-      border.color: root.palette.hoverBg
-      opacity: 0.1
-    }
-
-    // Тіло пігулки з градієнтом
-    Rectangle {
-      id: pillBg
-      anchors.fill: parent
-      clip: true
-      color: root.palette.bgAlpha
-      opacity: 1
-      border.width: 0
-      border.color: root.palette.outlineVariant
-
-      gradient: Gradient {
-        orientation: Gradient.Vertical
-        GradientStop { position: 0.0; color: Qt.lighter(root.palette.baseOverlay, 1.18) }
-        GradientStop { position: 1.0; color: root.palette.bgAlpha }
-      }
-
-      Behavior on opacity { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
-    }
-  }
-
   // --- Шаблони компонентів для динамічного рендеру пігулок ---
   // Loader.sourceComponent бере звідси потрібний тип за іменем віджета.
-  // Layout.fillHeight/alignment ставляться на сам Loader (в делегаті
-  // Repeater-а нижче), а не тут — бо прямий Layout-нащадок RowLayout це
-  // Loader, а не завантажений ним item. Для тих двох, кому реально
-  // потрібен fillHeight (Mpris/Audio), сам item заповнює Loader через
-  // anchors.fill: parent.
+  // Layout.fillHeight/alignment ставляться на сам Loader у делегаті Repeater-а
+  // всередині PillBar. Для тих, кому потрібен fillHeight (Mpris/Audio), сам
+  // item заповнює Loader через anchors.fill: parent.
   Component { id: launcherComp;   LauncherWidget { window: root; anchors.fill: parent } }
   Component { id: workspacesComp; WorkspacesWidget { window: root } }
   Component { id: mprisComp;      MprisWidget { window: root; anchors.fill: parent; cavBars: cavaMonitor.bars } }
@@ -138,127 +97,47 @@ PanelWindow {
   }
 
   // Ліва пігулка
-  Pill {
-    id: leftPill
+  PillBar {
     anchors {
       left: parent.left
       leftMargin: 8
       verticalCenter: parent.verticalCenter
     }
     height: pillHeight
-    radius: pillHeight / 8
-    width: leftRow.implicitWidth + 16
-
-    RowLayout {
-      id: leftRow
-      x: 8
-      anchors.verticalCenter: parent.verticalCenter
-      spacing: 4
-
-      Repeater {
-        id: leftRepeater
-        model: root.appConfig.leftOrder.filter(name => root.appConfig.isSep(name) || root.appConfig[name + "Enabled"])
-        delegate: RowLayout {
-          required property string modelData
-          spacing: 4
-
-          Loader {
-            Layout.alignment: Qt.AlignVCenter
-            Layout.fillHeight: root.widgetNeedsFillHeight(modelData)
-            sourceComponent: root.widgetComponents[modelData]
-            onLoaded: root.registerActive(modelData, item)
-            visible: !root.appConfig.isSep(modelData)
-          }
-          Separator {
-            Layout.alignment: Qt.AlignVCenter
-            pal: root.palette
-            visible: root.appConfig.isSep(modelData)
-          }
-        }
-      }
-    }
+    appConfig: root.appConfig
+    palette: root.palette
+    orderModel: root.appConfig.leftOrder
+    widgetComponents: root.widgetComponents
+    needsFillHeight: root.widgetNeedsFillHeight
+    registerActive: root.registerActive
   }
 
   // Центральна пігулка
-  Pill {
-    id: centerPill
+  PillBar {
     anchors.centerIn: parent
     height: pillHeight
-    radius: pillHeight / 8
-    width: centerRow.implicitWidth + 16
-    glowStrength: (root.genshinWidget && root.genshinWidget.resinClass === "critical") ? 0.32 : 0.16
-    Behavior on glowStrength { NumberAnimation { duration: 220 } }
-
-    RowLayout {
-      id: centerRow
-      x: 8
-      anchors.verticalCenter: parent.verticalCenter
-      spacing: 4
-
-      Repeater {
-        id: centerRepeater
-        model: root.appConfig.centerOrder.filter(name => root.appConfig.isSep(name) || root.appConfig[name + "Enabled"])
-        delegate: RowLayout {
-          required property string modelData
-          spacing: 4
-
-          Loader {
-            Layout.alignment: Qt.AlignVCenter
-            Layout.fillHeight: root.widgetNeedsFillHeight(modelData)
-            sourceComponent: root.widgetComponents[modelData]
-            onLoaded: root.registerActive(modelData, item)
-            visible: !root.appConfig.isSep(modelData)
-          }
-          Separator {
-            Layout.alignment: Qt.AlignVCenter
-            pal: root.palette
-            visible: root.appConfig.isSep(modelData)
-          }
-        }
-      }
-    }
+    appConfig: root.appConfig
+    palette: root.palette
+    orderModel: root.appConfig.centerOrder
+    widgetComponents: root.widgetComponents
+    needsFillHeight: root.widgetNeedsFillHeight
+    registerActive: root.registerActive
   }
 
   // Права пігулка
-  Pill {
-    id: rightPill
+  PillBar {
     anchors {
       right: parent.right
       rightMargin: 8
       verticalCenter: parent.verticalCenter
     }
     height: pillHeight
-    radius: pillHeight / 8
-    width: rightRow.implicitWidth + 16
-
-    RowLayout {
-      id: rightRow
-      x: 8
-      anchors.verticalCenter: parent.verticalCenter
-      spacing: 4
-
-      Repeater {
-        id: rightRepeater
-        model: root.appConfig.rightOrder.filter(name => root.appConfig.isSep(name) || root.appConfig[name + "Enabled"])
-        delegate: RowLayout {
-          required property string modelData
-          spacing: 4
-
-          Loader {
-            Layout.alignment: Qt.AlignVCenter
-            Layout.fillHeight: root.widgetNeedsFillHeight(modelData)
-            sourceComponent: root.widgetComponents[modelData]
-            onLoaded: root.registerActive(modelData, item)
-            visible: !root.appConfig.isSep(modelData)
-          }
-          Separator {
-            Layout.alignment: Qt.AlignVCenter
-            pal: root.palette
-            visible: root.appConfig.isSep(modelData)
-          }
-        }
-      }
-    }
+    appConfig: root.appConfig
+    palette: root.palette
+    orderModel: root.appConfig.rightOrder
+    widgetComponents: root.widgetComponents
+    needsFillHeight: root.widgetNeedsFillHeight
+    registerActive: root.registerActive
   }
 
   CalendarPopup {

@@ -5,12 +5,11 @@ import Quickshell.Hyprland
 import "../core"
 import QtQuick
 
+// Віджет робочих столів — номери з кольоровою індикацією
 Item {
   id: root
 
   required property QtObject window
-  signal clicked()
-  property bool hovered: false
 
   implicitHeight: parent?.height ?? 36
   implicitWidth: row.implicitWidth
@@ -53,13 +52,5 @@ Item {
         }
       }
     }
-  }
-
-  MouseArea {
-    anchors.fill: parent
-    hoverEnabled: true
-    onEntered: root.hovered = true
-    onExited: root.hovered = false
-    propagateComposedEvents: true
   }
 }

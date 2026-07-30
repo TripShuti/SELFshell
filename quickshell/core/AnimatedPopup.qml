@@ -13,9 +13,9 @@ PopupWindow {
 
   // Налаштовувані кольори та параметри анімації
   property color bgColor: palette ? palette.bg0H : "#34302a"
-  property real bgOpacity: 0.88
+  property real bgOpacity: 0.90
   property real bgLighten: 1.5
-  property real cornerRadius: 12
+  property real cornerRadius: 10
   property color borderColor: palette ? palette.bg2 : "#57514b"
   property real enterScale: 0.85
   property real overshootAmount: 2.5

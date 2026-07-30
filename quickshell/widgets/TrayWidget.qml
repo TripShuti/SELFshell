@@ -7,12 +7,11 @@ import Quickshell
 import Quickshell.Services.SystemTray
 import "../core"
 
-Item {
+// Віджет системного трею на панелі — іконки додатків
+HoverItem {
   id: root
 
   required property QtObject window
-  signal clicked()
-  property bool hovered: false
 
   implicitWidth: trayRow.implicitWidth
   implicitHeight: parent?.height ?? 36
@@ -41,13 +40,5 @@ Item {
         }
       }
     }
-  }
-
-  MouseArea {
-    anchors.fill: parent
-    hoverEnabled: true
-    onEntered: root.hovered = true
-    onExited: root.hovered = false
-    propagateComposedEvents: true
   }
 }

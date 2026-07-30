@@ -11,8 +11,6 @@ import QtQuick.Layouts
 // Календар з сіткою днів та списком задач
 AnimatedPopup {
   id: root
-  bgOpacity: 0.84  // збережено індивідуальне значення, яке було локально в цьому попапі
-  cornerRadius: 8  // теж було індивідуальним значенням цього попапу
 
   required property QtObject anchorItem
   required property QtObject window

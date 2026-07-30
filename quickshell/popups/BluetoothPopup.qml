@@ -12,7 +12,6 @@ import QtQuick.Layouts
 // Менеджер Bluetooth — адаптер, видимість, список пристроїв
 AnimatedPopup {
   id: root
-  bgOpacity: 0.88  // збережено індивідуальне значення, яке було локально в цьому попапі
 
   required property QtObject window
   palette: window.palette
