@@ -247,7 +247,7 @@ AnimatedPopup {
   onVisibleChanged: {
     if (visible) {
       var r = window.itemRect(anchorItem)
-      anchor.rect = Qt.rect(r.x, r.y + r.height + 4, implicitWidth, implicitHeight)
+      anchor.rect = Qt.rect(r.x, r.y + r.height + 10, implicitWidth, implicitHeight)
       root.refreshBrightness()
       brightnessPollTimer.running = true
     } else {

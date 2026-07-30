@@ -143,7 +143,7 @@ AnimatedPopup {
     if (visible) {
       var pos = anchorItem.mapToItem(window.contentItem, 0, 0)
       var popupX = pos.x + (anchorItem.width - implicitWidth) / 2
-      anchor.rect = Qt.rect(popupX, pos.y + anchorItem.height + 4, implicitWidth, implicitHeight)
+      anchor.rect = Qt.rect(popupX, pos.y + anchorItem.height + 10, implicitWidth, implicitHeight)
     }
   }
 
