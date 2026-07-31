@@ -76,7 +76,7 @@ AnimatedPopup {
   }
 
   // Прокручує список плейлісту до поточного треку.
-  // mode: ListView.Center — при відкритті/перезавантаженні,
+  // mode: ListView.Beginning — при відкритті/перезавантаженні (поточний зверху),
   // ListView.Visible — при зміні треку (мінімальний скрол, не смикає перегляд)
   function _scrollPlaylistToCurrent(mode) {
     if (!root.playlistOpen || !playlistList || playlistList.count === 0) return
@@ -162,7 +162,7 @@ AnimatedPopup {
   Timer {
     id: playlistScrollTimer
     interval: 300
-    onTriggered: root._scrollPlaylistToCurrent(ListView.Center)
+    onTriggered: root._scrollPlaylistToCurrent(ListView.Beginning)
   }
 
   // Анімована висота секції плейлісту; вікно підлаштовується кожен кадр
@@ -598,7 +598,16 @@ AnimatedPopup {
             return -1
           }
           onCurrentIndexChanged: root._scrollPlaylistToCurrent(ListView.Visible)
-          onModelChanged: Qt.callLater(function() { root._scrollPlaylistToCurrent(ListView.Center) })
+          onModelChanged: {
+            hoveredIndex = -1
+            Qt.callLater(function() { root._scrollPlaylistToCurrent(ListView.Beginning) })
+          }
+
+          // Індекс треку під курсором. Централізований, бо при ресайклінгу
+          // делегатів containsMouse у делегаті залишається застарілим і
+          // підсвітка блимає/зависає під час скролу
+          property int hoveredIndex: -1
+          onMovementStarted: hoveredIndex = -1
 
           // Порожній стан
           Text {
@@ -622,8 +631,7 @@ AnimatedPopup {
             Rectangle {
               anchors.fill: parent
               radius: 5
-              color: mouseArea.containsMouse ? window.palette.bg1 : "transparent"
-              Behavior on color { ColorAnimation { duration: 150 } }
+              color: playlistList.hoveredIndex === index ? window.palette.bg1 : "transparent"
 
               RowLayout {
                 anchors.fill: parent
@@ -672,6 +680,8 @@ AnimatedPopup {
                 id: mouseArea
                 anchors.fill: parent
                 hoverEnabled: true
+                onEntered: playlistList.hoveredIndex = index
+                onExited: if (playlistList.hoveredIndex === index) playlistList.hoveredIndex = -1
                 onClicked: tracklistService.goTo(modelData.trackId)
               }
             }
