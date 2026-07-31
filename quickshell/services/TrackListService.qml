@@ -83,6 +83,44 @@ Item {
     onExited: running = false
   }
 
+  // Спостерігач за сигналами TrackList від плеєра (dbus-monitor | grep,
+  // як у sleepMonitor в shell.qml). Дає миттєве оновлення списку замість
+  // чекання 20-секундного поллу. Полл лишається страховкою.
+  Process {
+    id: watchProc
+
+    stdout: StdioCollector {
+      id: watchCollector
+      waitForEnd: false
+      onDataChanged: {
+        // Текст не парсимо (тригер сам факт сигналу), тож скидаємо буфер,
+        // щоб він не ріс безмежно годинами
+        if (watchCollector.text.length > 8192)
+          watchCollector.text = ""
+        _signalDebounce.restart()
+      }
+    }
+
+    onExited: {
+      // dbus-monitor помер (глюк D-Bus тощо) — перезапускаємось,
+      // поки спостерігач ще потрібен
+      if (root.active && root.supported && root.playerName !== "")
+        watchRestartTimer.restart()
+    }
+  }
+
+  Timer {
+    id: watchRestartTimer
+    interval: 3000
+    onTriggered: root._startWatch()
+  }
+
+  Timer {
+    id: _signalDebounce
+    interval: 500
+    onTriggered: root.refresh()
+  }
+
   // --- Логіка ---
 
   function refresh() {
@@ -121,7 +159,45 @@ Item {
     gotoProc.running = true
   }
 
+  // D-Bus ім'я плеєра: identity може бути без префікса "org.mpris.MediaPlayer2."
+  function _playerBusName() {
+    if (root.playerName.startsWith("org.mpris.MediaPlayer2.")) return root.playerName
+    return "org.mpris.MediaPlayer2." + root.playerName
+  }
+
+  function _startWatch() {
+    if (!root.active || !root.supported || root.playerName === "") return
+    watchRestartTimer.stop()
+    watchProc.running = false
+    watchProc.command = ["sh", "-c",
+      "dbus-monitor --session \"type=signal,sender=" + root._playerBusName() +
+      ",interface=org.mpris.MediaPlayer2.TrackList\" 2>/dev/null "
+      + "| grep --line-buffered -E 'TrackListReplaced|TrackAdded|TrackRemoved'"]
+    watchProc.running = true
+  }
+
+  function _stopWatch() {
+    watchRestartTimer.stop()
+    watchProc.running = false
+  }
+
   // Оновлення при зміні плеєра чи активності
-  onActiveChanged: refresh()
-  onPlayerNameChanged: refresh()
+  onActiveChanged: {
+    refresh()
+    if (root.active)
+      root._startWatch()
+    else
+      root._stopWatch()
+  }
+  onPlayerNameChanged: {
+    refresh()
+    if (root.active)
+      root._startWatch()
+  }
+  onSupportedChanged: {
+    if (root.supported)
+      root._startWatch()
+    else
+      root._stopWatch()
+  }
 }
