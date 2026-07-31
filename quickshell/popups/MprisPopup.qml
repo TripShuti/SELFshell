@@ -3,6 +3,7 @@
 // ============================================================
 import Quickshell.Services.Mpris
 import "../core"
+import "../services"
 import QtQuick
 import QtQuick.Layouts
 
@@ -23,6 +24,71 @@ AnimatedPopup {
   property var cavBars: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 
   property bool artError: false
+
+  // --- Плейліст ---
+  property bool playlistOpen: false
+  property real playlistHeight
+  property real playlistTarget: 0
+
+  // Ім'я плеєра для TrackListService (з identity, інакше dbusName)
+  readonly property string _servicePlayer: {
+    var p = root.player
+    if (!p) return ""
+    var ident = (p.identity ?? "").toLowerCase()
+    return ident !== "" ? ident : (p.dbusName ?? "")
+  }
+
+  // Поточний trackid з метаданих плеєра.
+  // Quickshell віддає mpris:trackid як QVariant(QDBusObjectPath) і String()
+  // перетворює його в "QVariant(QDBusObjectPath, QDBusObjectPath(\"...\"))".
+  // Витягуємо чистий шлях регуляркою (формат Qt), інакше — fallback.
+  readonly property string _currentTrackId: {
+    var p = root.player
+    if (!p || !p.metadata) return ""
+    var id = p.metadata["mpris:trackid"]
+    if (!id) return ""
+    var m = String(id).match(/QDBusObjectPath\("([^"]+)"\)/)
+    return m ? m[1] : String(id)
+  }
+
+  // Сервіс MPRIS TrackList (список треків через scripts/tracklist.py)
+  TrackListService {
+    id: tracklistService
+    playerName: root._servicePlayer
+    active: root.visible
+
+    onTracksChanged: root._updatePlaylistTarget()
+  }
+
+  // Періодичне оновлення списку, поки плейліст відкритий
+  Timer {
+    interval: 20000
+    running: root.visible && root.playlistOpen
+    repeat: true
+    onTriggered: tracklistService.refresh()
+  }
+
+  // Рахує цільову висоту секції плейлісту (заголовок + список)
+  function _updatePlaylistTarget() {
+    var rows = Math.min(tracklistService.tracks.length, 10)
+    var listHeight = rows * 36 + Math.max(0, rows - 1) * 2
+    root.playlistTarget = 26 + listHeight
+  }
+
+  // Прокручує список плейлісту до поточного треку.
+  // mode: ListView.Center — при відкритті/перезавантаженні,
+  // ListView.Visible — при зміні треку (мінімальний скрол, не смикає перегляд)
+  function _scrollPlaylistToCurrent(mode) {
+    if (!root.playlistOpen || !playlistList || playlistList.count === 0) return
+    var idx = playlistList.currentIndex
+    if (idx >= 0) playlistList.positionViewAtIndex(idx, mode ?? ListView.Visible)
+  }
+
+  function _updateAnchor() {
+    if (!root.visible) return
+    var r = window.itemRect(anchorItem)
+    anchor.rect = Qt.rect(r.x, r.y + r.height + 10, implicitWidth, implicitHeight)
+  }
 
   // Знаходить плеєр за назвою або перший доступний
   function findAndSetPlayer() {
@@ -82,6 +148,29 @@ AnimatedPopup {
       anchor.rect = Qt.rect(r.x, r.y + r.height + 10, implicitWidth, implicitHeight)
     }
   }
+
+  // Якщо плеєр зник — закриваємо секцію плейлісту
+  onPlayerChanged: {
+    if (!root.player) root.playlistOpen = false
+  }
+
+  // При відкритті — після завершення анімації висоти фокусуємось на поточному треку
+  onPlaylistOpenChanged: {
+    if (root.playlistOpen) playlistScrollTimer.start()
+  }
+
+  Timer {
+    id: playlistScrollTimer
+    interval: 300
+    onTriggered: root._scrollPlaylistToCurrent(ListView.Center)
+  }
+
+  // Анімована висота секції плейлісту; вікно підлаштовується кожен кадр
+  playlistHeight: root.playlistOpen ? root.playlistTarget : 0
+  Behavior on playlistHeight {
+    NumberAnimation { duration: 260; easing.type: Easing.OutCubic }
+  }
+  onPlaylistHeightChanged: root._updateAnchor()
 
 
   ColumnLayout {
@@ -258,6 +347,28 @@ AnimatedPopup {
           }
         }
       }
+
+      // Кнопка плейлісту (виїзджаюча секція)
+      Rectangle {
+        property bool hovered: false
+        width: 20; height: 20; radius: 4
+        color: root.playlistOpen ? window.palette.green : (hovered ? window.palette.bg2 : "transparent")
+        Behavior on color { ColorAnimation { duration: 150 } }
+        Text {
+          anchors.centerIn: parent
+          text: "\uF03A"
+          color: root.playlistOpen ? window.palette.bg0H : window.palette.gray
+          font.family: window.palette.font; font.pixelSize: 10
+        }
+        visible: root.player != null && tracklistService.supported
+        MouseArea {
+          anchors.fill: parent
+          hoverEnabled: true
+          onEntered: parent.hovered = true
+          onExited: parent.hovered = false
+          onClicked: root.playlistOpen = !root.playlistOpen
+        }
+      }
     }
 
     // Смужка прогресу
@@ -426,6 +537,147 @@ AnimatedPopup {
       }
 
       Item { Layout.fillWidth: true }
+    }
+
+    // Плейліст (виїзджаюча секція зі списком треків)
+    // Layout.preferredHeight замість height: явний height не враховується
+    // в implicitHeight ColumnLayout, і вікно попапа не росте
+    Item {
+      id: playlistSection
+      Layout.fillWidth: true
+      Layout.preferredHeight: root.playlistHeight
+      visible: root.playlistHeight > 0
+      clip: true
+
+      ColumnLayout {
+        anchors.fill: parent
+        spacing: 4
+
+        // Заголовок секції
+        RowLayout {
+          Layout.fillWidth: true
+          spacing: 6
+
+          Text {
+            text: "Playlist"
+            color: window.palette.fg
+            font.family: window.palette.font; font.pixelSize: 11; font.bold: true
+          }
+
+          Text {
+            text: tracklistService.trackIds.length + " tracks"
+            color: window.palette.gray
+            font.family: window.palette.font; font.pixelSize: 9
+          }
+
+          Item { Layout.fillWidth: true }
+
+          Text {
+            text: "Loading..."
+            visible: tracklistService.loading
+            color: window.palette.gray
+            font.family: window.palette.font; font.pixelSize: 9
+          }
+        }
+
+        // Список треків навколо поточного
+        ListView {
+          id: playlistList
+          Layout.fillWidth: true
+          Layout.fillHeight: true
+          spacing: 2
+          clip: true
+          model: tracklistService.tracks
+
+          // Індекс поточного треку в завантаженому вікні
+          currentIndex: {
+            var ts = tracklistService.tracks
+            for (var i = 0; i < ts.length; ++i) {
+              if (ts[i] && ts[i].trackId === root._currentTrackId) return i
+            }
+            return -1
+          }
+          onCurrentIndexChanged: root._scrollPlaylistToCurrent(ListView.Visible)
+          onModelChanged: Qt.callLater(function() { root._scrollPlaylistToCurrent(ListView.Center) })
+
+          // Порожній стан
+          Text {
+            anchors.centerIn: parent
+            text: "No tracks"
+            visible: !tracklistService.loading && parent.count === 0
+            color: window.palette.gray
+            font.family: window.palette.font; font.pixelSize: 10
+          }
+
+          delegate: Item {
+            required property var modelData
+            required property int index
+
+            readonly property bool isCurrent: root._currentTrackId !== ""
+                && modelData && modelData.trackId === root._currentTrackId
+
+            width: ListView.view.width
+            height: 36
+
+            Rectangle {
+              anchors.fill: parent
+              radius: 5
+              color: mouseArea.containsMouse ? window.palette.bg1 : "transparent"
+              Behavior on color { ColorAnimation { duration: 150 } }
+
+              RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 8
+                anchors.rightMargin: 8
+                spacing: 8
+
+                Text {
+                  text: isCurrent ? "\uF04B" : ""
+                  color: window.palette.green
+                  font.family: window.palette.font; font.pixelSize: 9
+                  Layout.preferredWidth: 14
+                }
+
+                ColumnLayout {
+                  Layout.fillWidth: true
+                  spacing: 1
+
+                  Text {
+                    text: modelData?.title ?? "Unknown"
+                    color: isCurrent ? window.palette.green : window.palette.fg
+                    font.family: window.palette.font; font.pixelSize: 11
+                    font.bold: isCurrent
+                    elide: Text.ElideRight
+                    Layout.fillWidth: true
+                  }
+
+                  Text {
+                    text: modelData?.artist ?? ""
+                    visible: (modelData?.artist ?? "") !== ""
+                    color: window.palette.gray
+                    font.family: window.palette.font; font.pixelSize: 9
+                    elide: Text.ElideRight
+                    Layout.fillWidth: true
+                  }
+                }
+
+                Text {
+                  text: root.formatTime((modelData?.length ?? 0) / 1000000)
+                  color: window.palette.gray
+                  font.family: window.palette.font; font.pixelSize: 9
+                }
+              }
+
+              MouseArea {
+                id: mouseArea
+                anchors.fill: parent
+                hoverEnabled: true
+                onClicked: tracklistService.goTo(modelData.trackId)
+              }
+            }
+          }
+        }
+      }
     }
 
     // Порожній стан — немає плеєра

@@ -20,6 +20,7 @@ quickshell/wp/*
 docs/
 quickshell/scripts/.genshin_requests.log
 quickshell/scripts/.genshin_state.json
+quickshell/scripts/__pycache__/
 
 # згенеровані персональні налаштування
 quickshell/Palette.js
