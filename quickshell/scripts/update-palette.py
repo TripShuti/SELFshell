@@ -5,7 +5,45 @@
 # Генерує data/palette.json, kitty тему, fish кольори, starship та yazi тему
 # на основі поточних шпалер через matugen
 
-import sys, json, subprocess, re, os
+import sys, json, subprocess, re, os, tempfile
+
+QS_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+WP_DIR = os.path.expanduser("~/.config/quickshell/wp")
+
+
+# Список шпалер з директорії wp/ (найновіші першими), без current.jpg
+def list_wallpapers():
+    if not os.path.isdir(WP_DIR):
+        return
+    exts = (".jpg", ".jpeg", ".png")
+    files = [
+        os.path.join(WP_DIR, f) for f in os.listdir(WP_DIR)
+        if f.lower().endswith(exts) and f != "current.jpg"
+    ]
+    files.sort(key=lambda p: os.path.getmtime(p), reverse=True)
+    sys.stdout.write("\n".join(files))
+
+
+# Атомарний запис: пише у tmp у тій самій директорії, потім os.replace —
+# якщо скрипт перерветься на півшляху, файл лишається цілим
+def atomic_write(path, content):
+    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path), suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w") as f:
+            f.write(content)
+        os.replace(tmp, path)
+    except BaseException:
+        os.unlink(tmp)
+        raise
+
+
+if len(sys.argv) >= 2 and sys.argv[1] == "list":
+    list_wallpapers()
+    sys.exit(0)
+
+if len(sys.argv) < 2:
+    print(f"usage: {os.path.basename(sys.argv[0])} <wallpaper> | list", file=sys.stderr)
+    sys.exit(1)
 
 wallpaper = sys.argv[1]
 
@@ -62,7 +100,9 @@ bright    = tone("neutral", 95)
 yellow    = col("tertiary")
 blue      = col("secondary")
 purple    = tone("secondary", 70)
-orange    = tone("primary", 70)
+# orange з третинної палітри: раніше був тотожній green (primary 70) —
+# копіпаста, через що UI-елементи з orange виглядали зеленими
+orange    = tone("tertiary", 70)
 aqua      = tone("tertiary", 70)
 
 widgetFg   = blend(col("primary"), col("on_background"), 0.6)
@@ -92,12 +132,11 @@ palette_json = json.dumps({
     "danger": danger, "bgLayer": bgLayer, "sepBg": sepBg, "outlineVariant": outlineVariant,
 }, indent=2)
 
-qs_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+qs_dir = QS_DIR
 
 palette_json_path = os.path.join(qs_dir, "data", "palette.json")
 os.makedirs(os.path.dirname(palette_json_path), exist_ok=True)
-with open(palette_json_path, "w") as f:
-    f.write(palette_json)
+atomic_write(palette_json_path, palette_json)
 
 # --- Генерація kitty current-theme.conf ---
 
@@ -141,8 +180,7 @@ inactive_tab_background {bg0H}
 
 kitty_path = os.path.expanduser("~/.config/kitty/current-theme.conf")
 os.makedirs(os.path.dirname(kitty_path), exist_ok=True)
-with open(kitty_path, "w") as f:
-    f.write(kitty)
+atomic_write(kitty_path, kitty)
 
 # --- Генерація fish conf.d/99-palette.fish ---
 
@@ -170,8 +208,7 @@ set -g fish_color_valid_path --underline
 
 fish_dir = os.path.expanduser("~/.config/fish/conf.d")
 os.makedirs(fish_dir, exist_ok=True)
-with open(os.path.join(fish_dir, "99-palette.fish"), "w") as f:
-    f.write(fish)
+atomic_write(os.path.join(fish_dir, "99-palette.fish"), fish)
 
 # --- Оновлення starship config.toml палітри ---
 
@@ -220,8 +257,7 @@ if os.path.isfile(starship_path):
         else:
             new_lines.append(line)
 
-    with open(starship_path, "w") as f:
-        f.write("\n".join(new_lines))
+    atomic_write(starship_path, "\n".join(new_lines))
 
 # --- Генерація yazi flavor ---
 
@@ -329,8 +365,7 @@ rules = [
 ]
 """
 
-with open(os.path.join(yazi_flavor_dir, "flavor.toml"), "w") as f:
-    f.write(yazi_flavor)
+atomic_write(os.path.join(yazi_flavor_dir, "flavor.toml"), yazi_flavor)
 
 # --- Генерація yazi theme.toml ---
 
@@ -357,5 +392,4 @@ prepend_conds = [
 """
 
 yazi_theme_path = os.path.expanduser("~/.config/yazi/theme.toml")
-with open(yazi_theme_path, "w") as f:
-    f.write(yazi_theme)
+atomic_write(yazi_theme_path, yazi_theme)

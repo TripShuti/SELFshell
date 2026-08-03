@@ -68,32 +68,12 @@ AnimatedPopup {
       }
 
       // Тумблер увімкнення Bluetooth
-      Rectangle {
-        id: btToggleBg
-        property bool isHovered: false
-        width: 36; height: 22; radius: 11
-        color: adapter?.enabled ? window.palette.widgetFg : window.palette.bg2
-        Behavior on color { ColorAnimation { duration: 150 } }
-        border.width: isHovered ? 1 : 0
-        border.color: window.palette.hoverOverlay
-        Behavior on border.width { NumberAnimation { duration: 120 } }
-
-        Rectangle {
-          x: adapter?.enabled ? parent.width - width - 2 : 2
-          width: 18; height: 18; radius: 9
-          color: adapter?.enabled ? window.palette.bg1 : window.palette.gray
-          anchors.verticalCenter: parent.verticalCenter
-          Behavior on x { NumberAnimation { duration: 150 } }
-          Behavior on color { ColorAnimation { duration: 150 } }
-        }
-
-        MouseArea {
-          anchors.fill: parent
-          hoverEnabled: true
-          onEntered: btToggleBg.isHovered = true
-          onExited: btToggleBg.isHovered = false
-          onClicked: { if (adapter) adapter.enabled = !adapter.enabled }
-        }
+      ToggleSwitch {
+        checked: adapter?.enabled ?? false
+        palette: window.palette
+        checkedColor: window.palette.widgetFg
+        Layout.alignment: Qt.AlignVCenter
+        onToggled: value => { if (adapter) adapter.enabled = value }
       }
     }
 
@@ -154,32 +134,13 @@ AnimatedPopup {
         font.family: window.palette.font; font.pixelSize: 12
       }
 
-      Rectangle {
-        id: discoverableToggleBg
-        property bool isHovered: false
-        width: 32; height: 18; radius: 9
-        color: adapter?.discoverable ? window.palette.widgetFg : window.palette.bg2
-        Behavior on color { ColorAnimation { duration: 150 } }
-        border.width: isHovered ? 1 : 0
-        border.color: window.palette.hoverOverlay
-        Behavior on border.width { NumberAnimation { duration: 120 } }
-
-        Rectangle {
-          x: adapter?.discoverable ? parent.width - width - 2 : 2
-          width: 14; height: 14; radius: 7
-          color: adapter?.discoverable ? window.palette.bg1 : window.palette.gray
-          anchors.verticalCenter: parent.verticalCenter
-          Behavior on x { NumberAnimation { duration: 150 } }
-          Behavior on color { ColorAnimation { duration: 150 } }
-        }
-
-        MouseArea {
-          anchors.fill: parent
-          hoverEnabled: true
-          onEntered: discoverableToggleBg.isHovered = true
-          onExited: discoverableToggleBg.isHovered = false
-          onClicked: { if (adapter) adapter.discoverable = !adapter.discoverable }
-        }
+      ToggleSwitch {
+        checked: adapter?.discoverable ?? false
+        palette: window.palette
+        checkedColor: window.palette.widgetFg
+        trackWidth: 32; trackHeight: 18; knobSize: 14
+        Layout.alignment: Qt.AlignVCenter
+        onToggled: value => { if (adapter) adapter.discoverable = value }
       }
 
       Item { Layout.fillWidth: true }

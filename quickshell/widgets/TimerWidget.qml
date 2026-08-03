@@ -11,9 +11,7 @@ Item {
   id: root
 
   required property QtObject window
-  // Необов'язковий конфіг — якщо appConfig.timerSoundPath заданий і файл існує,
-  // матиме пріоритет над своїм звуком з assets/. Прибери "?" / required, якщо
-  // конфіг завжди передається ззовні, як у GenshinMonitor.
+  // Передається з Bar.qml: appConfig.timerSoundPath — кастомний звук завершення
   property QtObject appConfig: null
 
   property bool timerRunning: false
@@ -145,11 +143,10 @@ Item {
     Behavior on color { ColorAnimation { duration: 220 } }
 
     // Блимання при завершенні
-    SequentialAnimation on opacity {
+    BlinkAnimation {
       running: root.timerClass === "done"
-      loops: Animation.Infinite
-      NumberAnimation { to: 0.4; duration: 600; easing.type: Easing.InOutSine }
-      NumberAnimation { to: 1.0; duration: 600; easing.type: Easing.InOutSine }
+      minOpacity: 0.4
+      blinkDuration: 600
     }
   }
 

@@ -67,14 +67,14 @@ PanelWindow {
   Component { id: workspacesComp; WorkspacesWidget { window: root } }
   Component { id: mprisComp;      MprisWidget { window: root; anchors.fill: parent; cavBars: cavaMonitor.bars } }
   Component { id: clockComp;      ClockWidget { window: root } }
-  Component { id: timerComp;      TimerWidget { window: root; anchors.fill: parent } }
+  Component { id: timerComp;      TimerWidget { window: root; anchors.fill: parent; appConfig: root.appConfig } }
   Component { id: genshinComp;    GenshinWidget { window: root; anchors.fill: parent; resinText: genshinMonitor.resinText; resinClass: genshinMonitor.resinClass } }
   Component { id: keyboardComp;   KeyboardLayoutWidget { window: root; anchors.fill: parent } }
   Component { id: audioComp;      AudioWidget { window: root; anchors.fill: parent } }
   Component { id: controlComp;    ControlWidget { window: root; anchors.fill: parent; unread: controlPopup.unread } }
   Component { id: btComp;         BluetoothWidget { window: root; anchors.fill: parent } }
   Component { id: netComp;        NetWidget { window: root; anchors.fill: parent } }
-  Component { id: trayComp;       TrayWidget { window: root; anchors.fill: parent } }
+  Component { id: trayComp;       TrayWidget { anchors.fill: parent } }
 
   readonly property var widgetComponents: ({
     launcher: launcherComp, workspaces: workspacesComp, mpris: mprisComp,
@@ -179,10 +179,13 @@ PanelWindow {
     }
   }
 
-  // Монітор аудіо-візуалізації (cava)
+  // Монітор аудіо-візуалізації (cava) — працює, коли візуалізатор реально
+  // видно: у віджеті панелі під час відтворення або у відкритому попапі.
+  // Інакше cava на 30 fps спалював би CPU вхолосту весь день.
   CavaMonitor {
     id: cavaMonitor
     appConfig: root.appConfig
+    active: mprisPopup.visible || (root.mprisWidget?.player?.isPlaying ?? false)
   }
 
   GenshinMonitor {

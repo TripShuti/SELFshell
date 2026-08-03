@@ -40,6 +40,19 @@ PopupWindow {
     root.visible = !root.visible
   }
 
+  // --- Позиціонування під anchorItem-ом (спільний патерн попапів) ---
+  // Дочірні попапи встановлюють popupWindow/anchorTarget і викликають
+  // positionUnderAnchor() з onVisibleChanged — замість 5 однакових копій
+  // "var r = window.itemRect(...); anchor.rect = ..." по файлах.
+  property QtObject popupWindow: null
+  property QtObject anchorTarget: null
+
+  function positionUnderAnchor() {
+    if (!root.popupWindow || !root.anchorTarget) return
+    var r = root.popupWindow.itemRect(root.anchorTarget)
+    root.anchor.rect = Qt.rect(r.x, r.y + r.height + 10, root.implicitWidth, root.implicitHeight)
+  }
+
   // Зовнішнє м'яке сяйво навколо контейнера.
   // Раніше виходило на -3px за межі container через anchors.margins,
   // але сама Wayland-поверхня (PopupWindow) має розмір рівно container-а —

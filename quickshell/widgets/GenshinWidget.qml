@@ -42,11 +42,10 @@ Item {
       fillMode: Image.PreserveAspectFit
       Layout.alignment: Qt.AlignVCenter
 
-      SequentialAnimation on opacity {
+      BlinkAnimation {
         running: root.resinClass === "critical"
-        loops: Animation.Infinite
-        NumberAnimation { to: 0.45; duration: 700; easing.type: Easing.InOutSine }
-        NumberAnimation { to: 1.0; duration: 700; easing.type: Easing.InOutSine }
+        minOpacity: 0.45
+        blinkDuration: 700
       }
     }
 
@@ -62,11 +61,10 @@ Item {
       Behavior on color { ColorAnimation { duration: 220 } }
 
       // Блимання тексту при critical
-      SequentialAnimation on opacity {
+      BlinkAnimation {
         running: root.resinClass === "critical"
-        loops: Animation.Infinite
-        NumberAnimation { to: 0.45; duration: 700; easing.type: Easing.InOutSine }
-        NumberAnimation { to: 1.0; duration: 700; easing.type: Easing.InOutSine }
+        minOpacity: 0.45
+        blinkDuration: 700
       }
 
       onVisibleChanged: if (!visible) opacity = 1.0

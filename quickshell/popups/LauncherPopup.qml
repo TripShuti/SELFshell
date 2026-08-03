@@ -31,11 +31,6 @@ AnimatedPopup {
     values: root.entries
   }
 
-  // Перемикає видимість лаунчера
-  function toggle() {
-    root.visible = !root.visible
-  }
-
   // Фільтрує додатки за пошуком, сортує за частотою запуску
   function filterApps() {
     var all = DesktopEntries.applications.values
@@ -103,10 +98,6 @@ AnimatedPopup {
     anchor.window = window
     try { Usage.setData(JSON.parse(usageFile.text() || "{}")) } catch(e) { Usage.setData({}) }
     filterApps()
-    Qt.callLater(function() {
-      root.visible = true
-      root.visible = false
-    })
   }
 
   onVisibleChanged: {
@@ -186,17 +177,7 @@ AnimatedPopup {
     }
 
     // Роздільник
-    Rectangle {
-      Layout.fillWidth: true
-      height: 1
-      antialiasing: true
-      gradient: Gradient {
-        orientation: Gradient.Horizontal
-        GradientStop { position: 0.0; color: "transparent" }
-        GradientStop { position: 0.5; color: window.palette.bg2 }
-        GradientStop { position: 1.0; color: "transparent" }
-      }
-    }
+    GradientSeparator { midColor: window.palette.bg2 }
 
     // Список додатків
     Item {
@@ -310,11 +291,12 @@ AnimatedPopup {
             id: ma
             anchors.fill: parent
             hoverEnabled: true
+            // Тільки onClicked: подвійний клік не має власного обробника,
+            // бо він генерує onClicked двічі + onDoubleClicked — потрійний запуск
             onClicked: {
               listView.currentIndex = index
               launchEntry(modelData)
             }
-            onDoubleClicked: launchEntry(modelData)
           }
         }
 

@@ -25,7 +25,7 @@ Item {
   property bool _reachedMaxToday: false
   property bool _firstSyncDone: false
 
-  readonly property string _basePath: "$HOME/.config/quickshell/scripts/genshin_stats.py"
+  readonly property string _basePath: Qt.resolvedUrl("../scripts/genshin_stats.py").toString().replace("file://", "")
 
   function _todayStr() { return new Date().toISOString().slice(0, 10) }
 
@@ -81,7 +81,8 @@ Item {
       root._lastSyncDate = root._todayStr()
       root._firstSyncDone = true
 
-      if (obj.resin >= 200) {
+      // Кап рахуємо від реального максимуму, не від захардкодженого 200
+      if (obj.resin >= root._lastSyncMaxResin) {
         root._reachedMaxToday = true
         highResinTimer.running = false
       } else {
@@ -90,11 +91,15 @@ Item {
       }
     }
 
-    if (!mainTimer.running) mainTimer.running = true
+    // Таймери працюють тільки поки монітор увімкнений — вимкнення під час
+    // активного синку не повинно запустити їх заднім числом
+    if (!mainTimer.running && root.monitorEnabled) mainTimer.running = true
   }
 
   function _doSync() {
+    if (!root.monitorEnabled) return
     if (syncProc.running) return
+    root._syncManual = false
     console.log("[Genshin] Starting sync at", new Date().toISOString())
     syncProc.running = true
   }
@@ -103,7 +108,8 @@ Item {
   readonly property int _manualRefreshCooldown: 30
 
   function refreshNow() {
-    if (manualProc.running) return
+    if (!root.monitorEnabled) return
+    if (syncProc.running) return
     if (_firstSyncDone && (Date.now() / 1000 - _lastSyncTime) < _manualRefreshCooldown) {
       root.refreshStatus = "error"
       root.refreshMessage = "Wait a bit, synced recently"
@@ -112,10 +118,11 @@ Item {
     }
     root.refreshStatus = "loading"
     root.refreshMessage = ""
-    manualProc.running = true
+    root._syncManual = true
+    syncProc.running = true
   }
 
-  // Старт: перший синк + запуск головного таймера
+  // Старт: перший синк (тільки якщо монітор увімкнений)
   Component.onCompleted: _doSync()
 
   // Головний таймер: локальний обрахунок + тригери
@@ -141,59 +148,58 @@ Item {
     onTriggered: { if (!syncProc.running) syncProc.running = true }
   }
 
-  // Процес синку з HoYoLAB API
+  // Єдиний процес синку (фоновий і ручний рефреш):
+  // _syncManual розрізняє джерело запуску в onExited
+  property bool _syncManual: false
+
   Process {
     id: syncProc
     property string _buf: ""
-    command: ["sh", "-c", "python3 " + root._basePath + " sync"]
+    command: ["python3", root._basePath, "sync"]
     stdout: SplitParser {
       splitMarker: "\n"
       onRead: data => { syncProc._buf += (data ?? "") }
     }
-    onExited: {
+    onExited: (code) => {
       running = false
       var text = syncProc._buf.trim()
       syncProc._buf = ""
+
+      // Ручний рефреш має власний фідбек (статус/повідомлення)
+      if (root._syncManual) {
+        root._syncManual = false
+        if (code !== 0 && root.refreshStatus === "loading") {
+          root.refreshStatus = "error"
+          root.refreshMessage = "Launch error"
+          resetTimer.restart()
+          return
+        }
+        if (text === "") {
+          root.refreshStatus = "error"
+          root.refreshMessage = "Empty response"
+          resetTimer.restart()
+          return
+        }
+        try {
+          root._parseSyncResult(JSON.parse(text))
+          root.refreshStatus = "ok"
+          root.refreshMessage = "Updated"
+          resetTimer.restart()
+        } catch (e) {
+          console.error("Manual error:", e)
+          root.refreshStatus = "error"
+          root.refreshMessage = "Error: " + e
+          resetTimer.restart()
+        }
+        return
+      }
+
       if (text === "") return
       try {
         root._parseSyncResult(JSON.parse(text))
         console.log("[Genshin] Sync done, resin:", root._lastSyncResin, "/", root._lastSyncMaxResin)
       }
       catch (e) { console.error("Sync error:", e) }
-    }
-  }
-
-  // Процес ручного рефрешу (з кулдауном 30 с)
-  Process {
-    id: manualProc
-    property string _buf: ""
-    command: ["sh", "-c", "python3 " + root._basePath + " sync"]
-    stdout: SplitParser {
-      splitMarker: "\n"
-      onRead: data => { manualProc._buf += (data ?? "") }
-    }
-    onExited: (code) => {
-      running = false
-      if (code !== 0 && root.refreshStatus === "loading") {
-        root.refreshStatus = "error"
-        root.refreshMessage = "Launch error"
-        resetTimer.restart()
-        return
-      }
-      var text = manualProc._buf.trim()
-      manualProc._buf = ""
-      if (text === "") return
-      try {
-        root._parseSyncResult(JSON.parse(text))
-        root.refreshStatus = "ok"
-        root.refreshMessage = "Updated"
-        resetTimer.restart()
-      } catch (e) {
-        console.error("Manual error:", e)
-        root.refreshStatus = "error"
-        root.refreshMessage = "Error: " + e
-        resetTimer.restart()
-      }
     }
   }
 
@@ -211,7 +217,6 @@ Item {
       mainTimer.running = false
       highResinTimer.running = false
       syncProc.running = false
-      manualProc.running = false
     }
   }
 }

@@ -14,11 +14,13 @@ Item {
   required property QtObject window
   signal clicked()
 
-  property string preferredPlayer: "subtui"
+  property string preferredPlayer: "selfsonic"
   property var player: null
   property var cavBars: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 
-  // Знаходить плеєр за назвою або перший доступний
+  // Знаходить плеєр за назвою або перший доступний.
+  // Не перезаписує player, якщо той самий об'єкт — інакше таймер
+  // періодичного пошуку спамив би перепризначенням.
   function findAndSetPlayer() {
     var target = null
     var fallback = null
@@ -33,7 +35,8 @@ Item {
       }
     }
 
-    root.player = target ?? fallback
+    var best = target ?? fallback
+    if (root.player !== best) root.player = best
   }
 
   // Стежить за появою/зникненням плеєрів Mpris
@@ -52,14 +55,23 @@ Item {
     }
   }
 
-  // Періодичний пошук плеєра (на випадок пізнього підключення)
+  // Періодичний пошук плеєра. Крутиться ЗАВЖДИ: Mpris-модель наповнюється
+  // асинхронно (плеєри під'єднуються по одному), тож fallback (напр. mpv без
+  // artUrl/TrackList) може виграти спочатку. Постійний таймер підхоплює
+  // preferredPlayer, щойно той з'явиться в моделі.
   Timer {
-    interval: 2000; running: true; repeat: true
+    interval: 2000
+    running: true
+    repeat: true
     onTriggered: root.findAndSetPlayer()
   }
 
   implicitWidth: root.player ? contentRow.implicitWidth : 0
   implicitHeight: parent?.height ?? 36
+
+  // Максимальна ширина назви треку — інакше elide не має межі і довга
+  // назва роздуває центральну пігулку на всю ширину
+  readonly property real maxTrackWidth: 220
 
   RowLayout {
     id: contentRow
@@ -83,6 +95,7 @@ Item {
       font.family: window.palette.font; font.pixelSize: 12
       elide: Text.ElideRight
       Layout.fillWidth: true
+      Layout.maximumWidth: root.maxTrackWidth
       Layout.alignment: Qt.AlignVCenter
       Behavior on color { ColorAnimation { duration: 220 } }
     }
@@ -107,19 +120,18 @@ Item {
           anchors.bottom: parent.bottom
           color: raw > 0.65 ? window.palette.green : (raw > 0.3 ? window.palette.audioVolume : window.palette.muted)
 
+          // Тільки Behavior on height: кольорова анімація тут прибирає
+          // ~28 рестартів ColorAnimation на кожен кадр cava (30 fps)
           Behavior on height {
             NumberAnimation { duration: 130; easing.type: Easing.OutBack; easing.overshoot: 0.6 }
-          }
-          Behavior on color {
-            ColorAnimation { duration: 220 }
           }
         }
       }
     }
   }
 
-// Клік (ПКМ → попап, ЛКМ → play/pause), колесо → prev/next
-MouseArea {
+  // Клік (ПКМ → попап, ЛКМ → play/pause), колесо → prev/next
+  MouseArea {
     anchors.fill: parent
     acceptedButtons: Qt.LeftButton | Qt.RightButton
     onClicked: mouse => {

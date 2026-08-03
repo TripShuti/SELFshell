@@ -11,8 +11,6 @@ import "../core"
 HoverItem {
   id: root
 
-  required property QtObject window
-
   implicitWidth: trayRow.implicitWidth
   implicitHeight: parent?.height ?? 36
 

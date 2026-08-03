@@ -27,22 +27,27 @@ AnimatedPopup {
 
   onVisibleChanged: {
     if (visible) {
-      var scr = window.screen
-      anchor.rect = Qt.rect(
-        (scr.width - implicitWidth) / 2,
-        (scr.height - implicitHeight) / 2,
-        implicitWidth,
-        implicitHeight
-      )
+      var scr = window.screen ?? Quickshell.screens[0]
+      if (scr) {
+        anchor.rect = Qt.rect(
+          (scr.width - implicitWidth) / 2,
+          (scr.height - implicitHeight) / 2,
+          implicitWidth,
+          implicitHeight
+        )
+      }
     }
   }
 
+
+  readonly property string paletteScriptPath: Qt.resolvedUrl("../scripts/update-palette.sh").toString().replace("file://", "")
+  readonly property string listScriptPath: Qt.resolvedUrl("../scripts/update-palette.py").toString().replace("file://", "")
 
   // Отримує список файлів шпалер з директорії wp/
   Process {
     id: listProc
     stdout: listCollector
-    command: ["sh", "-c", "ls -t $HOME/.config/quickshell/wp/*.{jpg,jpeg,png} 2>/dev/null | grep -v /current.jpg"]
+    command: ["python3", root.listScriptPath, "list"]
   }
 
   StdioCollector {
@@ -59,12 +64,22 @@ AnimatedPopup {
   // Застосовує вибрану шпалеру через update-palette.sh
   Process {
     id: applyProc
-    onExited: running = false
+    onExited: {
+      running = false
+      // Статус "Setting wallpaper..." має зникнути через кілька секунд
+      statusResetTimer.restart()
+    }
+  }
+
+  Timer {
+    id: statusResetTimer
+    interval: 3000
+    onTriggered: root.statusText = ""
   }
 
   function setWallpaper(path) {
     statusText = "\uF002 Setting wallpaper..."
-    applyProc.command = ["sh", "-c", "$HOME/.config/quickshell/scripts/update-palette.sh \"$1\"", "--", path]
+    applyProc.command = [root.paletteScriptPath, path]
     applyProc.running = true
   }
 
@@ -112,16 +127,7 @@ AnimatedPopup {
     }
 
     // Роздільник
-    Rectangle {
-      Layout.fillWidth: true
-      height: 1
-      gradient: Gradient {
-        orientation: Gradient.Horizontal
-        GradientStop { position: 0.0; color: "transparent" }
-        GradientStop { position: 0.5; color: window.palette.bg2 }
-        GradientStop { position: 1.0; color: "transparent" }
-      }
-    }
+    GradientSeparator { midColor: window.palette.bg2 }
 
     // Сітка мініатюр (горизонтальний скрол)
     Flickable {

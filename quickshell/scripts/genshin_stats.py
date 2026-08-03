@@ -20,12 +20,16 @@ ACT_ID = os.getenv("GENSHIN_ACT_ID", "e202102251931481")
 
 STATE_FILE = os.path.join(os.path.dirname(__file__), ".genshin_state.json")
 REQUEST_LOG_FILE = os.path.join(os.path.dirname(__file__), ".genshin_requests.log")
+REQUEST_LOG_MAX_SIZE = 1024 * 1024
 RESIN_REGEN_SECONDS = 480
 
 
 def log_request(kind):
     """Пише один рядок у лог-файл щоразу, коли йде РЕАЛЬНИЙ HTTP-запит до Hoyolab."""
     try:
+        # Проста ротація: файл старше 1MB перейменовується в .old
+        if os.path.exists(REQUEST_LOG_FILE) and os.path.getsize(REQUEST_LOG_FILE) > REQUEST_LOG_MAX_SIZE:
+            os.replace(REQUEST_LOG_FILE, REQUEST_LOG_FILE + ".old")
         with open(REQUEST_LOG_FILE, "a") as f:
             f.write(f"{datetime.datetime.now().isoformat(timespec='seconds')}  {kind}\n")
     except OSError:
@@ -153,15 +157,16 @@ def do_sign(force=False):
 
 def estimate_local(state):
     now = time.time()
-    resin = state["resin"]
-    max_resin = state["max_resin"]
-    full_at = state["full_at"]
+    resin = state.get("resin", 0)
+    max_resin = state.get("max_resin", 200)
+    full_at = state.get("full_at", 0)
+    synced_at = state.get("synced_at", now)
 
     if now >= full_at:
         resin = max_resin
         recovery_str = "Full"
     else:
-        elapsed = now - state["synced_at"]
+        elapsed = now - synced_at
         resin = min(max_resin, resin + int(elapsed // RESIN_REGEN_SECONDS))
         remaining = int(full_at - now)
         hours, rem = divmod(remaining, 3600)
@@ -275,7 +280,7 @@ def do_sync(min_interval=SYNC_MIN_INTERVAL):
     backoff_until = state.get("backoff_until")
     if backoff_until and now < backoff_until:
         remaining = int(backoff_until - now)
-        return _cached_response(state, cache_note=f"\n⏳ Rate limit backoff, {remaining}s remaining")
+        return _cached_response(state, cache_note=f"\nRate limit backoff, {remaining}s remaining")
 
     # Троттлінг: не робимо реальний запит частіше, ніж раз на min_interval секунд,
     # незалежно від того, хто саме викликав sync
@@ -289,7 +294,7 @@ def do_sync(min_interval=SYNC_MIN_INTERVAL):
             state["backoff_until"] = now + RATE_LIMIT_BACKOFF
             save_state(state)
         if state and "resin" in state:
-            return _cached_response(state, cache_note="\n⚠ Request failed, data from cache")
+            return _cached_response(state, cache_note="\nRequest failed, data from cache")
         return {"text": " Error", "tooltip": error.get("tooltip", str(error)),
                 "class": "error", "resin": 0, "maxResin": 200, "ok": False}
 

@@ -130,18 +130,17 @@ AnimatedPopup {
     // конект після "forget"), NetworkManager міг створити ДЕКІЛЬКА профілів з тим
     // самим SSID ("MyWifi", "MyWifi 1", ...). Беремо не перший-ліпший, а той,
     // яким реально користувались останнім (за connection.timestamp).
+    //
+    // Один nmcli-прохід з трьома полями замість N+1 підпроцесів (раніше для
+    // кожного wireless-профілю запускався окремий "nmcli con show").
+    // Обмеження: імена профілів/SSID з ":" не підтримуються (той самий компроміс,
+    // що й у попередньому варіанті через awk -F:).
     if (network.name) {
       resolvingBySsid = true;
       resolveConnProcess.command = ["bash", "-c",
         "SSID=" + escapeShell(network.name) + "; " +
-        "nmcli -t -f NAME,TYPE con show | awk -F: '$2==\"802-11-wireless\"{print $1}' | " +
-        "while IFS= read -r c; do " +
-        "s=$(nmcli -t -f 802-11-wireless.ssid con show \"$c\" 2>/dev/null); s=${s#*:}; " +
-        "if [ \"$s\" = \"$SSID\" ]; then " +
-        "ts=$(nmcli -t -f connection.timestamp con show \"$c\" 2>/dev/null); ts=${ts#*:}; " +
-        "echo \"${ts:-0}|$c\"; " +
-        "fi; " +
-        "done | sort -t'|' -k1,1nr"
+        "nmcli -t -f NAME,802-11-wireless.ssid,connection.timestamp con show | " +
+        "awk -v s=\"$SSID\" -F: '$2 == s { ts=$3+0; print ts \"|\" $1 }' | sort -t'|' -k1,1nr"
       ];
       resolveConnProcess.running = true;
     }
@@ -401,35 +400,14 @@ AnimatedPopup {
         Layout.fillWidth: true
       }
 
-      Rectangle {
-        id: autoconnectToggleBg
-        property bool isHovered: false
-        width: 36; height: 22; radius: 11
+      ToggleSwitch {
+        checked: root.autoconnect
+        palette: window.palette
+        checkedColor: window.palette.widgetFg
         opacity: root.autoconnectPending ? 0.6 : 1
-        color: root.autoconnect ? window.palette.widgetFg : window.palette.bg2
-        Behavior on color { ColorAnimation { duration: 150 } }
-        border.width: isHovered ? 1 : 0
-        border.color: window.palette.hoverOverlay
-        Behavior on border.width { NumberAnimation { duration: 120 } }
-
-        Rectangle {
-          x: root.autoconnect ? parent.width - width - 2 : 2
-          width: 18; height: 18; radius: 9
-          color: root.autoconnect ? window.palette.bg1 : window.palette.gray
-          anchors.verticalCenter: parent.verticalCenter
-          Behavior on x { NumberAnimation { duration: 150 } }
-          Behavior on color { ColorAnimation { duration: 150 } }
-        }
-
-        MouseArea {
-          anchors.fill: parent
-          hoverEnabled: true
-          cursorShape: Qt.PointingHandCursor
-          enabled: !root.autoconnectPending
-          onEntered: autoconnectToggleBg.isHovered = true
-          onExited: autoconnectToggleBg.isHovered = false
-          onClicked: root.toggleAutoconnect()
-        }
+        enabled: !root.autoconnectPending
+        Layout.alignment: Qt.AlignVCenter
+        onToggled: root.toggleAutoconnect()
       }
     }
 

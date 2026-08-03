@@ -27,7 +27,7 @@ Item {
   // Отримує поточну розкладку при старті
   Process {
     id: initialProc
-    command: ["sh", "-c", "hyprctl devices -j"]
+    command: ["hyprctl", "devices", "-j"]
 
     stdout: SplitParser {
       splitMarker: "\n"
@@ -77,10 +77,38 @@ Item {
     }
   }
 
-  // Перемикає розкладку при кліку
+  // Перемикає розкладку при кліку: спершу знаходимо ім'я main-клавіатури,
+  // потім запускаємо switchxkblayout прямими аргументами
+  // (раніше — sh -c з python one-liner усередині)
+  Process {
+    id: devsProc
+    command: ["hyprctl", "devices", "-j"]
+
+    stdout: SplitParser {
+      splitMarker: "\n"
+      onRead: data => {
+        var text = (data ?? "").trim()
+        if (text === "") return
+        var mainName = ""
+        try {
+          var obj = JSON.parse(text)
+          var keyboards = obj.keyboards ?? []
+          for (var i = 0; i < keyboards.length; ++i) {
+            if (keyboards[i].main === true) { mainName = keyboards[i].name; break }
+          }
+          if (mainName === "" && keyboards.length > 0) mainName = keyboards[0].name
+        } catch (e) {}
+        if (mainName !== "") {
+          switchProc.command = ["hyprctl", "switchxkblayout", mainName, "next"]
+          switchProc.running = true
+        }
+      }
+    }
+  }
+
   Process {
     id: switchProc
-    command: ["sh", "-c", "hyprctl switchxkblayout $(hyprctl devices -j | python3 -c 'import sys,json;d=json.load(sys.stdin);print([k[\"name\"] for k in d[\"keyboards\"] if k.get(\"main\")][0])') next"]
+    command: ["hyprctl", "switchxkblayout", "", "next"]
   }
 
   Text {
@@ -95,7 +123,7 @@ Item {
   MouseArea {
     anchors.fill: parent
     cursorShape: Qt.PointingHandCursor
-    onClicked: switchProc.running = true
+    onClicked: devsProc.running = true
   }
 
   Component.onCompleted: {

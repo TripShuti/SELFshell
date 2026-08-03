@@ -25,9 +25,14 @@ Item {
   property bool keyboardEnabled: true
   property bool audioEnabled: true
   property bool controlEnabled: true
-  property bool btEnabled: true
-  property bool netEnabled: true
-  property bool trayEnabled: true
+  // Дефолти вимкнених сервісів співпадають з config.json (bt/net/tray
+  // за замовчуванням вимкнені, вмикаються через Settings)
+  property bool btEnabled: false
+  property bool netEnabled: false
+  property bool trayEnabled: false
+
+  // Кастомний шлях до звуку завершення таймера ("" = звук з assets/)
+  property string timerSoundPath: ""
 
   // Фіксований канонічний список усіх віджетів — використовується
   // Settings-попапом для стабільного порядку рядків (не залежить від
@@ -134,6 +139,7 @@ Item {
     if (data.btEnabled !== undefined)         btEnabled         = data.btEnabled
     if (data.netEnabled !== undefined)        netEnabled        = data.netEnabled
     if (data.trayEnabled !== undefined)       trayEnabled       = data.trayEnabled
+    if (data.timerSoundPath !== undefined)    timerSoundPath    = data.timerSoundPath
     if (data.leftOrder !== undefined)         leftOrder         = data.leftOrder
     if (data.centerOrder !== undefined)       centerOrder       = data.centerOrder
     if (data.rightOrder !== undefined)        rightOrder        = data.rightOrder
@@ -153,6 +159,7 @@ Item {
       btEnabled:         btEnabled,
       netEnabled:        netEnabled,
       trayEnabled:       trayEnabled,
+      timerSoundPath:    timerSoundPath,
       leftOrder:         leftOrder,
       centerOrder:       centerOrder,
       rightOrder:        rightOrder

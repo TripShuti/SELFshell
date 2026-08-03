@@ -19,11 +19,23 @@ AnimatedPopup {
   implicitHeight: layout.implicitHeight + 4
   transformOrigin: Item.Top
 
-  property string preferredPlayer: "subtui"
+  property string preferredPlayer: "selfsonic"
   property var player: null
   property var cavBars: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 
   property bool artError: false
+
+  // Стабілізований artUrl: 
+  // metadata push (~2/с), тож trackArtUrl міняється постійно, і без
+  // стабілізації Image перезавантажував би HTTP-картинку при кожному push.
+  // Оновлюємо source лише коли змінився сам трек (ключ — URL без токена);
+  // оновлення робить findAndSetPlayer (викликається таймером кожні 2с).
+  property string _artUrl: ""
+  property string _lastArtKey: ""
+
+  function _artKeyOf(url) {
+    return url.replace(/[?&](s|t)=[^&]*/g, "")
+  }
 
   // --- Плейліст ---
   property bool playlistOpen: false
@@ -86,11 +98,23 @@ AnimatedPopup {
 
   function _updateAnchor() {
     if (!root.visible) return
-    var r = window.itemRect(anchorItem)
-    anchor.rect = Qt.rect(r.x, r.y + r.height + 10, implicitWidth, implicitHeight)
+    root.positionUnderAnchor()
   }
 
-  // Знаходить плеєр за назвою або перший доступний
+  popupWindow: window
+  anchorTarget: anchorItem
+
+  Component.onCompleted: {
+    anchor.window = window
+  }
+
+  onVisibleChanged: {
+    if (visible) root.positionUnderAnchor()
+  }
+
+  // Знаходить плеєр за назвою або перший доступний.
+  // Не перезаписує player, якщо той самий об'єкт — інакше таймер
+  // періодичного пошуку спамив би перепризначенням.
   function findAndSetPlayer() {
     var target = null
     var fallback = null
@@ -105,7 +129,16 @@ AnimatedPopup {
       }
     }
 
-    root.player = target ?? fallback
+    var best = target ?? fallback
+    if (root.player !== best) root.player = best
+
+    // Стабілізація artUrl: не чіпаємо source, поки змінюється лише auth-токен
+    var raw = root.player?.trackArtUrl ?? ""
+    var key = root._artKeyOf(raw)
+    if (key !== root._lastArtKey) {
+      root._lastArtKey = key
+      root._artUrl = raw
+    }
   }
 
   // Стежить за появою/зникненням плеєрів Mpris
@@ -124,10 +157,29 @@ AnimatedPopup {
     }
   }
 
-  // Періодичний пошук плеєра (на випадок пізнього підключення)
+  // Періодичний пошук плеєра. Крутиться ЗАВЖДИ: Mpris-модель наповнюється
+  // асинхронно (плеєри під'єднуються по одному), тож fallback (напр. mpv без
+  // artUrl/TrackList) може виграти спочатку. Постійний таймер підхоплює
+  // preferredPlayer, щойно той з'явиться в моделі.
   Timer {
-    interval: 2000; running: true; repeat: true
+    interval: 2000
+    running: true
+    repeat: true
     onTriggered: root.findAndSetPlayer()
+  }
+
+  // Позиція плеєра не реактивна: Quickshell emitи positionChanged лише на
+  // нелінійні зміни (seek/зміна треку). Інтерполяція позиції (Position +
+  // таймстемп) дрейфує і може випередити реальний стан, тож часті ретрансляції
+  // дають бар "повний". Оновлюємо не частіше ніж раз на секунду; смужка
+  // сама клемпить значення до довжини треку.
+  Timer {
+    interval: 1000
+    running: root.player?.isPlaying ?? false
+    repeat: true
+    onTriggered: {
+      if (root.player) root.player.positionChanged()
+    }
   }
 
   // Форматує секунди в "m:ss"
@@ -138,15 +190,18 @@ AnimatedPopup {
     return m + ":" + (s < 10 ? "0" : "") + s
   }
 
-  Component.onCompleted: {
-    anchor.window = window
+  // Плавне встановлення гучності за позицією миші на треку
+  function _setVolumeFrom(track, mouse) {
+    if (!root.player) return
+    var ratio = mouse.x / track.width
+    root.player.volume = Math.max(0, Math.min(ratio, 1))
   }
 
-  onVisibleChanged: {
-    if (visible) {
-      var r = window.itemRect(anchorItem)
-      anchor.rect = Qt.rect(r.x, r.y + r.height + 10, implicitWidth, implicitHeight)
-    }
+  // Плавна перемотка за позицією миші на треку прогресу
+  function _seekFrom(track, mouse) {
+    if (!root.player?.canSeek) return
+    var ratio = Math.max(0, Math.min(mouse.x / track.width, 1))
+    root.player.position = ratio * root.player.length
   }
 
   // Якщо плеєр зник — закриваємо секцію плейлісту
@@ -184,14 +239,44 @@ AnimatedPopup {
 
 
     // Роздільник
-    Rectangle {
+    GradientSeparator {
+      midColor: window.palette.bg2
       Layout.fillWidth: true
-      height: 5
-      gradient: Gradient {
-        orientation: Gradient.Horizontal
-        GradientStop { position: 0.0; color: "transparent" }
-        GradientStop { position: 0.5; color: window.palette.bg2 }
-        GradientStop { position: 1.0; color: "transparent" }
+      Layout.preferredHeight: 5
+    }
+
+    // Аудіо-візуалізатор (cava) — на самому верху, під усіма елементами
+    RowLayout {
+      Layout.fillWidth: true
+      height: 24
+      spacing: 2
+      visible: root.player != null
+
+      Repeater {
+        model: 28
+
+        delegate: Rectangle {
+          required property int index
+
+          Layout.fillWidth: true
+          Layout.alignment: Qt.AlignBottom
+
+          readonly property real raw: root.cavBars[index] ?? 0
+          readonly property real vheight: Math.max(2, raw * 24)
+          readonly property real ratio: raw
+
+          height: vheight
+          radius: 1
+          color: ratio > 0.7 ? window.palette.green :
+                 ratio > 0.4 ? window.palette.purple :
+                 window.palette.gray
+
+          // Тільки Behavior on height: ColorAnimation тут рестартувала б
+          // ~28 разів на кожен кадр cava (30 fps)
+          Behavior on height {
+            NumberAnimation { duration: 140; easing.type: Easing.OutBack; easing.overshoot: 0.6 }
+          }
+        }
       }
     }
 
@@ -213,8 +298,8 @@ AnimatedPopup {
           id: artImg
           anchors.fill: parent
           anchors.margins: 1
-          source: root.player?.trackArtUrl ?? ""
-          visible: root.player != null && root.player.trackArtUrl !== "" && !root.artError
+          source: root._artUrl
+          visible: root.player != null && root._artUrl !== "" && !root.artError
           fillMode: Image.PreserveAspectCrop
           onStatusChanged: {
             if (status === Image.Error) root.artError = true
@@ -229,7 +314,7 @@ AnimatedPopup {
           text: "\uF025"
           color: window.palette.gray
           font.family: window.palette.font; font.pixelSize: 28
-          visible: root.player == null || root.player.trackArtUrl === "" || artImg.status === Image.Error
+          visible: root.player == null || root._artUrl === "" || artImg.status === Image.Error
         }
 
         // Індикатор відтворення
@@ -289,12 +374,130 @@ AnimatedPopup {
 
     }
 
-    // Перемішування та повтор
+    // Кнопки керування — по центру, як у типових плеєрах
+    RowLayout {
+      Layout.fillWidth: true
+      spacing: 10
+      Layout.alignment: Qt.AlignHCenter
+      visible: root.player != null
+
+      // Попередній трек
+      Rectangle {
+        property bool hovered: false
+        width: 28; height: 28; radius: 14
+        color: hovered ? window.palette.bg2 : window.palette.bg1
+        Behavior on color { ColorAnimation { duration: 150 } }
+        Text {
+          anchors.centerIn: parent
+          text: "\uF04A"
+          color: window.palette.fg; font.family: window.palette.font; font.pixelSize: 12
+        }
+        MouseArea {
+          anchors.fill: parent
+          hoverEnabled: true
+          onEntered: parent.hovered = true
+          onExited: parent.hovered = false
+          onClicked: root.player?.previous()
+        }
+      }
+
+      // Відтворення / Пауза
+      Rectangle {
+        property bool hovered: false
+        width: 36; height: 36; radius: 18
+        color: window.palette.green
+        border.width: hovered ? 2 : 0
+        border.color: window.palette.fg
+        Behavior on color { ColorAnimation { duration: 150 } }
+        Text {
+          anchors.centerIn: parent
+          text: root.player?.isPlaying ? "\uF04C" : "\uF04B"
+          color: window.palette.bg0H; font.family: window.palette.font; font.pixelSize: 14
+        }
+        MouseArea {
+          anchors.fill: parent
+          hoverEnabled: true
+          onEntered: parent.hovered = true
+          onExited: parent.hovered = false
+          onClicked: root.player?.togglePlaying()
+        }
+      }
+
+      // Наступний трек
+      Rectangle {
+        property bool hovered: false
+        width: 28; height: 28; radius: 14
+        color: hovered ? window.palette.bg2 : window.palette.bg1
+        Behavior on color { ColorAnimation { duration: 150 } }
+        Text {
+          anchors.centerIn: parent
+          text: "\uF04E"
+          color: window.palette.fg; font.family: window.palette.font; font.pixelSize: 12
+        }
+        MouseArea {
+          anchors.fill: parent
+          hoverEnabled: true
+          onEntered: parent.hovered = true
+          onExited: parent.hovered = false
+          onClicked: root.player?.next()
+        }
+      }
+    }
+
+    // Вторинні елементи: гучність зліва, shuffle/loop/playlist справа
     RowLayout {
       Layout.fillWidth: true
       spacing: 4
-      Layout.alignment: Qt.AlignRight
       visible: root.player != null
+
+      // Гучність — компактний блок зліва
+      RowLayout {
+        Layout.alignment: Qt.AlignVCenter
+        spacing: 6
+        visible: root.player?.volumeSupported ?? false
+
+        Text {
+          text: "\uF028"
+          color: window.palette.gray
+          font.family: window.palette.font; font.pixelSize: 9
+        }
+
+        // Тонкий трек з круглою ручкою, як у типових плеєрах
+        Rectangle {
+          id: volTrack
+          Layout.preferredWidth: 84
+          height: 4
+          radius: 1.5
+          color: window.palette.bgAlpha
+          Layout.alignment: Qt.AlignVCenter
+
+          Rectangle {
+            width: parent.width * Math.min(root.player?.volume ?? 0, 1)
+            height: parent.height
+            radius: 1.5
+            color: window.palette.green
+          }
+
+          // Ручка — круглий індикатор поточної гучності
+          Rectangle {
+            width: 8; height: 8; radius: 4
+            color: window.palette.fg
+            x: Math.min(Math.max(parent.width * Math.min(root.player?.volume ?? 0, 1) - width / 2, 0), parent.width - width)
+            y: (parent.height - height) / 2
+          }
+
+          // Drag: ведення миші після натискання змінює гучність плавно
+          MouseArea {
+            anchors.fill: parent
+            onPressed: mouse => root._setVolumeFrom(volTrack, mouse)
+            onPositionChanged: mouse => {
+              if (pressed) root._setVolumeFrom(volTrack, mouse)
+            }
+          }
+        }
+      }
+
+      Item { Layout.fillWidth: true }
 
       // Кнопка перемішування
       Rectangle {
@@ -378,9 +581,9 @@ AnimatedPopup {
       spacing: 4
       visible: root.player != null && root.player.lengthSupported
 
-      // Поточний час
+      // Поточний час (клемпимо дрейф інтерполяції позиції до довжини)
       Text {
-        text: formatTime(root.player?.position ?? 0)
+        text: formatTime(Math.min(root.player?.position ?? 0, root.player?.length ?? 0))
         color: window.palette.gray
         font.family: window.palette.font; font.pixelSize: 9
       }
@@ -389,13 +592,15 @@ AnimatedPopup {
       Rectangle {
         id: progTrack
         Layout.fillWidth: true
-        height: 5; radius: 2.5
+        height: 6; radius: 2.5
         color: window.palette.bg1
         Layout.alignment: Qt.AlignVCenter
 
-        // Заповнення
+        // Заповнення; позиція Quickshell інтерполюється і може вийти за межі
+        // довжини — клемпимо ratio, щоб бар ніколи не був "повний" через дрейф
         Rectangle {
-          width: parent.width * Math.min((root.player?.position ?? 0) / (root.player?.length ?? 1), 1)
+          readonly property real _ratio: Math.min(Math.max((root.player?.position ?? 0) / (root.player?.length ?? 1), 0), 1)
+          width: parent.width * _ratio
           color: root.player?.isPlaying ? window.palette.green : window.palette.gray
           height: parent.height; radius: 2.5
           Behavior on width { NumberAnimation { duration: 300; easing.type: Easing.Linear } }
@@ -410,14 +615,14 @@ AnimatedPopup {
           x: Math.min(Math.max(progArea.mouseX - 5, 0), parent.width - 10)
         }
 
+        // Drag: ведення миші після натискання перемотує трек плавно
         MouseArea {
           id: progArea
           anchors.fill: parent
           hoverEnabled: true
-          onClicked: mouse => {
-            if (root.player?.canSeek) {
-              root.player.position = (mouse.x / width) * root.player.length
-            }
+          onPressed: mouse => root._seekFrom(progTrack, mouse)
+          onPositionChanged: mouse => {
+            if (pressed) root._seekFrom(progTrack, mouse)
           }
         }
       }
@@ -428,115 +633,6 @@ AnimatedPopup {
         color: window.palette.gray
         font.family: window.palette.font; font.pixelSize: 9
       }
-    }
-
-    // Аудіо-візуалізатор (cava)
-    RowLayout {
-      Layout.fillWidth: true
-      height: 24
-      spacing: 2
-      visible: root.player != null
-
-      Repeater {
-        model: 28
-
-        delegate: Rectangle {
-          required property int index
-
-          Layout.fillWidth: true
-          Layout.alignment: Qt.AlignBottom
-
-          readonly property real raw: root.cavBars[index] ?? 0
-          readonly property real vheight: Math.max(2, raw * 24)
-          readonly property real ratio: raw
-
-          height: vheight
-          radius: 1
-          color: ratio > 0.7 ? window.palette.green :
-                 ratio > 0.4 ? window.palette.purple :
-                 window.palette.gray
-
-          Behavior on color { ColorAnimation { duration: 220 } }
-          Behavior on height {
-            NumberAnimation { duration: 140; easing.type: Easing.OutBack; easing.overshoot: 0.6 }
-          }
-        }
-      }
-    }
-
-
-    // Кнопки керування
-    RowLayout {
-      Layout.fillWidth: true
-      spacing: 10
-      Layout.alignment: Qt.AlignHCenter
-      visible: root.player != null
-
-      Item { Layout.fillWidth: true }
-
-      // Попередній трек
-      Rectangle {
-        property bool hovered: false
-        width: 28; height: 28; radius: 14
-        color: hovered ? window.palette.bg2 : window.palette.bg1
-        Behavior on color { ColorAnimation { duration: 150 } }
-        Text {
-          anchors.centerIn: parent
-          text: "\uF04A"
-          color: window.palette.fg; font.family: window.palette.font; font.pixelSize: 12
-        }
-        MouseArea {
-          anchors.fill: parent
-          hoverEnabled: true
-          onEntered: parent.hovered = true
-          onExited: parent.hovered = false
-          onClicked: root.player?.previous()
-        }
-      }
-
-      // Відтворення / Пауза
-      Rectangle {
-        property bool hovered: false
-        width: 36; height: 36; radius: 18
-        color: window.palette.green
-        border.width: hovered ? 2 : 0
-        border.color: window.palette.fg
-        Behavior on color { ColorAnimation { duration: 150 } }
-        Text {
-          anchors.centerIn: parent
-          text: root.player?.isPlaying ? "\uF04C" : "\uF04B"
-          color: window.palette.bg0H; font.family: window.palette.font; font.pixelSize: 14
-        }
-        MouseArea {
-          anchors.fill: parent
-          hoverEnabled: true
-          onEntered: parent.hovered = true
-          onExited: parent.hovered = false
-          onClicked: root.player?.togglePlaying()
-        }
-      }
-
-      // Наступний трек
-      Rectangle {
-        property bool hovered: false
-        width: 28; height: 28; radius: 14
-        color: hovered ? window.palette.bg2 : window.palette.bg1
-        Behavior on color { ColorAnimation { duration: 150 } }
-        Text {
-          anchors.centerIn: parent
-          text: "\uF04E"
-          color: window.palette.fg; font.family: window.palette.font; font.pixelSize: 12
-        }
-        MouseArea {
-          anchors.fill: parent
-          hoverEnabled: true
-          onEntered: parent.hovered = true
-          onExited: parent.hovered = false
-          onClicked: root.player?.next()
-        }
-      }
-
-      Item { Layout.fillWidth: true }
     }
 
     // Плейліст (виїзджаюча секція зі списком треків)
@@ -600,7 +696,8 @@ AnimatedPopup {
           onCurrentIndexChanged: root._scrollPlaylistToCurrent(ListView.Visible)
           onModelChanged: {
             hoveredIndex = -1
-            Qt.callLater(function() { root._scrollPlaylistToCurrent(ListView.Beginning) })
+            // guard: при закритті попапа callLater може виконатись вже після знищення root
+            Qt.callLater(function() { if (root) root._scrollPlaylistToCurrent(ListView.Beginning) })
           }
 
           // Індекс треку під курсором. Централізований, бо при ресайклінгу

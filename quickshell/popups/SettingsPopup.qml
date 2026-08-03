@@ -53,7 +53,6 @@ AnimatedPopup {
   // --- Стан драгу ---
   property bool dragActive: false
   property string dragName: ""
-  property string dragSourceZone: ""
   property Item dragHoverZoneItem: null
   property int dragDropIndex: -1
 
@@ -73,11 +72,10 @@ AnimatedPopup {
     dragDropIndex = -1
   }
 
-  // Починає перетягування: зберігає ім'я, джерело, показує ghost
-  function startDrag(name, sourcePill, globalPos, grabOffset) {
+  // Починає перетягування: зберігає ім'я, показує ghost
+  function startDrag(name, globalPos, grabOffset) {
     dragActive = true
     dragName = name
-    dragSourceZone = sourcePill
     var isSep = cfg.isSep(name)
     ghost.text = isSep ? "" : (displayNames[name] ?? name)
     ghost.width = isSep ? 6 : 64
@@ -121,7 +119,17 @@ AnimatedPopup {
     }
     dragActive = false
     dragName = ""
-    dragSourceZone = ""
+    dragHoverZoneItem = null
+    dragDropIndex = -1
+    ghost.visible = false
+  }
+
+  // Скасовує перетягування без коміту (напр. закриття по Escape —
+  // раніше onVisibleChanged викликав commitDrag, і скасування
+  // "закривши" драг все одно переносило/вимикало віджет)
+  function cancelDrag() {
+    dragActive = false
+    dragName = ""
     dragHoverZoneItem = null
     dragDropIndex = -1
     ghost.visible = false
@@ -140,7 +148,7 @@ AnimatedPopup {
         implicitHeight
       )
     } else {
-      commitDrag()
+      cancelDrag()
     }
   }
 
@@ -242,16 +250,7 @@ AnimatedPopup {
         }
       }
 
-      Rectangle {
-        Layout.fillWidth: true
-        height: 1
-        gradient: Gradient {
-          orientation: Gradient.Horizontal
-          GradientStop { position: 0.0; color: "transparent" }
-          GradientStop { position: 0.5; color: window.palette.bg2 }
-          GradientStop { position: 1.0; color: "transparent" }
-        }
-      }
+      GradientSeparator { midColor: window.palette.bg2 }
 
       ColumnLayout {
         Layout.fillWidth: true
@@ -419,7 +418,7 @@ AnimatedPopup {
 
             onPressed: (mouse) => {
               var globalPos = chip.mapToItem(coordSpace, mouse.x, mouse.y)
-              root.startDrag(chip.modelData, zone.pillName, globalPos, Qt.point(mouse.x, mouse.y))
+              root.startDrag(chip.modelData, globalPos, Qt.point(mouse.x, mouse.y))
             }
             onPositionChanged: (mouse) => {
               if (!root.dragActive) return

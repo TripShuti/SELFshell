@@ -292,15 +292,8 @@ AnimatedPopup {
     }
 
     // --- Секція задач ---
-    Rectangle {
-      Layout.fillWidth: true
-      height: 1
-      gradient: Gradient {
-        orientation: Gradient.Horizontal
-        GradientStop { position: 0.0; color: "transparent" }
-        GradientStop { position: 0.5; color: window.palette.bg2 }
-        GradientStop { position: 1.0; color: "transparent" }
-      }
+    GradientSeparator {
+      midColor: window.palette.bg2
       Layout.topMargin: 4
       visible: selectedDate !== ""
     }

@@ -68,15 +68,20 @@ def cmd_metadata(player: str, track_ids: list[str]):
     paths = [dbus.ObjectPath(t) for t in track_ids]
     result = _tracklist_iface(proxy)(paths)
 
-    # GetTracksMetadata returns an array of [path, metadata_dict] pairs
-    # When called with array arg, it returns array of {path -> metadata_dict}
-    # Actually in dbus-python it's a list of dicts with object path as key
-    # Let's handle both possible formats
+    # Спека: a{oa{sv}} (dict {path: metadata}), але деякі плеєри (mpris-server)
+    # повертають масив a{sv} у порядку запиту — обробляємо обидва варіанти.
     meta_by_id = {}
     if isinstance(result, dict):
         for track_id, meta in result.items():
             meta_by_id[str(track_id)] = _clean_metadata(meta)
-    tracks = [meta_by_id.get(tid) for tid in track_ids if meta_by_id.get(tid)]
+    else:
+        for tid, meta in zip(track_ids, result):
+            meta_by_id[tid] = _clean_metadata(meta)
+    tracks = [meta_by_id.get(tid) for tid in track_ids]
+    # index у blacklist-віждетах quickshell — позиція в черзі
+    for i, t in enumerate(tracks):
+        if t is not None:
+            t["index"] = i
 
     print(json.dumps(tracks, ensure_ascii=False))
 
@@ -143,11 +148,16 @@ def cmd_canedit(player: str):
     print(json.dumps(bool(value)))
 
 
+def cmd_busname(player: str):
+    print(_player_bus_name(player))
+
+
 def main():
     parser = argparse.ArgumentParser(description="MPRIS TrackList CLI")
-    parser.add_argument("--player", default="subtui", help="MPRIS player name")
+    parser.add_argument("--player", default="SELFsonic", help="MPRIS player name")
     sub = parser.add_subparsers(dest="command", required=True)
 
+    sub.add_parser("busname", help="Print resolved D-Bus name of the player")
     sub.add_parser("list", help="List all track IDs")
     meta_parser = sub.add_parser("metadata", help="Get track metadata")
     meta_parser.add_argument("ids", nargs="+", help="Track IDs (object paths)")
@@ -164,6 +174,8 @@ def main():
             cmd_metadata(args.player, args.ids)
         elif args.command == "goto":
             cmd_goto(args.player, args.id)
+        elif args.command == "busname":
+            cmd_busname(args.player)
         elif args.command == "canedit":
             cmd_canedit(args.player)
     except dbus.exceptions.DBusException as e:

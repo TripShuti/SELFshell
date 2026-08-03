@@ -55,11 +55,22 @@ AnimatedPopup {
     connectionSettings.visible = true;
   }
 
+  // Повернення до мережевого менеджера при закритті налаштувань
+  // (раніше NetworkPopup лишався прихованим — "чорна діра" після Escape/close)
+  Connections {
+    target: connectionSettings
+    function onVisibleChanged() {
+      if (!connectionSettings.visible && root.settingsNetwork !== null) {
+        root.visible = true
+        root.settingsNetwork = null
+      }
+    }
+  }
+
   Process {
     id: wiredProcess
   }
 
-  readonly property bool backendAvailable: Networking.backend === NetworkBackendType.NetworkManager
   readonly property var networkDevices: Networking.devices ? Networking.devices.values : []
   
   // Знаходить перший Wi-Fi пристрій
@@ -77,7 +88,7 @@ AnimatedPopup {
     var devices = networkDevices || [];
     for (var i = 0; i < devices.length; i++) {
         var dev = devices[i];
-        if (dev && (dev.type === 2 || (dev.name && (dev.name.startsWith("en") || dev.name.startsWith("eth"))))) {
+        if (dev && (dev.type === DeviceType.Ethernet || (dev.name && (dev.name.startsWith("en") || dev.name.startsWith("eth"))))) {
             return dev;
         }
     }
@@ -98,9 +109,12 @@ AnimatedPopup {
     if (visible) {
       anchor.edges = PopupAnchor.None
       anchor.gravity = PopupAnchor.None
+      // guard на випадок відсутнього screen (як у BluetoothPopup)
+      var sw = window.screen ? window.screen.width : 1920
+      var sh = window.screen ? window.screen.height : 1080
       anchor.rect = Qt.rect(
-        (window.screen.width - implicitWidth) / 2,
-        (window.screen.height - implicitHeight) / 2,
+        (sw - implicitWidth) / 2,
+        (sh - implicitHeight) / 2,
         implicitWidth,
         implicitHeight
       )
@@ -164,11 +178,11 @@ AnimatedPopup {
           id: settingsBtn
           property bool hovered: false
           implicitWidth: settingsLabel.implicitWidth + 12; height: 24; radius: 4
-color: hovered ? window.palette.hoverOverlay : window.palette.bgLayer
-            Behavior on color { ColorAnimation { duration: 150 } }
+          color: hovered ? window.palette.hoverOverlay : window.palette.bgLayer
+          Behavior on color { ColorAnimation { duration: 150 } }
 
-            Text {
-              id: settingsLabel
+          Text {
+            id: settingsLabel
             anchors.centerIn: parent
             text: "Settings"
             color: window.palette.textLight
@@ -190,7 +204,7 @@ color: hovered ? window.palette.hoverOverlay : window.palette.bgLayer
           id: wiredActionBtn
           property bool hovered: false
           implicitWidth: wiredActionLabel.implicitWidth + 12; height: 24; radius: 4
-          color: root.wiredDevice?.connected ? (hovered ? window.palette.hoverOverlay : window.palette.bgLayer) : (hovered ? window.palette.hoverOverlay : window.palette.bgLayer)
+          color: hovered ? window.palette.hoverOverlay : window.palette.bgLayer
           Behavior on color { ColorAnimation { duration: 150 } }
 
           Text {
@@ -245,33 +259,11 @@ color: hovered ? window.palette.hoverOverlay : window.palette.bgLayer
       }
 
       // Тумблер увімкнення Wi-Fi
-      Rectangle {
-        id: wifiToggleBg
-        property bool isHovered: false
-        width: 36; height: 22; radius: 11
-        color: root.wifiEnabled ? window.palette.accent : window.palette.bg2
-        Behavior on color { ColorAnimation { duration: 150 } }
-        border.width: isHovered ? 1 : 0
-        border.color: window.palette.hoverOverlay
-        Behavior on border.width { NumberAnimation { duration: 120 } }
-
-        Rectangle {
-          x: root.wifiEnabled ? parent.width - width - 2 : 2
-          width: 18; height: 18; radius: 9
-          color: root.wifiEnabled ? window.palette.bg1 : window.palette.gray
-          anchors.verticalCenter: parent.verticalCenter
-          Behavior on x { NumberAnimation { duration: 150 } }
-          Behavior on color { ColorAnimation { duration: 150 } }
-        }
-
-        MouseArea {
-          anchors.fill: parent
-          hoverEnabled: true
-          cursorShape: Qt.PointingHandCursor
-          onEntered: wifiToggleBg.isHovered = true
-          onExited: wifiToggleBg.isHovered = false
-          onClicked: Networking.wifiEnabled = !Networking.wifiEnabled
-        }
+      ToggleSwitch {
+        checked: root.wifiEnabled
+        palette: window.palette
+        Layout.alignment: Qt.AlignVCenter
+        onToggled: value => Networking.wifiEnabled = value
       }
     }
 
@@ -280,6 +272,10 @@ color: hovered ? window.palette.hoverOverlay : window.palette.bgLayer
       Layout.fillWidth: true
       spacing: 8
       visible: root.pendingNetwork !== null
+
+      // Фокус ставиться тоді, коли діалог СТАЄ видимим, а не при створенні —
+      // forceActiveFocus на невидимому елементі не працює
+      onVisibleChanged: if (visible) passwordInput.forceActiveFocus()
 
       Text {
         text: "Connect to: " + (root.pendingNetwork?.name || "")
@@ -304,7 +300,6 @@ color: hovered ? window.palette.hoverOverlay : window.palette.bgLayer
           font.family: window.palette.font; font.pixelSize: 12
           echoMode: TextInput.Password
           focus: true
-          Component.onCompleted: forceActiveFocus()
         }
       }
 

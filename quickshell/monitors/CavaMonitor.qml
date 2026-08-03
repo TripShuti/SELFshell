@@ -40,10 +40,32 @@ Item {
   // Процес cava з конфігом
   Process {
     id: cavaProcess
-    command: ["sh", "-c", "stdbuf -oL cava -p $HOME/.config/quickshell/services/cava-vis.conf"]
+    command: ["stdbuf", "-oL", "cava", "-p",
+      Qt.resolvedUrl("../services/cava-vis.conf").toString().replace("file://", "")]
     stdout: lineParser
+
+    onExited: {
+      // cava впав (глюк аудіо тощо) — перезапускаємось, поки ще потрібен
+      if (root.monitorEnabled && root.active) cavaRestartTimer.restart()
+    }
+  }
+
+  Timer {
+    id: cavaRestartTimer
+    interval: 2000
+    onTriggered: cavaProcess.running = true
   }
 
   property bool monitorEnabled: appConfig ? appConfig.mprisEnabled : false
-  onMonitorEnabledChanged: cavaProcess.running = monitorEnabled
+  // Активний коли візуалізатор реально видно: віджет панелі під час
+  // відтворення або відкритий попап (керується з Bar.qml) — інакше cava
+  // на 30 fps спалював би CPU вхолосту весь день
+  property bool active: false
+
+  function _updateRunning() {
+    cavaProcess.running = root.monitorEnabled && root.active
+  }
+
+  onMonitorEnabledChanged: _updateRunning()
+  onActiveChanged: _updateRunning()
 }

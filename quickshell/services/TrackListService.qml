@@ -17,7 +17,10 @@ Item {
   property bool loading: false
   property bool active: false
 
-  readonly property string script: "$HOME/.config/quickshell/scripts/tracklist.py"
+  readonly property string script: Qt.resolvedUrl("../scripts/tracklist.py").toString().replace("file://", "")
+  // Розв'язане D-Bus ім'я плеєра (може відрізнятись від identity, напр.
+  // chromium.instance1172) — отримується від tracklist.py busname.
+  property string _resolvedBusName: ""
 
   // --- Процеси ---
 
@@ -83,22 +86,34 @@ Item {
     onExited: running = false
   }
 
+  // Отримує розв'язане D-Bus ім'я плеєра — dbus-monitor слухає саме його.
+  // Запускається перед стартом watch, при зміні плеєра.
+  Process {
+    id: busnameProc
+
+    stdout: StdioCollector {
+      id: busnameCollector
+      waitForEnd: true
+      onStreamFinished: {
+        var text = busnameCollector.text.trim()
+        // Плеєр недоступний/вмер — лишаємо старе ім'я; _startWatch
+        // підставиться з фолбеком через _playerBusName()
+        if (text) root._resolvedBusName = text
+        root._startWatch()
+      }
+    }
+  }
+
   // Спостерігач за сигналами TrackList від плеєра (dbus-monitor | grep,
   // як у sleepMonitor в shell.qml). Дає миттєве оновлення списку замість
   // чекання 20-секундного поллу. Полл лишається страховкою.
   Process {
     id: watchProc
 
-    stdout: StdioCollector {
-      id: watchCollector
-      waitForEnd: false
-      onDataChanged: {
-        // Текст не парсимо (тригер сам факт сигналу), тож скидаємо буфер,
-        // щоб він не ріс безмежно годинами
-        if (watchCollector.text.length > 8192)
-          watchCollector.text = ""
-        _signalDebounce.restart()
-      }
+    // SplitParser не накопичує вивід — кожен рядок це окремий сигнал
+    stdout: SplitParser {
+      splitMarker: "\n"
+      onRead: _signalDebounce.restart()
     }
 
     onExited: {
@@ -131,9 +146,12 @@ Item {
       root.loading = false
       return
     }
+    // Запит уже виконується — не запускаємо другий паралельний процес
+    // (гонка за порядок результатів)
+    if (listProc.running) return
     root.loading = true
-    listProc.command = ["sh", "-c",
-      "python3 " + root.script + " --player " + root.playerName + " list"]
+    // Прямі аргументи, без sh -c: playerName не парситься шеллом
+    listProc.command = ["python3", root.script, "--player", root.playerName, "list"]
     listProc.running = true
   }
 
@@ -144,22 +162,22 @@ Item {
       root.loading = false
       return
     }
-
-    metaProc.command = ["sh", "-c",
-      "python3 " + root.script + " --player " + root.playerName +
-      " metadata " + root.trackIds.join(" ")]
+    if (metaProc.running) return
+    metaProc.command = ["python3", root.script, "--player", root.playerName,
+      "metadata"].concat(root.trackIds)
     metaProc.running = true
   }
 
   function goTo(trackId) {
     if (trackId === "" || trackId === undefined || trackId === null) return
-    gotoProc.command = ["sh", "-c",
-      "python3 " + root.script + " --player " + root.playerName +
-      " goto " + trackId]
+    gotoProc.command = ["python3", root.script, "--player", root.playerName,
+      "goto", trackId]
     gotoProc.running = true
   }
 
   // D-Bus ім'я плеєра: identity може бути без префікса "org.mpris.MediaPlayer2."
+  // Точний резолв (включно з незбіжними іменами на кшталт chromium.instance1172)
+  // робить tracklist.py busname; тут — синхронний фолбек для першого запуску.
   function _playerBusName() {
     if (root.playerName.startsWith("org.mpris.MediaPlayer2.")) return root.playerName
     return "org.mpris.MediaPlayer2." + root.playerName
@@ -169,8 +187,9 @@ Item {
     if (!root.active || !root.supported || root.playerName === "") return
     watchRestartTimer.stop()
     watchProc.running = false
+    var bus = root._resolvedBusName !== "" ? root._resolvedBusName : root._playerBusName()
     watchProc.command = ["sh", "-c",
-      "dbus-monitor --session \"type=signal,sender=" + root._playerBusName() +
+      "dbus-monitor --session \"type=signal,sender=" + bus +
       ",interface=org.mpris.MediaPlayer2.TrackList\" 2>/dev/null "
       + "| grep --line-buffered -E 'TrackListReplaced|TrackAdded|TrackRemoved'"]
     watchProc.running = true
@@ -181,22 +200,36 @@ Item {
     watchProc.running = false
   }
 
+  // Резолв bus name перед стартом спостерігача — щоб dbus-monitor слухав
+  // правильний sender навіть коли identity не збігається з well-known ім'ям.
+  function _resolveBusName() {
+    if (!root.active || !root.supported || root.playerName === "") return
+    if (root.playerName.startsWith(":")) {
+      root._resolvedBusName = root.playerName
+      root._startWatch()
+      return
+    }
+    busnameProc.command = ["python3", root.script, "--player", root.playerName, "busname"]
+    busnameProc.running = true
+  }
+
   // Оновлення при зміні плеєра чи активності
   onActiveChanged: {
     refresh()
     if (root.active)
-      root._startWatch()
+      root._resolveBusName()
     else
       root._stopWatch()
   }
   onPlayerNameChanged: {
+    root._resolvedBusName = ""
     refresh()
     if (root.active)
-      root._startWatch()
+      root._resolveBusName()
   }
   onSupportedChanged: {
     if (root.supported)
-      root._startWatch()
+      root._resolveBusName()
     else
       root._stopWatch()
   }

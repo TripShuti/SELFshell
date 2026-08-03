@@ -23,6 +23,7 @@ Item {
   visible: Pipewire.ready && sink != null
 
   MouseArea {
+    id: ma
     anchors.fill: parent
     hoverEnabled: true
     acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
@@ -30,16 +31,23 @@ Item {
     onEntered: root.hovered = true
     onExited: root.hovered = false
 
+    // Нормалізована позиція кліку (0..1) з захистом від нульової ширини —
+    // інакше клік по віджету ширини 0 (перший кадр анімації пігулки)
+    // діленням на нуль поставив би гучність на 100%
+    function ratio(mouse) {
+      return ma.width > 0 ? Math.max(0, Math.min(mouse.x / ma.width, 1)) : 0
+    }
+
     // Зміна гучності кліком або перетягуванням
     onPressed: mouse => {
       if (mouse.button === Qt.LeftButton && root.audio) {
-        root.audio.volume = Math.max(0, Math.min(mouse.x / width, 1))
+        root.audio.volume = ratio(mouse)
       }
     }
 
     onPositionChanged: mouse => {
       if ((pressedButtons & Qt.LeftButton) && root.audio) {
-        root.audio.volume = Math.max(0, Math.min(mouse.x / width, 1))
+        root.audio.volume = ratio(mouse)
       }
     }
 
@@ -56,8 +64,10 @@ Item {
     // Регулювання колесом
     onWheel: wheel => {
       if (root.audio) {
-        var step = wheel.angleDelta.y > 0 ? 0.05 : -0.05
-        root.audio.volume = Math.max(0, Math.min(root.audio.volume + step, 1))
+        // angleDelta.y === 0 (рідкісний горизонтальний скрол) — ігноруємо
+        var step = wheel.angleDelta.y > 0 ? 0.05 : wheel.angleDelta.y < 0 ? -0.05 : 0
+        if (step !== 0)
+          root.audio.volume = Math.max(0, Math.min(root.audio.volume + step, 1))
       }
     }
   }

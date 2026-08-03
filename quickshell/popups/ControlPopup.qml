@@ -105,7 +105,7 @@ AnimatedPopup {
     setBrightnessProc.running = true
   }
 
-    // --- Режим читання (hyprsunset) ---
+  // --- Режим читання (hyprsunset) ---
   function setReadingTemp(val) {
     root.readingTemp = Math.max(3500, Math.min(6500, val))
     hyprsunsetDebounce.restart()
@@ -163,7 +163,9 @@ AnimatedPopup {
   Timer {
     id: brightnessPollTimer
     interval: 5000
-    running: true
+    // Опитуємо ddcutil тільки поки попап відкритий — старт/стоп в
+    // onVisibleChanged. Раніше таймер крутився вічно з моменту старту шела
+    running: false
     repeat: true
     onTriggered: root.refreshBrightness()
   }
@@ -173,12 +175,24 @@ AnimatedPopup {
     onExited: running = false
   }
 
-  // socat для зміни температури через сокет (одноразовий)
+  // socat для зміни температури через сокет (одноразовий).
+  // Обмежена кількість ретраїв — якщо hyprsunset зламаний/відсутній,
+  // не спамимо socat-процесами вічно
+  property int _hyprsunsetRetries: 0
+  readonly property int _hyprsunsetMaxRetries: 6
+
   Process {
     id: hyprsunsetSocat
     onExited: (exitCode) => {
       running = false
-      if (exitCode !== 0 && root.readingTemp < 6500) hyprsunsetRetry.start()
+      if (exitCode === 0) {
+        root._hyprsunsetRetries = 0
+      } else if (root.readingTemp < 6500 && root._hyprsunsetRetries < root._hyprsunsetMaxRetries) {
+        root._hyprsunsetRetries++
+        hyprsunsetRetry.start()
+      } else {
+        root._hyprsunsetRetries = 0
+      }
     }
   }
 
@@ -242,12 +256,14 @@ AnimatedPopup {
     root.muted = savedMuted
   }
 
+  popupWindow: window
+  anchorTarget: anchorItem
+
   Component.onCompleted: { anchor.window = window; root.refreshBrightness(); root.ensureHyprsunset(); loadSavedState() }
 
   onVisibleChanged: {
     if (visible) {
-      var r = window.itemRect(anchorItem)
-      anchor.rect = Qt.rect(r.x, r.y + r.height + 10, implicitWidth, implicitHeight)
+      root.positionUnderAnchor()
       root.refreshBrightness()
       brightnessPollTimer.running = true
     } else {
@@ -365,16 +381,7 @@ AnimatedPopup {
     }
 
     // Роздільник
-    Rectangle {
-      Layout.fillWidth: true
-      height: 1
-      gradient: Gradient {
-        orientation: Gradient.Horizontal
-        GradientStop { position: 0.0; color: "transparent" }
-        GradientStop { position: 0.5; color: window.palette.bg2 }
-        GradientStop { position: 1.0; color: "transparent" }
-      }
-    }
+    GradientSeparator { midColor: window.palette.bg2 }
 
     // --- Повзунок яскравості (ddcutil) ---
     RowLayout {
@@ -436,12 +443,6 @@ AnimatedPopup {
         Layout.preferredWidth: 32
         horizontalAlignment: Text.AlignRight
         Layout.alignment: Qt.AlignVCenter
-        Behavior on text {
-          SequentialAnimation {
-            NumberAnimation { target: pctText; property: "opacity"; to: 0.3; duration: 60 }
-            NumberAnimation { target: pctText; property: "opacity"; to: 1.0; duration: 200; easing.type: Easing.OutSine }
-          }
-        }
       }
     }
 
@@ -508,16 +509,7 @@ AnimatedPopup {
     }
 
     // Роздільник
-    Rectangle {
-      Layout.fillWidth: true
-      height: 1
-      gradient: Gradient {
-        orientation: Gradient.Horizontal
-        GradientStop { position: 0.0; color: "transparent" }
-        GradientStop { position: 0.5; color: window.palette.bg2 }
-        GradientStop { position: 1.0; color: "transparent" }
-      }
-    }
+    GradientSeparator { midColor: window.palette.bg2 }
 
     // Список сповіщень
     Item {
@@ -695,16 +687,7 @@ AnimatedPopup {
     }
 
     // Роздільник
-    Rectangle {
-      Layout.fillWidth: true
-      height: 1
-      gradient: Gradient {
-        orientation: Gradient.Horizontal
-        GradientStop { position: 0.0; color: "transparent" }
-        GradientStop { position: 0.5; color: window.palette.bg2 }
-        GradientStop { position: 1.0; color: "transparent" }
-      }
-    }
+    GradientSeparator { midColor: window.palette.bg2 }
 
     // Кнопки живлення (Lock, Suspend, Logout, Reboot, Shutdown)
     RowLayout {
@@ -750,10 +733,11 @@ AnimatedPopup {
             onClicked: root.runPowerAction(act.action)
           }
 
-          ToolTip.visible: containsMouseGlobal
+          // Раніше ToolTip висів на мертвій containsMouseGlobal,
+          // яка ніколи не встановлювалась — тултіп ніколи не показувався
+          ToolTip.visible: hovered
           ToolTip.text: act.tooltip
           ToolTip.delay: 400
-          property bool containsMouseGlobal: false
         }
       }
     }

@@ -18,15 +18,21 @@ AnimatedPopup {
   implicitWidth: 320
   implicitHeight: layout.implicitHeight + 16
 
+  popupWindow: window
+  anchorTarget: anchorItem
+
   Component.onCompleted: {
     anchor.window = window
   }
 
   onVisibleChanged: {
-    if (visible) {
-      var r = window.itemRect(anchorItem)
-      anchor.rect = Qt.rect(r.x, r.y + r.height + 10, implicitWidth, implicitHeight)
-    }
+    if (visible) root.positionUnderAnchor()
+  }
+
+  // Список пристроїв міняє висоту — пере-позиціонуємо, інакше попап
+  // виходить за межі anchor-позиції (той самий патерн, що в MprisPopup)
+  onImplicitHeightChanged: {
+    if (visible) root.positionUnderAnchor()
   }
 
 

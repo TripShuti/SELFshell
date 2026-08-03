@@ -43,7 +43,6 @@ HoverItem {
 
   readonly property bool hasWired: wiredDevice?.connected ?? false
   readonly property bool hasWifi: connectedWifi != null
-  readonly property bool wifiOn: Networking.wifiEnabled
 
   readonly property real signalStrength: hasWifi ? (connectedWifi.signalStrength || 0) : 0
 

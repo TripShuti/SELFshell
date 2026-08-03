@@ -39,7 +39,8 @@ AnimatedPopup {
     : resinText
 
 
-  // Парсить деталі з tooltip, перевіряє статус чекіну
+  // Парсить деталі з tooltip, перевіряє статус чекіну.
+  // Має side-effect (isSigned), тож викликається один раз на зміну details.
   function parseTooltip(tip) {
     if (!tip) return []
     var lines = tip.split("\n")
@@ -56,19 +57,25 @@ AnimatedPopup {
     return result
   }
 
+  // Кеш розпарсених деталей — Repeater читає його, а не викликає
+  // parseTooltip повторно (подвійний парсинг при кожному оновленні)
+  property var detailsModel: []
+
+  popupWindow: window
+  anchorTarget: anchorItem
+
   Component.onCompleted: {
     root.anchor.window = root.window
-    parseTooltip(root.details)
+    root.detailsModel = parseTooltip(root.details)
   }
 
   onDetailsChanged: {
-    parseTooltip(root.details)
+    root.detailsModel = parseTooltip(root.details)
   }
 
   onVisibleChanged: {
     if (visible) {
-      var r = window.itemRect(anchorItem)
-      anchor.rect = Qt.rect(r.x, r.y + r.height + 10, implicitWidth, implicitHeight)
+      root.positionUnderAnchor()
       signBtn.text = "Check-in"
       signFeedback.text = ""
       signBtn.enabled = true
@@ -79,7 +86,13 @@ AnimatedPopup {
   // Процес чекіну (окремий запуск, не заважає фоновому оновленню)
   Process {
     id: signProc
-    command: ["sh", "-c", "python3 $HOME/.config/quickshell/scripts/genshin_stats.py sign"]
+    command: ["python3", scriptPath, "sign"]
+
+    readonly property string scriptPath: Qt.resolvedUrl("../scripts/genshin_stats.py").toString().replace("file://", "")
+
+    // Чи отримали вивід (результат оброблено) — якщо процес впав без
+    // stdout, onExited відновлює кнопку
+    property bool _signHandled: false
 
     stdout: SplitParser {
       splitMarker: "\n"
@@ -88,6 +101,7 @@ AnimatedPopup {
         var text = (data ?? "").trim()
         if (text === "") return
 
+        signProc._signHandled = true
         try {
           var obj = JSON.parse(text)
           signBtn.text = obj.ok ? "✓" : "✗"
@@ -99,6 +113,18 @@ AnimatedPopup {
         }
         signBtn.enabled = true
         signSpinner.visible = false
+      }
+    }
+
+    onExited: {
+      // Python вмер без виводу (помилка запуску тощо) — повертаємо кнопку,
+      // інакше вона лишилась би вимкненою назавжди
+      if (!signProc._signHandled) {
+        signBtn.enabled = true
+        signBtn.text = "Check-in"
+        signSpinner.visible = false
+        signFeedback.text = "Check-in failed"
+        signFeedback.color = window.palette.red
       }
     }
   }
@@ -197,16 +223,7 @@ AnimatedPopup {
     }
 
     // Роздільник
-    Rectangle {
-      Layout.fillWidth: true
-      height: 1
-      gradient: Gradient {
-        orientation: Gradient.Horizontal
-        GradientStop { position: 0.0; color: "transparent" }
-        GradientStop { position: 0.5; color: window.palette.bg2 }
-        GradientStop { position: 1.0; color: "transparent" }
-      }
-    }
+    GradientSeparator { midColor: window.palette.bg2 }
 
     // Сітка деталей
     GridLayout {
@@ -215,7 +232,7 @@ AnimatedPopup {
       rowSpacing: 3
 
       Repeater {
-        model: parseTooltip(root.details)
+        model: root.detailsModel
 
         delegate: Text {
           required property var modelData
@@ -231,16 +248,7 @@ AnimatedPopup {
     }
 
     // Роздільник
-    Rectangle {
-      Layout.fillWidth: true
-      height: 1
-      gradient: Gradient {
-        orientation: Gradient.Horizontal
-        GradientStop { position: 0.0; color: "transparent" }
-        GradientStop { position: 0.5; color: window.palette.bg2 }
-        GradientStop { position: 1.0; color: "transparent" }
-      }
-    }
+    GradientSeparator { midColor: window.palette.bg2 }
 
     // Секція чекіну
     RowLayout {
@@ -307,6 +315,7 @@ AnimatedPopup {
           hoverEnabled: true
           cursorShape: Qt.PointingHandCursor
           onClicked: {
+            signProc._signHandled = false
             signBtn.enabled = false
             signBtn.text = "..."
             signSpinner.visible = true
