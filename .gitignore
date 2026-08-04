@@ -22,6 +22,9 @@ quickshell/scripts/.genshin_requests.log
 quickshell/scripts/.genshin_state.json
 quickshell/scripts/__pycache__/
 
+# локальні skills агентів
+quickshell/.opencode/skills/
+
 # згенеровані персональні налаштування
 quickshell/Palette.js
 quickshell/data/config.json
