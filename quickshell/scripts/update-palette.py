@@ -2,8 +2,8 @@
 # ============================================================
 # update-palette.py — генерація палітри та тем зі шпалер
 # ============================================================
-# Генерує data/palette.json, kitty тему, fish кольори, starship та yazi тему
-# на основі поточних шпалер через matugen
+# Генерує data/palette.json, kitty тему, fish кольори, starship, yazi, foot
+# та qt6ct color scheme на основі поточних шпалер через matugen
 
 import sys, json, subprocess, re, os, tempfile
 
@@ -86,6 +86,50 @@ def alpha(h, a):
     r, g, b = parse_hex(h)
     aa = round(max(0, min(1, a)) * 255)
     return f"#{aa:02x}{r:02x}{g:02x}{b:02x}"
+
+# Колір у форматі qt6ct: #AARRGGBB (альфа повністю непрозора)
+def qt_argb(h):
+    r, g, b = parse_hex(h)
+    return f"#ff{r:02x}{g:02x}{b:02x}"
+
+# Гарантує, що qt6ct.conf посилається на нашу color scheme, зберігаючи решту ключів
+def ensure_qt6ct_palette(scheme_path):
+    conf_path = os.path.expanduser("~/.config/qt6ct/qt6ct.conf")
+    os.makedirs(os.path.dirname(conf_path), exist_ok=True)
+    lines = open(conf_path).read().splitlines() if os.path.isfile(conf_path) else []
+    if not any(l.strip() == "[Appearance]" for l in lines):
+        if lines and lines[-1].strip() != "":
+            lines.append("")
+        lines.append("[Appearance]")
+
+    out = []
+    in_appearance = False
+    wrote_palette = wrote_custom = False
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("[") and stripped.endswith("]"):
+            in_appearance = stripped == "[Appearance]"
+        elif in_appearance and "=" in line:
+            key = stripped.split("=", 1)[0].strip()
+            if key == "color_scheme_path":
+                line = f"color_scheme_path={scheme_path}"
+                wrote_palette = True
+            elif key == "custom_palette":
+                line = "custom_palette=true"
+                wrote_custom = True
+        out.append(line)
+
+    # Додаємо відсутні ключі одразу після [Appearance]
+    idx = next((i for i, l in enumerate(out) if l.strip() == "[Appearance]"), -1)
+    missing = []
+    if not wrote_palette:
+        missing.append(f"color_scheme_path={scheme_path}")
+    if not wrote_custom:
+        missing.append("custom_palette=true")
+    if missing:
+        out = out[:idx + 1] + missing + out[idx + 1:]
+
+    atomic_write(conf_path, "\n".join(out) + "\n")
 
 fg        = col("on_background")
 gray      = col("outline")
@@ -259,6 +303,63 @@ if os.path.isfile(starship_path):
 
     atomic_write(starship_path, "\n".join(new_lines))
 
+# --- Генерація foot theme ---
+
+FOOT_DIR = os.path.expanduser("~/.config/foot")
+
+# foot приймає RRGGBB без # та альфа-каналу
+def foot_hex(h):
+    r, g, b = parse_hex(h)
+    return to_hex(r, g, b).strip("#")
+
+# foot 1.27: секція [colors-dark] — дефолтна тема; live-перефарбування
+# через SIGUSR1 (pkill -USR1 foot), без рестарту терміналів.
+# Формат тільки key=value — foot не приймає роздільник пробілами.
+foot = f"""# Згенеровано update-palette.py
+
+[colors-dark]
+foreground={foot_hex(fg)}
+background={foot_hex(bg0H)}
+selection-foreground={foot_hex(fg)}
+selection-background={foot_hex(blend(bg0H, accent, 0.35))}
+
+regular0={foot_hex(bg1)}
+regular1={foot_hex(red)}
+regular2={foot_hex(green)}
+regular3={foot_hex(yellow)}
+regular4={foot_hex(blue)}
+regular5={foot_hex(purple)}
+regular6={foot_hex(aqua)}
+regular7={foot_hex(light)}
+
+bright0={foot_hex(muted)}
+bright1={foot_hex(blend(red, bright, 0.5))}
+bright2={foot_hex(blend(green, bright, 0.5))}
+bright3={foot_hex(orange)}
+bright4={foot_hex(blend(blue, bright, 0.5))}
+bright5={foot_hex(blend(purple, bright, 0.5))}
+bright6={foot_hex(blend(aqua, bright, 0.5))}
+bright7={foot_hex(bright)}
+
+cursor={foot_hex(fg)} {foot_hex(bg0H)}
+urls={foot_hex(blue)}
+"""
+
+os.makedirs(FOOT_DIR, exist_ok=True)
+atomic_write(os.path.join(FOOT_DIR, "colors.ini"), foot)
+
+# foot.ini: створюємо з include, якщо немає; наявні налаштування не чіпаємо
+foot_ini_path = os.path.join(FOOT_DIR, "foot.ini")
+include_line = "include=~/.config/foot/colors.ini"
+if os.path.isfile(foot_ini_path):
+    with open(foot_ini_path, "r") as f:
+        foot_ini = f.read()
+    if "colors.ini" not in foot_ini:
+        with open(foot_ini_path, "a") as f:
+            f.write(f"\n{include_line}\n")
+else:
+    atomic_write(foot_ini_path, f"# Згенеровано update-palette.py\n{include_line}\n")
+
 # --- Генерація yazi flavor ---
 
 yazi_flavor_dir = os.path.expanduser("~/.config/yazi/flavors/palette.yazi")
@@ -393,3 +494,46 @@ prepend_conds = [
 
 yazi_theme_path = os.path.expanduser("~/.config/yazi/theme.toml")
 atomic_write(yazi_theme_path, yazi_theme)
+
+# --- Генерація qt6ct color scheme (Qt акцент) ---
+# Qt-додатки (Telegram) читають акцент з QPalette::Highlight.
+# Формат — власний формат qt6ct: [ColorScheme] зі списками #AARRGGBB у порядку
+# ролей QPalette (Qt 6.11): індекс 12 = Highlight (акцент), 13 = HighlightedText
+# (on_primary), 21 = Accent. Три списки (active/inactive/disabled) — тотожні,
+# qt6ct латентно кладе їх у відповідні ColorGroup.
+qt_roles = [
+    fg,        # 0  WindowText
+    bg2,       # 1  Button
+    bg2,       # 2  Light
+    bg2,       # 3  Midlight
+    bg0H,      # 4  Dark
+    bg1,       # 5  Mid
+    fg,        # 6  Text
+    bright,    # 7  BrightText
+    fg,        # 8  ButtonText
+    bg1,       # 9  Base
+    bg0H,      # 10 Window
+    bg0H,      # 11 Shadow
+    accent,    # 12 Highlight
+    col("on_primary"),  # 13 HighlightedText
+    blue,      # 14 Link
+    purple,    # 15 LinkVisited
+    bg0H,      # 16 AlternateBase
+    bg0H,      # 17 NoRole
+    bg2,       # 18 ToolTipBase
+    fg,        # 19 ToolTipText
+    muted,     # 20 PlaceholderText
+    accent,    # 21 Accent
+]
+
+qt_roles_str = ", ".join(qt_argb(c) for c in qt_roles)
+qt_scheme = f"""[ColorScheme]
+active_colors={qt_roles_str}
+inactive_colors={qt_roles_str}
+disabled_colors={qt_roles_str}
+"""
+
+qt_scheme_path = os.path.expanduser("~/.config/qt6ct/colors/Quickshell.conf")
+os.makedirs(os.path.dirname(qt_scheme_path), exist_ok=True)
+atomic_write(qt_scheme_path, qt_scheme)
+ensure_qt6ct_palette(qt_scheme_path)

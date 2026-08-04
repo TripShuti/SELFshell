@@ -34,6 +34,10 @@ AnimatedPopup {
 
   property bool muted: false
 
+  // Caffeine mode: вимикає автоблокування/гаснення екрану/suspend по idle
+  // (idle-монітори в IdleManager реагують на зміну файлу control-state.json)
+  property bool caffeineEnabled: false
+
   // --- Яскравість ---
   property int brightness: -1
   property int prevBrightness: 50
@@ -227,6 +231,12 @@ AnimatedPopup {
     saveStateTimer.restart()
   }
 
+  function toggleCaffeine() {
+    root.caffeineEnabled = !root.caffeineEnabled
+    State.setCaffeine(root.caffeineEnabled)
+    saveStateTimer.restart()
+  }
+
   Timer {
     id: saveStateTimer
     interval: 500
@@ -254,6 +264,7 @@ AnimatedPopup {
     if (savedBright >= 0) root.setBrightness(savedBright)
     if (savedTemp < 6500) root.setReadingTemp(savedTemp)
     root.muted = savedMuted
+    root.caffeineEnabled = State.getCaffeine()
   }
 
   popupWindow: window
@@ -263,6 +274,9 @@ AnimatedPopup {
 
   onVisibleChanged: {
     if (visible) {
+      // Стан process-wide (pragma library) — синхронізуємо кнопку зі змінами,
+      // зробленими в попапі іншого монітора.
+      root.caffeineEnabled = State.getCaffeine()
       root.positionUnderAnchor()
       root.refreshBrightness()
       brightnessPollTimer.running = true
@@ -684,6 +698,30 @@ AnimatedPopup {
           onClicked: root.toggleMuted()
         }
       }
+
+      // Кнопка caffeine mode — вимикає автоблокування/гаснення/suspend по idle
+      Rectangle {
+        implicitWidth: 24; implicitHeight: 24; radius: 6
+        color: root.caffeineEnabled ? Qt.rgba(window.palette.green.r, window.palette.green.g, window.palette.green.b, 0.15)
+             : (caffeineArea.containsMouse ? window.palette.bg2 : window.palette.bg1)
+        Behavior on color { ColorAnimation { duration: 120 } }
+
+        Text {
+          anchors.centerIn: parent
+          text: "󰅶"
+          color: root.caffeineEnabled ? window.palette.green : window.palette.gray
+          font.family: window.palette.font; font.pixelSize: 11
+          Behavior on color { ColorAnimation { duration: 120 } }
+        }
+
+        MouseArea {
+          id: caffeineArea
+          anchors.fill: parent
+          hoverEnabled: true
+          onClicked: root.toggleCaffeine()
+        }
+
+      }
     }
 
     // Роздільник
@@ -733,11 +771,7 @@ AnimatedPopup {
             onClicked: root.runPowerAction(act.action)
           }
 
-          // Раніше ToolTip висів на мертвій containsMouseGlobal,
-          // яка ніколи не встановлювалась — тултіп ніколи не показувався
-          ToolTip.visible: hovered
-          ToolTip.text: act.tooltip
-          ToolTip.delay: 400
+
         }
       }
     }
