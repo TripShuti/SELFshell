@@ -13,7 +13,6 @@ local M = {}
 M.mainMod     = env.mod or "SUPER"
 M.terminal    = env.terminal or "kitty"
 M.fileManager = env.fileManager or "kitty -e yazi"
-M.menu        = env.menu or "wofi --show drun"
 M.browser     = env.browser or "chromium"
 M.cursorTheme = env.cursorTheme or "Capitaine Cursors (Gruvbox)"
 M.cursorSize  = env.cursorSize or 24
