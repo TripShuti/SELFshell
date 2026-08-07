@@ -14,23 +14,26 @@ Personal desktop environment configs built around **Hyprland + Quickshell**.
 
 ### Desktop Core
 - Custom QML **lock screen** with PAM authentication (`ext-session-lock-v1`)
-- Built-in **idle manager** — locks after 5min, DPMS off after 6min, suspend after 15min; pauses during media playback
+- Built-in **idle manager** — lock/DPMS/suspend timeouts (configurable in Settings), pauses during media playback
 - Per-monitor bar instances via `Quickshell.screens`
 
 ### Top Bar
-- 12 built-in widgets: Launcher, Workspaces, Clock, Timer, MPRIS (with cava visualizer), Genshin resin, Audio, Control Center, Bluetooth, Network, Keyboard Layout, System Tray
+- 13 built-in widgets: Launcher, Workspaces, Clock, Timer, MPRIS (with cava visualizer), Genshin resin, Audio, Control Center, Bluetooth, Network, Keyboard Layout, Battery, System Tray
 - Three configurable "pill" sections (left / center / right)
 - Drag-and-drop widget reordering and enable/disable via Settings popup
+- Settings popup "Behavior" tab: bar height/radius, idle timeouts, wheel step sizes — all persisted to `config.json`
 
 ### Popups & Menus
 - **Application Launcher** — frequency-sorted search
 - **Calendar** — month grid with task management (add / complete / delete)
 - **Audio Mixer** — PipeWire sink and application volumes
-- **Control Center** — notifications, brightness (ddcutil), reading mode (hyprsunset), power actions
+- **Control Center** — notifications (grouped by app, DND mode, action buttons), brightness (ddcutil), reading mode (hyprsunset), power actions
+- **Workspaces** — window list per workspace, move/close/focus windows (right-click on workspace number)
+- **Keyboard Layout** — layout list with active highlight (right-click on layout widget)
 - **Media Player** — MPRIS controls with cava audio visualization (28 bars)
 - **Network & Bluetooth** managers with connection details
 - **Wallpaper Picker** — grid view, applies palette on selection
-- **Notification Toasts** — animated, with sound, clickable
+- **Notification Toasts** — animated, with sound, clickable, action buttons
 
 ### Genshin Impact
 - Real-time resin tracking with local regeneration calculation (1 resin / 8 min)
@@ -100,7 +103,9 @@ Then:
 
 ```sh
 selfshell doctor         # check dependencies, config, services, hardware
+selfshell doctor --preboot # same, but skip session checks (for installer)
 selfshell lock           # lock the screen
+selfshell toggle-lock    # lock / unlock toggle
 selfshell launcher       # toggle application launcher
 selfshell settings       # toggle bar settings popup
 selfshell palette-reload # re-read the wallpaper palette
@@ -108,6 +113,7 @@ selfshell ipc call <target> <function> [args...]
 selfshell reload         # restart quickshell
 selfshell update         # git pull + reload
 selfshell version        # show version
+selfshell list           # list running quickshell instances
 ```
 
 ## Dependencies
@@ -124,6 +130,8 @@ array in the script for the complete list. Key packages:
 | `hyprsunset` | Blue-light filter |
 | `matugen awww` | Color generation & wallpaper |
 | `grim slurp wl-clipboard` | Screenshots & clipboard |
+| `ddcutil` | Monitor brightness control |
+| `upower` | Battery widget |
 | `python-requests python-dotenv` | Genshin Impact widget (Hoyolab API) |
 
 ## Structure
@@ -137,8 +145,8 @@ kitty/       - terminal config
 quickshell/  - QML panels, core, popups, widgets, monitors, scripts, data, assets, services
              - core/ — shell infrastructure (AppConfig, IdleManager, LockScreen, etc.)
              - monitors/ — background data monitors (Cava, Genshin)
-             - widgets/ — panel widgets (12 total)
-             - popups/ — popup windows (12 total)
+             - widgets/ — panel widgets (13 total)
+             - popups/ — popup windows (15 total)
              - scripts/ — helper scripts (palette, Genshin, etc.)
              - data/ — persisted state (config.json, calendar-tasks, etc.)
              - assets/ — icons, sounds
