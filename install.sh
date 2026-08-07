@@ -244,6 +244,10 @@ if [[ "$use_sddm" =~ ^[Yy]$ ]]; then
   cp "$REPO_DIR/quickshell/wp/wp1.jpg" "$SDDM_THEME_DIR/selfshell/current.jpg"
   info "SDDM theme installed to $SDDM_THEME_DIR/selfshell"
 
+  # Гретер SDDM біжить від користувача sddm — даємо йому трекінг
+  # до теми (o+x без права запису), інакше home 700 → fallback-тема
+  chmod o+x "$HOME" "$HOME/.local" "$HOME/.local/share" 2>/dev/null || true
+
   # Без автологіну — вхід з паролем через тематичний SDDM
   echo "[Theme]
 Current=selfshell
