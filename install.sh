@@ -20,6 +20,9 @@ PACMAN_DEPS=(
   quickshell
   qt6-5compat
   sddm
+  qt5-base
+  qt5-declarative
+  qt5-svg
   uwsm
   kitty
   fish
@@ -57,7 +60,9 @@ PACMAN_DEPS=(
 
   # qt6-5compat — Qt5Compat.GraphicalEffects (блюр на екрані блокування);
   # без нього quickshell не стартує взагалі
-  # sddm — тематичний екран входу (тема у sddm/, кольори з палітри)
+  # sddm — тематичний екран входу (тема у sddm/, кольори з палітри);
+  # sddm 0.21 зібраний проти Qt5 — qt5-base/declarative/svg потрібні
+  # гретеру (libQt5Quick/Qml/Network/Gui/Core), без них exit 127
   # uwsm — менеджер user-сесії, fallback без SDDM (wayland-wm@.service)
 )
 
