@@ -78,14 +78,13 @@ cd SELFshell
 ```
 
 The script installs all dependencies, copies configs, sets up Bluetooth
-and asks whether to install **SDDM** with the SELFshell-themed login
-screen (`sddm/` theme — background, palette colors and clock matching
-the lock screen). If SDDM is declined, it adds automatic Hyprland
-startup via **uwsm** (fish login → `exec uwsm start hyprland.desktop`)
-instead. The theme colors and background are refreshed automatically by
-`update-palette.sh` on every wallpaper change. The script finishes with
-a `selfshell doctor --preboot` check so you can see any missing pieces
-before the reboot.
+and asks whether to install **greetd** with the **tuigreet** TUI login
+screen (starts Hyprland via **uwsm** after login). If greetd is declined,
+it adds automatic Hyprland startup via uwsm (fish login →
+`exec uwsm start hyprland.desktop`) instead. The theme colors and
+background are refreshed automatically by `update-palette.sh` on every
+wallpaper change. The script finishes with a `selfshell doctor --preboot`
+check so you can see any missing pieces before the reboot.
 
 ### Manual setup (without install.sh)
 
@@ -138,8 +137,8 @@ array in the script for the complete list. Key packages:
 | `ddcutil` | Monitor brightness control |
 | `upower` | Battery widget |
 | `qt6-5compat` | `Qt5Compat.GraphicalEffects` — lock screen blur (required, shell won't start without it) |
-| `sddm` | Themed login screen (theme in `sddm/`) |
-| `uwsm` | User session manager (fallback autostart without SDDM) |
+| `greetd greetd-tuigreet` | TUI login screen (starts Hyprland via uwsm) |
+| `uwsm` | User session manager (session start from greetd / fallback autostart) |
 | `python-requests python-dotenv` | Genshin Impact widget (Hoyolab API) |
 
 ## Structure
@@ -160,7 +159,6 @@ quickshell/  - QML panels, core, popups, widgets, monitors, scripts, data, asset
              - assets/ — icons, sounds
              - services/ — system services (qs-bt-agent, cava-vis.conf)
              - pam/password.conf — PAM config for lock screen auth
-sddm/        - SDDM theme (login screen matching the shell design)
 starship/    - prompt config
 yazi/        - file manager config, keybindings, themes
 ```

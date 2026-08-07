@@ -5,8 +5,9 @@
 # Встановлює залежності, копіює конфіги quickshell у
 # ~/.config/quickshell/, пропонує скопіювати hypr/kitty/fish/
 # yazi/starship/fastfetch конфіги з бекапами.
-# Також пропонує AUR helper (yay). Екран входу — SDDM з темою sddm/
-# (fallback без SDDM: автозапуск Hyprland через uwsm у fish login).
+# Також пропонує AUR helper (yay). Екран входу — greetd + tuigreet,
+# який запускає Hyprland через uwsm після логіну
+# (fallback без greetd: автозапуск Hyprland через uwsm у fish login).
 # Фінал: selfshell doctor --preboot.
 # ============================================================
 set -euo pipefail
@@ -19,10 +20,8 @@ PACMAN_DEPS=(
   hyprland
   quickshell
   qt6-5compat
-  sddm
-  qt5-base
-  qt5-declarative
-  qt5-svg
+  greetd
+  greetd-tuigreet
   uwsm
   kitty
   fish
@@ -60,10 +59,9 @@ PACMAN_DEPS=(
 
   # qt6-5compat — Qt5Compat.GraphicalEffects (блюр на екрані блокування);
   # без нього quickshell не стартує взагалі
-  # sddm — тематичний екран входу (тема у sddm/, кольори з палітри);
-  # sddm 0.21 зібраний проти Qt5 — qt5-base/declarative/svg потрібні
-  # гретеру (libQt5Quick/Qml/Network/Gui/Core), без них exit 127
-  # uwsm — менеджер user-сесії, fallback без SDDM (wayland-wm@.service)
+  # greetd + greetd-tuigreet — екран входу (TUI), запускає Hyprland
+  # через uwsm після логіну
+  # uwsm — менеджер user-сесії, fallback без greetd
 )
 
 info()  { echo -e "\033[1;36m[i]\033[0m $*"; }
@@ -227,36 +225,36 @@ else
   info "Found AUR helper: $aur_helper"
 fi
 
-# --- Крок 5: менеджер входу (SDDM) / автозапуск ---
+# --- Крок 5: менеджер входу (greetd+tuigreet) / автозапуск ---
 echo
 info "On a bare Arch there is no display manager. After login you get a TTY."
-read -rp "Install SDDM with the SELFshell themed login? [y/N] " use_sddm
-if [[ "$use_sddm" =~ ^[Yy]$ ]]; then
-  sudo pacman -S --needed --noconfirm sddm
+read -rp "Install greetd with the tuigreet login (TUI, starts Hyprland via uwsm)? [y/N] " use_greetd
+if [[ "$use_greetd" =~ ^[Yy]$ ]]; then
+  sudo pacman -S --needed --noconfirm greetd greetd-tuigreet
 
-  # Тема у user space (~/.local/share) + ThemeDir у конфізі — щоб
-  # update-palette.sh оновлював кольори/фон без sudo
-  SDDM_THEME_DIR="$HOME/.local/share/sddm/themes"
-  mkdir -p "$SDDM_THEME_DIR"
-  rm -rf "$SDDM_THEME_DIR/selfshell"
-  cp -r "$REPO_DIR/sddm" "$SDDM_THEME_DIR/selfshell"
-  # Заглушка шпалери — оновиться при першому update-palette
-  cp "$REPO_DIR/quickshell/wp/wp1.jpg" "$SDDM_THEME_DIR/selfshell/current.jpg"
-  info "SDDM theme installed to $SDDM_THEME_DIR/selfshell"
+  # Екран входу: greetd + tuigreet (TUI). Пакет greetd створює
+  # /etc/greetd/ + config.toml, PAM та юзера "greeter" — лише перезаписуємо
+  # команду сесії. mkdir -p обов'язковий: теки може не бути на свіжих
+  # системах, а запис без неї вбив би скрипт через set -e
+  sudo mkdir -p /etc/greetd
+  printf '[terminal]\nvt = 1\n\n[default_session]\ncommand = "tuigreet --time --remember --cmd '\''/usr/bin/uwsm start hyprland.desktop'\''"\nuser = "greeter"\n' | sudo tee /etc/greetd/config.toml >/dev/null
+  if ! sudo test -f /etc/greetd/config.toml; then
+    error "Failed to write /etc/greetd/config.toml — manual steps:"
+    error "  sudo systemctl enable --now greetd"
+    exit 1
+  fi
+  info "greetd config written: /etc/greetd/config.toml (tuigreet + uwsm)"
 
-  # Гретер SDDM біжить від користувача sddm — даємо йому трекінг
-  # до теми (o+x без права запису), інакше home 700 → fallback-тема
-  chmod o+x "$HOME" "$HOME/.local" "$HOME/.local/share" 2>/dev/null || true
-
-  # Без автологіну — вхід з паролем через тематичний SDDM
-  echo "[Theme]
-Current=selfshell
-ThemeDir=$SDDM_THEME_DIR" | sudo tee /etc/sddm.conf.d/selfshell.conf >/dev/null
-  sudo systemctl enable sddm
-  sudo systemctl set-default graphical.target
-  info "SDDM enabled. Reboot to see the themed login."
+  # Старий SDDM забирає alias display-manager.service — disable ПЕРЕД enable
+  sudo systemctl disable --now sddm.service 2>/dev/null || true
+  sudo systemctl enable greetd
+  if ! sudo systemctl is-enabled greetd >/dev/null 2>&1; then
+    error "greetd did not enable — manual step: sudo systemctl enable greetd"
+    exit 1
+  fi
+  info "greetd enabled. Reboot to see the TUI login (tuigreet)."
 else
-  info "No SDDM: adding Hyprland autostart via uwsm (fish login)."
+  info "No greetd: adding Hyprland autostart via uwsm (fish login)."
   fish_config="$HOME/.config/fish/config.fish"
   if [ -f "$fish_config" ] && ! grep -q "uwsm start" "$fish_config"; then
     cat >> "$fish_config" << 'FISHEOF'

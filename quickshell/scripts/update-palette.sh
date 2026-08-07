@@ -13,14 +13,6 @@ awww img "$CURRENT"
 
 /usr/bin/python3 "$DIR/update-palette.py" "$CURRENT"
 
-# Тема SDDM: актуалізуємо фон (colors.js оновлює сам update-palette.py).
-# Пропускається, якщо тема не встановлена (немає SDDM)
-SDDM_THEME="$HOME/.local/share/sddm/themes/selfshell"
-if [ -d "$SDDM_THEME" ]; then
-  cp "$CURRENT" "$SDDM_THEME/current.jpg"
-  echo "[i] SDDM theme background updated"
-fi
-
 # Перефарбовуємо живі foot-термінали без рестарту (foot перечитує colors-dark)
 pkill -USR1 -x foot 2>/dev/null || true
 
