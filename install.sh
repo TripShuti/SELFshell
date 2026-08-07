@@ -5,8 +5,8 @@
 # Встановлює залежності, копіює конфіги quickshell у
 # ~/.config/quickshell/, пропонує скопіювати hypr/kitty/fish/
 # yazi/starship/fastfetch конфіги з бекапами.
-# Також пропонує AUR helper (yay). Автозапуск сесії — через uwsm
-# (fish login → 'exec uwsm start hyprland.desktop'), як у робочій системі.
+# Також пропонує AUR helper (yay). Екран входу — SDDM з темою sddm/
+# (fallback без SDDM: автозапуск Hyprland через uwsm у fish login).
 # Фінал: selfshell doctor --preboot.
 # ============================================================
 set -euo pipefail
@@ -19,6 +19,7 @@ PACMAN_DEPS=(
   hyprland
   quickshell
   qt6-5compat
+  sddm
   uwsm
   kitty
   fish
@@ -56,7 +57,8 @@ PACMAN_DEPS=(
 
   # qt6-5compat — Qt5Compat.GraphicalEffects (блюр на екрані блокування);
   # без нього quickshell не стартує взагалі
-  # uwsm — менеджер user-сесії (wayland-wm@.service) для автозапуску Hyprland
+  # sddm — тематичний екран входу (тема у sddm/, кольори з палітри)
+  # uwsm — менеджер user-сесії, fallback без SDDM (wayland-wm@.service)
 )
 
 info()  { echo -e "\033[1;36m[i]\033[0m $*"; }
@@ -220,14 +222,32 @@ else
   info "Found AUR helper: $aur_helper"
 fi
 
-# --- Крок 5: менеджер входу / автозапуск ---
+# --- Крок 5: менеджер входу (SDDM) / автозапуск ---
 echo
 info "On a bare Arch there is no display manager. After login you get a TTY."
-read -rp "Set up automatic Hyprland startup? [y/N] " setup_autostart
-if [[ "$setup_autostart" =~ ^[Yy]$ ]]; then
-  # Сесія піднімається через uwsm: fish (login) →
-  # 'exec uwsm start hyprland.desktop' → wayland-wm@hyprland.desktop.service.
-  # Це той самий флоу, що й у робочій системі (без гретера).
+read -rp "Install SDDM with the SELFshell themed login? [y/N] " use_sddm
+if [[ "$use_sddm" =~ ^[Yy]$ ]]; then
+  sudo pacman -S --needed --noconfirm sddm
+
+  # Тема у user space (~/.local/share) + ThemeDir у конфізі — щоб
+  # update-palette.sh оновлював кольори/фон без sudo
+  SDDM_THEME_DIR="$HOME/.local/share/sddm/themes"
+  mkdir -p "$SDDM_THEME_DIR"
+  rm -rf "$SDDM_THEME_DIR/selfshell"
+  cp -r "$REPO_DIR/sddm" "$SDDM_THEME_DIR/selfshell"
+  # Заглушка шпалери — оновиться при першому update-palette
+  cp "$REPO_DIR/quickshell/wp/wp1.jpg" "$SDDM_THEME_DIR/selfshell/current.jpg"
+  info "SDDM theme installed to $SDDM_THEME_DIR/selfshell"
+
+  # Без автологіну — вхід з паролем через тематичний SDDM
+  echo "[Theme]
+Current=selfshell
+ThemeDir=$SDDM_THEME_DIR" | sudo tee /etc/sddm.conf.d/selfshell.conf >/dev/null
+  sudo systemctl enable sddm
+  sudo systemctl set-default graphical.target
+  info "SDDM enabled. Reboot to see the themed login."
+else
+  info "No SDDM: adding Hyprland autostart via uwsm (fish login)."
   fish_config="$HOME/.config/fish/config.fish"
   if [ -f "$fish_config" ] && ! grep -q "uwsm start" "$fish_config"; then
     cat >> "$fish_config" << 'FISHEOF'
@@ -243,9 +263,6 @@ FISHEOF
   else
     info "Autostart already configured or $fish_config not found — skipping."
   fi
-  info "Hint: for passwordless boot add autologin (optional):"
-  info "  sudo systemctl edit getty@tty1 --drop-in=autologin.conf"
-  info "  then set: ExecStart=-/usr/bin/agetty --autologin $USER --noclear %I \$TERM"
 fi
 
 # --- Завершення ---
