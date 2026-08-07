@@ -9,6 +9,7 @@ hl.bind(s.mainMod .. " + Print", hl.dsp.exec_cmd("sh -c 'grim -g \"$(slurp)\" - 
 hl.bind("Pause",                hl.dsp.exec_cmd("systemctl suspend"))
 -- SUPER+Escape — центр керування (живлення/налаштування)
 hl.bind(s.mainMod .. " + Escape", hl.dsp.exec_cmd("qs ipc call control toggle"))
+hl.bind(s.mainMod .. " + S",      hl.dsp.exec_cmd("qs ipc call settings toggle"))
 hl.bind(s.mainMod .. " + L",    hl.dsp.exec_cmd("qs ipc call lockscreen toggle"))
 
 hl.bind(s.mainMod .. " + W", hl.dsp.exec_cmd(s.browser))

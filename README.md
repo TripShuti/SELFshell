@@ -78,9 +78,10 @@ cd SELFshell
 ```
 
 The script installs all dependencies, copies configs, sets up Bluetooth
-and optionally configures a display manager (`sysc-greet-hyprland` from AUR)
-for automatic Hyprland startup. It finishes with a `selfshell doctor --preboot`
-check so you can see any missing pieces before the reboot.
+and optionally adds automatic Hyprland startup via **uwsm** (fish login →
+`exec uwsm start hyprland.desktop`). It finishes with a
+`selfshell doctor --preboot` check so you can see any missing pieces
+before the reboot.
 
 ### Manual setup (without install.sh)
 
@@ -132,6 +133,8 @@ array in the script for the complete list. Key packages:
 | `grim slurp wl-clipboard` | Screenshots & clipboard |
 | `ddcutil` | Monitor brightness control |
 | `upower` | Battery widget |
+| `qt6-5compat` | `Qt5Compat.GraphicalEffects` — lock screen blur (required, shell won't start without it) |
+| `uwsm` | User session manager (`wayland-wm@.service`) for automatic Hyprland startup |
 | `python-requests python-dotenv` | Genshin Impact widget (Hoyolab API) |
 
 ## Structure

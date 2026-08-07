@@ -126,7 +126,7 @@ doctor() {
   echo "== Залежності (обов'язкові) =="
   local deps=(hyprland qs kitty fish starship yazi fastfetch playerctl
               cava matugen hyprsunset awww grim slurp wl-copy socat
-              yt-dlp notify-send ddcutil upower)
+              yt-dlp notify-send ddcutil upower uwsm)
   for dep in "${deps[@]}"; do
     if command -v "$dep" &>/dev/null; then
       ok "$dep"
@@ -135,6 +135,13 @@ doctor() {
       problems=$((problems + 1))
     fi
   done
+  # qt6-5compat — модуль Qt5Compat.GraphicalEffects, без нього шелл не стартує
+  if [ -d /usr/lib/qt6/qml/Qt5Compat/GraphicalEffects ]; then
+    ok "qt6-5compat (Qt5Compat.GraphicalEffects)"
+  else
+    error "qt6-5compat — модуль Qt5Compat.GraphicalEffects не знайдено"
+    problems=$((problems + 1))
+  fi
 
   echo
   echo "== Python-модулі (для скриптів) =="

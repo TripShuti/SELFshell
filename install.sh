@@ -5,7 +5,8 @@
 # Встановлює залежності, копіює конфіги quickshell у
 # ~/.config/quickshell/, пропонує скопіювати hypr/kitty/fish/
 # yazi/starship/fastfetch конфіги з бекапами.
-# Також пропонує AUR helper (yay) + greetd/greeter.
+# Також пропонує AUR helper (yay). Автозапуск сесії — через uwsm
+# (fish login → 'exec uwsm start hyprland.desktop'), як у робочій системі.
 # Фінал: selfshell doctor --preboot.
 # ============================================================
 set -euo pipefail
@@ -17,6 +18,8 @@ QS_CONFIG_DIR="$HOME/.config/quickshell"
 PACMAN_DEPS=(
   hyprland
   quickshell
+  qt6-5compat
+  uwsm
   kitty
   fish
   starship
@@ -50,6 +53,10 @@ PACMAN_DEPS=(
   xdg-desktop-portal-hyprland
   ddcutil
   upower
+
+  # qt6-5compat — Qt5Compat.GraphicalEffects (блюр на екрані блокування);
+  # без нього quickshell не стартує взагалі
+  # uwsm — менеджер user-сесії (wayland-wm@.service) для автозапуску Hyprland
 )
 
 info()  { echo -e "\033[1;36m[i]\033[0m $*"; }
@@ -81,14 +88,35 @@ else
 fi
 
 # --- Увімкнення системних сервісів (NetworkManager, Bluetooth) ---
-info "Enabling and starting NetworkManager and bluetooth..."
-sudo systemctl enable --now NetworkManager.service
-sudo systemctl enable --now bluetooth.service
+# 'enable --now' може висять: enable миттєвий (симлінк), а start без
+# пристрою (Bluetooth у VM) чекає по таймауту 90-180 с. Тому start
+# виконується окремо з таймаутом 30 с.
+svc_start() {
+  local svc="$1"
+  info "Enabling $svc..."
+  sudo systemctl enable "$svc" --now 2>/dev/null || sudo systemctl enable "$svc"
+  if ! sudo timeout 30 systemctl start "$svc" &>/dev/null; then
+    warn "$svc: start timeout/failed — перевір обладнання, 'systemctl status $svc'"
+  fi
+}
+
+# У chroot (складання образу) systemd не може запускати сервіси — лише enable
+if systemd-detect-virt -q -c; then
+  warn "Chroot detected — starting services skipped (enable only)."
+  svc_start() {
+    local svc="$1"
+    info "Enabling $svc (chroot)..."
+    sudo systemctl enable "$svc" 2>/dev/null || true
+  }
+fi
+
+svc_start NetworkManager.service
+svc_start bluetooth.service
 
 sudo usermod -aG lp "$USER" 2>/dev/null || true
 rfkill unblock bluetooth 2>/dev/null || true
 if command -v bluetoothctl &>/dev/null; then
-  if ! bluetoothctl list 2>/dev/null | grep -q .; then
+  if ! timeout 5 bluetoothctl list 2>/dev/null | grep -q .; then
     warn "No Bluetooth adapter found. This is expected in a VM."
   fi
 fi
@@ -124,9 +152,14 @@ fi
 chmod +x "$QS_CONFIG_DIR/services/qs-bt-agent"
 mkdir -p "$HOME/.config/systemd/user"
 cp "$QS_CONFIG_DIR/services/qs-bt-agent.service" "$HOME/.config/systemd/user/qs-bt-agent.service"
-systemctl --user daemon-reload
-systemctl --user enable --now qs-bt-agent.service 2>/dev/null || systemctl --user enable qs-bt-agent.service
-info "qs-bt-agent installed as systemd user service (systemctl --user status qs-bt-agent)"
+if [ -n "${XDG_RUNTIME_DIR:-}" ] && [ -d "$XDG_RUNTIME_DIR" ]; then
+  systemctl --user daemon-reload
+  systemctl --user enable --now qs-bt-agent.service 2>/dev/null || systemctl --user enable qs-bt-agent.service
+  info "qs-bt-agent installed as systemd user service (systemctl --user status qs-bt-agent)"
+else
+  warn "No user session (XDG_RUNTIME_DIR missing) — skipped qs-bt-agent enable."
+  warn "After login run: systemctl --user enable --now qs-bt-agent"
+fi
 
 # --- CLI selfshell: chmod + symlink у ~/.local/bin ---
 chmod +x "$QS_CONFIG_DIR/scripts/selfshell"
@@ -192,37 +225,27 @@ echo
 info "On a bare Arch there is no display manager. After login you get a TTY."
 read -rp "Set up automatic Hyprland startup? [y/N] " setup_autostart
 if [[ "$setup_autostart" =~ ^[Yy]$ ]]; then
-  use_greeter="n"
-  if [ -n "$aur_helper" ]; then
-    read -rp "Install sysc-greet-hyprland (TUI greeter via greetd)? [y/N] " use_greeter
-    if [[ "$use_greeter" =~ ^[Yy]$ ]]; then
-      "$aur_helper" -S sysc-greet-hyprland
-      info "Package post_install set up greetd config and greeter user."
-      info "Reboot to see the greeter."
-    fi
-  else
-    warn "No AUR helper found — skipping sysc-greet-hyprland installation."
-  fi
+  # Сесія піднімається через uwsm: fish (login) →
+  # 'exec uwsm start hyprland.desktop' → wayland-wm@hyprland.desktop.service.
+  # Це той самий флоу, що й у робочій системі (без гретера).
+  fish_config="$HOME/.config/fish/config.fish"
+  if [ -f "$fish_config" ] && ! grep -q "uwsm start" "$fish_config"; then
+    cat >> "$fish_config" << 'FISHEOF'
 
-  if [[ ! "$use_greeter" =~ ^[Yy]$ ]]; then
-    info "Without greeter: adding Hyprland autostart on tty1 via fish config."
-    fish_config="$HOME/.config/fish/config.fish"
-    if [ -f "$fish_config" ] && ! grep -q "exec Hyprland" "$fish_config"; then
-      cat >> "$fish_config" << 'FISHEOF'
-
-# Autostart Hyprland on tty1 when no display manager is present
+# Autostart Hyprland session via uwsm (no display manager)
 if status is-login
-    and status is-interactive
     and test -z "$WAYLAND_DISPLAY"
-    and test "$XDG_VTNR" = 1
-    exec Hyprland
+    and test (tty) = /dev/tty1
+    exec uwsm start hyprland.desktop
 end
 FISHEOF
-      info "Added to $fish_config"
-    else
-      info "Autostart already configured or $fish_config not found — skipping."
-    fi
+    info "Added uwsm Hyprland autostart to $fish_config"
+  else
+    info "Autostart already configured or $fish_config not found — skipping."
   fi
+  info "Hint: for passwordless boot add autologin (optional):"
+  info "  sudo systemctl edit getty@tty1 --drop-in=autologin.conf"
+  info "  then set: ExecStart=-/usr/bin/agetty --autologin $USER --noclear %I \$TERM"
 fi
 
 # --- Завершення ---
