@@ -78,7 +78,9 @@ AnimatedPopup {
       case "shutdown": cmd = ["/usr/bin/systemctl", "poweroff"]; break
       case "reboot":   cmd = ["/usr/bin/systemctl", "reboot"]; break
       case "suspend":  cmd = ["sh", "-c", "qs ipc call lockscreen lock && /usr/bin/systemctl suspend"]; break
-      case "logout":   cmd = ["/usr/bin/hyprctl", "dispatch", "exit"]; break
+      // logout — Hyprland 0.56+: диспетчери через Lua (hl.dsp.exit),
+      // старий синтаксис 'dispatch exit' більше не працює
+      case "logout":   cmd = ["/usr/bin/hyprctl", "dispatch", "hl.dsp.exit()"]; break
       case "lock":     cmd = ["qs", "ipc", "call", "lockscreen", "lock"]; break
     }
     powerProc.command = cmd
