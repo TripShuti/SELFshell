@@ -10,6 +10,7 @@ Rectangle {
   radius: 10
   color: background
 
+  property string text: ""
   property string background: Palette.Colors["accent"]
   property string foreground: Palette.Colors["bg0H"]
   property int fontSize: 15

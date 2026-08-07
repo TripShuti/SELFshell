@@ -37,7 +37,6 @@ FocusScope {
       font.pixelSize: 15
       selectionColor: Palette.Colors["accent"]
       selectedTextColor: Palette.Colors["bg0H"]
-      cursorColor: Palette.Colors["accent"]
 
       Keys.onReturnPressed: root.submitted()
       Keys.onEnterPressed: root.submitted()
