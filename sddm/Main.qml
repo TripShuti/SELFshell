@@ -1,11 +1,12 @@
 // ============================================================
-// sddm/Main.qml — екран входу SELFshell (повна тема SDDM)
-// Кольори — з палітри (colors.js, генерується update-palette.py),
-// фон — current.jpg (оновлюється update-palette.sh)
-// API перевірено за src/greeter + components/2.0 репозиторію SDDM
+// sddm/Main.qml — екран входу SELFshell.
+// Повністю кастомна тема: власні поля/кнопки (LoginField.qml,
+// ActionButton.qml) замість вбудованих SddmComponents — стиль
+// повністю під контролем. Кольори — з палітри (colors.js),
+// фон — current.jpg (оновлюється update-palette.sh).
+// Контекст гретера: sddm, userModel, sessionModel.
 // ============================================================
 import QtQuick 2.15
-import SddmComponents 2.0
 import "colors.js" as Palette
 
 Rectangle {
@@ -16,7 +17,7 @@ Rectangle {
 
   property bool loginFailed: false
 
-  // Шпалера з папки теми; якщо файла нема — лишається чорний фон
+  // Шпалера; якщо файла нема — чорний фон
   Image {
     id: wallpaper
     anchors.fill: parent
@@ -25,86 +26,101 @@ Rectangle {
     visible: wallpaper.status === Image.Ready
   }
 
-  // Легке затемнення для читабельності полів
+  // Затемнення для читабельності
   Rectangle {
     anchors.fill: parent
     color: "black"
     opacity: 0.35
   }
 
-  Column {
-    anchors.centerIn: parent
-    width: 360
-    spacing: 10
+  // Оновлення годинника щосекунди
+  Timer {
+    interval: 1000
+    repeat: true
+    running: true
+    onTriggered: timeLabel.text = Qt.formatTime(new Date(), "HH:mm")
+  }
 
-    // Годинник у стилі лок-скрину
-    Clock {
+  Column {
+    id: card
+    anchors.centerIn: parent
+    width: 340
+    spacing: 12
+    opacity: 0
+    Behavior on opacity { NumberAnimation { duration: 500 } }
+
+    // Великий годинник у стилі лок-скрину
+    Text {
+      id: timeLabel
       anchors.horizontalCenter: parent.horizontalCenter
+      text: Qt.formatTime(new Date(), "HH:mm")
       color: Palette.Colors["textLight"]
-      timeFont.pixelSize: 60
-      timeFont.bold: true
-      timeFont.family: Palette.Colors["font"]
-      dateFont.pixelSize: 14
-      dateFont.family: Palette.Colors["font"]
+      font.family: Palette.Colors["font"]
+      font.pixelSize: 84
+      font.bold: true
+      font.letterSpacing: 2
+    }
+
+    Text {
+      anchors.horizontalCenter: parent.horizontalCenter
+      text: Qt.formatDate(new Date(), "dddd, MMMM d")
+      color: Palette.Colors["muted"]
+      font.family: Palette.Colors["font"]
+      font.pixelSize: 14
+      font.letterSpacing: 3
     }
 
     Text {
       anchors.horizontalCenter: parent.horizontalCenter
       text: "SELFshell"
-      color: Palette.Colors["muted"]
-      font.pixelSize: 13
+      color: Palette.Colors["mutedAlt"]
       font.family: Palette.Colors["font"]
+      font.pixelSize: 12
+      font.letterSpacing: 8
+      topPadding: 24
     }
 
     Item {
       width: 1
-      height: 16
+      height: 22
     }
 
-    // Ім'я користувача — префілл останнім залогіненим
-    TextBox {
-      id: usernameEntry
+    // Лейбли + поля входу
+    Text {
+      text: "USERNAME"
+      color: Palette.Colors["gray"]
+      font.family: Palette.Colors["font"]
+      font.pixelSize: 10
+      font.letterSpacing: 2
+      leftPadding: 2
+    }
+
+    LoginField {
+      id: usernameField
       width: parent.width
-      height: 42
       text: userModel.lastUser
-      font.pixelSize: 15
-      font.family: Palette.Colors["font"]
-      color: Palette.Colors["bgAlpha"]
-      textColor: Palette.Colors["fg"]
-      borderColor: "transparent"
-      focusColor: Palette.Colors["accent"]
-      hoverColor: Palette.Colors["accent"]
-      radius: 6
-      Keys.onPressed: {
-        if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-          passwordEntry.forceActiveFocus()
-          event.accepted = true
-        }
-      }
+      onSubmitted: passwordField.forceActiveFocus()
     }
 
-    PasswordBox {
-      id: passwordEntry
+    Text {
+      text: "PASSWORD"
+      color: Palette.Colors["gray"]
+      font.family: Palette.Colors["font"]
+      font.pixelSize: 10
+      font.letterSpacing: 2
+      leftPadding: 2
+      topPadding: 4
+    }
+
+    LoginField {
+      id: passwordField
       width: parent.width
-      height: 42
+      echoMode: TextInput.Password
       focus: true
-      font.pixelSize: 15
-      font.family: Palette.Colors["font"]
-      color: Palette.Colors["bgAlpha"]
-      textColor: Palette.Colors["fg"]
-      borderColor: "transparent"
-      focusColor: Palette.Colors["accent"]
-      hoverColor: Palette.Colors["accent"]
-      radius: 6
-      Keys.onPressed: {
-        if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-          doLogin()
-          event.accepted = true
-        }
-      }
+      onSubmitted: doLogin()
     }
 
-    // Повідомлення про невірний пароль (висота зарезервована)
+    // Повідомлення про помилку — фіксована висота, щоб не зсувати картку
     Text {
       id: errorText
       width: parent.width
@@ -113,66 +129,78 @@ Rectangle {
       visible: root.loginFailed
       text: "Wrong password. Try again."
       color: Palette.Colors["danger"]
-      font.pixelSize: 13
       font.family: Palette.Colors["font"]
+      font.pixelSize: 13
     }
 
-    Button {
+    ActionButton {
       id: loginButton
       width: parent.width
-      height: 42
       text: "Log In"
-      font.pixelSize: 15
-      font.family: Palette.Colors["font"]
-      font.bold: true
-      color: Palette.Colors["accent"]
-      textColor: Palette.Colors["bg0H"]
+      background: Palette.Colors["accent"]
+      foreground: Palette.Colors["bg0H"]
+      fontSize: 15
+      bold: true
       onClicked: doLogin()
     }
   }
 
-  // Живлення (перезавантаження/вимкнення)
-  Row {
-    anchors.horizontalCenter: parent.horizontalCenter
+  // Хостнейм — дрібний підпис знизу зліва
+  Text {
+    anchors.left: parent.left
     anchors.bottom: parent.bottom
-    anchors.bottomMargin: 26
+    anchors.margins: 28
+    text: sddm.hostName
+    color: Palette.Colors["gray"]
+    font.family: Palette.Colors["font"]
+    font.pixelSize: 11
+    font.letterSpacing: 1
+    visible: sddm.hostName !== ""
+  }
+
+  // Живлення — справа знизу
+  Row {
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    anchors.margins: 28
     spacing: 10
 
-    Button {
+    ActionButton {
       text: "Reboot"
       visible: sddm.canReboot
-      font.pixelSize: 13
-      font.family: Palette.Colors["font"]
-      color: Palette.Colors["bgAlpha"]
-      textColor: Palette.Colors["fg"]
+      background: Palette.Colors["baseOverlay"]
+      foreground: Palette.Colors["fg"]
+      width: 96
+      height: 34
+      fontSize: 12
       onClicked: sddm.reboot()
     }
 
-    Button {
+    ActionButton {
       text: "Shutdown"
       visible: sddm.canPowerOff
-      font.pixelSize: 13
-      font.family: Palette.Colors["font"]
-      color: Palette.Colors["bgAlpha"]
-      textColor: Palette.Colors["fg"]
+      background: Palette.Colors["baseOverlay"]
+      foreground: Palette.Colors["fg"]
+      width: 104
+      height: 34
+      fontSize: 12
       onClicked: sddm.powerOff()
     }
   }
 
   Connections {
     target: sddm
-    function onLoginSucceeded() {
-      // сесія стартує, greeter закриється сам
-    }
     function onLoginFailed() {
       root.loginFailed = true
-      passwordEntry.text = ""
-      passwordEntry.forceActiveFocus()
+      passwordField.text = ""
+      passwordField.forceActiveFocus()
     }
   }
 
   function doLogin() {
     root.loginFailed = false
-    sddm.login(usernameEntry.text, passwordEntry.text, sessionModel.lastIndex)
+    sddm.login(usernameField.text, passwordField.text, sessionModel.lastIndex)
   }
+
+  Component.onCompleted: card.opacity = 1
 }
