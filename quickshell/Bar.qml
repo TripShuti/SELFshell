@@ -34,9 +34,11 @@ PanelWindow {
   }
 
   readonly property Item launcherWidget: activeWidgets["launcher"] ?? null
+  readonly property Item workspacesWidget: activeWidgets["workspaces"] ?? null
   readonly property Item clockWidget: activeWidgets["clock"] ?? null
   readonly property Item mprisWidget: activeWidgets["mpris"] ?? null
   readonly property Item genshinWidget: activeWidgets["genshin"] ?? null
+  readonly property Item keyboardWidget: activeWidgets["keyboard"] ?? null
   readonly property Item audioWidget: activeWidgets["audio"] ?? null
   readonly property Item controlWidget: activeWidgets["control"] ?? null
   readonly property Item btWidget: activeWidgets["bt"] ?? null
@@ -49,14 +51,12 @@ PanelWindow {
     right: true
   }
 
-  implicitHeight: 36
+  implicitHeight: root.appConfig.barHeight
   color: "transparent"
-  exclusiveZone: 36
+  exclusiveZone: root.appConfig.barHeight
 
   required property QtObject palette
-
-  // Спільний стан конфігурації (видимість, порядок) — зберігається в config.json
-  readonly property AppConfig appConfig: AppConfig {}
+  required property QtObject appConfig
 
   // --- Шаблони компонентів для динамічного рендеру пігулок ---
   // Loader.sourceComponent бере звідси потрібний тип за іменем віджета.
@@ -71,6 +71,7 @@ PanelWindow {
   Component { id: genshinComp;    GenshinWidget { window: root; anchors.fill: parent; resinText: genshinMonitor.resinText; resinClass: genshinMonitor.resinClass } }
   Component { id: keyboardComp;   KeyboardLayoutWidget { window: root; anchors.fill: parent } }
   Component { id: audioComp;      AudioWidget { window: root; anchors.fill: parent } }
+  Component { id: batteryComp;    BatteryWidget { window: root; anchors.fill: parent } }
   Component { id: controlComp;    ControlWidget { window: root; anchors.fill: parent; unread: controlPopup.unread } }
   Component { id: btComp;         BluetoothWidget { window: root; anchors.fill: parent } }
   Component { id: netComp;        NetWidget { window: root; anchors.fill: parent } }
@@ -79,7 +80,7 @@ PanelWindow {
   readonly property var widgetComponents: ({
     launcher: launcherComp, workspaces: workspacesComp, mpris: mprisComp,
     clock: clockComp, timer: timerComp, genshin: genshinComp,
-    keyboard: keyboardComp, audio: audioComp, control: controlComp,
+    keyboard: keyboardComp, audio: audioComp, battery: batteryComp, control: controlComp,
     bt: btComp, net: netComp, tray: trayComp
   })
 
@@ -92,8 +93,8 @@ PanelWindow {
     return name === "mpris" || name === "audio"
         || name === "launcher" || name === "control"
         || name === "genshin" || name === "timer"
-        || name === "bt" || name === "net" || name === "tray"
-        || name === "keyboard"
+    || name === "bt" || name === "net" || name === "tray"
+    || name === "keyboard" || name === "battery"
   }
 
   // Ліва пігулка
@@ -104,6 +105,7 @@ PanelWindow {
       verticalCenter: parent.verticalCenter
     }
     height: pillHeight
+    radius: root.appConfig.barRadius
     appConfig: root.appConfig
     palette: root.palette
     orderModel: root.appConfig.leftOrder
@@ -116,6 +118,7 @@ PanelWindow {
   PillBar {
     anchors.centerIn: parent
     height: pillHeight
+    radius: root.appConfig.barRadius
     appConfig: root.appConfig
     palette: root.palette
     orderModel: root.appConfig.centerOrder
@@ -132,6 +135,7 @@ PanelWindow {
       verticalCenter: parent.verticalCenter
     }
     height: pillHeight
+    radius: root.appConfig.barRadius
     appConfig: root.appConfig
     palette: root.palette
     orderModel: root.appConfig.rightOrder
@@ -174,10 +178,17 @@ PanelWindow {
     imageSupported: true
 
     onNotification: (notif) => {
+      // DND — повністю ховає сповіщення (тост, список, звук)
+      if (root.appConfig.dndEnabled) return
       notif.tracked = true
       notifToast.showNotif(notif)
+      // Лічильник непрочитаних: росте, поки центр керування закритий
+      if (!controlPopup.visible) root.newNotifs++
     }
   }
+
+  // Лічильник нових сповіщень (badge на ControlWidget, скидається при відкритті)
+  property int newNotifs: 0
 
   // Монітор аудіо-візуалізації (cava) — працює, коли візуалізатор реально
   // видно: у віджеті панелі під час відтворення або у відкритому попапі.
@@ -199,6 +210,22 @@ PanelWindow {
     anchorItem: root.mprisWidget
     visible: false
     cavBars: cavaMonitor.bars
+  }
+
+  // Попап воркспейса: вікна стола, навігація (ПКМ на номері)
+  WorkspacesPopup {
+    id: workspacesPopup
+    window: root
+    anchorItem: root.workspacesWidget
+    visible: false
+  }
+
+  // Попап вибору розкладки (ПКМ на віджеті розкладки)
+  KeyboardLayoutPopup {
+    id: keyboardPopup
+    window: root
+    anchorItem: root.keyboardWidget
+    visible: false
   }
 
   GenshinPopup {
@@ -274,9 +301,38 @@ PanelWindow {
     }
   }
 
+  // IpcHandler для глобального виклику центру керування (SUPER+Escape)
+  IpcHandler {
+    target: "control"
+    function toggle(): void {
+      controlPopup.toggle()
+    }
+  }
+
   // Зв'язки: клік на віджеті → відкриває відповідний попап
   Connections { target: launcherWidget; function onClicked() { launcherPopup.toggle() } }
+  Connections {
+    target: workspacesWidget
+    // ПКМ на тій же столі — закрити; на іншій — перевідкрити під нею
+    function onOpenPopup(ws, anchor) {
+      if (workspacesPopup.visible && workspacesPopup.workspace === ws) {
+        workspacesPopup.close()
+        return
+      }
+      workspacesPopup.workspace = ws
+      workspacesPopup.anchorItem = anchor
+      if (!workspacesPopup.visible) workspacesPopup.visible = true
+      workspacesPopup.positionUnderAnchor()
+    }
+  }
   Connections { target: clockWidget;    function onClicked() { calendarPopup.toggle() } }
+  Connections {
+    target: keyboardWidget
+    function onOpenPopup(anchor) {
+      keyboardPopup.anchorItem = anchor
+      keyboardPopup.toggle()
+    }
+  }
   Connections { target: audioWidget;    function onClicked() { audioPopup.toggle() } }
   Connections { target: mprisWidget;    function onClicked() { mprisPopup.toggle() } }
   Connections { target: genshinWidget;  function onClicked() { genshinPopup.toggle() } }
@@ -287,6 +343,19 @@ PanelWindow {
   Connections { target: controlPopup;   function onOpenBtManager() { controlPopup.visible = false; btPopup.toggle() } }
   Connections { target: controlPopup;   function onOpenNetManager() { controlPopup.visible = false; netPopup.toggle() } }
   Connections { target: controlPopup;   function onOpenSettingsPopup() { controlPopup.visible = false; settingsPopup.toggle() } }
+  Connections {
+    target: root
+    function onNewNotifsChanged() {
+      if (root.controlWidget) root.controlWidget.unread = root.newNotifs
+    }
+  }
+  Connections {
+    target: controlPopup
+    function onVisibleChanged() {
+      // Відкрили центр керування — сповіщення "прочитані"
+      if (controlPopup.visible) root.newNotifs = 0
+    }
+  }
   Connections { target: genshinPopup;   function onRefreshRequested() { genshinMonitor.refreshNow() } }
   Connections {
     target: trayWidget

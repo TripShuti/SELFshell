@@ -7,6 +7,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
+import Quickshell.Widgets
 import "../core"
 import "../scripts/ControlState.js" as State
 
@@ -27,12 +28,35 @@ AnimatedPopup {
   readonly property int unread: notificationsModel?.values?.length ?? 0
   readonly property var notifications: notificationsModel
 
+  // Сповіщення, згруповані по додатках: [{appName, icon, notifs: [...]}]
+  property var groupedModel: []
+  function rebuildGroups() {
+    var vals = root.notifications?.values ?? []
+    var map = {}
+    for (var i = 0; i < vals.length; i++) {
+      var n = vals[i]
+      if (!n) continue
+      var key = n.appName || "System"
+      if (!map[key]) map[key] = []
+      map[key].push(n)
+    }
+    var out = []
+    for (var k in map) {
+      out.push({ appName: k, icon: map[k][0].appIcon, notifs: map[k] })
+    }
+    root.groupedModel = out
+  }
+  onUnreadChanged: root.rebuildGroups()
+
   signal openWallpaperPopup()
   signal openBtManager()
   signal openNetManager()
   signal openSettingsPopup()
 
   property bool muted: false
+
+  // DND — повністю ховає сповіщення (джерело істини — config.json)
+  readonly property bool dndEnabled: window.appConfig.dndEnabled
 
   // Caffeine mode: вимикає автоблокування/гаснення екрану/suspend по idle
   // (idle-монітори в IdleManager реагують на зміну файлу control-state.json)
@@ -270,7 +294,7 @@ AnimatedPopup {
   popupWindow: window
   anchorTarget: anchorItem
 
-  Component.onCompleted: { anchor.window = window; root.refreshBrightness(); root.ensureHyprsunset(); loadSavedState() }
+  Component.onCompleted: { anchor.window = window; root.refreshBrightness(); root.ensureHyprsunset(); loadSavedState(); root.rebuildGroups() }
 
   onVisibleChanged: {
     if (visible) {
@@ -442,7 +466,7 @@ AnimatedPopup {
             else if (mouse.button === Qt.RightButton) root.setBrightness(100)
           }
           onWheel: wheel => {
-            var step = wheel.angleDelta.y > 0 ? 5 : -5
+            var step = wheel.angleDelta.y > 0 ? window.appConfig.brightnessStep : -window.appConfig.brightnessStep
             root.setBrightness(root.brightness + step)
           }
         }
@@ -525,104 +549,249 @@ AnimatedPopup {
     // Роздільник
     GradientSeparator { midColor: window.palette.bg2 }
 
-    // Список сповіщень
+    // Список сповіщень, згрупованих по додатках
     Item {
       Layout.fillWidth: true
       Layout.fillHeight: true
       clip: true
 
-      ListView {
-        id: notifList
+      Flickable {
+        id: notifFlick
         anchors.fill: parent
         visible: root.unread > 0
-        spacing: 6
+        contentWidth: width
+        contentHeight: notifColumn.implicitHeight
+        boundsBehavior: Flickable.StopAtBounds
         interactive: contentHeight > height
-        model: root.notifications
 
-        delegate: Rectangle {
-          required property var modelData
-          readonly property var notif: modelData
-          property bool hovered: false
+        Column {
+          id: notifColumn
+          width: parent.width
+          spacing: 8
 
-          width: notifList.width
-          height: delLayout.implicitHeight + 12
-          radius: 6
-          color: hovered ? window.palette.bg2 : window.palette.bg1
-          Behavior on color { ColorAnimation { duration: 120 } }
+          Repeater {
+            model: root.groupedModel
 
-          HoverHandler { onHoveredChanged: parent.hovered = hovered }
+            delegate: Column {
+              required property var modelData
+              width: parent.width
+              spacing: 3
 
-          // Акцентна смужка ліворуч
-          Rectangle {
-            width: 3
-            height: parent.height - 8
-            anchors.verticalCenter: parent.verticalCenter
-            anchors.left: parent.left
-            anchors.leftMargin: 2
-            radius: 2
-            color: window.palette.yellow
-          }
+              // --- Шапка групи: іконка, назва, кількість, очистити групу ---
+              RowLayout {
+                width: parent.width
+                spacing: 6
 
-          RowLayout {
-            id: delLayout
-            x: 14; y: 6
-            width: parent.width - 22
-            spacing: 8
+                IconImage {
+                  Layout.preferredWidth: 16
+                  Layout.preferredHeight: 16
+                  source: Quickshell.iconPath(modelData.icon, true)
+                }
 
+                Text {
+                  text: modelData.appName
+                  color: window.palette.green
+                  font.family: window.palette.font; font.pixelSize: 11; font.bold: true
+                  elide: Text.ElideRight
+                  Layout.fillWidth: true
+                }
 
+                Text {
+                  text: modelData.notifs.length
+                  color: window.palette.gray
+                  font.family: window.palette.font; font.pixelSize: 10
+                }
 
-            // Назва додатка, заголовок, тіло сповіщення
-            ColumnLayout {
-              Layout.fillWidth: true
-              spacing: 2
-
-              Text {
-                text: notif.appName
-                color: window.palette.green
-                font.family: window.palette.font; font.pixelSize: 14; font.bold: true
+                Rectangle {
+                  implicitWidth: 16; implicitHeight: 16; radius: 8
+                  color: groupClearArea.containsMouse ? window.palette.red : window.palette.bg1
+                  Behavior on color { ColorAnimation { duration: 120 } }
+                  Text {
+                    anchors.centerIn: parent
+                    text: "\uF00D"
+                    color: groupClearArea.containsMouse ? window.palette.bg0H : window.palette.gray
+                    font.family: window.palette.font; font.pixelSize: 8
+                  }
+                  MouseArea {
+                    id: groupClearArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    onClicked: {
+                      for (var i = 0; i < modelData.notifs.length; ++i) {
+                        if (modelData.notifs[i]) modelData.notifs[i].dismiss()
+                      }
+                    }
+                  }
+                }
               }
 
-              Text {
-                text: notif.summary
-                color: window.palette.fg
-                font.family: window.palette.font; font.pixelSize: 12; font.bold: true
-                wrapMode: Text.WordWrap
-                Layout.fillWidth: true
-                maximumLineCount: 1
-                elide: Text.ElideRight
-              }
+              // --- Сповіщення групи ---
+              Repeater {
+                model: modelData.notifs
 
-              Text {
-                text: notif.body
-                color: window.palette.gray
-                font.family: window.palette.font; font.pixelSize: 12
-                wrapMode: Text.WordWrap
-                Layout.fillWidth: true
-                maximumLineCount: 3
-                elide: Text.ElideRight
-                visible: notif.body !== ""
-              }
-            }
+                delegate: Rectangle {
+                  required property var modelData
+                  readonly property var notif: modelData
+                  property bool hovered: false
 
-            // Кнопка закриття сповіщення
-            Rectangle {
-              implicitWidth: 18; implicitHeight: 18; radius: 9
-              color: closeArea.containsMouse ? window.palette.red : window.palette.bg1
-              Behavior on color { ColorAnimation { duration: 120 } }
+                  width: notifColumn.width
+                  height: notifRow.implicitHeight + 10
+                  radius: 6
+                  color: hovered ? window.palette.bg2 : window.palette.bg1
+                  Behavior on color { ColorAnimation { duration: 120 } }
 
-              Text {
-                anchors.centerIn: parent
-                text: "\uF00D"
-                color: closeArea.containsMouse ? window.palette.bg0H : window.palette.gray
-                Behavior on color { ColorAnimation { duration: 120 } }
-                font.family: window.palette.font; font.pixelSize: 9
-              }
+                  HoverHandler { onHoveredChanged: parent.hovered = hovered }
 
-              MouseArea {
-                id: closeArea
-                anchors.fill: parent
-                hoverEnabled: true
-                onClicked: notif.dismiss()
+                  // Акцентна смужка ліворуч
+                  Rectangle {
+                    width: 3
+                    height: parent.height - 8
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.left: parent.left
+                    anchors.leftMargin: 2
+                    radius: 2
+                    color: window.palette.yellow
+                  }
+
+                  // Клік по рядку — default-дія сповіщення.
+                  // MouseArea під контентом, щоб кнопки дій приймали кліки
+                  MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                      var actions = notif.actions
+                      var invoked = false
+                      for (var i = 0; i < actions.length; ++i) {
+                        if (actions[i].identifier === "default") {
+                          actions[i].invoke()
+                          invoked = true
+                          break
+                        }
+                      }
+                      if (!invoked) notif.dismiss()
+                    }
+                  }
+
+                  ColumnLayout {
+                    id: notifRow
+                    x: 12; y: 5
+                    width: parent.width - 24
+                    spacing: 4
+
+                    RowLayout {
+                      Layout.fillWidth: true
+                      spacing: 8
+
+                      // Іконка додатка
+                      IconImage {
+                        Layout.preferredWidth: 18
+                        Layout.preferredHeight: 18
+                        source: Quickshell.iconPath(notif.appIcon, true)
+                      }
+
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 1
+
+                        Text {
+                          text: notif.summary
+                          color: window.palette.fg
+                          font.family: window.palette.font; font.pixelSize: 12; font.bold: true
+                          wrapMode: Text.WordWrap
+                          Layout.fillWidth: true
+                          maximumLineCount: 2
+                          elide: Text.ElideRight
+                        }
+
+                        Text {
+                          text: notif.body
+                          color: window.palette.gray
+                          font.family: window.palette.font; font.pixelSize: 11
+                          wrapMode: Text.WordWrap
+                          Layout.fillWidth: true
+                          maximumLineCount: 2
+                          elide: Text.ElideRight
+                          visible: notif.body !== ""
+                        }
+                      }
+
+                      // Картинка сповіщення
+                      Image {
+                        visible: notif.image !== ""
+                        Layout.preferredWidth: 56
+                        Layout.preferredHeight: 56
+                        source: notif.image
+                        fillMode: Image.PreserveAspectFit
+                        clip: true
+                      }
+
+                      // Кнопка закриття сповіщення
+                      Rectangle {
+                        implicitWidth: 18; implicitHeight: 18; radius: 9
+                        color: closeArea.containsMouse ? window.palette.red : window.palette.bg1
+                        Behavior on color { ColorAnimation { duration: 120 } }
+
+                        Text {
+                          anchors.centerIn: parent
+                          text: "\uF00D"
+                          color: closeArea.containsMouse ? window.palette.bg0H : window.palette.gray
+                          font.family: window.palette.font; font.pixelSize: 9
+                        }
+
+                        MouseArea {
+                          id: closeArea
+                          anchors.fill: parent
+                          hoverEnabled: true
+                          onClicked: notif.dismiss()
+                        }
+                      }
+                    }
+
+                    // --- Кнопки дій сповіщення (без "default" — він на клік по рядку) ---
+                    Row {
+                      Layout.fillWidth: true
+                      spacing: 4
+                      visible: {
+                        var actions = notif.actions
+                        for (var i = 0; i < actions.length; ++i)
+                          if (actions[i].identifier !== "default") return true
+                        return false
+                      }
+
+                      Repeater {
+                        model: notif.actions
+
+                        delegate: Rectangle {
+                          required property var modelData
+                          readonly property var action: modelData
+                          visible: action.identifier !== "default"
+
+                          implicitWidth: actionText.implicitWidth + 12
+                          height: 20
+                          radius: 4
+                          color: actionArea.containsMouse ? window.palette.bgAlpha : window.palette.bg2
+                          Behavior on color { ColorAnimation { duration: 120 } }
+
+                          Text {
+                            id: actionText
+                            anchors.centerIn: parent
+                            text: action.text
+                            color: window.palette.light
+                            font.family: window.palette.font; font.pixelSize: 9
+                          }
+
+                          MouseArea {
+                            id: actionArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: action.invoke()
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
               }
             }
           }
@@ -685,7 +854,7 @@ AnimatedPopup {
 
         Text {
           anchors.centerIn: parent
-          text: root.muted ? "\uF1F6" : "\uF0F3"
+          text: root.muted ? "\uF026" : "\uF028"
           color: root.muted ? window.palette.red : window.palette.gray
           font.family: window.palette.font; font.pixelSize: 11
           Behavior on color { ColorAnimation { duration: 120 } }
@@ -696,6 +865,32 @@ AnimatedPopup {
           anchors.fill: parent
           hoverEnabled: true
           onClicked: root.toggleMuted()
+        }
+      }
+
+      // Кнопка DND — повністю ховає сповіщення (тост, список, звук)
+      Rectangle {
+        implicitWidth: 24; implicitHeight: 24; radius: 6
+        color: root.dndEnabled ? Qt.rgba(window.palette.red.r, window.palette.red.g, window.palette.red.b, 0.15)
+             : (dndArea.containsMouse ? window.palette.bg2 : window.palette.bg1)
+        Behavior on color { ColorAnimation { duration: 120 } }
+
+        Text {
+          anchors.centerIn: parent
+          text: root.dndEnabled ? "\uF1F6" : "\uF0F3"
+          color: root.dndEnabled ? window.palette.red : window.palette.gray
+          font.family: window.palette.font; font.pixelSize: 11
+          Behavior on color { ColorAnimation { duration: 120 } }
+        }
+
+        MouseArea {
+          id: dndArea
+          anchors.fill: parent
+          hoverEnabled: true
+          onClicked: {
+            window.appConfig.dndEnabled = !window.appConfig.dndEnabled
+            window.appConfig.saveToFile()
+          }
         }
       }
 

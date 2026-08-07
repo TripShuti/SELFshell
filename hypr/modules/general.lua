@@ -63,9 +63,13 @@ hl.config({
     },
 })
 
-hl.device({
-    name          = "e-signal-hator-pulsar",
-    sensitivity   = 0.1,
-    accel_profile = "flat",
-    scroll_factor = 2
-})
+-- Налаштування конкретних пристроїв — з hypr/env.json (devices).
+-- Для неіснуючого пристрою запис неактивний (не ламає нічого).
+for _, dev in ipairs(require("modules.env").devices) do
+    hl.device({
+        name          = dev.name,
+        sensitivity   = dev.sensitivity,
+        accel_profile = dev.accel_profile,
+        scroll_factor = dev.scroll_factor,
+    })
+end

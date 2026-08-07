@@ -1,14 +1,23 @@
 -- ============================================================
--- env.lua — змінні оточення: mainMod, термінал, браузер
+-- env.lua — змінні оточення з hypr/env.json (з дефолтами, якщо
+-- файл відсутній або пошкоджений)
 -- ============================================================
+local json = require("modules.json")
+
+local ENV_PATH = os.getenv("HOME") .. "/.config/hypr/env.json"
+
+local env = json.read(ENV_PATH) or {}
+
 local M = {}
 
-M.mainMod     = "SUPER"
-M.terminal    = "kitty"
-M.fileManager = "kitty -e yazi"
-M.menu        = "wofi --show drun"
-M.browser     = "chromium"
-M.cursorTheme = "Capitaine Cursors (Gruvbox)"
-M.cursorSize  = "24"
+M.mainMod     = env.mod or "SUPER"
+M.terminal    = env.terminal or "kitty"
+M.fileManager = env.fileManager or "kitty -e yazi"
+M.menu        = env.menu or "wofi --show drun"
+M.browser     = env.browser or "chromium"
+M.cursorTheme = env.cursorTheme or "Capitaine Cursors (Gruvbox)"
+M.cursorSize  = env.cursorSize or 24
+M.autostart   = env.autostart or {}
+M.devices     = env.devices or {}
 
 return M

@@ -264,6 +264,51 @@ AnimatedPopup {
           minHeight: 34
         }
       }
+
+      GradientSeparator { midColor: window.palette.bg2 }
+
+      ColumnLayout {
+        Layout.fillWidth: true
+        spacing: 4
+        Text { text: "Behavior"; color: window.palette.gray; font.family: window.palette.font; font.pixelSize: 9; font.bold: true }
+        RowLayout {
+          Layout.fillWidth: true
+          spacing: 10
+          ColumnLayout {
+            Layout.fillWidth: true
+            Layout.preferredWidth: 1
+            spacing: 4
+            Text { text: "Panel"; color: window.palette.gray; font.family: window.palette.font; font.pixelSize: 8 }
+            NumField { label: "Bar height, px"; prop: "barHeight"; stepSize: 2; minVal: 24; maxVal: 96 }
+            NumField { label: "Pill radius, px"; prop: "barRadius"; stepSize: 1; minVal: 0; maxVal: 24 }
+          }
+          ColumnLayout {
+            Layout.fillWidth: true
+            Layout.preferredWidth: 1
+            spacing: 4
+            Text { text: "Idle timeouts, seconds"; color: window.palette.gray; font.family: window.palette.font; font.pixelSize: 8 }
+            NumField { label: "Lock"; prop: "idleLockTimeout"; stepSize: 30; minVal: 30; maxVal: 86400 }
+            NumField { label: "DPMS off"; prop: "idleDpmsTimeout"; stepSize: 30; minVal: 30; maxVal: 86400 }
+            NumField { label: "Suspend"; prop: "idleSuspendTimeout"; stepSize: 30; minVal: 30; maxVal: 86400 }
+          }
+          ColumnLayout {
+            Layout.fillWidth: true
+            Layout.preferredWidth: 1
+            spacing: 4
+            Text { text: "Wheel steps"; color: window.palette.gray; font.family: window.palette.font; font.pixelSize: 8 }
+            NumField { label: "Audio volume"; prop: "audioStep"; stepSize: 0.05; minVal: 0.01; maxVal: 0.5; decimals: 2 }
+            NumField { label: "Brightness"; prop: "brightnessStep"; stepSize: 1; minVal: 1; maxVal: 25 }
+          }
+        }
+        Text {
+          text: "Bar size and idle timeouts apply after shell restart (selfshell reload)"
+          color: window.palette.mutedAlt
+          font.family: window.palette.font
+          font.pixelSize: 8
+          Layout.fillWidth: true
+          wrapMode: Text.WordWrap
+        }
+      }
     }
 
     component DnDZone: Rectangle {
@@ -429,6 +474,82 @@ AnimatedPopup {
             onCanceled: root.commitDrag()
           }
         }
+      }
+    }
+
+    // Числовий степпер для налаштувань поведінки.
+    // Змінює cfg[prop] і одразу зберігає в config.json.
+    // idle-таймаути підтискаються, щоб зберігалося lock < dpms < suspend.
+    component NumField: RowLayout {
+      id: field
+      required property string label
+      required property string prop
+      property real stepSize: 1
+      property real minVal: 0
+      property real maxVal: 9999
+      property int decimals: 0
+      spacing: 4
+      Layout.fillWidth: true
+
+      Text {
+        text: field.label
+        color: window.palette.fg
+        font.family: window.palette.font
+        font.pixelSize: 9
+        elide: Text.ElideRight
+        Layout.fillWidth: true
+      }
+
+      Rectangle {
+        implicitWidth: 16
+        implicitHeight: 16
+        radius: 3
+        color: fieldMouseMin.pressed ? window.palette.bgAlpha : window.palette.bg2
+        Text { anchors.centerIn: parent; text: "\u2212"; color: window.palette.fg; font.pixelSize: 10; font.bold: true }
+        MouseArea {
+          id: fieldMouseMin
+          anchors.fill: parent
+          cursorShape: Qt.PointingHandCursor
+          onClicked: field.setValue(-1)
+        }
+      }
+
+      Text {
+        text: root.cfg[field.prop].toFixed(field.decimals)
+        color: window.palette.fg
+        font.family: window.palette.font
+        font.pixelSize: 9
+        horizontalAlignment: Text.AlignHCenter
+        Layout.preferredWidth: 44
+      }
+
+      Rectangle {
+        implicitWidth: 16
+        implicitHeight: 16
+        radius: 3
+        color: fieldMousePlus.pressed ? window.palette.bgAlpha : window.palette.bg2
+        Text { anchors.centerIn: parent; text: "+"; color: window.palette.fg; font.pixelSize: 10; font.bold: true }
+        MouseArea {
+          id: fieldMousePlus
+          anchors.fill: parent
+          cursorShape: Qt.PointingHandCursor
+          onClicked: field.setValue(1)
+        }
+      }
+
+      function setValue(dir) {
+        var cur = root.cfg[field.prop]
+        var next = cur + dir * field.stepSize
+        if (field.prop === "idleLockTimeout")
+          next = Math.min(next, root.cfg.idleDpmsTimeout - 1)
+        else if (field.prop === "idleDpmsTimeout")
+          next = Math.min(Math.max(next, root.cfg.idleLockTimeout + 1), root.cfg.idleSuspendTimeout - 1)
+        else if (field.prop === "idleSuspendTimeout")
+          next = Math.max(next, root.cfg.idleDpmsTimeout + 1)
+        next = Math.round(next / field.stepSize) * field.stepSize
+        next = Math.min(Math.max(next, field.minVal), field.maxVal)
+        root.cfg[field.prop] = next
+        root.cfg.saveToFile()
       }
     }
   }

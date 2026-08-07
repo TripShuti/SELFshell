@@ -1,0 +1,121 @@
+// ============================================================
+// widgets/BatteryWidget.qml — віджет заряду батареї на панелі
+// ============================================================
+import Quickshell
+import Quickshell.Io
+import QtQuick
+import QtQuick.Layouts
+
+// Віджет батареї: іконка + відсоток, червоний < 15% без зарядки.
+// Джерело — UPower через `upower` (зовнішня програма, без читання файлів).
+Item {
+  id: root
+
+  required property QtObject window
+  property int percent: -1
+  property string state: ""
+  property string device: ""
+
+  // Прихований на машинах без батареї (десктоп)
+  readonly property bool available: device !== ""
+  visible: available
+
+  implicitWidth: 64
+  implicitHeight: parent?.height ?? 36
+
+  readonly property bool charging: state === "charging" || state === "pending-charge"
+  readonly property bool low: percent >= 0 && percent <= 15 && !root.charging
+
+  readonly property string icon: {
+    var p = root.percent
+    if (p < 0) return "\uF097" // battery-unknown
+    if (root.charging) return "\uF0E7" // bolt
+    if (p < 13) return "\uF240"
+    if (p < 38) return "\uF241"
+    if (p < 63) return "\uF242"
+    if (p < 88) return "\uF243"
+    return "\uF244"
+  }
+
+  readonly property color iconColor: root.low ? window.palette.danger
+      : root.charging ? window.palette.green : window.palette.fg
+
+  // sysfs не підтримує inotify, тому раз на 30 с опитуємо upower
+  Timer {
+    interval: 30000
+    repeat: true
+    triggeredOnStart: true
+    running: true
+    onTriggered: devsProc.running = true
+  }
+
+  // Крок 1: знайти пристрій батареї
+  Process {
+    id: devsProc
+    command: ["upower", "-e"]
+    stdout: SplitParser {
+      splitMarker: "\n"
+      onRead: data => {
+        var dev = ""
+        for (var line of String(data ?? "").split(/\r?\n/)) {
+          if (/battery/i.test(line)) { dev = line; break }
+        }
+        if (root.device !== dev) root.device = dev
+        if (dev !== "") {
+          infoProc.command = ["upower", "-i", dev]
+          infoProc.running = true
+        }
+      }
+    }
+  }
+
+  // Крок 2: прочитати стан та відсоток
+  Process {
+    id: infoProc
+    command: []
+    stdout: SplitParser {
+      splitMarker: "\n"
+      onRead: data => {
+        var pct = root.percent
+        var st = root.state
+        for (var line of String(data ?? "").split(/\r?\n/)) {
+          var m = line.match(/^\s*([a-z]+)\s*:\s*(.+?)\s*$/)
+          if (!m) continue
+          if (m[1] === "percentage") {
+            var v = parseInt(m[2], 10)
+            if (!isNaN(v)) pct = v
+          } else if (m[1] === "state") {
+            st = m[2]
+          }
+        }
+        root.percent = pct
+        root.state = st
+      }
+    }
+  }
+
+  // Клік — негайне оновлення
+  MouseArea {
+    anchors.fill: parent
+    cursorShape: Qt.PointingHandCursor
+    onClicked: devsProc.running = true
+  }
+
+  RowLayout {
+    anchors.centerIn: parent
+    spacing: 5
+
+    Text {
+      text: root.icon
+      color: root.iconColor
+      font.family: window.palette.font
+      font.pixelSize: 13
+    }
+    Text {
+      text: root.percent >= 0 ? root.percent + "%" : "--"
+      color: root.iconColor
+      font.family: window.palette.font
+      font.pixelSize: 12
+    }
+  }
+}

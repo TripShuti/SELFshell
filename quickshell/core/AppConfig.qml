@@ -30,16 +30,36 @@ Item {
   property bool btEnabled: false
   property bool netEnabled: false
   property bool trayEnabled: false
+  property bool batteryEnabled: false
+
+  // DND — повністю ховає сповіщення (тост, список, звук)
+  property bool dndEnabled: false
 
   // Кастомний шлях до звуку завершення таймера ("" = звук з assets/)
   property string timerSoundPath: ""
+
+  // --- Поведінка системи (JSON-налаштування) ---
+  // Idle-таймаути (секунди). Порядок має бути зростаючим:
+  // lock < dpms < suspend, інакше рівні спрацьовуватимуть у несподіваному
+  // порядку.
+  property int idleLockTimeout: 300
+  property int idleDpmsTimeout: 360
+  property int idleSuspendTimeout: 900
+
+  // Інкременти змін значень (wheel/клавіші)
+  property real audioStep: 0.05
+  property int brightnessStep: 5
+
+  // Зовнішній вигляд панелі
+  property int barHeight: 36
+  property int barRadius: 4
 
   // Фіксований канонічний список усіх віджетів — використовується
   // Settings-попапом для стабільного порядку рядків (не залежить від
   // того, в якій пігулці зараз лежить віджет).
   readonly property var allWidgetNames: [
     "launcher", "workspaces", "mpris", "clock", "timer",
-    "genshin", "keyboard", "audio", "control", "bt", "net", "tray"
+    "genshin", "keyboard", "audio", "battery", "control", "bt", "net", "tray"
   ]
 
   // Порядок ВСЕРЕДИНІ пігулки + приналежність до пігулки визначаються
@@ -139,7 +159,15 @@ Item {
     if (data.btEnabled !== undefined)         btEnabled         = data.btEnabled
     if (data.netEnabled !== undefined)        netEnabled        = data.netEnabled
     if (data.trayEnabled !== undefined)       trayEnabled       = data.trayEnabled
+    if (data.dndEnabled !== undefined)        dndEnabled        = data.dndEnabled
     if (data.timerSoundPath !== undefined)    timerSoundPath    = data.timerSoundPath
+    if (data.idleLockTimeout !== undefined)   idleLockTimeout   = data.idleLockTimeout
+    if (data.idleDpmsTimeout !== undefined)   idleDpmsTimeout   = data.idleDpmsTimeout
+    if (data.idleSuspendTimeout !== undefined) idleSuspendTimeout = data.idleSuspendTimeout
+    if (data.audioStep !== undefined)         audioStep         = data.audioStep
+    if (data.brightnessStep !== undefined)    brightnessStep    = data.brightnessStep
+    if (data.barHeight !== undefined)         barHeight         = data.barHeight
+    if (data.barRadius !== undefined)         barRadius         = data.barRadius
     if (data.leftOrder !== undefined)         leftOrder         = data.leftOrder
     if (data.centerOrder !== undefined)       centerOrder       = data.centerOrder
     if (data.rightOrder !== undefined)        rightOrder        = data.rightOrder
@@ -159,7 +187,15 @@ Item {
       btEnabled:         btEnabled,
       netEnabled:        netEnabled,
       trayEnabled:       trayEnabled,
+      dndEnabled:        dndEnabled,
       timerSoundPath:    timerSoundPath,
+      idleLockTimeout:   idleLockTimeout,
+      idleDpmsTimeout:   idleDpmsTimeout,
+      idleSuspendTimeout: idleSuspendTimeout,
+      audioStep:         audioStep,
+      brightnessStep:    brightnessStep,
+      barHeight:         barHeight,
+      barRadius:         barRadius,
       leftOrder:         leftOrder,
       centerOrder:       centerOrder,
       rightOrder:        rightOrder

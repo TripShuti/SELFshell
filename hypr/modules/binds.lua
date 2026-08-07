@@ -7,7 +7,8 @@ hl.bind("Print",               hl.dsp.exec_cmd("sh -c 'grim - | tee ~/Screenshot
 hl.bind(s.mainMod .. " + Print", hl.dsp.exec_cmd("sh -c 'grim -g \"$(slurp)\" - | tee ~/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png | wl-copy'"))
 
 hl.bind("Pause",                hl.dsp.exec_cmd("systemctl suspend"))
-hl.bind(s.mainMod .. " + Escape", hl.dsp.exec_cmd("~/.config/wofi/powermenu.sh"))
+-- SUPER+Escape — центр керування (живлення/налаштування)
+hl.bind(s.mainMod .. " + Escape", hl.dsp.exec_cmd("qs ipc call control toggle"))
 hl.bind(s.mainMod .. " + L",    hl.dsp.exec_cmd("qs ipc call lockscreen toggle"))
 
 hl.bind(s.mainMod .. " + W", hl.dsp.exec_cmd(s.browser))

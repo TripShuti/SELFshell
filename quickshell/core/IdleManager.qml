@@ -9,14 +9,17 @@ import Quickshell.Wayland
 import Quickshell.Services.Mpris
 
 // Менеджер бездіяльності з трьома рівнями:
-//   300s — блокування (lockRequested)
-//   360s — DPMS off
-//   900s — suspend (suspendRequested)
+//   lock < dpms < suspend
+//
+// Таймаути (секунди) налаштовуються в config.json:
+//   idleLockTimeout / idleDpmsTimeout / idleSuspendTimeout
 //
 // Не знає про lockContext/sessionLock — спілкується через
 // сигнали, які обробляє shell.qml.
 Item {
   id: root
+
+  required property QtObject appConfig
 
   signal lockRequested()
   signal suspendRequested()
@@ -66,16 +69,16 @@ Item {
     }
   }
 
-  // Рівень 1: блокування екрана (5 хв)
+  // Рівень 1: блокування екрана
   IdleMonitor {
-    timeout: 300
+    timeout: root.appConfig.idleLockTimeout
     enabled: !root.mediaPlaying && !root.caffeineEnabled
     onIsIdleChanged: if (isIdle) root.lockRequested()
   }
 
-  // Рівень 2: DPMS off (6 хв) — з автоматичним увімкненням
+  // Рівень 2: DPMS off — з автоматичним увімкненням
   IdleMonitor {
-    timeout: 360
+    timeout: root.appConfig.idleDpmsTimeout
     enabled: !root.mediaPlaying && !root.caffeineEnabled
     onIsIdleChanged: {
       dpmsProc.command = isIdle
@@ -85,9 +88,9 @@ Item {
     }
   }
 
-  // Рівень 3: suspend (15 хв)
+  // Рівень 3: suspend
   IdleMonitor {
-    timeout: 900
+    timeout: root.appConfig.idleSuspendTimeout
     enabled: !root.mediaPlaying && !root.caffeineEnabled
     onIsIdleChanged: if (isIdle) root.suspendRequested()
   }

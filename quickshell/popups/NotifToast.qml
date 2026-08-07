@@ -3,6 +3,7 @@
 // ============================================================
 import Quickshell
 import Quickshell.Io
+import Quickshell.Widgets
 import "../core"
 import QtQuick
 import QtQuick.Layouts
@@ -19,6 +20,15 @@ PopupWindow {
   property QtObject anchorWindow: null
   property bool muted: false
   readonly property QtObject palette: anchorWindow ? anchorWindow.palette : null
+
+  // Є дії, окрім default (default — на клік по тосту)
+  readonly property bool hasActions: {
+    if (!root.toastNotification) return false
+    var actions = root.toastNotification.actions
+    for (var i = 0; i < actions.length; ++i)
+      if (actions[i].identifier !== "default") return true
+    return false
+  }
 
 
   color: "transparent"
@@ -150,12 +160,23 @@ PopupWindow {
     width: parent.width - 20
     spacing: 3
 
-    // Назва додатка
-    Text {
-      text: root.toastAppName
-      color: anchorWindow.palette.green
-      font.family: anchorWindow.palette.font; font.pixelSize: 16; font.bold: true
+    // Назва додатка з іконкою
+    RowLayout {
+      spacing: 6
       visible: root.toastAppName !== ""
+      height: 20
+
+      IconImage {
+        Layout.preferredWidth: 16
+        Layout.preferredHeight: 16
+        source: Quickshell.iconPath(root.toastAppIcon, true)
+      }
+
+      Text {
+        text: root.toastAppName
+        color: anchorWindow.palette.green
+        font.family: anchorWindow.palette.font; font.pixelSize: 13; font.bold: true
+      }
     }
 
     // Заголовок сповіщення
@@ -179,6 +200,48 @@ PopupWindow {
       maximumLineCount: 3
       elide: Text.ElideRight
       visible: root.toastBody !== ""
+    }
+
+    // Кнопки дій сповіщення (без "default" — він на клік по тосту)
+    Row {
+      Layout.fillWidth: true
+      Layout.topMargin: 2
+      spacing: 4
+      visible: root.hasActions
+
+      Repeater {
+        model: root.toastNotification ? root.toastNotification.actions : []
+
+        delegate: Rectangle {
+          required property var modelData
+          visible: modelData.identifier !== "default"
+
+          implicitWidth: actionText.implicitWidth + 12
+          height: 20
+          radius: 4
+          color: actionArea.containsMouse ? anchorWindow.palette.bgAlpha : anchorWindow.palette.bg2
+          Behavior on color { ColorAnimation { duration: 120 } }
+
+          Text {
+            id: actionText
+            anchors.centerIn: parent
+            text: modelData.text
+            color: anchorWindow.palette.light
+            font.family: anchorWindow.palette.font; font.pixelSize: 9
+          }
+
+          MouseArea {
+            id: actionArea
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: {
+              modelData.invoke()
+              root.dismiss()
+            }
+          }
+        }
+      }
     }
   }
 

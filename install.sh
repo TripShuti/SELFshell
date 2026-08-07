@@ -4,8 +4,9 @@
 #
 # Встановлює залежності, копіює конфіги quickshell у
 # ~/.config/quickshell/, пропонує скопіювати hypr/kitty/fish/
-# yazi/starship конфіги з бекапами.
+# yazi/starship/fastfetch конфіги з бекапами.
 # Також пропонує AUR helper (yay) + greetd/greeter.
+# Фінал: selfshell doctor --preboot.
 # ============================================================
 set -euo pipefail
 
@@ -47,6 +48,8 @@ PACMAN_DEPS=(
   python-requests
   python-dotenv
   xdg-desktop-portal-hyprland
+  ddcutil
+  upower
 )
 
 info()  { echo -e "\033[1;36m[i]\033[0m $*"; }
@@ -96,13 +99,15 @@ fi
 
 # --- Крок 2: конфіг quickshell ---
 if [ -e "$QS_CONFIG_DIR" ]; then
+  ts="$(date +%Y%m%d-%H%M%S)"
   warn "$QS_CONFIG_DIR already exists."
-  read -rp "Overwrite? [y/N] " confirm
+  read -rp "Back it up to $QS_CONFIG_DIR.bak-$ts and reinstall? [y/N] " confirm
   if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
     error "Aborted by user."
     exit 1
   fi
-  rm -rf "$QS_CONFIG_DIR"
+  mv "$QS_CONFIG_DIR" "$QS_CONFIG_DIR.bak-$ts"
+  info "Backed up to $QS_CONFIG_DIR.bak-$ts"
 fi
 
 mkdir -p "$QS_CONFIG_DIR"
@@ -112,7 +117,7 @@ info "Copied to $QS_CONFIG_DIR"
 if [ ! -f "$QS_CONFIG_DIR/scripts/.env" ] && [ -f "$QS_CONFIG_DIR/scripts/.env.example" ]; then
   cp "$QS_CONFIG_DIR/scripts/.env.example" "$QS_CONFIG_DIR/scripts/.env"
   warn "Created scripts/.env from .env.example — fill in your HoYoLAB data if you need the Genshin widget"
-  warn "(or disable enableGenshinWidget in $QS_CONFIG_DIR/Config.js)"
+  warn "(or disable the Genshin widget in Settings → Widgets)"
 fi
 
 # qs-bt-agent — агент парування BlueZ як systemd user-сервіс
@@ -123,12 +128,21 @@ systemctl --user daemon-reload
 systemctl --user enable --now qs-bt-agent.service 2>/dev/null || systemctl --user enable qs-bt-agent.service
 info "qs-bt-agent installed as systemd user service (systemctl --user status qs-bt-agent)"
 
-# --- Крок 3 (необов'язково): dotfiles — hypr/kitty/fish/yazi/starship ---
+# --- CLI selfshell: chmod + symlink у ~/.local/bin ---
+chmod +x "$QS_CONFIG_DIR/scripts/selfshell"
+mkdir -p "$HOME/.local/bin"
+ln -sf "$QS_CONFIG_DIR/scripts/selfshell" "$HOME/.local/bin/selfshell"
+info "CLI installed: ~/.local/bin/selfshell (run 'selfshell help')"
+if ! echo "$PATH" | grep -q "$HOME/.local/bin"; then
+  warn "$HOME/.local/bin is not in PATH — add it (e.g. in ~/.config/fish/config.fish)"
+fi
+
+# --- Крок 3 (необов'язково): dotfiles — hypr/kitty/fish/yazi/starship/fastfetch ---
 echo
-read -rp "Copy hypr/kitty/fish/yazi/starship configs too? Existing ones will be backed up. [y/N] " with_dotfiles
+read -rp "Copy hypr/kitty/fish/yazi/starship/fastfetch configs too? Existing ones will be backed up. [y/N] " with_dotfiles
 if [[ "$with_dotfiles" =~ ^[Yy]$ ]]; then
   ts="$(date +%Y%m%d-%H%M%S)"
-  for dir in hypr kitty fish yazi starship; do
+  for dir in hypr kitty fish yazi starship fastfetch; do
     target="$HOME/.config/$dir"
     src="$REPO_DIR/$dir"
     [ -d "$src" ] || continue
@@ -146,8 +160,11 @@ if [[ "$with_dotfiles" =~ ^[Yy]$ ]]; then
     ya pack -i 2>/dev/null || true
   fi
 else
-  info "Skipping hypr/kitty/fish/yazi/starship — only quickshell shell installed."
+  info "Skipping hypr/kitty/fish/yazi/starship/fastfetch — only quickshell shell installed."
 fi
+
+# --- Папка для скріншотів (бінд Print у binds.lua) ---
+mkdir -p "$HOME/Screenshots"
 
 # --- Крок 4: AUR helper (yay) ---
 echo
@@ -210,8 +227,11 @@ fi
 
 # --- Завершення ---
 echo
+info "Running final check:"
+"$QS_CONFIG_DIR/scripts/selfshell" doctor --preboot || true
+echo
 info "Done."
 echo
 info "Reboot now — after login you will have a fully working SELFshell desktop."
 echo
-info "If something is missing, check $QS_CONFIG_DIR/Config.js to tweak widgets."
+info "If something is missing, run 'selfshell doctor' or tweak widgets in Settings → Widgets."

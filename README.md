@@ -70,14 +70,14 @@ I haven't tested it on any exist setup, but I assume everything works fine there
 ```sh
 git clone https://github.com/TripShuti/SELFshell
 cd SELFshell
-chmod +x install.sh
 ./install.sh
 # follow the prompts, then reboot
 ```
 
 The script installs all dependencies, copies configs, sets up Bluetooth
 and optionally configures a display manager (`sysc-greet-hyprland` from AUR)
-for automatic Hyprland startup.
+for automatic Hyprland startup. It finishes with a `selfshell doctor --preboot`
+check so you can see any missing pieces before the reboot.
 
 ### Manual setup (without install.sh)
 
@@ -93,6 +93,22 @@ Then:
 - Review and adjust path references in configs.
 - Place a wallpaper in `quickshell/wp/current.jpg` for the lock screen background.
 - Ensure all dependencies listed in `install.sh` (`PACMAN_DEPS`) are installed.
+
+## CLI
+
+`install.sh` installs a `selfshell` CLI into `~/.local/bin`:
+
+```sh
+selfshell doctor         # check dependencies, config, services, hardware
+selfshell lock           # lock the screen
+selfshell launcher       # toggle application launcher
+selfshell settings       # toggle bar settings popup
+selfshell palette-reload # re-read the wallpaper palette
+selfshell ipc call <target> <function> [args...]
+selfshell reload         # restart quickshell
+selfshell update         # git pull + reload
+selfshell version        # show version
+```
 
 ## Dependencies
 
@@ -115,7 +131,7 @@ array in the script for the complete list. Key packages:
 ```
 fastfetch/   - system info config
 fish/        - shell config, functions, yt-dlp wrapper
-hypr/        - Hyprland (lua module system) & hyprsunset configs
+hypr/        - Hyprland (lua module system, env.json for user settings) & hyprsunset configs
 install.sh   - automated setup script
 kitty/       - terminal config
 quickshell/  - QML panels, core, popups, widgets, monitors, scripts, data, assets, services
@@ -134,5 +150,6 @@ yazi/        - file manager config, keybindings, themes
 
 ## Notes
 
+- `hypr/env.json` — user-level Hyprland settings: terminal/browser/cursor, autostart apps, input devices. If the file is missing, built-in defaults (identical values) are used.
 - Genshin Impact widgets require Hoyolab API credentials (see `quickshell/scripts/.env.example`).
 - Bluetooth pairing agent (`qs-bt-agent`) is installed as a systemd user service.

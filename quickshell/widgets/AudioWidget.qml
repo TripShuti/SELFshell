@@ -65,7 +65,7 @@ Item {
     onWheel: wheel => {
       if (root.audio) {
         // angleDelta.y === 0 (рідкісний горизонтальний скрол) — ігноруємо
-        var step = wheel.angleDelta.y > 0 ? 0.05 : wheel.angleDelta.y < 0 ? -0.05 : 0
+        var step = wheel.angleDelta.y > 0 ? window.appConfig.audioStep : wheel.angleDelta.y < 0 ? -window.appConfig.audioStep : 0
         if (step !== 0)
           root.audio.volume = Math.max(0, Math.min(root.audio.volume + step, 1))
       }

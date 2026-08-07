@@ -9,7 +9,13 @@ import "core"
 import QtQuick
 
 ShellRoot {
+  id: root
+
   PaletteService { id: paletteService }
+
+  // Спільний стан конфігурації — єдиний інстанс на весь шелл.
+  // Доступний барам через window.appConfig, моніторам — напряму.
+  AppConfig { id: rootAppConfig }
 
   LockContext { id: lockContext }
 
@@ -33,7 +39,10 @@ ShellRoot {
     }
   }
 
-  IdleManager { id: idleManager }
+  IdleManager {
+    id: idleManager
+    appConfig: rootAppConfig
+  }
 
   Connections {
     target: idleManager
@@ -115,6 +124,6 @@ ShellRoot {
 
   Variants {
     model: Quickshell.screens
-    Bar { palette: paletteService }
+    Bar { palette: paletteService; appConfig: rootAppConfig }
   }
 }

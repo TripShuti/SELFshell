@@ -12,13 +12,20 @@ Item {
   required property QtObject window
   property string layout: "US"
 
+  // ПКМ — запит попапа зі списком розкладок (обробляється в Bar.qml)
+  signal openPopup(Item anchor)
+
   readonly property string displayText: {
     var l = root.layout
     if (l.indexOf("Ukrainian") >= 0) return "UA"
     if (l.indexOf("Russian") >= 0) return "RU"
     if (l.indexOf("German") >= 0) return "DE"
     if (l.indexOf("French") >= 0) return "FR"
-    return "US"
+    if (l.indexOf("(UK)") >= 0) return "UK"
+    if (l.indexOf("English") >= 0 || l.indexOf("(US)") >= 0) return "US"
+    // Невідома розкладка — перші 3 літери першого слова (Persian → PER)
+    var first = String(l).split(/[\s(-]+/)[0] ?? ""
+    return first.slice(0, 3).toUpperCase()
   }
 
   implicitWidth: txt.implicitWidth
@@ -123,7 +130,11 @@ Item {
   MouseArea {
     anchors.fill: parent
     cursorShape: Qt.PointingHandCursor
-    onClicked: devsProc.running = true
+    acceptedButtons: Qt.LeftButton | Qt.RightButton
+    onClicked: mouse => {
+      if (mouse.button === Qt.LeftButton) devsProc.running = true
+      else root.openPopup(root)
+    }
   }
 
   Component.onCompleted: {
