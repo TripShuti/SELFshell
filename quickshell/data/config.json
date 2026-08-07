@@ -1,0 +1,49 @@
+{
+  "launcherEnabled": true,
+  "workspacesEnabled": true,
+  "mprisEnabled": true,
+  "clockEnabled": true,
+  "timerEnabled": true,
+  "genshinEnabled": true,
+  "keyboardEnabled": true,
+  "audioEnabled": true,
+  "controlEnabled": true,
+  "btEnabled": false,
+  "netEnabled": false,
+  "trayEnabled": true,
+  "dndEnabled": false,
+  "timerSoundPath": "",
+  "idleLockTimeout": 300,
+  "idleDpmsTimeout": 360,
+  "idleSuspendTimeout": 900,
+  "audioStep": 0.05,
+  "brightnessStep": 5,
+  "barHeight": 32,
+  "barRadius": 5,
+  "leftOrder": [
+    "launcher",
+    "sep-2",
+    "workspaces",
+    "sep-7",
+    "mpris"
+  ],
+  "centerOrder": [
+    "clock",
+    "sep-5",
+    "timer",
+    "sep-6",
+    "genshin",
+    "battery"
+  ],
+  "rightOrder": [
+    "tray",
+    "sep-12",
+    "net",
+    "bt",
+    "keyboard",
+    "sep-10",
+    "audio",
+    "sep-11",
+    "control"
+  ]
+}

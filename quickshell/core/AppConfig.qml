@@ -50,9 +50,9 @@ Item {
   property real audioStep: 0.05
   property int brightnessStep: 5
 
-  // Зовнішній вигляд панелі
-  property int barHeight: 36
-  property int barRadius: 4
+  // Зовнішній вигляд панелі — дефолти = робочій системі
+  property int barHeight: 32
+  property int barRadius: 5
 
   // Фіксований канонічний список усіх віджетів — використовується
   // Settings-попапом для стабільного порядку рядків (не залежить від
@@ -66,10 +66,12 @@ Item {
   // належністю імені до одного з цих трьох масивів. Окремої властивості
   // "xPill" більше не потрібно — пігулка це і є масив, де лежить ім'я.
   // Фабричні дефолти — на випадок відсутнього/порожнього config.json.
-  // При старті перезаписуються реальними значеннями з config.json.
-  property var leftOrder: ["launcher", "workspaces", "mpris"]
-  property var centerOrder: ["clock", "timer", "genshin"]
-  property var rightOrder: ["tray", "sep-0", "bt", "net", "sep-1", "keyboard", "audio", "control"]
+  // Містять сепаратори (sep-N) — інакше свіжий клон без config.json
+  // рендерив би бар без роздільників. При старті перезаписуються
+  // реальними значеннями з config.json.
+  property var leftOrder: ["launcher", "sep-2", "workspaces", "sep-7", "mpris"]
+  property var centerOrder: ["clock", "sep-5", "timer", "sep-6", "genshin", "battery"]
+  property var rightOrder: ["tray", "sep-12", "net", "bt", "keyboard", "sep-10", "audio", "sep-11", "control"]
 
   function isSep(name) {
     return name === "sep" || String(name).startsWith("sep-")

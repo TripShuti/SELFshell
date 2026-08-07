@@ -25,8 +25,12 @@ quickshell/scripts/__pycache__/
 # локальні skills агентів
 quickshell/.opencode/skills/
 
+# рантайм-артефакт: симлінк у vfs quickshell, змінюється при кожному старті
+quickshell/.qmlls.ini
+
 # згенеровані персональні налаштування
 quickshell/Palette.js
-quickshell/data/config.json
 quickshell/data/control-state.json
-quickshell/data/palette.json
+
+# дефолтні config.json/palette.json трекаються у git: свіжому клону
+# вони потрібні, щоб бар рендерився з сепараторами і робочою палітрою
