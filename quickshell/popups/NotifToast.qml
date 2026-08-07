@@ -156,6 +156,9 @@ PopupWindow {
 
   ColumnLayout {
     id: toastLayout
+    // z вище за загальний MouseArea (клік по тосту = default дія) —
+    // інакше той перехоплює кліки по кнопках дій і запускає default
+    z: 1
     x: 10; y: 8
     width: parent.width - 20
     spacing: 3
