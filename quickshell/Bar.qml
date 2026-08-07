@@ -74,7 +74,7 @@ PanelWindow {
   Component { id: controlComp;    ControlWidget { window: root; anchors.fill: parent; unread: controlPopup.unread } }
   Component { id: btComp;         BluetoothWidget { window: root; anchors.fill: parent } }
   Component { id: netComp;        NetWidget { window: root; anchors.fill: parent } }
-  Component { id: trayComp;       TrayWidget { anchors.fill: parent } }
+  Component { id: trayComp;       TrayWidget { window: root; anchors.fill: parent } }
 
   readonly property var widgetComponents: ({
     launcher: launcherComp, workspaces: workspacesComp, mpris: mprisComp,
@@ -257,6 +257,15 @@ PanelWindow {
     visible: false
   }
 
+  // Меню системного трею — QML-рендер через QsMenuOpener.
+  // anchorItem оновлюється при кожному відкритті (під яку саме іконку).
+  TrayMenuPopup {
+    id: trayPopup
+    window: root
+    anchorItem: root.trayWidget
+    visible: false
+  }
+
   // IpcHandler для глобального виклику лаунчера
   IpcHandler {
     target: "launcher"
@@ -279,4 +288,18 @@ PanelWindow {
   Connections { target: controlPopup;   function onOpenNetManager() { controlPopup.visible = false; netPopup.toggle() } }
   Connections { target: controlPopup;   function onOpenSettingsPopup() { controlPopup.visible = false; settingsPopup.toggle() } }
   Connections { target: genshinPopup;   function onRefreshRequested() { genshinMonitor.refreshNow() } }
+  Connections {
+    target: trayWidget
+    // Клік на тій же іконці — закрити; на іншій — перевідкрити під нею
+    function onMenuRequested(menu, anchor) {
+      if (trayPopup.visible && trayPopup.menu === menu) {
+        trayPopup.close()
+        return
+      }
+      if (trayPopup.visible) trayPopup.visible = false
+      trayPopup.menu = menu
+      trayPopup.anchorItem = anchor
+      trayPopup.visible = true
+    }
+  }
 }
