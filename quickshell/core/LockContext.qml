@@ -16,8 +16,21 @@ Scope {
   property int failCount: 0
   property string userName: ""
 
+  // Лок-аут після failThreshold невдалих спроб (анти-брутфорс):
+  // tryUnlock() не стартує PAM, поки lockoutRemaining > 0.
+  property int failThreshold: 3
+  property int lockoutSeconds: 30
+  property int lockoutRemaining: 0
+
   signal unlocked()
   signal failed()
+
+  Timer {
+    interval: 1000
+    repeat: true
+    running: root.lockoutRemaining > 0
+    onTriggered: root.lockoutRemaining = Math.max(0, root.lockoutRemaining - 1)
+  }
 
   onCurrentTextChanged: showFailure = false
 
@@ -31,6 +44,7 @@ Scope {
 
   function tryUnlock() {
     if (currentText === "") return
+    if (lockoutRemaining > 0) return
     unlockInProgress = true
     pam.start()
   }
@@ -69,6 +83,8 @@ Scope {
         root.currentText = ""
         root.showFailure = true
         root.failCount++
+        if (root.failCount > root.failThreshold)
+          root.lockoutRemaining = root.lockoutSeconds
         root.failed()
       }
       root.unlockInProgress = false

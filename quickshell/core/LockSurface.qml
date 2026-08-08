@@ -138,7 +138,7 @@ Rectangle {
         echoMode: TextInput.Normal
         inputMethodHints: Qt.ImhSensitiveData
         focus: true
-        enabled: !root.context.unlockInProgress
+        enabled: !root.context.unlockInProgress && root.context.lockoutRemaining === 0
 
         onTextChanged: root.context.currentText = text
         onAccepted: root.context.tryUnlock()
@@ -169,8 +169,8 @@ Rectangle {
       id: failureText
       Layout.alignment: Qt.AlignHCenter
       visible: root.context.showFailure
-      text: root.context.failCount > 3
-        ? "Too many attempts. Try again later."
+      text: root.context.lockoutRemaining > 0
+        ? "Too many attempts. Try again in " + root.context.lockoutRemaining + "s"
         : "Incorrect password"
       color: root.palette.danger
       font.family: root.palette.font
@@ -186,7 +186,7 @@ Rectangle {
       }
     }
 
-    // Повідомлення "Wait" при блокуванні на >3 спроби
+    // Повідомлення "Unlocking..." поки PAM обробляє пароль
     Text {
       Layout.alignment: Qt.AlignHCenter
       visible: root.context.unlockInProgress
