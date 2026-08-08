@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Idle timeouts (Lock / DPMS off / Suspend) support `0 = never` — a level
+  can be disabled individually in Settings or `config.json`, and a disabled
+  level is exempt from the `lock < dpms < suspend` ordering constraint
+  (`IdleManager` ignores it and the steppers clamp correctly).
+
 ### Fixed
 
 - Wired devices are now detected by `DeviceType.Wired` (the previous

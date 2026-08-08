@@ -288,9 +288,9 @@ AnimatedPopup {
             Layout.preferredWidth: 1
             spacing: 4
             Text { text: "Idle timeouts, seconds"; color: window.palette.gray; font.family: window.palette.font; font.pixelSize: 8 }
-            NumField { label: "Lock"; prop: "idleLockTimeout"; stepSize: 30; minVal: 30; maxVal: 86400 }
-            NumField { label: "DPMS off"; prop: "idleDpmsTimeout"; stepSize: 30; minVal: 30; maxVal: 86400 }
-            NumField { label: "Suspend"; prop: "idleSuspendTimeout"; stepSize: 30; minVal: 30; maxVal: 86400 }
+            NumField { label: "Lock (0 = never)"; prop: "idleLockTimeout"; stepSize: 30; minVal: 0; maxVal: 86400 }
+            NumField { label: "DPMS off (0 = never)"; prop: "idleDpmsTimeout"; stepSize: 30; minVal: 0; maxVal: 86400 }
+            NumField { label: "Suspend (0 = never)"; prop: "idleSuspendTimeout"; stepSize: 30; minVal: 0; maxVal: 86400 }
           }
           ColumnLayout {
             Layout.fillWidth: true
@@ -302,7 +302,7 @@ AnimatedPopup {
           }
         }
         Text {
-          text: "Bar size and idle timeouts apply after shell restart (selfshell reload)"
+          text: "Idle timeouts apply immediately; bar size applies after shell restart (selfshell reload)"
           color: window.palette.mutedAlt
           font.family: window.palette.font
           font.pixelSize: 8
@@ -480,7 +480,8 @@ AnimatedPopup {
 
     // Числовий степпер для налаштувань поведінки.
     // Змінює cfg[prop] і одразу зберігає в config.json.
-    // idle-таймаути підтискаються, щоб зберігалося lock < dpms < suspend.
+    // idle-таймаути підтискаються, щоб зберігалося lock < dpms < suspend;
+    // 0 = "never" (рівень вимкнено, обмеження порядку не застосовуються).
     component NumField: RowLayout {
       id: field
       required property string label
@@ -541,12 +542,23 @@ AnimatedPopup {
       function setValue(dir) {
         var cur = root.cfg[field.prop]
         var next = cur + dir * field.stepSize
-        if (field.prop === "idleLockTimeout")
-          next = Math.min(next, root.cfg.idleDpmsTimeout - 1)
-        else if (field.prop === "idleDpmsTimeout")
-          next = Math.min(Math.max(next, root.cfg.idleLockTimeout + 1), root.cfg.idleSuspendTimeout - 1)
-        else if (field.prop === "idleSuspendTimeout")
-          next = Math.max(next, root.cfg.idleDpmsTimeout + 1)
+        if (field.prop === "idleLockTimeout") {
+          // 0 = never (вимкнено); інакше lock має бути меншим за dpms
+          if (next !== 0 && root.cfg.idleDpmsTimeout > 0)
+            next = Math.min(next, root.cfg.idleDpmsTimeout - 1)
+        } else if (field.prop === "idleDpmsTimeout") {
+          // 0 = never (вимкнено); інакше dpms має бути між lock+1 і suspend-1
+          if (next !== 0) {
+            if (root.cfg.idleLockTimeout > 0)
+              next = Math.max(next, root.cfg.idleLockTimeout + 1)
+            if (root.cfg.idleSuspendTimeout > 0)
+              next = Math.min(next, root.cfg.idleSuspendTimeout - 1)
+          }
+        } else if (field.prop === "idleSuspendTimeout") {
+          // 0 = never (вимкнено); інакше suspend має бути більшим за dpms
+          if (next !== 0 && root.cfg.idleDpmsTimeout > 0)
+            next = Math.max(next, root.cfg.idleDpmsTimeout + 1)
+        }
         next = Math.round(next / field.stepSize) * field.stepSize
         next = Math.min(Math.max(next, field.minVal), field.maxVal)
         root.cfg[field.prop] = next

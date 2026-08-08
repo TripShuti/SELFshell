@@ -24,9 +24,9 @@ Edited through SettingsPopup (UI) or manually.
 | `batteryEnabled` | `boolean` | `true` | Battery (the widget hides itself when no battery exists) |
 | `dndEnabled` | `boolean` | `false` | Do-not-disturb — hides all notifications |
 | `timerSoundPath` | `string` | `""` | Custom timer sound (`""` = from assets/) |
-| `idleLockTimeout` | `number` | `300` | Idle time before the screen locks, seconds |
-| `idleDpmsTimeout` | `number` | `360` | Idle time before the screen turns off (DPMS off), seconds |
-| `idleSuspendTimeout` | `number` | `900` | Idle time before suspend, seconds |
+| `idleLockTimeout` | `number` | `300` | Idle time before the screen locks, seconds (`0` = never) |
+| `idleDpmsTimeout` | `number` | `360` | Idle time before the screen turns off (DPMS off), seconds (`0` = never) |
+| `idleSuspendTimeout` | `number` | `900` | Idle time before suspend, seconds (`0` = never) |
 | `audioStep` | `number` | `0.05` | Mouse-wheel volume step (0–1) |
 | `brightnessStep` | `number` | `5` | Mouse-wheel brightness step (0–100) |
 | `barHeight` | `number` | `32` | Bar height in pixels |
@@ -39,8 +39,9 @@ Separators look like `sep-N`, where N is a unique numeric ID.
 Generated automatically by `addSep()` in AppConfig.
 
 Idle timeouts must be ascending: `idleLockTimeout < idleDpmsTimeout <
-idleSuspendTimeout`. The widgets/bar apply `barHeight`/`barRadius` after a
-shell restart (they are read at startup).
+idleSuspendTimeout`. A timeout of `0` disables that level ("never") and
+exempts it from the ordering constraint. The widgets/bar apply
+`barHeight`/`barRadius` after a shell restart (they are read at startup).
 
 ### Read/write
 
