@@ -89,6 +89,13 @@ never() { attempts=$((attempts+1)); return 1; }
 if run_retry 2 never; then echo "FAIL T7"; exit 1; fi
 [ "$attempts" -eq 2 ] || { echo "FAIL T7 count"; exit 1; }
 echo "T7 retry exhaustion OK"
+
+# T8: missing parent dir (fresh user/chroot, ~/.config не існує) — створюється
+if [ -e "$HOME/.config" ]; then echo "FAIL T8: sandbox .config already exists"; exit 1; fi
+backup_and_replace "$HOME/.config/quickshell" "$REPO_DIR/quickshell"
+[ -f "$HOME/.config/quickshell/marker" ] || { echo "FAIL T8: copy missing"; exit 1; }
+echo "T8 missing parent OK"
+
 echo "ALL INSTALL-SH FUNCTION TESTS PASSED"
 BODY
 } > "$TMPH"

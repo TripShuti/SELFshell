@@ -133,6 +133,9 @@ _BACKED_UP=()   # пари "target|backup"
 
 backup_and_replace() {
   local target="$1" src="$2"
+  # Батьківська тека може бути відсутня на свіжому юзері/chroot
+  # (напр. ~/.config) — без mkdir -p cp впаде через set -e
+  mkdir -p "$(dirname "$target")"
   if [ -e "$target" ]; then
     local backup="$target.bak-$ts"
     mv "$target" "$backup"
