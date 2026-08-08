@@ -68,7 +68,7 @@ Personal desktop environment configs built around **Hyprland + Quickshell**.
 | [Fastfetch](https://github.com/fastfetch-cli/fastfetch) | System info
 
 ## Quick start for fresh installed Arch
-I haven't tested it on any exist setup, but I assume everything works fine there too.
+I haven't tested it on an existing setup, but I assume everything works fine there too.
 
 ```sh
 git clone https://github.com/TripShuti/SELFshell

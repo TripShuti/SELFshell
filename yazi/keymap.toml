@@ -3,10 +3,6 @@
 
 #:schema https://yazi-rs.github.io/schemas/keymap.json
 
-[manager]
-prepend_keymap = [
-    { on = [ "g", "s" ], run = "cd sftp://myserver", desc = "Home Server" }
-]
 [mgr]
 
 keymap = [
@@ -134,7 +130,6 @@ keymap = [
 	{ on = [ "g", "d" ],       run = "cd ~/Downloads",   desc = "Go ~/Downloads" },
 	{ on = [ "g", "<Space>" ], run = "cd --interactive", desc = "Jump interactively" },
 	{ on = [ "g", "f" ],       run = "follow",           desc = "Follow hovered symlink" },
-	{ on = [ "g", "s" ],       run = "cd sftp://myserver", desc = "HomeServer"},
 
 	# Вкладки
 	{ on = [ "t", "t" ], run = "tab_create --current",     desc = "Create a new tab in CWD" },

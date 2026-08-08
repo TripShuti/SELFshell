@@ -12,8 +12,6 @@ quickshell/data/calendar-tasks.json
 quickshell/data/launcher-usage.json
 
 # шпалери (залишаємо лише wp1.jpg як заглушку)
-hypr/wp/*
-!hypr/wp/wp1.jpg
 quickshell/wp/*
 !quickshell/wp/wp1.jpg
 *.bak
