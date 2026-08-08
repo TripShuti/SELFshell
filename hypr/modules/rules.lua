@@ -1,16 +1,31 @@
 -- ============================================================
 -- rules.lua — правила для вікон: розкладка, float, opacity
 -- ============================================================
+local s = require("modules.env")
 
-hl.on("window.active", function(w)
-    if w ~= nil then
-        if w.class == "kitty" or w.class == "code-oss" or w.class == "bluetui" or w.class == "pulsemixer" then
-            hl.exec_cmd("hyprctl switchxkblayout all 0")
-        else
-            hl.exec_cmd("hyprctl switchxkblayout all 1")
+-- Автоматичне перемикання розкладки за класом вікна — опційна фіча:
+-- вмикається лише якщо в env.json задано `appLayout` (список
+-- {class, layout}) І кількість розкладок у `kbLayout` більша за одну
+-- (switchxkblayout індексує розкладку за порядком у списку, тому для
+-- однієї розкладки фіча не має сенсу).
+if s.appLayoutActive and string.find(s.kbLayout, ",") ~= nil then
+    local lastLayout = -1
+    hl.on("window.active", function(w)
+        if w ~= nil then
+            local target = 0
+            for _, entry in ipairs(s.appLayout) do
+                if w.class == entry.class then
+                    target = entry.layout
+                    break
+                end
+            end
+            if target ~= lastLayout then
+                hl.exec_cmd("hyprctl switchxkblayout all " .. tostring(target))
+                lastLayout = target
+            end
         end
-    end
-end)
+    end)
+end
 
 hl.config({
   decoration = {
@@ -21,18 +36,7 @@ hl.config({
   }
 })
 
-hl.window_rule({
-    name      = "telegram-on-ws1",
-    match     = { class = "^(org\\.telegram\\.desktop)$" },
-    workspace = "1"
-})
-
-hl.window_rule({
-    name      = "feishin-on-ws1",
-    match     = { class = "^(feishin)$" },
-    workspace = "1"
-})
-
+-- Універсальні правила, які не залежать від набору програм користувача.
 hl.window_rule({
     name           = "suppress-maximize-events",
     match          = { class = ".*" },
@@ -45,53 +49,7 @@ hl.window_rule({
     no_focus = true
 })
 
-hl.window_rule({
-    name = "bluetui-float",
-    match = { class = "bluetui" },
-    float = true,
-    center = true,
-    size = "750 400"
-})
-
-hl.window_rule({
-    name = "pulsemixer-float",
-    match = { class = "pulsemixer" },
-    float = true,
-    center = true,
-    size = "750 400"
-})
-
-
-hl.window_rule({
-    name   = "galculator-float",
-    match  = { class = "galculator" },
-    float  = true,
-    center = true,
-    size   = "400 540"
-})
-
-hl.window_rule({
-    name   = "prismlauncher-float",
-    match  = { class = "org.prismlauncher.PrismLauncher" },
-    float  = true,
-    center = true,
-    size   = "701 487"
-})
-
-hl.window_rule({
-    name   = "blender-file",
-    match  = { class = "blender", title = "^(File Browser|Blender File View)$" },
-    float  = true,
-    center = true,
-    size   = "982 577"
-})
-
-hl.window_rule({
-    match   = { class = "blender" },
-    opacity = "1.0 override 0.5 override 0.8 override",
-})
-
-hl.window_rule({
-    match   = { class = "imv" },
-    opacity = "1.0 override 0.5 override 0.8 override",
-})
+-- Правила для конкретних програм — з hypr/env.json (windowRules).
+for _, rule in ipairs(s.windowRules) do
+    hl.window_rule(rule)
+end

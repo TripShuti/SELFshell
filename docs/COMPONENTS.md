@@ -8,13 +8,13 @@
 
 | File | What it does |
 |------|--------------|
-| `env.lua` | Reads `env.json`, provides modules: mainMod, terminal, browser, cursor, autostarts, devices |
+| `env.lua` | Reads `env.json`, provides modules: mainMod, terminal, browser, cursor, kb layout, suspendKey, autostarts, devices, windowRules, appLayout |
 | `json.lua` | Minimal JSON parser (no dependencies) |
 | `exec.lua` | Autostart on Hyprland start (quickshell always + `autostart[]` from `env.json`) |
-| `general.lua` | Window settings, gaps, decorations, input; `devices[]` from `env.json` |
+| `general.lua` | Window settings, gaps, decorations, input (`kbLayout`/`kbOptions`); `devices[]` from `env.json` |
 | `binds.lua` | Keybindings |
 | `animation.lua` | Animation curves and styles |
-| `rules.lua` | Window rules |
+| `rules.lua` | Window rules (universal + data-driven from `env.json`) |
 
 ### Configs
 
@@ -23,7 +23,6 @@
 | `hyprland.lua` | Root config — includes the modules |
 | `env.json` | User settings (browser, terminal, autostarts, devices) |
 | `hyprsunset.conf` | Blue-light filter |
-| `hyprtoolkit.conf` | hyprlauncher theme (reserved) |
 
 ## Fish (`fish/`)
 

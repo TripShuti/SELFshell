@@ -71,11 +71,37 @@ jobs:
       - name: Lua syntax (hypr configs)
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq lua5.4
+          sudo apt-get install -y -qq lua5.4 luajit
           for f in hypr/hyprland.lua hypr/modules/*.lua; do
             lua5.4 -e "assert(loadfile('$f'))"
             echo "ok: $f"
           done
+          luajit tests/lua/json_test.lua "$PWD"
+          luajit tests/lua/env_rules_test.lua "$PWD"
+
+      - name: Python unit tests (genshin_stats, update-palette)
+        run: |
+          sudo apt-get install -y -qq python3-requests python3-dotenv
+          python3 -m unittest discover -s tests/python
+
+      - name: Config schema validation (config.json, env.json)
+        run: |
+          python3 tests/check_config_schema.py
+          python3 tests/check_md_links.py
+
+      - name: Installer logic tests (helpers, rollback, prompts)
+        run: |
+          bash tests/install_test.sh
+
+      - name: Shellcheck
+        run: |
+          command -v shellcheck || sudo apt-get install -y -qq shellcheck
+          shellcheck -S warning install.sh quickshell/scripts/selfshell quickshell/scripts/update-palette.sh
+
+      - name: VERSION is valid SemVer
+        run: |
+          grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$' quickshell/VERSION
+          echo "ok: quickshell/VERSION ($(cat quickshell/VERSION))"
 
       - name: Fallback wallpaper tracked
         run: |

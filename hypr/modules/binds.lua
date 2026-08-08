@@ -6,7 +6,10 @@ local s = require("modules.env")
 hl.bind("Print",               hl.dsp.exec_cmd("sh -c 'grim - | tee ~/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png | wl-copy'"))
 hl.bind(s.mainMod .. " + Print", hl.dsp.exec_cmd("sh -c 'grim -g \"$(slurp)\" - | tee ~/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png | wl-copy'"))
 
-hl.bind("Pause",                hl.dsp.exec_cmd("systemctl suspend"))
+-- Бінд на паузу/розблокування — лише якщо вказаний у env.json (suspendKey).
+if s.suspendKey ~= "" then
+    hl.bind(s.suspendKey, hl.dsp.exec_cmd("systemctl suspend"))
+end
 -- SUPER+Escape — центр керування (живлення/налаштування)
 hl.bind(s.mainMod .. " + Escape", hl.dsp.exec_cmd("qs ipc call control toggle"))
 hl.bind(s.mainMod .. " + S",      hl.dsp.exec_cmd("qs ipc call settings toggle"))

@@ -25,7 +25,6 @@ selfshell/                       # git repo root (cloned into ~/.config)
   │   ├── env.json               # user settings (browser, terminal,
   │   │                          #   autostarts, devices)
   │   ├── hyprsunset.conf        # blue-light filter
-  │   ├── hyprtoolkit.conf       # hyprlauncher theme (reserved)
   │   └── modules/               # env, exec, general, binds, animation,
   │                              #   rules + json.lua (env.json parser)
   ├── fish/                      # ~/.config/fish/
@@ -56,13 +55,13 @@ files.
 
 | Module | Purpose |
 |--------|---------|
-| `env.lua` | Reads `env.json`, provides modules: mainMod, terminal, browser, cursor, autostarts, devices |
+| `env.lua` | Reads `env.json`, provides modules: mainMod, terminal, browser, cursor, kb layout, suspendKey, autostarts, devices, windowRules, appLayout |
 | `json.lua` | Minimal JSON parser (no dependencies). Any error → `nil` |
 | `exec.lua` | `XCURSOR_*` env + autostart: `quickshell` (always) and the list from `env.json` |
-| `general.lua` | Window settings: gaps, border, colors, dwindle, decorations, input; `devices[]` from `env.json` |
+| `general.lua` | Window settings: gaps, border, colors, dwindle, decorations, input (`kbLayout`/`kbOptions` from `env.json`); `devices[]` from `env.json` |
 | `binds.lua` | Keybindings: screenshots, launcher, workspaces, focus, window movement |
 | `animation.lua` | Animation curves (`wind`, `winIn`, `winOut`, `liner`) and styles |
-| `rules.lua` | Window rules: automatic keyboard layout switching, per-app workspaces |
+| `rules.lua` | Universal window rules + data-driven per-app rules from `env.json` (`windowRules`, optional `appLayout`) |
 
 ### `env.json` — user settings
 
@@ -78,7 +77,6 @@ Details in [CONFIG_FORMAT.md](CONFIG_FORMAT.md).
 | File | Purpose |
 |------|---------|
 | `hyprsunset.conf` | Blue-light filter |
-| `hyprtoolkit.conf` | hyprlauncher theme (reserved — the launcher is QML now) |
 
 > The lock screen (hyprlock) and idle (hypridle) are replaced by QML:
 > `LockContext`/`LockSurface` and `IdleManager` in quickshell (see §9.6–9.7).

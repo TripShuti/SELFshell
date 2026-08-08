@@ -1,6 +1,8 @@
 -- ============================================================
 -- general.lua — налаштування вікон, декору, введення
 -- ============================================================
+local s = require("modules.env")
+
 hl.config({
     general = {
         gaps_in  = 3,
@@ -53,8 +55,8 @@ hl.config({
     },
 
     input = {
-        kb_layout  = "us, ua",
-        kb_options = "grp:alt_shift_toggle",
+        kb_layout  = s.kbLayout,
+        kb_options = s.kbOptions,
         follow_mouse = 1,
     },
 
@@ -65,7 +67,7 @@ hl.config({
 
 -- Налаштування конкретних пристроїв — з hypr/env.json (devices).
 -- Для неіснуючого пристрою запис неактивний (не ламає нічого).
-for _, dev in ipairs(require("modules.env").devices) do
+for _, dev in ipairs(s.devices) do
     hl.device({
         name          = dev.name,
         sensitivity   = dev.sensitivity,

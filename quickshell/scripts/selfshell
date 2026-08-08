@@ -47,7 +47,8 @@ version() {
   if git -C "$QS_CONFIG_DIR" rev-parse --is-inside-work-tree &>/dev/null; then
     local tag
     tag="$(git -C "$QS_CONFIG_DIR" describe --tags --exact-match 2>/dev/null)"
-    [ -n "$tag" ] && v="$tag"
+    # теги з v-префіксом (v0.2.0), а VERSION-файл без — приводимо до одного вигляду
+    [ -n "$tag" ] && v="${tag#v}"
     echo "selfshell ${v:-$(git -C "$QS_CONFIG_DIR" rev-parse --short HEAD)} ($QS_CONFIG_DIR)"
     return
   fi
@@ -138,8 +139,9 @@ LOCAL_FILES=(
 
 update_from_archive() {
   command -v curl &>/dev/null || { error "curl not found (package: curl)."; exit 1; }
-  local tmp="$(mktemp -d)"
-  local url="$REPO_URL/archive/refs/heads/main.tar.gz"
+  local tmp url
+  tmp="$(mktemp -d)"
+  url="$REPO_URL/archive/refs/heads/main.tar.gz"
   info "Downloading archive: $url"
   if ! curl -fsSL "$url" -o "$tmp/selfshell.tar.gz"; then
     rm -rf "$tmp"

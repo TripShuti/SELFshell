@@ -1,0 +1,83 @@
+# ============================================================
+# .github/workflows/release.yml — реліз за тегом vX.Y.Z
+#
+# Тригер: push тега «v*». Валідує, що quickshell/VERSION збігається з
+# тегом і що CHANGELOG.md містить секцію цієї версії. Переносить секцію
+# в notes, збирає таг-архів (selfshell-X.Y.Z.tar.gz — для встановлень без
+# git) і публікує GitHub Release.
+#
+# Процедура створення релізу: docs/RELEASING.md
+# ============================================================
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # потрібно, щоб git describe бачив теги
+
+      - name: Parse version from tag
+        id: ver
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          VERSION="${TAG#v}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: quickshell/VERSION matches the tag
+        run: |
+          VERSION_FILE="$(cat quickshell/VERSION)"
+          if [ "$VERSION_FILE" != "${{ steps.ver.outputs.version }}" ]; then
+            echo "::error::quickshell/VERSION is '$VERSION_FILE', tag is '${{ steps.ver.outputs.tag }}'"
+            exit 1
+          fi
+          echo "ok: VERSION matches tag"
+
+      - name: CHANGELOG has a section for this version
+        run: |
+          grep -q "^## \[${{ steps.ver.outputs.version }}\]" CHANGELOG.md \
+            || { echo "::error::NO changelog section for ${{ steps.ver.outputs.version }}"; exit 1; }
+          echo "ok: changelog section present"
+
+      - name: Extract release notes from CHANGELOG
+        env:
+          RELVER: ${{ steps.ver.outputs.version }}
+        run: |
+          python3 - <<'EOF'
+          import os, re, sys
+          ver = os.environ["RELVER"]
+          text = open("CHANGELOG.md").read()
+          m = re.search(rf"^## \[{re.escape(ver)}\]\s*[^\n]*\n(.*?)(?=^## \[|\Z)",
+                        text, re.M | re.S)
+          if not m:
+              sys.exit("changelog section not found")
+          notes = m.group(1).rstrip() + "\n"
+          open("/tmp/notes.md", "w").write(notes)
+          print("ok: release notes extracted")
+          EOF
+
+      - name: Build tarball asset
+        run: |
+          git archive --format=tar.gz \
+            --prefix="selfshell-${{ steps.ver.outputs.version }}/" \
+            -o "/tmp/selfshell-${{ steps.ver.outputs.version }}.tar.gz" \
+            "${{ steps.ver.outputs.tag }}"
+          ls -lh "/tmp/selfshell-${{ steps.ver.outputs.version }}.tar.gz"
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ steps.ver.outputs.tag }}" \
+            --title "SELFshell ${{ steps.ver.outputs.version }}" \
+            --notes-file /tmp/notes.md \
+            "/tmp/selfshell-${{ steps.ver.outputs.version }}.tar.gz"

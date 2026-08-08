@@ -69,14 +69,16 @@ hardcoded values).
   "browser": "chromium",
   "cursorTheme": "Bibata-Modern-Classic",
   "cursorSize": 24,
+  "kbLayout": "us",
+  "kbOptions": "",
+  "suspendKey": "",
   "autostart": [
     { "command": "awww-daemon" },
     { "command": "hyprsunset" }
   ],
-  "devices": [
-    { "name": "e-signal-hator-pulsar", "sensitivity": 0.1,
-      "accel_profile": "flat", "scroll_factor": 2 }
-  ]
+  "devices": [],
+  "windowRules": [],
+  "appLayout": []
 }
 ```
 
@@ -90,6 +92,9 @@ hardcoded values).
 | `browser` | `string` | `"chromium"` | Browser (SUPER+W) |
 | `cursorTheme` | `string` | `"Bibata-Modern-Classic"` | Cursor theme; `""` — do not set |
 | `cursorSize` | `number` | `24` | Cursor size |
+| `kbLayout` | `string` | `"us"` | Comma-separated keyboard layouts (`input:kb_layout`) |
+| `kbOptions` | `string` | `""` | Keyboard options, e.g. `"grp:alt_shift_toggle"` for layout switching |
+| `suspendKey` | `string` | `""` | Extra key that suspends via `systemctl suspend`; `""` — disabled |
 | `autostart` | `array` | `[]` | Autostarts on Hyprland start |
 | `autostart[].command` | `string` | — | Command |
 | `autostart[].workspace` | `number?` | `null` | Workspace (`[workspace N silent]`) |
@@ -98,9 +103,33 @@ hardcoded values).
 | `devices[].sensitivity` | `number?` | — | Mouse sensitivity |
 | `devices[].accel_profile` | `string?` | — | `flat`/`adaptive` |
 | `devices[].scroll_factor` | `number?` | — | Scroll multiplier |
+| `windowRules` | `array` | `[]` | Extra `hl.window_rule()` definitions for your apps |
+| `windowRules[].name` | `string` | — | Rule name (shown in logs) |
+| `windowRules[].match` | `object` | — | Matchers: `class`, `title`, `xwayland`, `float`, … (see `hl.window_rule`) |
+| `windowRules[].*` | `*` | — | Rule body: `float`, `center`, `size`, `opacity`, `no_focus`, `suppress_event`, `workspace` … |
+| `appLayout` | `array` | `[]` | Per-app keyboard layout switching (`switchxkblayout` index) |
+| `appLayout[].class` | `string` | — | Window class (from `hyprctl clients`) |
+| `appLayout[].layout` | `number` | — | Layout index in `kbLayout` (0 = first) |
 
-Note: `quickshell` always starts, regardless of `autostart`
-(shell infrastructure, not a user choice).
+Notes:
+- `quickshell` always starts, regardless of `autostart`
+  (shell infrastructure, not a user choice).
+- `windowRules` entries are passed to `hl.window_rule()` as-is — the rule
+  becomes active only while the corresponding window class is running.
+  Example (float a calculator):
+  ```json
+  "windowRules": [
+    { "name": "calculator-float", "match": { "class": "galculator" },
+      "float": true, "center": true, "size": "400 540" }
+  ]
+  ```
+- `appLayout` only works with 2+ layouts in `kbLayout` (the feature is
+  based on `hyprctl switchxkblayout all N`). It is disabled by default.
+  Example — Russian/Ukrainian typing in the terminal only:
+  ```json
+  "kbLayout": "us, ua",
+  "appLayout": [ { "class": "kitty", "layout": 1 } ]
+  ```
 
 ---
 
@@ -108,7 +137,6 @@ Note: `quickshell` always starts, regardless of `autostart`
 
 Standard Hyprland `.conf` format:
 - `hyprsunset.conf`: blue-light filter temperature
-- `hyprtoolkit.conf`: hyprlauncher theme (colors, font, rounding)
 
 ---
 

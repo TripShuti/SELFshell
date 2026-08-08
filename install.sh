@@ -9,11 +9,41 @@
 # який запускає Hyprland через uwsm після логіну
 # (fallback без greetd: автозапуск Hyprland через uwsm у fish login).
 # Фінал: selfshell doctor --preboot.
+#
+# Опції:
+#   --yes / -y   — автоматично «y» на кожен промпт
+#   --no / -n    — автоматично «n» на кожен промпт (нічого не встановлює
+#                  поза межами дефолтів; корисний для огляду)
+#   --help       — цей текст
+#
+# Гарантії:
+#   - Якщо будь-який крок падає — всі бекапи, зняті цим запуском,
+#     автоматично відновлюються (rollback), старі конфіги не губляться.
+#   - Якщо ~/.config/quickshell — git-клон цього репозиторію, запуск
+#     оновлює його через git pull замість перезапису (зберігаються
+#     налаштування, .env та git-workflow із README).
 # ============================================================
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 QS_CONFIG_DIR="$HOME/.config/quickshell"
+
+# --- Режими ---
+ASSUME_YES=""
+for arg in "$@"; do
+  case "$arg" in
+    --yes|-y) ASSUME_YES="y" ;;
+    --no|-n)  ASSUME_YES="n" ;;
+    --help|-h)
+      sed -n '3,24p' "$0" | sed 's/^# \{0,1\}//'
+      exit 0
+      ;;
+    *)
+      echo "Unknown argument: $arg (see --help)" >&2
+      exit 1
+      ;;
+  esac
+done
 
 # --- Пакети з офіційних репозиторіїв Arch ---
 PACMAN_DEPS=(
@@ -68,8 +98,85 @@ info()  { echo -e "\033[1;36m[i]\033[0m $*"; }
 warn()  { echo -e "\033[1;33m[!]\033[0m $*"; }
 error() { echo -e "\033[1;31m[x]\033[0m $*" >&2; }
 
+# --- Промпт, стійкий до EOF: stdin-кінець (пусте, CI, `</dev/null`) не
+# вбиває скрипт «set -e» — беремо відповідь за замовчуванням.
+# USAGE: confirm "Question" [default]  → exit-code 0/1
+confirm() {
+  local question="$1" default="${2:-n}" ans suffix
+  if [ "$ASSUME_YES" = "y" ]; then return 0; fi
+  if [ "$ASSUME_YES" = "n" ]; then return 1; fi
+  if [ "$default" = "y" ]; then suffix="Y/n"; else suffix="y/N"; fi
+  read -rp "$question [$suffix] " ans || ans="$default"
+  case "${ans:-$default}" in
+    [Yy]*) return 0 ;;
+    *)     return 1 ;;
+  esac
+}
+
+# --- Network retry для кроків, що можуть зірватися на каналі ---
+# USAGE: run_retry <n> <cmd...>
+run_retry() {
+  local tries="$1"; shift
+  local i
+  for ((i = 1; i <= tries; i++)); do
+    if "$@"; then return 0; fi
+    warn "Command failed (attempt $i/$tries): $*"
+    [ "$i" -lt "$tries" ] && sleep 5
+  done
+  return 1
+}
+
+# --- Rollback: якщо будь-який крок падає (set -e → ERR), всі бекапи,
+# зняті ЦИМ запуском, повертаються на місце. ---
+_FAILED=0
+_BACKED_UP=()   # пари "target|backup"
+
+backup_and_replace() {
+  local target="$1" src="$2"
+  if [ -e "$target" ]; then
+    local backup="$target.bak-$ts"
+    mv "$target" "$backup"
+    _BACKED_UP+=("$target|$backup")
+    warn "Existing $target backed up to $backup"
+  fi
+  cp -r "$src" "$target"
+}
+
+restore_backups() {
+  local entry target backup
+  for entry in "${_BACKED_UP[@]}"; do
+    target="${entry%%|*}"
+    backup="${entry#*|}"
+    if [ -e "$backup" ]; then
+      rm -rf "$target" 2>/dev/null || true
+      mv "$backup" "$target" 2>/dev/null || true
+      warn "Restored $target from $backup"
+    fi
+  done
+  _BACKED_UP=()
+}
+
+trap '_FAILED=1' ERR
+trap '
+  if [ "$_FAILED" -eq 1 ]; then
+    echo
+    error "Installation failed — restoring backups..."
+    restore_backups
+    echo
+    error "Rerun the installer (it is safe to retry)."
+  fi
+' EXIT
+
 if ! command -v pacman &>/dev/null; then
   error "pacman not found. This script is for Arch Linux only."
+  exit 1
+fi
+
+# --- sudo перевірка: діагностуємо права на старті, а не в середині ---
+if ! sudo -v 2>/dev/null; then
+  error "sudo not available (user not in sudoers or no root privileges?)."
+  echo
+  error "Grant the current user sudo access and rerun the installer."
   exit 1
 fi
 
@@ -82,9 +189,8 @@ done
 
 if [ ${#missing[@]} -gt 0 ]; then
   warn "Missing packages: ${missing[*]}"
-  read -rp "Install via 'sudo pacman -S'? [y/N] " confirm
-  if [[ "$confirm" =~ ^[Yy]$ ]]; then
-    sudo pacman -S --needed "${missing[@]}"
+  if confirm "Install via 'sudo pacman -S'?" n; then
+    run_retry 3 sudo pacman -S --needed --noconfirm "${missing[@]}"
   else
     warn "Skipping dependency installation. The shell may not work."
   fi
@@ -93,21 +199,22 @@ else
 fi
 
 # --- Увімкнення системних сервісів (NetworkManager, Bluetooth) ---
-# 'enable --now' може висять: enable миттєвий (симлінк), а start без
+# 'enable --now' може висіти: enable миттєвий (симлінк), а start без
 # пристрою (Bluetooth у VM) чекає по таймауту 90-180 с. Тому start
 # виконується окремо з таймаутом 30 с.
 svc_start() {
   local svc="$1"
   info "Enabling $svc..."
-  sudo systemctl enable "$svc" --now 2>/dev/null || sudo systemctl enable "$svc"
+  sudo systemctl enable "$svc" 2>/dev/null || sudo systemctl enable "$svc"
   if ! sudo timeout 30 systemctl start "$svc" &>/dev/null; then
     warn "$svc: start timeout/failed — check your hardware, 'systemctl status $svc'"
   fi
 }
 
-# У chroot (складання образу) systemd не може запускати сервіси — лише enable
+# У chroot (складання образу) systemd не може запускати сервіси — лише
+# enable.
 if systemd-detect-virt -q -c; then
-  warn "Chroot detected — starting services skipped (enable only)."
+  warn "Chroot detected — service start skipped (enable only)."
   svc_start() {
     local svc="$1"
     info "Enabling $svc (chroot)..."
@@ -126,26 +233,43 @@ if command -v bluetoothctl &>/dev/null; then
   fi
 fi
 if ! systemctl is-active --quiet bluetooth.service; then
-  warn "bluetooth.service failed to start. Check 'rfkill list' and linux-firmware."
+  warn "bluetooth.service failed to start. Check 'rfkill list' and kernel."
   systemctl status bluetooth.service --no-pager 2>&1 || true
 fi
 
 # --- Крок 2: конфіг quickshell ---
-if [ -e "$QS_CONFIG_DIR" ]; then
-  ts="$(date +%Y%m%d-%H%M%S)"
-  warn "$QS_CONFIG_DIR already exists."
-  read -rp "Back it up to $QS_CONFIG_DIR.bak-$ts and reinstall? [y/N] " confirm
-  if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
-    error "Aborted by user."
-    exit 1
-  fi
-  mv "$QS_CONFIG_DIR" "$QS_CONFIG_DIR.bak-$ts"
-  info "Backed up to $QS_CONFIG_DIR.bak-$ts"
-fi
+ts="$(date +%Y%m%d-%H%M%S)"
 
-mkdir -p "$QS_CONFIG_DIR"
-cp -r "$REPO_DIR/quickshell/." "$QS_CONFIG_DIR"
-info "Copied to $QS_CONFIG_DIR"
+if [ -e "$QS_CONFIG_DIR" ]; then
+  if [ -d "$QS_CONFIG_DIR/.git" ]; then
+    # Git-клон цього репозиторію: оновлюємо через pull, а не будуємо
+    # свіжу копію — інакше загине git-протокол `selfshell update` і
+    # локальні налаштування.
+    warn "$QS_CONFIG_DIR is a git clone of SELFshell."
+    if confirm "Update it in place via 'git pull' (keeps your settings and .env)?" y; then
+      if git -C "$QS_CONFIG_DIR" pull --ff-only; then
+        info "Updated $QS_CONFIG_DIR via git pull."
+      else
+        error "git pull failed. The clone is untouched — fix your remote/branch."
+        exit 1
+      fi
+    else
+      info "Skipping the git clone update (no changes made)."
+    fi
+  else
+    warn "$QS_CONFIG_DIR already exists (not a git clone)."
+    if confirm "Back it up and reinstall with repo defaults?" n; then
+      backup_and_replace "$QS_CONFIG_DIR" "$REPO_DIR/quickshell"
+      info "Copied to $QS_CONFIG_DIR (backup in .bak-$ts)"
+    else
+      error "Aborted by user."
+      exit 1
+    fi
+  fi
+else
+  backup_and_replace "$QS_CONFIG_DIR" "$REPO_DIR/quickshell"
+  info "Copied to $QS_CONFIG_DIR"
+fi
 
 if [ ! -f "$QS_CONFIG_DIR/scripts/.env" ] && [ -f "$QS_CONFIG_DIR/scripts/.env.example" ]; then
   cp "$QS_CONFIG_DIR/scripts/.env.example" "$QS_CONFIG_DIR/scripts/.env"
@@ -177,19 +301,12 @@ fi
 
 # --- Крок 3 (необов'язково): dotfiles — hypr/kitty/fish/yazi/starship/fastfetch ---
 echo
-read -rp "Copy hypr/kitty/fish/yazi/starship/fastfetch configs too? Existing ones will be backed up. [y/N] " with_dotfiles
-if [[ "$with_dotfiles" =~ ^[Yy]$ ]]; then
-  ts="$(date +%Y%m%d-%H%M%S)"
+if confirm "Copy hypr/kitty/fish/yazi/starship/fastfetch configs too? Existing ones will be backed up." n; then
   for dir in hypr kitty fish yazi starship fastfetch; do
     target="$HOME/.config/$dir"
     src="$REPO_DIR/$dir"
     [ -d "$src" ] || continue
-    if [ -e "$target" ]; then
-      backup="$target.bak-$ts"
-      mv "$target" "$backup"
-      warn "Existing $target backed up to $backup"
-    fi
-    cp -r "$src" "$target"
+    backup_and_replace "$target" "$src"
     info "Installed ~/.config/$dir"
   done
 
@@ -198,7 +315,7 @@ if [[ "$with_dotfiles" =~ ^[Yy]$ ]]; then
     ya pack -i 2>/dev/null || true
   fi
 else
-  info "Skipping hypr/kitty/fish/yazi/starship/fastfetch — only quickshell shell installed."
+  info "Skipping dotfiles — only the quickshell shell is installed."
 fi
 
 # --- Папка для скріншотів (бінд Print у binds.lua) ---
@@ -211,15 +328,27 @@ for h in yay paru; do
   command -v "$h" &>/dev/null && aur_helper="$h" && break
 done
 
+install_yay() {
+  # builddir зачищається навіть при аварії (RETURN trap функції)
+  local builddir="/tmp/yay-build"
+  trap 'rm -rf "$builddir"' RETURN
+  rm -rf "$builddir"
+  if ! run_retry 3 git clone https://aur.archlinux.org/yay.git "$builddir"; then
+    error "Failed to clone yay from AUR."
+    return 1
+  fi
+  if ! run_retry 3 sh -c "cd '$builddir' && makepkg -si --noconfirm"; then
+    error "Failed building yay (makepkg)."
+    return 1
+  fi
+  rm -rf "$builddir"
+}
+
 if [ -z "$aur_helper" ]; then
   info "No AUR helper (yay/paru) found."
-  read -rp "Install yay from AUR? [y/N] " install_yay
-  if [[ "$install_yay" =~ ^[Yy]$ ]]; then
-    sudo pacman -S --needed --noconfirm base-devel git
-    rm -rf /tmp/yay-build
-    git clone https://aur.archlinux.org/yay.git /tmp/yay-build
-    (cd /tmp/yay-build && makepkg -si --noconfirm)
-    rm -rf /tmp/yay-build
+  if confirm "Install yay from AUR?" n; then
+    run_retry 3 sudo pacman -S --needed --noconfirm base-devel git
+    install_yay
     aur_helper="yay"
   fi
 else
@@ -231,8 +360,7 @@ fi
 # застосовуємо тему для GTK (gsettings) і X-додатків без env (index.theme)
 CURSOR_THEME="Bibata-Modern-Classic"
 if [ -n "$aur_helper" ]; then
-  read -rp "Install Bibata cursor theme ($CURSOR_THEME, AUR)? [y/N] " use_cursor
-  if [[ "$use_cursor" =~ ^[Yy]$ ]]; then
+  if confirm "Install Bibata cursor theme ($CURSOR_THEME, AUR)?" n; then
     "$aur_helper" -S --needed --noconfirm bibata-cursor-theme || warn "Bibata install failed — cursor stays default"
     if [ -d /usr/share/icons/"$CURSOR_THEME" ]; then
       sudo mkdir -p /usr/share/icons/default
@@ -255,11 +383,11 @@ fi
 # --- Крок 5: менеджер входу (greetd+tuigreet) / автозапуск ---
 echo
 info "On a bare Arch there is no display manager. After login you get a TTY."
-read -rp "Install greetd with the tuigreet login (TUI, starts Hyprland via uwsm)? [y/N] " use_greetd
-if [[ "$use_greetd" =~ ^[Yy]$ ]]; then
-  # greetd уже в PACMAN_DEPS (крок 1) — тут доставляємо лише якщо юзер пропустив крок 1
+if confirm "Install greetd with the tuigreet login (TUI, starts Hyprland via uwsm)?" n; then
+  # greetd уже в PACMAN_DEPS (крок 1) — тут доставляємо лише якщо юзер
+  # пропустив крок 1
   if ! pacman -Qi greetd-tuigreet &>/dev/null; then
-    sudo pacman -S --needed --noconfirm greetd greetd-tuigreet
+    run_retry 3 sudo pacman -S --needed --noconfirm greetd greetd-tuigreet
   fi
 
   # Екран входу: greetd + tuigreet (TUI). Пакет greetd створює
@@ -282,7 +410,7 @@ if [[ "$use_greetd" =~ ^[Yy]$ ]]; then
     error "greetd did not enable — manual step: sudo systemctl enable greetd"
     exit 1
   fi
-  info "greetd enabled. Reboot to see the TUI login (tuigreet)."
+  info "greetd enabled. Reboot to see the TUI login (greetd-tuigreet)."
 else
   info "No greetd: adding Hyprland autostart via uwsm (fish login)."
   fish_config="$HOME/.config/fish/config.fish"
@@ -305,7 +433,11 @@ fi
 # --- Завершення ---
 echo
 info "Running final check:"
-"$QS_CONFIG_DIR/scripts/selfshell" doctor --preboot || true
+if ! "$QS_CONFIG_DIR/scripts/selfshell" doctor --preboot; then
+  error "selfshell doctor --preboot reported problems. Inspect the output"
+  error "above, then fix or rerun the installer (rerunning is safe)."
+  exit 1
+fi
 echo
 info "Done."
 echo

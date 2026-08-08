@@ -57,7 +57,8 @@
 
 ## Валідація
 - `quickshell` не має `--check`. Тестувати через `quickshell kill default && timeout 5 quickshell 2>&1` (перевірити наявність "Configuration Loaded" в логах).
-- Bash/Python/JSON/TOML/Lua-синтаксис перевіряє GitHub Actions (`.github/workflows/ci.yml`): `bash -n`, `py_compile`, парсинг json/toml/jsonc, `loadfile` для Lua.
+- Bash/Python/JSON/TOML/Lua-синтаксис перевіряє GitHub Actions (`.github/workflows/ci.yml`): `bash -n`, `py_compile`, парсинг json/toml/jsonc, `loadfile` для Lua, shellcheck, luajit-unit-тести, Python-unittest, схеми конфігів, markdown-посилання, тести інсталера (`tests/`).
+- Локальний прогін усієї валідації: `bash tests/run.sh` (непотребні інструменти пропускаються).
 - Системна діагностика: `selfshell doctor` (або `doctor --preboot` для pre-boot стану).
 
 ## Інше

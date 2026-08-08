@@ -18,6 +18,10 @@ quickshell/scripts/.genshin_requests.log
 quickshell/scripts/.genshin_state.json
 quickshell/scripts/__pycache__/
 
+# python-кеш тестів
+tests/__pycache__/
+tests/python/__pycache__/
+
 # локальні skills агентів
 quickshell/.opencode/skills/
 
