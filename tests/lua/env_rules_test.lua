@@ -19,12 +19,18 @@ hl = {
 
 local ENV_JSON = arg[2] or (root .. "/hypr/env.json")
 local HOME = "/tmp/selfshell-env-test-home"
+-- Порожня дома для кейсу «env.json відсутній» — інакше тест читав би
+-- СВІЙ $HOME розробника (негерметично на машинах з власним hypr/env.json)
+local NOHOME = "/tmp/selfshell-env-test-nohome"
 
 local function setup_home()
   os.execute("rm -rf '" .. HOME .. "'")
   os.execute("mkdir -p '" .. HOME .. "/.config/hypr'")
   os.execute("cp '" .. ENV_JSON .. "' '" .. HOME .. "/.config/hypr/env.json'")
 end
+
+os.execute("rm -rf '" .. NOHOME .. "'")
+os.execute("mkdir -p '" .. NOHOME .. "'")
 
 -- LuaJIT: os.setenv недоступний — підставляємо os.getenv
 local real_getenv = os.getenv
@@ -56,7 +62,7 @@ local function load_rules(home)
 end
 
 -- 1) Немає env.json → дефолти env.lua
-local e = fresh_env(nil)
+local e = fresh_env(NOHOME)
 assert(e.kbLayout == "us", "kbLayout default")
 assert(e.kbOptions == "", "kbOptions default")
 assert(e.suspendKey == "", "suspendKey default")
