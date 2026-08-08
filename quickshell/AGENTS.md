@@ -31,6 +31,7 @@
 - `scripts/` — допоміжні Python/shell скрипти
 - `data/` — персистентні дані (config.json, calendar-tasks.json, etc.)
 - `services/` — системні сервіси (qs-bt-agent, cava-vis.conf)
+- `pam/` — PAM-конфіг локскріна (password.conf)
 - `assets/` — ресурси (звуки, шпалери)
 - `docs/` (корінь репо) — документація англійською
 
@@ -55,6 +56,8 @@
 
 ## Валідація
 - `quickshell` не має `--check`. Тестувати через `quickshell kill default && timeout 5 quickshell 2>&1` (перевірити наявність "Configuration Loaded" в логах).
+- Bash/Python/JSON/TOML/Lua-синтаксис перевіряє GitHub Actions (`.github/workflows/ci.yml`): `bash -n`, `py_compile`, парсинг json/toml/jsonc, `loadfile` для Lua.
+- Системна діагностика: `selfshell doctor` (або `doctor --preboot` для pre-boot стану).
 
 ## Інше
 - Не додавати emoji в код
