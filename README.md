@@ -133,7 +133,7 @@ array in the script for the complete list. Key packages:
 | `pipewire wireplumber pipewire-pulse` | Audio |
 | `hyprsunset` | Blue-light filter |
 | `matugen awww` | Color generation & wallpaper |
-| `capitaine-cursors` | Gruvbox cursor theme (XCURSOR_THEME + gsettings + index.theme) |
+| `capitaine-cursors` | Cursor theme (XCURSOR_THEME + gsettings + index.theme) |
 | `grim slurp wl-clipboard` | Screenshots & clipboard |
 | `ddcutil` | Monitor brightness control |
 | `upower` | Battery widget |
