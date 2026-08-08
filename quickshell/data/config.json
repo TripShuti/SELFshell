@@ -11,6 +11,7 @@
   "btEnabled": false,
   "netEnabled": false,
   "trayEnabled": true,
+  "batteryEnabled": true,
   "dndEnabled": false,
   "timerSoundPath": "",
   "idleLockTimeout": 300,

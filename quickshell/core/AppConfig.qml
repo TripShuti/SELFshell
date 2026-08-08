@@ -161,6 +161,7 @@ Item {
     if (data.btEnabled !== undefined)         btEnabled         = data.btEnabled
     if (data.netEnabled !== undefined)        netEnabled        = data.netEnabled
     if (data.trayEnabled !== undefined)       trayEnabled       = data.trayEnabled
+    if (data.batteryEnabled !== undefined)    batteryEnabled    = data.batteryEnabled
     if (data.dndEnabled !== undefined)        dndEnabled        = data.dndEnabled
     if (data.timerSoundPath !== undefined)    timerSoundPath    = data.timerSoundPath
     if (data.idleLockTimeout !== undefined)   idleLockTimeout   = data.idleLockTimeout
@@ -189,6 +190,7 @@ Item {
       btEnabled:         btEnabled,
       netEnabled:        netEnabled,
       trayEnabled:       trayEnabled,
+      batteryEnabled:    batteryEnabled,
       dndEnabled:        dndEnabled,
       timerSoundPath:    timerSoundPath,
       idleLockTimeout:   idleLockTimeout,

@@ -37,6 +37,7 @@ AnimatedPopup {
     bt: "Bluetooth",
     net: "Network",
     tray: "System Tray",
+    battery: "Battery",
     sep: "\u2014 \u2014"
   })
 
