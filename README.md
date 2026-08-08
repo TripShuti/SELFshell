@@ -4,56 +4,47 @@
   <img src="https://github.com/user-attachments/assets/d5b6e3ae-7b14-4cb0-9859-dc3385b5374c" alt="SELFshell demo" width="720">
 </p>
 
-
-
-Personal desktop environment configs built around **Hyprland + Quickshell**.
-
-> **Disclaimer:** Bugs or breakage may occur on your machine. Feel free to use anything you like, but at your own risk.
+A feature-complete Hyprland desktop shell built with **Quickshell and QML**.
+Includes a custom lock screen, a built-in idle manager, dynamic
+wallpaper-based theming, and a fully configurable top bar — no external bar,
+no separate lock/idle daemons.
 
 ## Features
 
-### Desktop Core
-- Custom QML **lock screen** with PAM authentication (`ext-session-lock-v1`)
-- Built-in **idle manager** — lock/DPMS/suspend timeouts (configurable in Settings), pauses during media playback
-- Per-monitor bar instances via `Quickshell.screens`
+**Shell & Bar**
+- 13 built-in widgets across three configurable pill sections (left / center / right)
+- Drag-and-drop widget reordering via a built-in Settings popup
+- System Tray, MPRIS player with cava visualizer, Battery, Bluetooth, Network
 
-### Top Bar
-- 13 built-in widgets: Launcher, Workspaces, Clock, Timer, MPRIS (with cava visualizer), Genshin resin, Audio, Control Center, Bluetooth, Network, Keyboard Layout, Battery, System Tray
-- Three configurable "pill" sections (left / center / right)
-- Drag-and-drop widget reordering and enable/disable via Settings popup
-- Settings popup "Behavior" tab: bar height/radius, idle timeouts, wheel step sizes — all persisted to `config.json`
+**Lock Screen & Idle**
+- Native lock screen via `ext-session-lock-v1` with PAM authentication
+- Built-in idle manager — lock → DPMS → suspend timeouts (replaces hypridle)
+- Media playback pauses idle timers automatically
 
-### Popups & Menus
-- **Application Launcher** — frequency-sorted search
-- **Calendar** — month grid with task management (add / complete / delete)
-- **Audio Mixer** — PipeWire sink and application volumes
-- **Control Center** — notifications (grouped by app, DND mode, action buttons), brightness (ddcutil), reading mode (hyprsunset), power actions
-- **Workspaces** — window list per workspace, move/close/focus windows (right-click on workspace number)
-- **Keyboard Layout** — layout list with active highlight (right-click on layout widget)
-- **Media Player** — MPRIS controls with cava audio visualization (28 bars)
-- **Network & Bluetooth** managers with connection details
-- **Wallpaper Picker** — grid view, applies palette on selection
-- **Notification Toasts** — animated, with sound, clickable, action buttons
+**Dynamic Theming**
+- Wallpaper-based palette generation via `matugen`
+- Live reload — terminal (Kitty), prompt (Starship), file manager (Yazi) all update
+- No restart required
 
-### Genshin Impact
-- Real-time resin tracking with local regeneration calculation (1 resin / 8 min)
-- HoYoLAB API sync for resin, expeditions, teapot coins, daily commissions
-- Auto-sync at high resin (≥198) and rate-limit protection
-- Pulsing visual indicator at critical resin (≥190)
-
-### Hardware Control
-- Monitor brightness via `ddcutil` with sub-stepping
-- Blue-light filter via `hyprsunset` (3500K–6500K)
+**Hardware**
+- Monitor brightness via `ddcutil` with smooth sub-stepping
+- Blue-light filter via `hyprsunset` (3500K–6500K slider)
 - Power actions: Shutdown, Reboot, Suspend, Logout, Lock
 
-### Dynamic Theming
-- Wallpaper-based color palette via `matugen`
-- Live palette reload (no restart required)
-- Palette drives all QML UI, plus auto-generates terminal (Kitty), prompt (Starship), and file manager (Yazi) colors
+**Installer & CLI**
+- `install.sh` — full setup from a fresh Arch install (greetd, services, cursor, AUR packages)
+- `selfshell doctor` — runtime diagnostics (dependencies, services, hardware)
+- `selfshell update`, `selfshell lock`, `selfshell reload` — all operations from CLI
 
-### Persistence
-- All state persisted through `Quickshell.Io.FileView` — no shell-level I/O
-- Config, calendar tasks, control center state, launcher usage saved to JSON
+<details>
+<summary>Genshin Impact widget (optional)</summary>
+
+- Real-time resin tracking with local regeneration calculation (1 resin / 8 min)
+- HoYoLAB API sync for expeditions, dailies, teapot coins
+- Auto-sync at high resin (≥198) and rate-limit protection
+- Pulsing visual indicator at critical resin (≥190)
+- Requires credentials in `scripts/.env` (see `.env.example`)
+</details>
 
 ## Components
 
@@ -187,6 +178,8 @@ yazi/        - file manager config, keybindings, themes
 ```
 
 ## Notes
+
+> **Disclaimer:** Bugs or breakage may occur on your machine. Feel free to use anything you like, but at your own risk.
 
 - `hypr/env.json` — user-level Hyprland settings: terminal/browser/cursor, autostart apps, input devices. If the file is missing, built-in defaults (identical values) are used.
 - Genshin Impact widgets require Hoyolab API credentials (see `quickshell/scripts/.env.example`).
