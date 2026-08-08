@@ -37,6 +37,11 @@ PACMAN_DEPS=(
   matugen
   ttf-jetbrains-mono-nerd
 
+  # capitaine-cursors — тема курсора з Gruvbox-варіантом; без неї чиста
+  # система отримує дефолтний курсор Hyprland (конфіг уже прописує
+  # "Capitaine Cursors (Gruvbox)" у env.json/env.lua)
+  capitaine-cursors
+
   # додаткові пакунки, необхідні для конфігів
   hyprsunset
   awww
@@ -199,6 +204,22 @@ if [[ "$with_dotfiles" =~ ^[Yy]$ ]]; then
   fi
 else
   info "Skipping hypr/kitty/fish/yazi/starship/fastfetch — only quickshell shell installed."
+fi
+
+# --- Курсор: capitaine-cursors + системне застосування ---
+# XCURSOR_THEME/HYPRCURSOR_THEME ставить exec.lua; тут додатково
+# застосовуємо тему для GTK (gsettings) і X-додатків без env (index.theme)
+if pacman -Qi capitaine-cursors &>/dev/null; then
+  sudo mkdir -p /usr/share/icons/default
+  echo "[Icon Theme]
+Inherits=Capitaine Cursors (Gruvbox)" | sudo tee /usr/share/icons/default/index.theme >/dev/null
+  if command -v gsettings &>/dev/null; then
+    gsettings set org.gnome.desktop.interface cursor-theme "Capitaine Cursors (Gruvbox)" 2>/dev/null || true
+    gsettings set org.gnome.desktop.interface cursor-size 24 2>/dev/null || true
+  fi
+  info "Cursor applied: Capitaine Cursors (Gruvbox), size 24"
+else
+  warn "capitaine-cursors missing — cursor stays default (check PACMAN_DEPS)"
 fi
 
 # --- Папка для скріншотів (бінд Print у binds.lua) ---
