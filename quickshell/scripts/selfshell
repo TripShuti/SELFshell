@@ -18,24 +18,24 @@ error() { echo -e "\033[1;31m[x]\033[0m $*" >&2; }
 
 usage() {
   cat <<'EOF'
-selfshell — CLI SELFshell
+selfshell — SELFshell CLI
 
-Використання:
-  selfshell <команда> [аргументи...]
+Usage:
+  selfshell <command> [arguments...]
 
-Команди:
-  help                           Показати цю довідку
-  version                        Версія SELFshell
-  ipc call <target> <fn> [args]  Викликати IPC-функцію quickshell
-  lock                           Заблокувати екран
-  toggle-lock                    Перемкнути блокування
-  launcher                       Відкрити/закрити лаунчер
-  settings                       Відкрити/закрити налаштування бару
-  palette-reload                 Перечитати палітру зі шпалери
-  doctor                         Діагностика системи
-  reload                         Перезапустити quickshell
-  update                         Оновити конфіг (git pull або архів) і перезапустити шелл
-  list                           Список запущених інстансів quickshell
+Commands:
+  help                           Show this help
+  version                        SELFshell version
+  ipc call <target> <fn> [args]  Call a quickshell IPC function
+  lock                           Lock the screen
+  toggle-lock                    Toggle the lock
+  launcher                       Open/close the launcher
+  settings                       Open/close the bar settings
+  palette-reload                 Re-read the palette from the wallpaper
+  doctor                         System diagnostics
+  reload                         Restart quickshell
+  update                         Update the config (git pull or archive) and restart the shell
+  list                           List running quickshell instances
 EOF
 }
 
@@ -58,7 +58,7 @@ version() {
 ipc() {
   if [ "${1:-}" = "call" ]; then shift; fi
   if [ "$#" -lt 2 ]; then
-    error "Використання: selfshell ipc call <target> <function> [args...]"
+    error "Usage: selfshell ipc call <target> <function> [args...]"
     exit 1
   fi
   local target="$1"; shift
@@ -81,11 +81,11 @@ qs_running() {
 # Перезапуск quickshell: kill + новий інстанс у daemonize-режимі
 reload() {
   if ! pgrep -x Hyprland &>/dev/null; then
-    error "Hyprland не запущено — quickshell перезапускати нікуди."
+    error "Hyprland is not running — nothing to restart quickshell in."
     exit 1
   fi
   if qs_running; then
-    info "Зупиняю quickshell..."
+    info "Stopping quickshell..."
     qs kill &>/dev/null || true
     sleep 1
     if qs_running; then
@@ -95,13 +95,13 @@ reload() {
       sleep 1
     fi
   fi
-  info "Запускаю quickshell..."
+  info "Starting quickshell..."
   setsid qs -d &>/dev/null &
   sleep 1
   if qs_running; then
-    ok "quickshell працює."
+    ok "quickshell is running."
   else
-    error "quickshell не піднявся. Дивіться: qs log"
+    error "quickshell failed to start. Check: qs log"
     exit 1
   fi
 }
@@ -111,8 +111,8 @@ reload() {
 # (LOCAL_FILES — ті самі, що в .gitignore репозиторію) не перезаписуються.
 update() {
   if git -C "$QS_CONFIG_DIR" rev-parse --is-inside-work-tree &>/dev/null; then
-    info "Оновлюю $QS_CONFIG_DIR (git pull)..."
-    git -C "$QS_CONFIG_DIR" pull --ff-only || { error "git pull не вдався."; exit 1; }
+    info "Updating $QS_CONFIG_DIR (git pull)..."
+    git -C "$QS_CONFIG_DIR" pull --ff-only || { error "git pull failed."; exit 1; }
   else
     update_from_archive
   fi
@@ -137,38 +137,38 @@ LOCAL_FILES=(
 )
 
 update_from_archive() {
-  command -v curl &>/dev/null || { error "curl не знайдено (пакет: curl)."; exit 1; }
+  command -v curl &>/dev/null || { error "curl not found (package: curl)."; exit 1; }
   local tmp="$(mktemp -d)"
   local url="$REPO_URL/archive/refs/heads/main.tar.gz"
-  info "Завантажую архів: $url"
+  info "Downloading archive: $url"
   if ! curl -fsSL "$url" -o "$tmp/selfshell.tar.gz"; then
     rm -rf "$tmp"
-    error "Не вдалося завантажити архів — перевірте інтернет і назву репозиторію."
+    error "Failed to download the archive — check your internet connection and the repository name."
     exit 1
   fi
   # --strip-components=1: ім'я кореневої теки архіву не фіксоване
   if ! tar -xzf "$tmp/selfshell.tar.gz" -C "$tmp" --strip-components=1; then
     rm -rf "$tmp"
-    error "Архів пошкоджено — розпакування не вдалося."
+    error "Archive is corrupt — extraction failed."
     exit 1
   fi
   local src="$tmp/quickshell"
   if [ ! -d "$src" ]; then
     rm -rf "$tmp"
-    error "Архів пошкоджено — quickshell/ не знайдено."
+    error "Archive is corrupt — quickshell/ not found."
     exit 1
   fi
   # Копіюємо через tar: виключення не пропустять локальні файли
   local excludes=()
   for f in "${LOCAL_FILES[@]}"; do excludes+=(--exclude="*/$f"); done
-  info "Розпаковую в $QS_CONFIG_DIR (локальні файли зберігаються)..."
+  info "Extracting into $QS_CONFIG_DIR (local files are kept)..."
   if ! tar -C "$src" -cf - . | tar -C "$QS_CONFIG_DIR" -xf - "${excludes[@]}"; then
     rm -rf "$tmp"
-    error "Оновлення не вдалося."
+    error "Update failed."
     exit 1
   fi
   rm -rf "$tmp"
-  ok "Конфіг оновлено."
+  ok "Config updated."
 }
 
 doctor() {
@@ -178,7 +178,7 @@ doctor() {
   [ "${1:-}" = "--preboot" ] && preboot=true
 
   echo
-  echo "== Залежності (обов'язкові) =="
+  echo "== Dependencies (required) =="
   local deps=(hyprland qs kitty fish starship yazi fastfetch playerctl
               cava matugen hyprsunset awww grim slurp wl-copy socat
               yt-dlp notify-send ddcutil upower uwsm)
@@ -186,7 +186,7 @@ doctor() {
     if command -v "$dep" &>/dev/null; then
       ok "$dep"
     else
-      error "$dep — не знайдено"
+      error "$dep — not found"
       problems=$((problems + 1))
     fi
   done
@@ -194,130 +194,130 @@ doctor() {
   if [ -d /usr/lib/qt6/qml/Qt5Compat/GraphicalEffects ]; then
     ok "qt6-5compat (Qt5Compat.GraphicalEffects)"
   else
-    error "qt6-5compat — модуль Qt5Compat.GraphicalEffects не знайдено"
+    error "qt6-5compat — Qt5Compat.GraphicalEffects module not found"
     problems=$((problems + 1))
   fi
 
   echo
-  echo "== Python-модулі (для скриптів) =="
+  echo "== Python modules (for scripts) =="
   for mod in gi dbus requests dotenv; do
     if python3 -c "import $mod" 2>/dev/null; then
       ok "python: $mod"
     else
-      warn "python: $mod — відсутній (потрібен для відповідного скрипта)"
+      warn "python: $mod — missing (required by the matching script)"
     fi
   done
 
   if ! $preboot; then
     echo
-    echo "== Сесія =="
+    echo "== Session =="
     if pgrep -x Hyprland &>/dev/null; then
-      ok "Hyprland запущено"
+      ok "Hyprland is running"
     else
-      error "Hyprland не запущено"
+      error "Hyprland is not running"
       problems=$((problems + 1))
     fi
     if qs_running; then
-      ok "quickshell запущено"
+      ok "quickshell is running"
     else
-      error "quickshell не запущено"
+      error "quickshell is not running"
       problems=$((problems + 1))
     fi
   fi
 
   echo
-  echo "== Конфігурація ($QS_CONFIG_DIR) =="
+  echo "== Configuration ($QS_CONFIG_DIR) =="
   if [ -f "$QS_CONFIG_DIR/shell.qml" ]; then
     ok "shell.qml"
   else
-    error "shell.qml відсутній"
+    error "shell.qml is missing"
     problems=$((problems + 1))
   fi
-  [ -f "$QS_CONFIG_DIR/Bar.qml" ] && ok "Bar.qml" || { error "Bar.qml відсутній"; problems=$((problems + 1)); }
+  [ -f "$QS_CONFIG_DIR/Bar.qml" ] && ok "Bar.qml" || { error "Bar.qml is missing"; problems=$((problems + 1)); }
   if [ -f "$QS_CONFIG_DIR/data/config.json" ]; then
     if python3 -m json.tool "$QS_CONFIG_DIR/data/config.json" >/dev/null 2>&1; then
-      ok "data/config.json (валідний JSON)"
+      ok "data/config.json (valid JSON)"
     else
-      error "data/config.json — пошкоджений JSON"
+      error "data/config.json — broken JSON"
       problems=$((problems + 1))
     fi
   else
-    warn "data/config.json відсутній — будуть дефолтні налаштування"
+    warn "data/config.json is missing — default settings will apply"
   fi
   if [ -f "$QS_CONFIG_DIR/scripts/.env" ]; then
     if grep -qi "your_" "$QS_CONFIG_DIR/scripts/.env"; then
-      warn "scripts/.env містить значення-заглушки (геншин-віджет не працюватиме)"
+      warn "scripts/.env contains placeholder values (the Genshin widget will not work)"
     else
       ok "scripts/.env"
     fi
   else
-    warn "scripts/.env відсутній — скопіюйте з .env.example"
+    warn "scripts/.env is missing — copy it from .env.example"
   fi
   if [ -f "$QS_CONFIG_DIR/wp/current.jpg" ]; then
-    ok "wp/current.jpg (фон блокування)"
+    ok "wp/current.jpg (lock screen background)"
   else
-    warn "wp/current.jpg відсутній — буде заглушка wp1.jpg (налаштуйте: selfshell palette-reload)"
+    warn "wp/current.jpg is missing — the wp1.jpg fallback will be used (set it up: selfshell palette-reload)"
   fi
 
   echo
-  echo "== Hyprland конфіг =="
+  echo "== Hyprland config =="
   if [ -f "$HOME/.config/hypr/hyprland.lua" ]; then
     ok "hyprland.lua"
     if [ -f "$HOME/.config/hypr/env.json" ]; then
       if python3 -m json.tool "$HOME/.config/hypr/env.json" >/dev/null 2>&1; then
-        ok "hypr/env.json (валідний JSON)"
+        ok "hypr/env.json (valid JSON)"
       else
-        error "hypr/env.json — пошкоджений JSON"
+        error "hypr/env.json — broken JSON"
         problems=$((problems + 1))
       fi
     else
-      warn "hypr/env.json відсутній — використовуються дефолти (kitty, chromium...)"
+      warn "hypr/env.json is missing — defaults are used (kitty, chromium...)"
     fi
     if [ -f "$HOME/.config/hypr/modules/json.lua" ]; then
       ok "modules/json.lua"
     else
-      error "modules/json.lua відсутній — hyprland.lua не завантажиться"
+      error "modules/json.lua is missing — hyprland.lua will not load"
       problems=$((problems + 1))
     fi
   fi
 
   echo
-  echo "== Сервіси =="
+  echo "== Services =="
   if systemctl is-active --quiet NetworkManager 2>/dev/null; then
-    ok "NetworkManager активний"
+    ok "NetworkManager is active"
   else
-    error "NetworkManager не активний"
+    error "NetworkManager is not active"
     problems=$((problems + 1))
   fi
   if systemctl is-active --quiet bluetooth 2>/dev/null; then
-    ok "bluetooth активний"
+    ok "bluetooth is active"
   else
-    warn "bluetooth не активний (може бути відсутній адаптер)"
+    warn "bluetooth is not active (an adapter may be missing)"
   fi
   if systemctl --user is-active --quiet qs-bt-agent 2>/dev/null; then
-    ok "qs-bt-agent (user-сервіс) активний"
+    ok "qs-bt-agent (user service) is active"
   else
-    warn "qs-bt-agent (user-сервіс) не активний — пейринг BT через UI недоступний"
+    warn "qs-bt-agent (user service) is not active — BT pairing through the UI is unavailable"
   fi
 
   echo
-  echo "== Обладнання =="
+  echo "== Hardware =="
   if command -v ddcutil &>/dev/null; then
     if timeout 6 ddcutil detect &>/dev/null; then
-      ok "ddcutil виявляє монітори"
+      ok "ddcutil detects monitors"
     else
-      warn "ddcutil не бачить моніторів (i2c-права/udev — яскравість буде недоступна)"
+      warn "ddcutil sees no monitors (i2c permissions/udev — brightness will be unavailable)"
     fi
   else
-    warn "ddcutil не встановлено — яскравість через DDC недоступна"
+    warn "ddcutil is not installed — DDC brightness is unavailable"
   fi
 
   echo
   if [ "$problems" -gt 0 ]; then
-    error "Знайдено $problems критичних проблем."
+    error "Found $problems critical problems."
     exit 1
   fi
-  ok "Все гаразд."
+  ok "All good."
 }
 
 case "${1:-help}" in
@@ -333,5 +333,5 @@ case "${1:-help}" in
   reload) reload ;;
   update) update ;;
   list) qs list ;;
-  *) error "Невідома команда: ${1:-}"; usage; exit 1 ;;
+  *) error "Unknown command: ${1:-}"; usage; exit 1 ;;
 esac

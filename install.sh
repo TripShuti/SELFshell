@@ -101,7 +101,7 @@ svc_start() {
   info "Enabling $svc..."
   sudo systemctl enable "$svc" --now 2>/dev/null || sudo systemctl enable "$svc"
   if ! sudo timeout 30 systemctl start "$svc" &>/dev/null; then
-    warn "$svc: start timeout/failed — перевір обладнання, 'systemctl status $svc'"
+    warn "$svc: start timeout/failed — check your hardware, 'systemctl status $svc'"
   fi
 }
 
