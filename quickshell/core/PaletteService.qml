@@ -11,7 +11,11 @@ Item {
 
   FileView {
     id: paletteFile
+    // blockLoading — перший text() (в onCompleted) робить синхронне
+    // читання, палітра готова до першого кадру; інакше бар на мить
+    // показує захардкоджені дефолти (async read ще в дорозі)
     preload: false
+    blockLoading: true
     path: Qt.resolvedUrl("../data/palette.json")
 
     onDataChanged: root._parse(paletteFile.text())
