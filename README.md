@@ -166,6 +166,7 @@ array in the script for the complete list. Key packages:
 ## Structure
 
 ```
+docs/        - documentation (architecture, components, config formats)
 fastfetch/   - system info config
 fish/        - shell config, functions, yt-dlp wrapper
 hypr/        - Hyprland (lua module system, env.json for user settings) & hyprsunset configs
