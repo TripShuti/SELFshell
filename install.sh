@@ -37,11 +37,6 @@ PACMAN_DEPS=(
   matugen
   ttf-jetbrains-mono-nerd
 
-  # capitaine-cursors — тема курсора; без неї чиста система отримує
-  # дефолтний курсор Hyprland (конфіг прописує "capitaine-cursors"
-  # у env.json/env.lua)
-  capitaine-cursors
-
   # додаткові пакунки, необхідні для конфігів
   hyprsunset
   awww
@@ -206,22 +201,6 @@ else
   info "Skipping hypr/kitty/fish/yazi/starship/fastfetch — only quickshell shell installed."
 fi
 
-# --- Курсор: capitaine-cursors + системне застосування ---
-# XCURSOR_THEME/HYPRCURSOR_THEME ставить exec.lua; тут додатково
-# застосовуємо тему для GTK (gsettings) і X-додатків без env (index.theme)
-if pacman -Qi capitaine-cursors &>/dev/null; then
-  sudo mkdir -p /usr/share/icons/default
-  echo "[Icon Theme]
-Inherits=capitaine-cursors" | sudo tee /usr/share/icons/default/index.theme >/dev/null
-  if command -v gsettings &>/dev/null; then
-    gsettings set org.gnome.desktop.interface cursor-theme "capitaine-cursors" 2>/dev/null || true
-    gsettings set org.gnome.desktop.interface cursor-size 24 2>/dev/null || true
-  fi
-  info "Cursor applied: capitaine-cursors, size 24"
-else
-  warn "capitaine-cursors missing — cursor stays default (check PACMAN_DEPS)"
-fi
-
 # --- Папка для скріншотів (бінд Print у binds.lua) ---
 mkdir -p "$HOME/Screenshots"
 
@@ -244,6 +223,32 @@ if [ -z "$aur_helper" ]; then
   fi
 else
   info "Found AUR helper: $aur_helper"
+fi
+
+# --- Крок 4.5: курсор Bibata (AUR) ---
+# XCURSOR_THEME/HYPRCURSOR_THEME ставить exec.lua; тут додатково
+# застосовуємо тему для GTK (gsettings) і X-додатків без env (index.theme)
+CURSOR_THEME="Bibata-Modern-Classic"
+if [ -n "$aur_helper" ]; then
+  read -rp "Install Bibata cursor theme ($CURSOR_THEME, AUR)? [y/N] " use_cursor
+  if [[ "$use_cursor" =~ ^[Yy]$ ]]; then
+    "$aur_helper" -S --needed --noconfirm bibata-cursor-theme || warn "Bibata install failed — cursor stays default"
+    if [ -d /usr/share/icons/"$CURSOR_THEME" ]; then
+      sudo mkdir -p /usr/share/icons/default
+      printf '[Icon Theme]\nInherits=%s\n' "$CURSOR_THEME" | sudo tee /usr/share/icons/default/index.theme >/dev/null
+      if command -v gsettings &>/dev/null; then
+        gsettings set org.gnome.desktop.interface cursor-theme "$CURSOR_THEME" 2>/dev/null || true
+        gsettings set org.gnome.desktop.interface cursor-size 24 2>/dev/null || true
+      fi
+      info "Cursor applied: $CURSOR_THEME, size 24"
+    else
+      warn "Cursor theme dir missing after install — cursor stays default"
+    fi
+  else
+    info "Cursor skipped — Hyprland will use its default cursor."
+  fi
+else
+  warn "No AUR helper — cursor theme (bibata) skipped, cursor stays default."
 fi
 
 # --- Крок 5: менеджер входу (greetd+tuigreet) / автозапуск ---
