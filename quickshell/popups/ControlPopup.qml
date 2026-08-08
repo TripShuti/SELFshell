@@ -20,7 +20,7 @@ AnimatedPopup {
   palette: window.palette
 
   implicitWidth: 320
-  implicitHeight: 460
+  implicitHeight: layout.implicitHeight + 20
   transformOrigin: Item.Top
 
   property var notificationsModel: null
@@ -555,6 +555,14 @@ AnimatedPopup {
     Item {
       Layout.fillWidth: true
       Layout.fillHeight: true
+      // implicitHeight за замовчуванням 0 (діти заякорені), а секція
+      // входить в implicitHeight попапа — без явної висоти список
+      // сповіщень схлопнувся б. Зі сповіщеннями — до висоти списку
+      // (з обмеженням, далі скрол), без — висота порожнього стану.
+      readonly property real notifMaxHeight: 240
+      implicitHeight: root.unread > 0
+        ? Math.min(notifColumn.implicitHeight, notifMaxHeight)
+        : 46
       clip: true
 
       Flickable {
