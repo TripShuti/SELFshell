@@ -88,7 +88,7 @@ AnimatedPopup {
     var devices = networkDevices || [];
     for (var i = 0; i < devices.length; i++) {
         var dev = devices[i];
-        if (dev && (dev.type === DeviceType.Ethernet || (dev.name && (dev.name.startsWith("en") || dev.name.startsWith("eth"))))) {
+        if (dev && (dev.type === DeviceType.Wired || (dev.name && (dev.name.startsWith("en") || dev.name.startsWith("eth"))))) {
             return dev;
         }
     }

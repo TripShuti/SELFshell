@@ -4,6 +4,8 @@
 # Запускається як systemd user-сервіс.
 # ============================================================
 
+import sys
+
 import dbus
 import dbus.service
 import dbus.mainloop.glib
@@ -66,8 +68,15 @@ def main():
         pass
 
     agent = Agent(bus, AGENT_PATH)
-    mgr.RegisterAgent(AGENT_PATH, CAPABILITY)
-    mgr.RequestDefaultAgent(AGENT_PATH)
+    try:
+        mgr.RegisterAgent(AGENT_PATH, CAPABILITY)
+        mgr.RequestDefaultAgent(AGENT_PATH)
+    except dbus.DBusException as e:
+        # Конфлікт з іншим default-агентом (bluetoothctl, інші BT-менеджери):
+        # systemd перезапустить нас (Restart=on-failure) — повідомлення чітке,
+        # щоб журнал показував причину, а не голий traceback-цикл
+        print(f"qs-bt-agent: cannot register as default agent: {e}", file=sys.stderr)
+        raise
 
     try:
         GLib.MainLoop().run()

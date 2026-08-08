@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Wired devices are now detected by `DeviceType.Wired` (the previous
+  `DeviceType.Ethernet` never matches Quickshell's enum — network names
+  like `wwan0` without an `en`/`eth` prefix were missed).
+- `qs-bt-agent` logs a clear reason when it cannot register as the
+  default BlueZ agent (conflict with another agent) instead of a bare
+  traceback restart loop.
+
 ## [0.1.1] - 2026-08-08
 
 ### Fixed
