@@ -26,6 +26,9 @@ AnimatedPopup {
   anchorTarget: anchorItem
 
   implicitWidth: 330
+  // Розмір попапа — від контентного ColumnLayout: його implicitHeight
+  // рахує рядки списку через явну height у delegate
+  implicitHeight: layout.implicitHeight + 24
 
   Component.onCompleted: { anchor.window = window }
 
@@ -33,7 +36,17 @@ AnimatedPopup {
     if (visible) root.positionUnderAnchor()
   }
 
+  // Попап слідкує за фокусом: після ▶/◀ (або зміни стола хоткеєм)
+  // назва й список оновлюються до активного стола
+  Connections {
+    target: Hyprland
+    function onFocusedWorkspaceChanged() {
+      if (root.visible) root.workspace = Hyprland.focusedWorkspace
+    }
+  }
+
   ColumnLayout {
+    id: layout
     anchors.fill: parent
     anchors.margins: 12
     spacing: 8
@@ -45,7 +58,7 @@ AnimatedPopup {
 
       NavBtn {
         text: "\u25C0"
-        onClicked: Hyprland.dispatch("workspace -1")
+        onClicked: Hyprland.dispatch("hl.dsp.focus({ workspace = \"-1\" })")
       }
 
       Text {
@@ -60,7 +73,7 @@ AnimatedPopup {
 
       NavBtn {
         text: "\u25B6"
-        onClicked: Hyprland.dispatch("workspace +1")
+        onClicked: Hyprland.dispatch("hl.dsp.focus({ workspace = \"+1\" })")
       }
 
       NavBtn {
@@ -70,7 +83,11 @@ AnimatedPopup {
     }
 
     // --- Список вікон ---
-    ColumnLayout {
+    // Явний Column (не Layout): його implicitHeight — сума висот
+    // дітей (Column враховує властивість height), тож попап
+    // отримує правильний розмір після асинхронного наповнення моделі
+    Column {
+      id: listCol
       Layout.fillWidth: true
       spacing: 2
 
@@ -83,7 +100,7 @@ AnimatedPopup {
       }
 
       Repeater {
-        model: root.workspace ? (root.workspace.windows ?? []) : []
+        model: root.workspace ? root.workspace.toplevels.values : []
 
         delegate: WindowRow {
           required property var modelData
@@ -94,28 +111,37 @@ AnimatedPopup {
 
       // Порожній стан
       Text {
-        visible: !root.workspace || (root.workspace.windows ?? []).length === 0
+        visible: !root.workspace || root.workspace.toplevels.values.length === 0
         text: "No windows"
         color: window.palette.muted
         font.family: window.palette.font
         font.pixelSize: 10
-        Layout.fillWidth: true
+        width: listCol.width
         horizontalAlignment: Text.AlignHCenter
       }
     }
   }
 
-  // Рядок вікна: іконка, назва, дії (перенести/закрити).
-  // MouseArea під контентом, щоб кнопки приймали кліки
+  // Рядок вікна: іконка, назва, закриття.
+  // Клік по рядку — фокус вікна, ✕ — закриття.
+  // MouseArea під контентом, щоб кнопка приймала кліки
   component WindowRow: Rectangle {
     id: row
 
     required property QtObject win
     required property QtObject window
 
+    // Нове IPC-ядро Quickshell не має полів class/icon —
+    // лише address/title; решта береться з останнього IPC-об'єкта
+    readonly property string winClass: (row.win.lastIpcObject && row.win.lastIpcObject["class"]) || ""
+    readonly property string winIcon: (row.win.lastIpcObject && row.win.lastIpcObject["icon"]) || ""
+    // Quickshell віддає address без префікса 0x, а lua-диспетчери
+    // Hyprland 0.56+ шукають вікно за "address:0x..."
+    readonly property string winAddr: (row.win.address.startsWith("0x") ? "" : "0x") + row.win.address
+
     readonly property color rowColor: rowMouse.containsMouse ? window.palette.bg2 : "transparent"
 
-    Layout.fillWidth: true
+    width: parent ? parent.width : 0
     height: 34
     radius: 6
     color: rowColor
@@ -125,7 +151,9 @@ AnimatedPopup {
       id: rowMouse
       anchors.fill: parent
       cursorShape: Qt.PointingHandCursor
-      onClicked: Hyprland.dispatch("focuswindow address:" + row.win.address)
+      // Lua-синтаксис Hyprland 0.56+: класичні dispatch-команди
+      // оцінюються як lua-вираз в обгортці hl.dispatch(...)
+      onClicked: Hyprland.dispatch("hl.dsp.focus({ window = \"address:" + row.winAddr + "\" })")
     }
 
     RowLayout {
@@ -134,9 +162,9 @@ AnimatedPopup {
       spacing: 8
 
       IconImage {
-        Layout.preferredWidth: 18
-        Layout.preferredHeight: 18
-        source: row.win.icon
+        Layout.preferredWidth: row.winIcon !== "" ? 18 : 0
+        Layout.preferredHeight: row.winIcon !== "" ? 18 : 0
+        source: row.winIcon
       }
 
       ColumnLayout {
@@ -144,7 +172,7 @@ AnimatedPopup {
         spacing: 0
 
         Text {
-          text: row.win.title || row.win.class || "Window"
+          text: row.win.title || row.winClass || "Window"
           color: window.palette.fg
           font.family: window.palette.font
           font.pixelSize: 10
@@ -153,7 +181,7 @@ AnimatedPopup {
         }
 
         Text {
-          text: row.win.class || ""
+          text: row.winClass || ""
           color: window.palette.muted
           font.family: window.palette.font
           font.pixelSize: 8
@@ -164,18 +192,8 @@ AnimatedPopup {
       }
 
       ActionBtn {
-        text: "\u25C0"
-        onClicked: Hyprland.dispatch("movetoworkspace -1 address:" + row.win.address)
-      }
-
-      ActionBtn {
-        text: "\u25B6"
-        onClicked: Hyprland.dispatch("movetoworkspace +1 address:" + row.win.address)
-      }
-
-      ActionBtn {
         text: "\u2715"
-        onClicked: Hyprland.dispatch("closewindow address:" + row.win.address)
+        onClicked: Hyprland.dispatch("hl.dsp.window.close({ window = \"address:" + row.winAddr + "\" })")
       }
     }
   }
