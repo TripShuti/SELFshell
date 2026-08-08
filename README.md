@@ -134,6 +134,7 @@ array in the script for the complete list. Key packages:
 | `hyprsunset` | Blue-light filter |
 | `matugen awww` | Color generation & wallpaper |
 | `capitaine-cursors` | Cursor theme (XCURSOR_THEME + gsettings + index.theme) |
+| `hypr/env.json` `cursorTheme` | `capitaine-cursors` — directory name, not the index.theme `Name` |
 | `grim slurp wl-clipboard` | Screenshots & clipboard |
 | `ddcutil` | Monitor brightness control |
 | `upower` | Battery widget |
