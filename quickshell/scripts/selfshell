@@ -201,7 +201,7 @@ doctor() {
   if [ -f "$QS_CONFIG_DIR/wp/current.jpg" ]; then
     ok "wp/current.jpg (фон блокування)"
   else
-    warn "wp/current.jpg відсутній — фон блокування буде порожнім"
+    warn "wp/current.jpg відсутній — буде заглушка wp1.jpg (налаштуйте: selfshell palette-reload)"
   fi
 
   echo

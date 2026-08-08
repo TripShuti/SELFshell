@@ -101,6 +101,27 @@ Then:
 - Place a wallpaper in `quickshell/wp/current.jpg` for the lock screen background.
 - Ensure all dependencies listed in `install.sh` (`PACMAN_DEPS`) are installed.
 
+## Updating an existing setup
+
+Re-running `./install.sh` is safe: existing configs are backed up to
+`~/.config/quickshell.bak-<timestamp>` (and `<app>.bak-<ts>` for each
+dotfile) before being replaced, and every step is skipped if it is
+already done.
+
+To sync a config from a fresh clone of the repository without the installer:
+
+```sh
+cp -r quickshell/. ~/.config/quickshell/
+selfshell reload
+```
+
+If you keep `~/.config/quickshell` as a git clone of the repository,
+`selfshell update` (git pull + shell restart) is the shortest path.
+
+The lock screen uses `quickshell/wp/current.jpg`; on a fresh clone it
+falls back to the tracked `wp1.jpg` until you pick a wallpaper (via the
+Wallpaper Picker or `selfshell palette-reload`).
+
 ## CLI
 
 `install.sh` installs a `selfshell` CLI into `~/.local/bin`:

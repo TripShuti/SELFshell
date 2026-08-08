@@ -1,0 +1,81 @@
+# ============================================================
+# .github/workflows/ci.yml — валідація конфігів репозиторію
+# ============================================================
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Shell syntax (install.sh, CLI, scripts)
+        run: |
+          for f in install.sh quickshell/scripts/selfshell quickshell/scripts/update-palette.sh; do
+            bash -n "$f"
+            echo "ok: $f"
+          done
+
+      - name: Python syntax
+        run: |
+          python3 -m py_compile \
+            quickshell/scripts/update-palette.py \
+            quickshell/scripts/tracklist.py \
+            quickshell/scripts/genshin_stats.py
+          echo "ok: python scripts"
+
+      - name: JSON validity
+        run: |
+          python3 - <<'EOF'
+          import json
+          for f in [
+              "quickshell/data/config.json",
+              "quickshell/data/palette.json",
+              "hypr/env.json",
+          ]:
+              json.load(open(f))
+              print(f"ok: {f}")
+          EOF
+
+      - name: TOML validity (yazi, starship)
+        run: |
+          python3 - <<'EOF'
+          import tomllib
+          for f in [
+              "yazi/yazi.toml",
+              "yazi/keymap.toml",
+              "yazi/theme.toml",
+              "yazi/package.toml",
+              "starship/config.toml",
+          ]:
+              tomllib.load(open(f, "rb"))
+              print(f"ok: {f}")
+          EOF
+
+      - name: fastfetch config.jsonc validity
+        run: |
+          python3 - <<'EOF'
+          import json, re
+          src = open("fastfetch/config.jsonc").read()
+          src = re.sub(r"//.*", "", src)
+          src = re.sub(r"/\*.*?\*/", "", src, flags=re.S)
+          json.loads(src)
+          print("ok: fastfetch/config.jsonc")
+          EOF
+
+      - name: Lua syntax (hypr configs)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq lua5.4
+          for f in hypr/hyprland.lua hypr/modules/*.lua; do
+            lua5.4 -e "assert(loadfile('$f'))"
+            echo "ok: $f"
+          done
+
+      - name: Fallback wallpaper tracked
+        run: test -f quickshell/wp/wp1.jpg && echo "ok: quickshell/wp/wp1.jpg"

@@ -7,7 +7,6 @@
 
 # персональні дані
 fish/fish_variables
-quickshell/AGENTS.md
 quickshell/data/calendar-tasks.json
 quickshell/data/launcher-usage.json
 
@@ -15,7 +14,6 @@ quickshell/data/launcher-usage.json
 quickshell/wp/*
 !quickshell/wp/wp1.jpg
 *.bak
-docs/
 quickshell/scripts/.genshin_requests.log
 quickshell/scripts/.genshin_state.json
 quickshell/scripts/__pycache__/
