@@ -78,4 +78,6 @@ jobs:
           done
 
       - name: Fallback wallpaper tracked
-        run: test -f quickshell/wp/wp1.jpg && echo "ok: quickshell/wp/wp1.jpg"
+        run: |
+          test -f quickshell/wp/wp1.jpg
+          echo "ok: fallback wallpaper"
