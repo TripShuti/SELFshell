@@ -9,6 +9,7 @@ set -uo pipefail
 SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
 SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
 QS_CONFIG_DIR="$(dirname "$SCRIPT_DIR")"
+REPO_URL="https://github.com/TripShuti/selfshell"
 
 info()  { echo -e "\033[1;36m[i]\033[0m $*"; }
 ok()    { echo -e "\033[1;32m[o]\033[0m $*"; }
@@ -33,7 +34,7 @@ selfshell — CLI SELFshell
   palette-reload                 Перечитати палітру зі шпалери
   doctor                         Діагностика системи
   reload                         Перезапустити quickshell
-  update                         Оновити конфіг (git pull) і перезапустити шелл
+  update                         Оновити конфіг (git pull або архів) і перезапустити шелл
   list                           Список запущених інстансів quickshell
 EOF
 }
@@ -105,15 +106,69 @@ reload() {
   fi
 }
 
+# Оновлення конфігу. Git-клон → git pull; конфіг від install.sh (cp, без .git)
+# → завантажуємо архів з GitHub і rsync-имо quickshell/. Локальні файли
+# (LOCAL_FILES — ті самі, що в .gitignore репозиторію) не перезаписуються.
 update() {
-  if ! git -C "$QS_CONFIG_DIR" rev-parse --is-inside-work-tree &>/dev/null; then
-    error "Конфіг не є git-клоном — git pull неможливий."
-    error "Скопіюйте конфіг: git clone https://github.com/TripShuti/selfshell $QS_CONFIG_DIR"
+  if git -C "$QS_CONFIG_DIR" rev-parse --is-inside-work-tree &>/dev/null; then
+    info "Оновлюю $QS_CONFIG_DIR (git pull)..."
+    git -C "$QS_CONFIG_DIR" pull --ff-only || { error "git pull не вдався."; exit 1; }
+  else
+    update_from_archive
+  fi
+  reload
+}
+
+# Персональні/згенеровані файли, які не чіпаємо при оновленні з архіву
+LOCAL_FILES=(
+  data/config.json          # налаштування з Settings
+  data/palette.json         # генерується update-palette
+  data/calendar-tasks.json  # задачі календаря
+  data/control-state.json   # стан центру керування
+  data/launcher-usage.json  # статистика лаунчера
+  scripts/.env              # секрети (HoYoLAB)
+  scripts/.genshin_state.json
+  scripts/.genshin_requests.log
+  scripts/__pycache__/
+  wp/                       # персональні шпалери + current.jpg
+  .qmlls.ini
+  .opencode/
+  Palette.js
+)
+
+update_from_archive() {
+  command -v curl &>/dev/null || { error "curl не знайдено (пакет: curl)."; exit 1; }
+  local tmp="$(mktemp -d)"
+  local url="$REPO_URL/archive/refs/heads/main.tar.gz"
+  info "Завантажую архів: $url"
+  if ! curl -fsSL "$url" -o "$tmp/selfshell.tar.gz"; then
+    rm -rf "$tmp"
+    error "Не вдалося завантажити архів — перевірте інтернет і назву репозиторію."
     exit 1
   fi
-  info "Оновлюю $QS_CONFIG_DIR..."
-  git -C "$QS_CONFIG_DIR" pull --ff-only || { error "git pull не вдався."; exit 1; }
-  reload
+  # --strip-components=1: ім'я кореневої теки архіву не фіксоване
+  if ! tar -xzf "$tmp/selfshell.tar.gz" -C "$tmp" --strip-components=1; then
+    rm -rf "$tmp"
+    error "Архів пошкоджено — розпакування не вдалося."
+    exit 1
+  fi
+  local src="$tmp/quickshell"
+  if [ ! -d "$src" ]; then
+    rm -rf "$tmp"
+    error "Архів пошкоджено — quickshell/ не знайдено."
+    exit 1
+  fi
+  # Копіюємо через tar: виключення не пропустять локальні файли
+  local excludes=()
+  for f in "${LOCAL_FILES[@]}"; do excludes+=(--exclude="*/$f"); done
+  info "Розпаковую в $QS_CONFIG_DIR (локальні файли зберігаються)..."
+  if ! tar -C "$src" -cf - . | tar -C "$QS_CONFIG_DIR" -xf - "${excludes[@]}"; then
+    rm -rf "$tmp"
+    error "Оновлення не вдалося."
+    exit 1
+  fi
+  rm -rf "$tmp"
+  ok "Конфіг оновлено."
 }
 
 doctor() {

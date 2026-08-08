@@ -136,7 +136,7 @@ selfshell settings       # toggle bar settings popup
 selfshell palette-reload # re-read the wallpaper palette
 selfshell ipc call <target> <function> [args...]
 selfshell reload         # restart quickshell
-selfshell update         # git pull + reload
+selfshell update         # update config (git pull, or GitHub archive download) + reload
 selfshell version        # show version
 selfshell list           # list running quickshell instances
 ```
