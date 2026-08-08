@@ -25,6 +25,27 @@ python3 -m json.tool ~/.config/hypr/env.json
 ```
 Default — `"mod": "SUPER"`.
 
+## Hyprland: bindings stop working with a non-US layout first
+**Symptom:** bindings (SUPER+Q/W/E/R, workspace keys…) worked, then died
+after editing `env.json`. `hyprctl configerrors` is empty.
+
+**Cause:** Hyprland resolves bind key names against the keyboard layout
+active when the config is loaded. If `"kbLayout"` starts with a non-Latin
+layout (e.g. `"ua, us"`), the PHYSICAL keys no longer match the bound
+symbols while that layout is active.
+
+**Fix:** keep a Latin layout first:
+```json
+"kbLayout": "us, ua",
+"kbOptions": "grp:alt_shift_toggle"
+```
+then `hyprctl reload`. If per-window layout switching is configured in a
+Lua module (`hl.on("window.active")` + `hyprctl switchxkblayout`), switch
+to the non-Latin layout by index (`hyprctl switchxkblayout all 1`); the
+order in `kbLayout` stays `us`-first. Diagnostic: `hyprctl configerrors`
+(empty → not a config syntax problem) and `hyprctl getoption
+input:kb_layout`.
+
 ## Hyprland: autostarts / cursor / devices disappeared
 **Cause:** `hypr/env.json` is broken — `json.lua` returns `nil`,
 `env.lua` applies defaults (empty `autostart`/`devices`).
