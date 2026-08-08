@@ -158,7 +158,7 @@ chmod +x "$QS_CONFIG_DIR/services/qs-bt-agent"
 mkdir -p "$HOME/.config/systemd/user"
 cp "$QS_CONFIG_DIR/services/qs-bt-agent.service" "$HOME/.config/systemd/user/qs-bt-agent.service"
 if [ -n "${XDG_RUNTIME_DIR:-}" ] && [ -d "$XDG_RUNTIME_DIR" ]; then
-  systemctl --user daemon-reload
+  systemctl --user daemon-reload 2>/dev/null || warn "systemctl --user daemon-reload failed — qs-bt-agent may not start"
   systemctl --user enable --now qs-bt-agent.service 2>/dev/null || systemctl --user enable qs-bt-agent.service
   info "qs-bt-agent installed as systemd user service (systemctl --user status qs-bt-agent)"
 else
@@ -216,6 +216,7 @@ if [ -z "$aur_helper" ]; then
   read -rp "Install yay from AUR? [y/N] " install_yay
   if [[ "$install_yay" =~ ^[Yy]$ ]]; then
     sudo pacman -S --needed --noconfirm base-devel git
+    rm -rf /tmp/yay-build
     git clone https://aur.archlinux.org/yay.git /tmp/yay-build
     (cd /tmp/yay-build && makepkg -si --noconfirm)
     rm -rf /tmp/yay-build
@@ -256,7 +257,10 @@ echo
 info "On a bare Arch there is no display manager. After login you get a TTY."
 read -rp "Install greetd with the tuigreet login (TUI, starts Hyprland via uwsm)? [y/N] " use_greetd
 if [[ "$use_greetd" =~ ^[Yy]$ ]]; then
-  sudo pacman -S --needed --noconfirm greetd greetd-tuigreet
+  # greetd уже в PACMAN_DEPS (крок 1) — тут доставляємо лише якщо юзер пропустив крок 1
+  if ! pacman -Qi greetd-tuigreet &>/dev/null; then
+    sudo pacman -S --needed --noconfirm greetd greetd-tuigreet
+  fi
 
   # Екран входу: greetd + tuigreet (TUI). Пакет greetd створює
   # /etc/greetd/ + config.toml, PAM та юзера "greeter" — лише перезаписуємо
