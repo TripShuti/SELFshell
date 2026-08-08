@@ -62,7 +62,11 @@ AnimatedPopup {
       }
 
       Text {
-        text: root.workspace ? ("Workspace " + root.workspace.id + (root.workspace.name ? " \u2014 " + root.workspace.name : "")) : "Workspace"
+        // name може дублювати id ("3" == "3") — показуємо лише відмінну частину
+        text: root.workspace
+          ? "Workspace " + root.workspace.id
+            + ((root.workspace.name && root.workspace.name !== String(root.workspace.id)) ? " \u2014 " + root.workspace.name : "")
+          : "Workspace"
         color: window.palette.fg
         font.family: window.palette.font
         font.pixelSize: 12
@@ -74,11 +78,6 @@ AnimatedPopup {
       NavBtn {
         text: "\u25B6"
         onClicked: Hyprland.dispatch("hl.dsp.focus({ workspace = \"+1\" })")
-      }
-
-      NavBtn {
-        text: "\u2715"
-        onClicked: root.close()
       }
     }
 
