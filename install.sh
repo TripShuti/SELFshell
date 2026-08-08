@@ -283,6 +283,9 @@ fi
 # qs-bt-agent — агент парування BlueZ як systemd user-сервіс
 chmod +x "$QS_CONFIG_DIR/services/qs-bt-agent"
 mkdir -p "$HOME/.config/systemd/user"
+# Старі інсталяції могли мати застарілий unit (напр. шлях без services/):
+# дизаблимо перед заміною, щоб systemd не тримав кешовану версію
+systemctl --user disable --now qs-bt-agent.service 2>/dev/null || true
 cp "$QS_CONFIG_DIR/services/qs-bt-agent.service" "$HOME/.config/systemd/user/qs-bt-agent.service"
 if [ -n "${XDG_RUNTIME_DIR:-}" ] && [ -d "$XDG_RUNTIME_DIR" ]; then
   systemctl --user daemon-reload 2>/dev/null || warn "systemctl --user daemon-reload failed — qs-bt-agent may not start"

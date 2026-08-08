@@ -95,6 +95,27 @@ If the service is not installed — make sure `qs-bt-agent` is copied to
 `~/.local/bin/` or another directory in `PATH`, and the unit lives in
 `~/.config/systemd/user/`.
 
+## qs-bt-agent is dead and will not restart
+**Symptom:** `systemctl --user status qs-bt-agent` shows `inactive
+(dead)`; `journalctl --user -u qs-bt-agent` shows `Unit bluetooth.service
+not found` while scheduling the restart (or `Unable to locate
+executable .../qs-bt-agent` on installs predating the `services/` split).
+
+**Cause:** the unit ran the agent from the wrong path, or the unit file
+is stale. A unit file with `Requires=bluetooth.service` will not restart —
+a user manager cannot resolve system services.
+
+**Fix:** install the current unit and start it from scratch:
+```sh
+systemctl --user disable --now qs-bt-agent
+cp ~/.config/quickshell/services/qs-bt-agent.service ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable --now qs-bt-agent
+```
+Verify: `systemctl --user status qs-bt-agent` (active) and
+`selfshell doctor` (line `qs-bt-agent (user service) is active`).
+(install.sh does this automatically on the next run.)
+
 ## Sharp corners on popups (clipped glow)
 **Symptom:** sharp "wedges" in the popup corners instead of a smooth rounding.
 
