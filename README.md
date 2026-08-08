@@ -1,7 +1,7 @@
 # SELFshell
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/d5b6e3ae-7b14-4cb0-9859-dc3385b5374c" alt="SELFshell demo" width="720">
+  <img src="https://github.com/user-attachments/assets/935367c4-ef2e-46c1-a6e2-c4cc74ecc440" alt="SELFshell demo" width="720">
 </p>
 
 A feature-complete Hyprland desktop shell built with **Quickshell and QML**.
