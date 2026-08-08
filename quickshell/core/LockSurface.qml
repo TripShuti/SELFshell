@@ -16,6 +16,9 @@ Rectangle {
   required property QtObject palette
 
   readonly property string wallpaperSource: Qt.resolvedUrl("../wp/current.jpg")
+  // current.jpg генерується локально (update-palette.sh) і не в git —
+  // на свіжому клоні fallback на трековану заглушку wp1.jpg
+  readonly property string wallpaperFallback: Qt.resolvedUrl("../wp/wp1.jpg")
 
   color: "#000000"
 
@@ -37,6 +40,10 @@ Rectangle {
     anchors.fill: parent
     source: root.wallpaperSource
     fillMode: Image.PreserveAspectCrop
+    onStatusChanged: {
+      if (status === Image.Error && source !== root.wallpaperFallback)
+        source = root.wallpaperFallback
+    }
   }
 
   FastBlur {
