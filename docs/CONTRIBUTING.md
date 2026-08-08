@@ -24,9 +24,18 @@
 Do not write a comment that just repeats the variable/function name — that is noise.
 
 ## Commits
-- One commit per session (unless stated otherwise)
-- Prefixes: `feat:`, `fix:`, `chore:`, `docs:`, `refactor:`
-- If you change logic, update the adjacent comment in the same commit
+Commit messages are **English**, following the
+[Conventional Commits](https://www.conventionalcommits.org) spec:
+
+```
+<type>(<scope>): <imperative summary>
+```
+
+- Types: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `ci`, `perf`
+- `scope` is optional (e.g. `feat(cli):`, `fix(lock):`)
+- Summary in imperative mood, lowercase, no trailing period
+- One commit per logical change; if you change logic, update the adjacent
+  comment in the same commit
 
 ## Validation
 - Bash scripts (`install.sh`, `scripts/selfshell`, `update-palette.sh`):
