@@ -96,10 +96,18 @@ Then:
 
 ## Updating an existing setup
 
-Re-running `./install.sh` is safe: existing configs are backed up to
-`~/.config/quickshell.bak-<timestamp>` (and `<app>.bak-<ts>` for each
-dotfile) before being replaced, and every step is skipped if it is
-already done.
+Re-running `./install.sh` does not touch anything without confirmation:
+
+- If `~/.config/quickshell` is a git clone of the repo, the installer
+  offers `git pull` (keeps your local settings and `.env`)
+- Otherwise it asks to back up the existing config and reinstall the repo
+  defaults — the default answer is **no**, and declining aborts the script
+  with nothing changed
+- Already-installed packages and services are skipped; the optional steps
+  (dotfiles, yay, Bibata cursor, greetd) default to **no**
+
+Non-interactive runs: `./install.sh --yes` answers yes to every prompt,
+`./install.sh --no` answers no (both are useful for CI / scripts).
 
 To sync a config from a fresh clone of the repository without the installer:
 
