@@ -193,12 +193,12 @@ AnimatedPopup {
           width: listView.width
           height: 30
 
-          // Тло рядка
+          // Тло рядка — активне і коли курсор над кнопкою ✕ (та перехоплює hover)
           Rectangle {
             anchors.fill: parent
             radius: 6
             antialiasing: true
-            color: rowArea.containsMouse ? window.palette.bg2 : "transparent"
+            color: (rowArea.containsMouse || delArea.containsMouse) ? window.palette.bg2 : "transparent"
             Behavior on color { ColorAnimation { duration: 120 } }
           }
 
@@ -216,9 +216,7 @@ AnimatedPopup {
             elide: Text.ElideRight
           }
 
-          // Клік по рядку — копіювання в буфер обміну.
-          // Оголошений ДО кнопки видалення: пізніші сиблінги малюються
-          // поверх і перехоплювали б кліки по ✕ (додатковий захист — z: 1 у delBtn)
+          // Клік по рядку — копіювання в буфер обміну (найнижчий шар)
           MouseArea {
             id: rowArea
             anchors.fill: parent
@@ -227,16 +225,20 @@ AnimatedPopup {
             onClicked: root.copyEntry(modelData.id)
           }
 
-          // Кнопка видалення — з'являється на hover рядка, поверх rowArea
+          // Кнопка видалення — з'являється на hover рядка, поверх rowArea.
+          // visible враховує hover САМОЇ кнопки: коли курсор над ✕, верхній
+          // MouseArea перехоплює в rowArea його containsMouse стає false —
+          // залежність лише від rowArea робила б кнопку невидимою і вона б
+          // блимала (зникала саме в момент наведення на неї)
           Rectangle {
             id: delBtn
             z: 1
-            anchors { right: parent.right; rightMargin: 5; verticalCenter: parent.verticalCenter }
-            width: 20
-            height: 20
-            radius: 4
+            anchors { right: parent.right; rightMargin: 3; verticalCenter: parent.verticalCenter }
+            width: 24
+            height: 24
+            radius: 6
             antialiasing: true
-            visible: rowArea.containsMouse
+            visible: rowArea.containsMouse || delArea.containsMouse
             color: delArea.containsMouse ? window.palette.red : "transparent"
             Behavior on color { ColorAnimation { duration: 120 } }
 
@@ -245,7 +247,7 @@ AnimatedPopup {
               text: "\uF00D"
               color: delArea.containsMouse ? window.palette.bg0H : window.palette.muted
               font.family: window.palette.font
-              font.pixelSize: 12
+              font.pixelSize: 13
             }
 
             MouseArea {
