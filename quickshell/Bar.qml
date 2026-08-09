@@ -43,6 +43,7 @@ PanelWindow {
   readonly property Item keyboardWidget: activeWidgets["keyboard"] ?? null
   readonly property Item audioWidget: activeWidgets["audio"] ?? null
   readonly property Item controlWidget: activeWidgets["control"] ?? null
+  readonly property Item clipboardWidget: activeWidgets["clipboard"] ?? null
   readonly property Item btWidget: activeWidgets["bt"] ?? null
   readonly property Item netWidget: activeWidgets["net"] ?? null
   readonly property Item trayWidget: activeWidgets["tray"] ?? null
@@ -75,6 +76,7 @@ PanelWindow {
   Component { id: audioComp;      AudioWidget { window: root; anchors.fill: parent } }
   Component { id: batteryComp;    BatteryWidget { window: root; anchors.fill: parent } }
   Component { id: controlComp;    ControlWidget { window: root; anchors.fill: parent; unread: controlPopup.unread } }
+  Component { id: clipboardComp;  ClipboardWidget { window: root; anchors.fill: parent } }
   Component { id: btComp;         BluetoothWidget { window: root; anchors.fill: parent } }
   Component { id: netComp;        NetWidget { window: root; anchors.fill: parent } }
   Component { id: trayComp;       TrayWidget { window: root; anchors.fill: parent } }
@@ -83,6 +85,7 @@ PanelWindow {
     launcher: launcherComp, workspaces: workspacesComp, mpris: mprisComp,
     clock: clockComp, timer: timerComp, genshin: genshinComp,
     keyboard: keyboardComp, audio: audioComp, battery: batteryComp, control: controlComp,
+    clipboard: clipboardComp,
     bt: btComp, net: netComp, tray: trayComp
   })
 
@@ -97,6 +100,7 @@ PanelWindow {
         || name === "genshin" || name === "timer"
     || name === "bt" || name === "net" || name === "tray"
     || name === "keyboard" || name === "battery"
+    || name === "clipboard"
   }
 
   // Ліва пігулка
@@ -251,11 +255,12 @@ PanelWindow {
     notificationsModel: notifServer.trackedNotifications
   }
 
-  // Історія буфера обміну (SUPER+SHIFT+V) — прив'язана до центру керування
+  // Історія буфера обміну (SUPER+SHIFT+V). Коли віджет присутній у барі,
+  // попап прив'язується до нього; інакше — до центру керування
   ClipboardPopup {
     id: clipboardPopup
     window: root
-    anchorItem: root.controlWidget
+    anchorItem: root.clipboardWidget ?? root.controlWidget
     visible: false
   }
 
@@ -375,6 +380,7 @@ PanelWindow {
 
   // Зв'язки: клік на віджеті → відкриває відповідний попап
   Connections { target: launcherWidget; function onClicked() { launcherPopup.toggle() } }
+  Connections { target: clipboardWidget; function onClicked() { clipboardPopup.toggle() } }
   Connections {
     target: workspacesWidget
     // ПКМ на тій же столі — закрити; на іншій — перевідкрити під нею

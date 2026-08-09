@@ -33,7 +33,7 @@ def load(path):
 BOOL_FIELDS = [
     "launcherEnabled", "workspacesEnabled", "mprisEnabled", "clockEnabled",
     "timerEnabled", "genshinEnabled", "keyboardEnabled", "audioEnabled",
-    "controlEnabled", "btEnabled", "netEnabled", "trayEnabled",
+    "controlEnabled", "clipboardEnabled", "btEnabled", "netEnabled", "trayEnabled",
     "batteryEnabled", "dndEnabled",
 ]
 NUM_FIELDS = {

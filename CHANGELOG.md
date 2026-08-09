@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (text and images): `SUPER+SHIFT+V` opens a popup
   (`qs ipc call clipboard toggle`);
   click copies an entry back into the clipboard, a hover button deletes it.
+- Clipboard widget for the bar — a button that opens the clipboard history
+  popup (same as `SUPER+SHIFT+V`; the popup anchors to it when present).
 
 ### Fixed
 

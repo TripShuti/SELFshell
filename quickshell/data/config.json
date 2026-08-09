@@ -8,6 +8,7 @@
   "keyboardEnabled": true,
   "audioEnabled": true,
   "controlEnabled": true,
+  "clipboardEnabled": true,
   "btEnabled": false,
   "netEnabled": false,
   "trayEnabled": true,
@@ -45,6 +46,7 @@
     "sep-10",
     "audio",
     "sep-11",
-    "control"
+    "control",
+    "clipboard"
   ]
 }

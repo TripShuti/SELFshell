@@ -25,6 +25,7 @@ Item {
   property bool keyboardEnabled: true
   property bool audioEnabled: true
   property bool controlEnabled: true
+  property bool clipboardEnabled: true
   // Дефолти вимкнених сервісів співпадають з config.json (bt/net/tray
   // за замовчуванням вимкнені, вмикаються через Settings)
   property bool btEnabled: false
@@ -59,7 +60,7 @@ Item {
   // того, в якій пігулці зараз лежить віджет).
   readonly property var allWidgetNames: [
     "launcher", "workspaces", "mpris", "clock", "timer",
-    "genshin", "keyboard", "audio", "battery", "control", "bt", "net", "tray"
+    "genshin", "keyboard", "audio", "battery", "control", "clipboard", "bt", "net", "tray"
   ]
 
   // Порядок ВСЕРЕДИНІ пігулки + приналежність до пігулки визначаються
@@ -71,7 +72,7 @@ Item {
   // реальними значеннями з config.json.
   property var leftOrder: ["launcher", "sep-2", "workspaces", "sep-7", "mpris"]
   property var centerOrder: ["clock", "sep-5", "timer", "sep-6", "genshin", "battery"]
-  property var rightOrder: ["tray", "sep-12", "net", "bt", "keyboard", "sep-10", "audio", "sep-11", "control"]
+  property var rightOrder: ["tray", "sep-12", "net", "bt", "keyboard", "sep-10", "audio", "sep-11", "control", "clipboard"]
 
   function isSep(name) {
     return name === "sep" || String(name).startsWith("sep-")
@@ -158,6 +159,7 @@ Item {
     if (data.keyboardEnabled !== undefined)   keyboardEnabled   = data.keyboardEnabled
     if (data.audioEnabled !== undefined)      audioEnabled      = data.audioEnabled
     if (data.controlEnabled !== undefined)    controlEnabled    = data.controlEnabled
+    if (data.clipboardEnabled !== undefined)  clipboardEnabled  = data.clipboardEnabled
     if (data.btEnabled !== undefined)         btEnabled         = data.btEnabled
     if (data.netEnabled !== undefined)        netEnabled        = data.netEnabled
     if (data.trayEnabled !== undefined)       trayEnabled       = data.trayEnabled
@@ -187,6 +189,7 @@ Item {
       keyboardEnabled:   keyboardEnabled,
       audioEnabled:      audioEnabled,
       controlEnabled:    controlEnabled,
+      clipboardEnabled:  clipboardEnabled,
       btEnabled:         btEnabled,
       netEnabled:        netEnabled,
       trayEnabled:       trayEnabled,

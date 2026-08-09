@@ -109,6 +109,7 @@
 | `KeyboardLayoutWidget.qml` | Keyboard layout indicator | — |
 | `AudioWidget.qml` | Volume | AudioMixerPopup, CavaMonitor |
 | `ControlWidget.qml` | Control center | ControlPopup |
+| `ClipboardWidget.qml` | Clipboard history open button | ClipboardPopup |
 | `BluetoothWidget.qml` | Bluetooth | BluetoothPopup |
 | `NetWidget.qml` | Network | NetworkPopup |
 | `TrayWidget.qml` | System tray | — |

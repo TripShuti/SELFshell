@@ -18,6 +18,7 @@ Edited through SettingsPopup (UI) or manually.
 | `keyboardEnabled` | `boolean` | `true` | Keyboard layout |
 | `audioEnabled` | `boolean` | `true` | Audio |
 | `controlEnabled` | `boolean` | `true` | Control center |
+| `clipboardEnabled` | `boolean` | `true` | Clipboard history |
 | `btEnabled` | `boolean` | `false` | Bluetooth |
 | `netEnabled` | `boolean` | `false` | Network |
 | `trayEnabled` | `boolean` | `true` | System tray |
