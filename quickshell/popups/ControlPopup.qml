@@ -105,13 +105,16 @@ AnimatedPopup {
   // Вбиття процесу (running=false під час роботи) дає exit code 15 (SIGTERM);
   // прапорець дозволяє не малювати хибний warn у такому випадку.
   property bool _shotKilled: false
+  // Лічильник стартів shotProc: onExited старого (вбитого обрhtyком)
+  // не повинен гасити новий процес (running=false).
+  property int _shotTicket: 0
 
-  // Подвійний клік МОЖЕ генерує два onClicked (як у LauncherPopup) —
-  // без guard перший click стартує, але його тут же вбиває restart
+  // Подвійний клік МОЖЕ генерувати два onClicked (як у LauncherPopup) —
+  // без debounce перший click стартує, але його тут же вбиває restart
   // (exit 15), і вибір області «не з'являється».
   function shotDebouncedClick(kind) {
-    var now = (new Date()).getTime()
-    var prev = kind === "full" ? root._lastShotTimeFull : root._lastShotTimeRegion
+    let now = (new Date()).getTime()
+    let prev = kind === "full" ? root._lastShotTimeFull : root._lastShotTimeRegion
     if (now - prev < 350) { console.log("[shot] debounce: block second click (" + kind + ")"); return true }
     if (kind === "full") root._lastShotTimeFull = now
     else root._lastShotTimeRegion = now
@@ -119,30 +122,31 @@ AnimatedPopup {
   }
 
   function takeScreenshot(kind) {
-    // Якщо процес уже працює (slurp чекає вибору) — не вбиваємо новим
-    // запуском, а ігноруємо запит. Це захист від будь-яких подвійних
-    // подій незалежно від debounce.
+    // Перший запуск slurp на «свіжому» шелі висить невидимим (overlay не
+    // з'являється), повторний — працює. Тому замість блокування «already
+    // running» вбиваємо застряглий процес і запускаємо новий.
     if (shotProc.running) {
-      console.log("[shot] already running — ignore request (" + kind + ")")
-      return
+      console.log("[shot] stale process — restarting (" + kind + ")")
+      root._shotKilled = true
+      shotProc.running = false
     }
-    // Region-скріншот потребує slurp-оверлею ПОВЕРХ усього екрана; відкритий
-    // ControlPopup (PopupWindow на тому ж слої) лишається зверху — вибір
-    // області не видно і кліки йдуть не в slurp. Закриваємо попап першим.
-    if (kind === "region") root.close()
     console.log("[shot] takeScreenshot(" + kind + ")")
     var geom = kind === "region" ? ' -g "$(slurp)" ' : " "
     var cmd = ['mkdir -p "$HOME/Screenshots"; f="$HOME/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png"; ' +
       'grim' + geom + '- | tee "$f" | wl-copy; echo "$f"']
     console.log("[shot] sh -c: " + cmd[0].substring(0, 60) + "...")
-    root._shotKilled = shotProc.running
-    shotProc.running = false
+    var ticket = ++root._shotTicket
+    root._shotKilled = false
+    shotProc.ticket = ticket
     shotProc.command = ["sh", "-c", cmd[0]]
     shotProc.running = true
   }
 
   Process {
     id: shotProc
+    // Тікет старту: вбитий restart-ом старий процес емітить onExited із
+    // запізненням — його завершення не має гасити новий процес.
+    property int ticket: -1
     stdout: SplitParser {
       splitMarker: "\n"
       onRead: data => {
@@ -152,6 +156,10 @@ AnimatedPopup {
     }
     onExited: exitCode => {
       console.log("[shot] exited with code " + exitCode)
+      if (shotProc.ticket !== root._shotTicket) {
+        console.log("[shot] stale exit ignored")
+        return
+      }
       running = false
       var killed = root._shotKilled
       root._shotKilled = false
