@@ -126,6 +126,10 @@ AnimatedPopup {
       console.log("[shot] already running — ignore request (" + kind + ")")
       return
     }
+    // Region-скріншот потребує slurp-оверлею ПОВЕРХ усього екрана; відкритий
+    // ControlPopup (PopupWindow на тому ж слої) лишається зверху — вибір
+    // області не видно і кліки йдуть не в slurp. Закриваємо попап першим.
+    if (kind === "region") root.close()
     console.log("[shot] takeScreenshot(" + kind + ")")
     var geom = kind === "region" ? ' -g "$(slurp)" ' : " "
     var cmd = ['mkdir -p "$HOME/Screenshots"; f="$HOME/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png"; ' +
