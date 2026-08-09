@@ -83,9 +83,20 @@ AnimatedPopup {
           out[j].text = out[j].text.replace(/\s+/g, " ").trim()
           if (out[j].text === "") out.splice(j, 1)
         }
-        root.entries = out
+        // Модель оновлюється лише при реальній зміні списку — інакше
+        // автооновлення таймером скидало б hover/прокрутку на кожен тік
+        if (JSON.stringify(out) !== JSON.stringify(root.entries)) {
+          root.entries = out
+        }
       }
     }
+  }
+
+  // Автооновлення: нові копії з'являються в списку, поки попап відкритий
+  Timer {
+    interval: 2000
+    running: root.visible
+    onTriggered: root.refresh()
   }
 
   // Копіювання в буфер обміну (wl-copy)
