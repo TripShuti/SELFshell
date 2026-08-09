@@ -143,14 +143,16 @@ AnimatedPopup {
     property string shotKind: ""
     onTriggered: {
       console.log("[shot] takeScreenshot(" + shotKind + ")")
-      var geom = shotKind === "region" ? ' -g "$(slurp)" ' : " "
-      var cmd = ['mkdir -p "$HOME/Screenshots"; f="$HOME/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png"; ' +
-        'grim' + geom + '- | tee "$f" | wl-copy; echo "$f"']
-      console.log("[shot] sh -c: " + cmd[0].substring(0, 60) + "...")
+      // geom-порожній коли slurp скасовано (Esc/правий клік) — без вибору
+      // не створюємо пустий файл і не показуємо тост.
+      var cmd = shotKind === "region"
+        ? 'f="$HOME/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png"; geom="$(slurp)"; if [ -z "$geom" ]; then exit 0; fi; mkdir -p "$HOME/Screenshots"; grim -g "$geom" - | tee "$f" | wl-copy; if [ -s "$f" ]; then echo "$f"; else rm -f "$f"; fi'
+        : 'mkdir -p "$HOME/Screenshots"; f="$HOME/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png"; grim - | tee "$f" | wl-copy; if [ -s "$f" ]; then echo "$f"; else rm -f "$f"; fi'
+      console.log("[shot] sh -c: " + cmd.substring(0, 60) + "...")
       var ticket = ++root._shotTicket
       root._shotKilled = false
       shotProc.ticket = ticket
-      shotProc.command = ["sh", "-c", cmd[0]]
+      shotProc.command = ["sh", "-c", cmd]
       shotProc.running = true
     }
   }
