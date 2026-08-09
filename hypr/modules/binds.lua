@@ -3,8 +3,21 @@
 -- ============================================================
 local s = require("modules.env")
 
-hl.bind("Print",               hl.dsp.exec_cmd("sh -c 'grim - | tee ~/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png | wl-copy'"))
-hl.bind(s.mainMod .. " + Print", hl.dsp.exec_cmd("sh -c 'grim -g \"$(slurp)\" - | tee ~/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png | wl-copy'"))
+-- Скріншоти: Print — весь екран, SUPER+Print — виділення (slurp).
+-- Шлях збереженого файлу пишеться в маркер-файл data/last-shot.txt —
+-- той самий, що читає ControlPopup для тоста (єдиний спосіб тоста й
+-- для бінда, і для кнопок попапа)
+local shotMarkerFile = "~/.config/quickshell/data/last-shot.txt"
+
+local function makeShotCmd(region)
+    local capture = region and 'grim -g "$(slurp)" - ' or "grim - "
+    return "sh -c 'f=~/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png; " .. capture ..
+           "| tee \"$f\" | wl-copy; if [ -s \"$f\" ]; then echo \"$f\" > " ..
+           shotMarkerFile .. "; fi'"
+end
+
+hl.bind("Print", hl.dsp.exec_cmd(makeShotCmd(false)))
+hl.bind(s.mainMod .. " + Print", hl.dsp.exec_cmd(makeShotCmd(true)))
 
 -- Медіаклавіші: гучність (wpctl) та яскравість (ddcutil) з OSD-індикатором.
 -- OSD показується через IPC після зміни значення.
