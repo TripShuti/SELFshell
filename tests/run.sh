@@ -45,9 +45,22 @@ run "install.sh function tests" bash tests/install_test.sh
 if have luajit; then
   run "lua: json.lua unit tests" luajit tests/lua/json_test.lua "$ROOT"
   run "lua: env+rules smoke" luajit tests/lua/env_rules_test.lua "$ROOT"
+  run "lua: binds unit test" luajit tests/lua/binds_test.lua "$ROOT"
 else
   skip "lua tests" "luajit not installed"
 fi
+
+# --- Фікстура фейкового upower: контракт виводу, який парсить BatteryWidget ---
+run "fake upower fixture" bash -c '
+  export FAKE_BATTERY_PCT=12 FAKE_BATTERY_STATE=discharging
+  [ "$(bash tests/fake_upower.sh -e)" = "/org/freedesktop/UPower/devices/battery_BAT0" ] || exit 1
+  out="$(bash tests/fake_upower.sh -i)"
+  echo "$out" | grep -qE "^[[:space:]]*state[[:space:]]*:[[:space:]]*discharging[[:space:]]*$" || exit 1
+  line="$(echo "$out" | grep -E "^[[:space:]]*percentage" | head -1)"
+  python3 -c "import re,sys; m=re.match(r\"^\s*percentage\s*:\s*(\d+)%\", sys.argv[1]); assert m and int(m.group(1)) == 12, sys.argv[1]" "$line" || exit 1
+  export FAKE_BATTERY_STATE=charging
+  bash tests/fake_upower.sh -i | grep -q "state:[[:space:]]*charging" || exit 1
+'
 
 # --- Python — unittest (genshin, update-palette) ---
 if python3 -c "import requests, dotenv" >/dev/null 2>&1; then

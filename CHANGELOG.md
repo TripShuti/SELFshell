@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Tests: fake `upower` battery simulator (`tests/fake_upower.sh`, env-driven
+  state/percentage, drop-in PATH replacement) for visual testing of
+  BatteryWidget on machines without a battery; Lua unit test for the binds
+  (screenshot marker, media keys, clipboard, control center).
+
 - Media keys with OSD: `XF86AudioRaiseVolume` / `XF86AudioLowerVolume` /
   `XF86AudioMute` (via `wpctl`) and `XF86MonBrightnessUp` /
   `XF86MonBrightnessDown` (via `ddcutil`) now work and show a 1.5 s overlay
