@@ -147,14 +147,16 @@ PopupWindow {
     id: container
     width: parent.width
     implicitHeight: osdLayout.implicitHeight + 14
-    radius: 8
+    // Стиль рамки — як у решти попапів (AnimatedPopup): тонка обводка
+    // bg2, radius 10, градієнт lighten 1.5 (без зеленої рамки)
+    radius: 10
     border.width: 1
-    border.color: root.palette.green
+    border.color: root.palette.bg2
     opacity: 0
     scale: 0.88
     gradient: Gradient {
       orientation: Gradient.Vertical
-      GradientStop { position: 0.0; color: Qt.lighter(root.palette.bg0H, 1.12) }
+      GradientStop { position: 0.0; color: Qt.lighter(root.palette.bg0H, 1.5) }
       GradientStop { position: 1.0; color: root.palette.bg0H }
     }
 
