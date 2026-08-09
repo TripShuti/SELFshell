@@ -225,6 +225,14 @@ doctor() {
       error "quickshell is not running"
       problems=$((problems + 1))
     fi
+    echo
+    echo "== Polkit agent =="
+    if pgrep -x lxqt-policykit-agent >/dev/null; then
+      ok "lxqt-policykit-agent is running"
+    else
+      warn "lxqt-policykit-agent is NOT running — GUI privilege prompts (Pamac etc.) will fail silently"
+      warn "restart the shell or run: lxqt-policykit-agent &"
+    fi
   fi
 
   echo

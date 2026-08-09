@@ -432,6 +432,7 @@ Why a separate process + systemd instead of exec-once:
 | `ipc call <target> <fn> [args]` | Wrapper for `qs ipc call` |
 | `lock` / `toggle-lock` | `qs ipc call lockscreen ...` |
 | `launcher` / `settings` | `qs ipc call launcher/settings toggle` |
+| `osd` | `qs ipc call osd volume|brightness` (media-key overlay) |
 | `palette-reload` | `qs ipc call palette-reload reload` |
 | `doctor` | Diagnostics: dependencies, python modules, session, configs, services, ddcutil. Exit 1 on critical problems |
 | `reload` | `qs kill` + `qs -d` (this quickshell version has no `qs reload`) |

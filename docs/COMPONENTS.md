@@ -127,6 +127,7 @@
 | `NetworkPopup.qml` | Network management | NetworkManager |
 | `NetworkConnectionSettingsPopup.qml` | Details of a specific Wi-Fi/connection | NetworkPopup |
 | `ControlPopup.qml` | Notifications + quick actions | NotificationServer |
+| `OsdPopup.qml` | Volume/brightness overlay for media keys | PipeWire, ddcutil |
 | `SettingsPopup.qml` | Bar settings (drag-and-drop) | AppConfig |
 | `KeyboardLayoutPopup.qml` | Keyboard layout list | — |
 | `WorkspacesPopup.qml` | Window list per workspace | Hyprland |

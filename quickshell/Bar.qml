@@ -21,12 +21,14 @@ PanelWindow {
 
   readonly property real pillHeight: root.implicitHeight - 8
 
-  // Активні (реально завантажені зараз) інстанси віджетів — заповнюється
+// Активні (реально завантажені зараз) інстанси віджетів — заповнюється
   // Loader-ами всередині пігулок через registerActive(). Перепризначення
   // ЦІЛОГО об'єкта (не мутація ключа) потрібне, щоб QML-біндинги, які
   // читають ці властивості (Connections/anchorItem нижче), реагували на
   // зміну.
   property var activeWidgets: ({})
+  // Тостер для віджетів (battery): явна властивість замість id-хаків між файлами
+  readonly property QtObject toast: notifToast
   function registerActive(name, item) {
     var copy = Object.assign({}, activeWidgets)
     copy[name] = item
@@ -267,6 +269,51 @@ PanelWindow {
     anchorWindow: root
     visible: false
     muted: controlPopup.muted
+  }
+
+  // OSD-індикатор гучності/яскравості (викликається через IPC з binds.lua)
+  OsdPopup {
+    id: osdPopup
+    anchorWindow: root
+    visible: false
+  }
+
+  // IpcHandler: XF86-клавіші (binds.lua) → показ OSD
+  IpcHandler {
+    target: "osd"
+    function volume(): void {
+      osdPopup.showVolume()
+    }
+    function brightness(): void {
+      osdPopup.showBrightness()
+    }
+  }
+
+  // Кнопка скріншота в ControlPopup → тост «Screenshot saved» з кнопкою Open
+  Connections {
+    target: controlPopup
+    function onScreenshotTaken(path) {
+      notifToast.showNotif({
+        appName: "Screenshot",
+        summary: "Saved to " + path,
+        body: "",
+        appIcon: "camera-photo",
+        actions: [{
+          identifier: "open",
+          text: "Open",
+          invoke: (function() {
+            openShotProc.command = ["xdg-open", path]
+            openShotProc.running = true
+          })
+        }]
+      })
+      if (controlPopup.visible) controlPopup.visible = false
+    }
+  }
+
+  Process {
+    id: openShotProc
+    onExited: running = false
   }
 
   // IpcHandler для глобального виклику налаштувань

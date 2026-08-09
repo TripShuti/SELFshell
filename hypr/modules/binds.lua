@@ -6,6 +6,16 @@ local s = require("modules.env")
 hl.bind("Print",               hl.dsp.exec_cmd("sh -c 'grim - | tee ~/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png | wl-copy'"))
 hl.bind(s.mainMod .. " + Print", hl.dsp.exec_cmd("sh -c 'grim -g \"$(slurp)\" - | tee ~/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png | wl-copy'"))
 
+-- Медіаклавіші: гучність (wpctl) та яскравість (ddcutil) з OSD-індикатором.
+-- OSD показується через IPC після зміни значення.
+-- ddcutil глушиться 2>/dev/null: на моніторах без DDC команда падає, але
+-- OSD має все одно показатися.
+hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("sh -c 'wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ && qs ipc call osd volume'"))
+hl.bind("XF86AudioLowerVolume",  hl.dsp.exec_cmd("sh -c 'wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- && qs ipc call osd volume'"))
+hl.bind("XF86AudioMute",         hl.dsp.exec_cmd("sh -c 'wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle; qs ipc call osd volume'"))
+hl.bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd("sh -c 'ddcutil setvcp 10 + 5 2>/dev/null; qs ipc call osd brightness'"))
+hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("sh -c 'ddcutil setvcp 10 - 5 2>/dev/null; qs ipc call osd brightness'"))
+
 -- Бінд на паузу/розблокування — лише якщо вказаний у env.json (suspendKey).
 if s.suspendKey ~= "" then
     hl.bind(s.suspendKey, hl.dsp.exec_cmd("systemctl suspend"))

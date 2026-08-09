@@ -86,6 +86,7 @@ PACMAN_DEPS=(
   xdg-desktop-portal-hyprland
   ddcutil
   upower
+  lxqt-policykit
 
   # qt6-5compat — Qt5Compat.GraphicalEffects (блюр на екрані блокування);
   # без нього quickshell не стартує взагалі

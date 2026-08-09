@@ -26,6 +26,24 @@ Item {
   readonly property bool charging: state === "charging" || state === "pending-charge"
   readonly property bool low: percent >= 0 && percent <= 15 && !root.charging
 
+  // Сповіщення про низький заряд: один раз за цикл розряду (не спамимо
+  // кожні 30 с опитування), скидається при зарядці або > 15%.
+  // DND поважається — тост не показується, коли dndEnabled.
+  property bool lowNotified: false
+  onLowChanged: {
+    if (!root.low) { root.lowNotified = false; return }
+    if (root.lowNotified) return
+    root.lowNotified = true
+    if (window.appConfig.dndEnabled) return
+    window.toast.showNotif({
+      appName: "Battery",
+      summary: "Low battery (" + root.percent + "%)",
+      body: "Connect the charger.",
+      appIcon: "battery-low",
+      actions: []
+    })
+  }
+
   readonly property string icon: {
     var p = root.percent
     if (p < 0) return "\uF097" // battery-unknown

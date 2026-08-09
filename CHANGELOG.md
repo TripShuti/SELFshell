@@ -6,6 +6,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Media keys with OSD: `XF86AudioRaiseVolume` / `XF86AudioLowerVolume` /
+  `XF86AudioMute` (via `wpctl`) and `XF86MonBrightnessUp` /
+  `XF86MonBrightnessDown` (via `ddcutil`) now work and show a 1.5 s overlay
+  (icon + value + progress bar, top-center under the bar) via the
+  `qs ipc call osd` endpoint.
+- Screenshot buttons in the Control Center (full screen and region) — same
+  behaviour as `Print` / `SUPER+Print`, with a «Screenshot saved» toast that
+  has an **Open** action.
+- Polkit agent (`lxqt-policykit`) installed with the other deps and started
+  at Hyprland startup; `selfshell doctor` now checks it and warns if it is
+  not running.
+- Battery widget raises a notification when the battery drops to ≤15% while
+  discharging (once per charge cycle; suppressed in DND).
+
 ## [0.1.2] - 2026-08-08
 
 ### Added

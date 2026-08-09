@@ -18,6 +18,10 @@ hl.on("hyprland.start", function()
     -- Сам шелл — інфраструктура, запускається завжди
     hl.exec_cmd("sleep 2 && quickshell")
 
+    -- Polkit-агент: діалоги підвищення прав для GUI (Pamac, системні дії).
+    -- Трохи пізніше за шелл, щоб сесійна D-Bus шина була готова.
+    hl.exec_cmd("sleep 3 && lxqt-policykit-agent")
+
     for _, app in ipairs(s.autostart) do
         local cmd = app.command
         if app.workspace then

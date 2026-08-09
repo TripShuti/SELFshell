@@ -52,6 +52,7 @@ AnimatedPopup {
   signal openBtManager()
   signal openNetManager()
   signal openSettingsPopup()
+  signal screenshotTaken(string path)
 
   property bool muted: false
 
@@ -90,6 +91,34 @@ AnimatedPopup {
   Process {
     id: powerProc
     onExited: running = false
+  }
+
+  // --- Скріншоти ---
+  // Повторює команди з hypr/modules/binds.lua; результат — тост у Bar.qml
+  // через сигнал screenshotTaken. Останній рядок stdout — шлях до файлу.
+  property string _lastShotPath: "~/Screenshots"
+
+  function takeScreenshot(kind) {
+    var geom = kind === "region" ? ' -g "$(slurp)" ' : " "
+    shotProc.command = ["sh", "-c",
+      'mkdir -p "$HOME/Screenshots"; f="$HOME/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png"; ' +
+      'grim' + geom + '- | tee "$f" | wl-copy; echo "$f"']
+    shotProc.running = true
+  }
+
+  Process {
+    id: shotProc
+    stdout: SplitParser {
+      splitMarker: "\n"
+      onRead: data => {
+        var line = String(data ?? "").trim()
+        if (line !== "") root._lastShotPath = line
+      }
+    }
+    onExited: exitCode => {
+      running = false
+      if (exitCode === 0) root.screenshotTaken(root._lastShotPath)
+    }
   }
 
   // --- Яскравість (ddcutil) ---
@@ -416,6 +445,54 @@ AnimatedPopup {
           anchors.fill: parent
           hoverEnabled: true
           onClicked: root.openSettingsPopup()
+        }
+      }
+
+      // Кнопка скріншота всього екрану
+      Rectangle {
+        Layout.fillWidth: true
+        implicitHeight: 24
+        radius: 6
+        color: fullArea.containsMouse ? window.palette.bg2 : window.palette.bg1
+        Behavior on color { ColorAnimation { duration: 120 } }
+
+        Text {
+          anchors.centerIn: parent
+          text: "\uF030"
+          color: fullArea.containsMouse ? window.palette.green : window.palette.gray
+          Behavior on color { ColorAnimation { duration: 120 } }
+          font.family: window.palette.font; font.pixelSize: 13
+        }
+
+        MouseArea {
+          id: fullArea
+          anchors.fill: parent
+          hoverEnabled: true
+          onClicked: root.takeScreenshot("full")
+        }
+      }
+
+      // Кнопка скріншота області (slurp)
+      Rectangle {
+        Layout.fillWidth: true
+        implicitHeight: 24
+        radius: 6
+        color: regionArea.containsMouse ? window.palette.bg2 : window.palette.bg1
+        Behavior on color { ColorAnimation { duration: 120 } }
+
+        Text {
+          anchors.centerIn: parent
+          text: "\uF125"
+          color: regionArea.containsMouse ? window.palette.green : window.palette.gray
+          Behavior on color { ColorAnimation { duration: 120 } }
+          font.family: window.palette.font; font.pixelSize: 13
+        }
+
+        MouseArea {
+          id: regionArea
+          anchors.fill: parent
+          hoverEnabled: true
+          onClicked: root.takeScreenshot("region")
         }
       }
     }
