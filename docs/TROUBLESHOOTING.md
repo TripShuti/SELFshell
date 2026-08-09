@@ -180,6 +180,6 @@ archive download when the config was installed via `install.sh` (no `.git`).
 
 **Fix:** make sure `selfshell` is up to date:
 ```sh
-curl -fsSL https://raw.githubusercontent.com/TripShuti/selfshell/main/quickshell/scripts/selfshell -o ~/.config/quickshell/scripts/selfshell && chmod +x ~/.config/quickshell/scripts/selfshell
+curl -fsSL https://raw.githubusercontent.com/TripShuti/SELFshell/main/quickshell/scripts/selfshell -o ~/.config/quickshell/scripts/selfshell && chmod +x ~/.config/quickshell/scripts/selfshell
 ```
 Local files (`config.json`, `.env`, wallpapers) are never overwritten.

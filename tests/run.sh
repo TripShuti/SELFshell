@@ -60,6 +60,12 @@ fi
 run "config schema check" python3 tests/check_config_schema.py
 run "markdown links check" python3 tests/check_md_links.py
 
+# --- Канонічний регістр URL репозиторію (TripShuti/SELFshell) ---
+# Нижній регістр імені репо працює лише через редирект GitHub —
+# у скриптах (selfshell REPO_URL, docs, README) має бути канонічний.
+run "canonical repo URL" bash -c \
+  '! grep -rn "TripShuti/[s]elfshell" . --exclude-dir=.git --exclude-dir=__pycache__ 2>/dev/null'
+
 # --- Fish-синтаксис ---
 if have fish; then
   run "fish syntax" fish -n fish/config.fish fish/conf.d/*.fish

@@ -37,7 +37,7 @@ exactly — the release workflow refuses to publish otherwise.
    - builds `selfshell-X.Y.Z.tar.gz` (tag archive);
    - publishes the GitHub Release with the notes and the archive
      attached.
-7. Verify on https://github.com/TripShuti/selfshell/releases.
+7. Verify on https://github.com/TripShuti/SELFshell/releases.
 
 ## Notes
 

@@ -62,8 +62,8 @@ no separate lock/idle daemons.
 I haven't tested it on an existing setup, but I assume everything works fine there too.
 
 ```sh
-git clone https://github.com/TripShuti/selfshell
-cd selfshell
+git clone https://github.com/TripShuti/SELFshell
+cd SELFshell
 ./install.sh
 # follow the prompts, then reboot
 ```
@@ -83,8 +83,8 @@ Clone and copy the component dirs into `~/.config/` (each repo subdir maps
 to `~/.config/<name>`, mirroring what `install.sh` copies):
 
 ```sh
-git clone https://github.com/TripShuti/selfshell
-cp -r selfshell/{quickshell,hypr,fish,kitty,starship,yazi,fastfetch} ~/.config/
+git clone https://github.com/TripShuti/SELFshell
+cp -r SELFshell/{quickshell,hypr,fish,kitty,starship,yazi,fastfetch} ~/.config/
 ```
 
 Then:
