@@ -122,24 +122,37 @@ AnimatedPopup {
   }
 
   function takeScreenshot(kind) {
-    // Перший запуск slurp на «свіжому» шелі висить невидимим (overlay не
-    // з'являється), повторний — працює. Тому замість блокування «already
-    // running» вбиваємо застряглий процес і запускаємо новий.
+    // Перший slurp на свіжому шелі висить невидимим: його layer-surface
+    // стартує в момент, коли ControlPopup ще тримає pointer-grab/фокус.
+    // Тому спершу закриваємо попап і чекаємо завершення анімації закриття
+    // (250 мс > exitDuration), потім запускаємо процес.
     if (shotProc.running) {
       console.log("[shot] stale process — restarting (" + kind + ")")
       root._shotKilled = true
       shotProc.running = false
     }
-    console.log("[shot] takeScreenshot(" + kind + ")")
-    var geom = kind === "region" ? ' -g "$(slurp)" ' : " "
-    var cmd = ['mkdir -p "$HOME/Screenshots"; f="$HOME/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png"; ' +
-      'grim' + geom + '- | tee "$f" | wl-copy; echo "$f"']
-    console.log("[shot] sh -c: " + cmd[0].substring(0, 60) + "...")
-    var ticket = ++root._shotTicket
-    root._shotKilled = false
-    shotProc.ticket = ticket
-    shotProc.command = ["sh", "-c", cmd[0]]
-    shotProc.running = true
+    root.close()
+    delayedShotTimer.shotKind = kind
+    delayedShotTimer.start()
+  }
+
+  Timer {
+    id: delayedShotTimer
+    interval: 250
+    repeat: false
+    property string shotKind: ""
+    onTriggered: {
+      console.log("[shot] takeScreenshot(" + shotKind + ")")
+      var geom = shotKind === "region" ? ' -g "$(slurp)" ' : " "
+      var cmd = ['mkdir -p "$HOME/Screenshots"; f="$HOME/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png"; ' +
+        'grim' + geom + '- | tee "$f" | wl-copy; echo "$f"']
+      console.log("[shot] sh -c: " + cmd[0].substring(0, 60) + "...")
+      var ticket = ++root._shotTicket
+      root._shotKilled = false
+      shotProc.ticket = ticket
+      shotProc.command = ["sh", "-c", cmd[0]]
+      shotProc.running = true
+    }
   }
 
   Process {
