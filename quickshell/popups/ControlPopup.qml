@@ -94,20 +94,22 @@ AnimatedPopup {
   }
 
   // --- Скріншоти ---
-  // Повторює команди з hypr/modules/binds.lua; результат — тост у Bar.qml
-  // через сигнал screenshotTaken. Останній рядок stdout — шлях до файлу.
-  property string _lastShotPath: "~/Screenshots"
+  // Кнопки викликають ті самі команди, що й гарячі клавіші в
+  // hypr/modules/binds.lua, але через `hyprctl dispatch hl.dsp.exec_cmd(...)`:
+  // grim/slurp запускає Hyprland у сесійному середовищі, тому оверлей slurp
+  // завжди видно (запуск з QML Process давав невидимий layer-surface).
+  // Результат шляху пише команда в data/last-shot.txt (маркер готовності),
+  // FileView ловить зміну і показує тост через сигнал screenshotTaken.
+  readonly property string _shotMarkerPath: {
+    var url = Qt.resolvedUrl("../data/last-shot.txt").toString()
+    return url.startsWith("file://") ? url.substring(7) : url
+  }
+
   // Час останнього кліку по кожній кнопці скріншота (double-click guard).
   // Числові проперти замість var-об'єкта — щоб виключити будь-які
   // дива з мутацією об'єкта в property var.
   property int _lastShotTimeFull: 0
   property int _lastShotTimeRegion: 0
-  // Вбиття процесу (running=false під час роботи) дає exit code 15 (SIGTERM);
-  // прапорець дозволяє не малювати хибний warn у такому випадку.
-  property bool _shotKilled: false
-  // Лічильник стартів shotProc: onExited старого (вбитого обрhtyком)
-  // не повинен гасити новий процес (running=false).
-  property int _shotTicket: 0
 
   // Подвійний клік МОЖЕ генерувати два onClicked (як у LauncherPopup) —
   // без debounce перший click стартує, але його тут же вбиває restart
@@ -121,16 +123,20 @@ AnimatedPopup {
     return false
   }
 
+  // Lua-аргумент для hyprctl dispatch — дослівно команда з binds.lua,
+  // плюс прибирання порожнього файлу (скасування slurp) і маркер шляху.
+  function shotCommand(kind) {
+    var shell =
+      'mkdir -p ~/Screenshots; f=~/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png; ' +
+      (kind === "region"
+        ? 'geom="$(slurp)"; if [ -z "$geom" ]; then exit 0; fi; grim -g "$geom" - '
+        : 'grim - ') +
+      '| tee "$f" | wl-copy; if [ -s "$f" ]; then echo "$f" > "' + root._shotMarkerPath + '"; fi'
+    return 'hl.dsp.exec_cmd("' + shell.replace(/"/g, '\\"') + '")'
+  }
+
   function takeScreenshot(kind) {
-    // Перший slurp на свіжому шелі висить невидимим: його layer-surface
-    // стартує в момент, коли ControlPopup ще тримає pointer-grab/фокус.
-    // Тому спершу закриваємо попап і чекаємо завершення анімації закриття
-    // (250 мс > exitDuration), потім запускаємо процес.
-    if (shotProc.running) {
-      console.log("[shot] stale process — restarting (" + kind + ")")
-      root._shotKilled = true
-      shotProc.running = false
-    }
+    console.log("[shot] takeScreenshot(" + kind + ") — hyprctl dispatch")
     root.close()
     delayedShotTimer.shotKind = kind
     delayedShotTimer.start()
@@ -142,46 +148,32 @@ AnimatedPopup {
     repeat: false
     property string shotKind: ""
     onTriggered: {
-      console.log("[shot] takeScreenshot(" + shotKind + ")")
-      // geom-порожній коли slurp скасовано (Esc/правий клік) — без вибору
-      // не створюємо пустий файл і не показуємо тост.
-      var cmd = shotKind === "region"
-        ? 'f="$HOME/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png"; geom="$(slurp)"; if [ -z "$geom" ]; then exit 0; fi; mkdir -p "$HOME/Screenshots"; grim -g "$geom" - | tee "$f" | wl-copy; if [ -s "$f" ]; then echo "$f"; else rm -f "$f"; fi'
-        : 'mkdir -p "$HOME/Screenshots"; f="$HOME/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png"; grim - | tee "$f" | wl-copy; if [ -s "$f" ]; then echo "$f"; else rm -f "$f"; fi'
-      console.log("[shot] sh -c: " + cmd.substring(0, 60) + "...")
-      var ticket = ++root._shotTicket
-      root._shotKilled = false
-      shotProc.ticket = ticket
-      shotProc.command = ["sh", "-c", cmd]
+      shotProc.command = ["/usr/bin/hyprctl", "dispatch", root.shotCommand(shotKind)]
       shotProc.running = true
     }
   }
 
   Process {
     id: shotProc
-    // Тікет старту: вбитий restart-ом старий процес емітить onExited із
-    // запізненням — його завершення не має гасити новий процес.
-    property int ticket: -1
-    stdout: SplitParser {
-      splitMarker: "\n"
-      onRead: data => {
-        var line = String(data ?? "").trim()
-        if (line !== "") root._lastShotPath = line
-      }
-    }
     onExited: exitCode => {
-      console.log("[shot] exited with code " + exitCode)
-      if (shotProc.ticket !== root._shotTicket) {
-        console.log("[shot] stale exit ignored")
-        return
-      }
+      console.log("[shot] dispatch exit " + exitCode)
       running = false
-      var killed = root._shotKilled
-      root._shotKilled = false
-      if (exitCode === 0)
-        root.screenshotTaken(root._lastShotPath)
-      else if (!killed)
-        console.warn("[shot] grim failed (code " + exitCode + ") — check grim/slurp/wl-copy")
+    }
+  }
+
+  // Маркер готовності: quickshell сам лише ЧИТАЄ/ЧИСТИТЬ файл,
+  // пише його зовнішня команда скріншота (спільниый з IdleManager підхід)
+  FileView {
+    id: shotMarkerFile
+    path: Qt.resolvedUrl("../data/last-shot.txt")
+    watchChanges: true
+    onFileChanged: this.reload()
+    onDataChanged: {
+      var p = shotMarkerFile.text().trim()
+      if (!p) return
+      console.log("[shot] marker: " + p)
+      shotMarkerFile.setText("")
+      root.screenshotTaken(p)
     }
   }
 

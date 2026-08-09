@@ -22,6 +22,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Battery widget raises a notification when the battery drops to ≤15% while
   discharging (once per charge cycle; suppressed in DND).
 
+### Fixed
+
+- Screenshot buttons in the Control Center no longer freeze or produce empty
+  files: the capture commands are now dispatched through
+  `hyprctl dispatch hl.dsp.exec_cmd(...)` (the same path as the `Print` /
+  `SUPER+Print` keybinds) instead of spawning `slurp` as a QML `Process`
+  child, which raced with the still-focusing Control Center popup. The
+  result path is delivered via a marker file and the toast appears only
+  after the capture finished (a cancelled region selection produces no
+  file and no toast).
+
 ## [0.1.2] - 2026-08-08
 
 ### Added

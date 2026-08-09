@@ -32,6 +32,7 @@ quickshell/.qmlls.ini
 # згенеровані персональні налаштування
 quickshell/Palette.js
 quickshell/data/control-state.json
+quickshell/data/last-shot.txt
 
 # дефолтні config.json/palette.json трекаються у git: свіжому клону
 # вони потрібні, щоб бар рендерився з сепараторами і робочою палітрою
