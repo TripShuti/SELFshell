@@ -13,9 +13,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   BatteryWidget on machines without a battery; Lua unit test for the binds
   (screenshot marker, media keys, clipboard, control center).
 
+## [0.2.0] - 2026-08-09
+
+### Added
+
+- Clipboard history via `cliphist` + `wl-paste --watch store` watchers
+  (text and images): `SUPER+SHIFT+V` opens a popup
+  (`qs ipc call clipboard toggle`);
+  click copies an entry back into the clipboard, a hover button deletes it.
+- Clipboard widget for the bar — a button that opens the clipboard history
+  popup (same as `SUPER+SHIFT+V`; the popup anchors to it when present).
+- The `Print` / `SUPER+Print` screenshot keybinds now write the result path
+  into the same marker file as the Control Center buttons, so the
+  «Screenshot saved» toast (with an **Open** action) also appears after a
+  keybind-taken screenshot.
 - Media keys with OSD: `XF86AudioRaiseVolume` / `XF86AudioLowerVolume` /
   `XF86AudioMute` (via `wpctl`) and `XF86MonBrightnessUp` /
-  `XF86MonBrightnessDown` (via `ddcutil`) now work and show a 1.5 s overlay
+  `XF86MonBrightnessDown` (via `ddcutil`) now work and show an overlay
   (icon + value + progress bar, top-center under the bar) via the
   `qs ipc call osd` endpoint.
 - Screenshot buttons in the Control Center (full screen and region) — same
@@ -26,23 +40,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   not running.
 - Battery widget raises a notification when the battery drops to ≤15% while
   discharging (once per charge cycle; suppressed in DND).
-- Clipboard history via `cliphist` + `wl-paste --watch store` watchers
-  (text and images): `SUPER+SHIFT+V` opens a popup
-  (`qs ipc call clipboard toggle`);
-  click copies an entry back into the clipboard, a hover button deletes it.
-- Clipboard widget for the bar — a button that opens the clipboard history
-  popup (same as `SUPER+SHIFT+V`; the popup anchors to it when present).
 
 ### Fixed
 
-- Screenshot buttons in the Control Center no longer freeze or produce empty
-  files: the capture commands are now dispatched through
-  `hyprctl dispatch hl.dsp.exec_cmd(...)` (the same path as the `Print` /
-  `SUPER+Print` keybinds) instead of spawning `slurp` as a QML `Process`
-  child, which raced with the still-focusing Control Center popup. The
-  result path is delivered via a marker file and the toast appears only
-  after the capture finished (a cancelled region selection produces no
-  file and no toast).
+- Control Center screenshot buttons no longer freeze or produce empty files:
+  captures are dispatched through `hyprctl dispatch hl.dsp.exec_cmd(...)`
+  (same path as the keybinds) instead of a QML `Process` child racing with
+  the still-focusing popup; a cancelled region selection leaves no file and
+  shows no toast. A double-click can no longer kill the interactive `slurp`.
+- `qs-bt-agent` logs a clear reason when it cannot register as the default
+  BlueZ agent instead of a bare traceback restart loop.
+- `doctor` checks the polkit agent via `pgrep -f` (the process name exceeds
+  the 15-char `comm` limit, so a name match alone missed it).
+- OSD restyled to match the other popups (subtle `bg2` border, radius 10,
+  gradient background) and made compact — icon, progress bar and value on
+  one line; the window is exactly as tall as its content, so the border is
+  never clipped.
+- Muted-volume OSD icon: the font in use (JetBrainsMonoNL Nerd Font) has no
+  `\uF6A9` glyph, which rendered as a fallback «glass» glyph — muted is now
+  `\uF026` tinted red.
+- Battery widget no longer reserves a fixed 64px width: it sizes itself from
+  its content like the other text widgets.
+- Canonical `TripShuti/SELFshell` repository URL everywhere + regression
+  test.
 
 ## [0.1.2] - 2026-08-08
 
