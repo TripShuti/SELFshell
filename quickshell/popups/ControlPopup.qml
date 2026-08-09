@@ -97,8 +97,11 @@ AnimatedPopup {
   // Повторює команди з hypr/modules/binds.lua; результат — тост у Bar.qml
   // через сигнал screenshotTaken. Останній рядок stdout — шлях до файлу.
   property string _lastShotPath: "~/Screenshots"
-  // Мітки часу останніх кліків по кожній кнопці скріншота (double-click guard)
-  property var _lastShotClick: ({})
+  // Час останнього кліку по кожній кнопці скріншота (double-click guard).
+  // Числові проперти замість var-об'єкта — щоб виключити будь-які
+  // дива з мутацією об'єкта в property var.
+  property int _lastShotTimeFull: 0
+  property int _lastShotTimeRegion: 0
   // Вбиття процесу (running=false під час роботи) дає exit code 15 (SIGTERM);
   // прапорець дозволяє не малювати хибний warn у такому випадку.
   property bool _shotKilled: false
@@ -108,13 +111,21 @@ AnimatedPopup {
   // (exit 15), і вибір області «не з'являється».
   function shotDebouncedClick(kind) {
     var now = (new Date()).getTime()
-    var prev = root._lastShotClick[kind] ?? 0
-    if (now - prev < 350) return true
-    root._lastShotClick[kind] = now
+    var prev = kind === "full" ? root._lastShotTimeFull : root._lastShotTimeRegion
+    if (now - prev < 350) { console.log("[shot] debounce: block second click (" + kind + ")"); return true }
+    if (kind === "full") root._lastShotTimeFull = now
+    else root._lastShotTimeRegion = now
     return false
   }
 
   function takeScreenshot(kind) {
+    // Якщо процес уже працює (slurp чекає вибору) — не вбиваємо новим
+    // запуском, а ігноруємо запит. Це захист від будь-яких подвійних
+    // подій незалежно від debounce.
+    if (shotProc.running) {
+      console.log("[shot] already running — ignore request (" + kind + ")")
+      return
+    }
     console.log("[shot] takeScreenshot(" + kind + ")")
     var geom = kind === "region" ? ' -g "$(slurp)" ' : " "
     var cmd = ['mkdir -p "$HOME/Screenshots"; f="$HOME/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png"; ' +

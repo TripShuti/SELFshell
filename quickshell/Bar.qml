@@ -293,6 +293,7 @@ PanelWindow {
   Connections {
     target: controlPopup
     function onScreenshotTaken(path) {
+      console.log("[shot] toast for: " + path)
       notifToast.showNotif({
         appName: "Screenshot",
         summary: "Saved to " + path,
