@@ -97,6 +97,22 @@ AnimatedPopup {
   // Повторює команди з hypr/modules/binds.lua; результат — тост у Bar.qml
   // через сигнал screenshotTaken. Останній рядок stdout — шлях до файлу.
   property string _lastShotPath: "~/Screenshots"
+  // Мітки часу останніх кліків по кожній кнопці скріншота (double-click guard)
+  property var _lastShotClick: ({})
+  // Вбиття процесу (running=false під час роботи) дає exit code 15 (SIGTERM);
+  // прапорець дозволяє не малювати хибний warn у такому випадку.
+  property bool _shotKilled: false
+
+  // Подвійний клік МОЖЕ генерує два onClicked (як у LauncherPopup) —
+  // без guard перший click стартує, але його тут же вбиває restart
+  // (exit 15), і вибір області «не з'являється».
+  function shotDebouncedClick(kind) {
+    var now = (new Date()).getTime()
+    var prev = root._lastShotClick[kind] ?? 0
+    if (now - prev < 350) return true
+    root._lastShotClick[kind] = now
+    return false
+  }
 
   function takeScreenshot(kind) {
     console.log("[shot] takeScreenshot(" + kind + ")")
@@ -104,6 +120,7 @@ AnimatedPopup {
     var cmd = ['mkdir -p "$HOME/Screenshots"; f="$HOME/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png"; ' +
       'grim' + geom + '- | tee "$f" | wl-copy; echo "$f"']
     console.log("[shot] sh -c: " + cmd[0].substring(0, 60) + "...")
+    root._shotKilled = shotProc.running
     shotProc.running = false
     shotProc.command = ["sh", "-c", cmd[0]]
     shotProc.running = true
@@ -121,8 +138,12 @@ AnimatedPopup {
     onExited: exitCode => {
       console.log("[shot] exited with code " + exitCode)
       running = false
-      if (exitCode === 0) root.screenshotTaken(root._lastShotPath)
-      else console.warn("[shot] grim failed (code " + exitCode + ") — check grim/slurp/wl-copy")
+      var killed = root._shotKilled
+      root._shotKilled = false
+      if (exitCode === 0)
+        root.screenshotTaken(root._lastShotPath)
+      else if (!killed)
+        console.warn("[shot] grim failed (code " + exitCode + ") — check grim/slurp/wl-copy")
     }
   }
 
@@ -473,7 +494,10 @@ AnimatedPopup {
           id: fullArea
           anchors.fill: parent
           hoverEnabled: true
-          onClicked: { console.log("[shot] full button clicked"); root.takeScreenshot("full") }
+          onClicked: {
+            if (root.shotDebouncedClick("full")) return
+            root.takeScreenshot("full")
+          }
         }
       }
 
@@ -497,7 +521,10 @@ AnimatedPopup {
           id: regionArea
           anchors.fill: parent
           hoverEnabled: true
-          onClicked: { console.log("[shot] region button clicked"); root.takeScreenshot("region") }
+          onClicked: {
+            if (root.shotDebouncedClick("region")) return
+            root.takeScreenshot("region")
+          }
         }
       }
     }
