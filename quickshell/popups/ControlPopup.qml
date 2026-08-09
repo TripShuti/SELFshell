@@ -99,10 +99,13 @@ AnimatedPopup {
   property string _lastShotPath: "~/Screenshots"
 
   function takeScreenshot(kind) {
+    console.log("[shot] takeScreenshot(" + kind + ")")
     var geom = kind === "region" ? ' -g "$(slurp)" ' : " "
-    shotProc.command = ["sh", "-c",
-      'mkdir -p "$HOME/Screenshots"; f="$HOME/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png"; ' +
+    var cmd = ['mkdir -p "$HOME/Screenshots"; f="$HOME/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png"; ' +
       'grim' + geom + '- | tee "$f" | wl-copy; echo "$f"']
+    console.log("[shot] sh -c: " + cmd[0].substring(0, 60) + "...")
+    shotProc.running = false
+    shotProc.command = ["sh", "-c", cmd[0]]
     shotProc.running = true
   }
 
@@ -116,8 +119,10 @@ AnimatedPopup {
       }
     }
     onExited: exitCode => {
+      console.log("[shot] exited with code " + exitCode)
       running = false
       if (exitCode === 0) root.screenshotTaken(root._lastShotPath)
+      else console.warn("[shot] grim failed (code " + exitCode + ") — check grim/slurp/wl-copy")
     }
   }
 
@@ -468,7 +473,7 @@ AnimatedPopup {
           id: fullArea
           anchors.fill: parent
           hoverEnabled: true
-          onClicked: root.takeScreenshot("full")
+          onClicked: { console.log("[shot] full button clicked"); root.takeScreenshot("full") }
         }
       }
 
@@ -492,7 +497,7 @@ AnimatedPopup {
           id: regionArea
           anchors.fill: parent
           hoverEnabled: true
-          onClicked: root.takeScreenshot("region")
+          onClicked: { console.log("[shot] region button clicked"); root.takeScreenshot("region") }
         }
       }
     }
