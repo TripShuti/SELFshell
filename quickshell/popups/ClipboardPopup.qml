@@ -207,9 +207,21 @@ AnimatedPopup {
             elide: Text.ElideRight
           }
 
-          // Кнопка видалення — з'являється на hover рядка
+          // Клік по рядку — копіювання в буфер обміну.
+          // Оголошений ДО кнопки видалення: пізніші сиблінги малюються
+          // поверх і перехоплювали б кліки по ✕ (додатковий захист — z: 1 у delBtn)
+          MouseArea {
+            id: rowArea
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+            hoverEnabled: true
+            onClicked: root.copyEntry(modelData.id)
+          }
+
+          // Кнопка видалення — з'являється на hover рядка, поверх rowArea
           Rectangle {
             id: delBtn
+            z: 1
             anchors { right: parent.right; rightMargin: 5; verticalCenter: parent.verticalCenter }
             width: 20
             height: 20
@@ -234,15 +246,6 @@ AnimatedPopup {
               hoverEnabled: true
               onClicked: root.deleteEntry(modelData.id)
             }
-          }
-
-          // Клік по рядку — копіювання в буфер обміну
-          MouseArea {
-            id: rowArea
-            anchors.fill: parent
-            cursorShape: Qt.PointingHandCursor
-            hoverEnabled: true
-            onClicked: root.copyEntry(modelData.id)
           }
         }
       }
