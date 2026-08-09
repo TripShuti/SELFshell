@@ -23,8 +23,10 @@ PopupWindow {
   property string mode: "volume"
 
   color: "transparent"
+  // Висота вікна = висота контейнера: якщо вікно нижче, нижня обводка/кут
+  // контейнера обрізаються краєм поверхні (попередній +12 різав рамку).
   implicitWidth: 240
-  implicitHeight: osdLayout.implicitHeight + 12
+  implicitHeight: container.implicitHeight
   grabFocus: false
   visible: false
 
