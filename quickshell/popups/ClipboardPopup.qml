@@ -25,6 +25,10 @@ AnimatedPopup {
 
   // Готова модель рядків: [{ id, text }] — id для cliphist decode/delete-index
   property var entries: []
+  // Накопичувач сирого виводу: SplitParser віддає дані шматками (по рядку чи
+  // кількома), тому парсимо ВЕСЬ накопичений буфер на кожен onRead — інакше
+  // модель перезаписувалась би лише останнім рядком і в списку був би 1 запис
+  property string rawList: ""
 
   Component.onCompleted: { anchor.window = window }
 
@@ -48,9 +52,12 @@ AnimatedPopup {
     root.close()
   }
 
-  // Видаляє запис з історії та оновлює список
+  // Видаляє запис з історії та оновлює список.
+  // cliphist delete приймає id через stdin (по рядку). Пайп через sh:
+  // він закриває stdin після printf → cliphist отримує EOF; нативний
+  // stdinEnabled/QML не закриває пайп, і cliphist висів би на читанні
   function deleteEntry(id) {
-    deleteProc.command = ["cliphist", "delete-index", String(id)]
+    deleteProc.command = ["sh", "-c", "printf '%s\\n' " + id + " | cliphist delete"]
     deleteProc.running = true
     Qt.callLater(root.refresh)
   }
@@ -61,10 +68,14 @@ AnimatedPopup {
     id: listProc
     command: ["cliphist", "list"]
 
+    // Новий запуск — чистий буфер
+    onStarted: root.rawList = ""
+
     stdout: SplitParser {
       splitMarker: "\n"
       onRead: data => {
-        var text = (data ?? "")
+        root.rawList += (data ?? "") + "\n"
+        var text = root.rawList
         if (text === "") return
         var out = []
         var current = null
@@ -83,6 +94,7 @@ AnimatedPopup {
           out[j].text = out[j].text.replace(/\s+/g, " ").trim()
           if (out[j].text === "") out.splice(j, 1)
         }
+        console.log("Clipboard: parsed " + out.length + " entries")
         // Модель оновлюється лише при реальній зміні списку — інакше
         // автооновлення таймером скидало б hover/прокрутку на кожен тік
         if (JSON.stringify(out) !== JSON.stringify(root.entries)) {

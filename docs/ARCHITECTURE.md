@@ -274,8 +274,8 @@ is opened by the `SUPER+SHIFT+V` keybind via `qs ipc call clipboard toggle`
 The history itself is gathered by `cliphist`, fed by two
 `wl-paste --watch cliphist store` watchers started in `exec.lua` (one for
 text, one for images). Clicking an entry pipes it back into the clipboard
-(`cliphist decode <id> | wl-copy`); a hover button deletes the entry
-(`cliphist delete-index <id>`).
+(`cliphist decode <id> | wl-copy`); a hover button deletes the entry by
+feeding its id to `cliphist delete` through stdin.
 
 ---
 
