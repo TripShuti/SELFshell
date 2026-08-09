@@ -44,6 +44,38 @@ AnimatedPopup {
     listProc.running = true
   }
 
+  // Парсить накопичений вивід cliphist list і оновлює модель, якщо список
+  // реально змінився. Формат рядка: "{id}\t{перший рядок вмісту}", наступні
+  // рядки багаторядкового вмісту йдуть без префікса id
+  function applyRawList() {
+    var text = root.rawList
+    if (text === "") return
+    var out = []
+    var current = null
+    var lines = text.split("\n")
+    for (var i = 0; i < lines.length; ++i) {
+      var line = lines[i]
+      var tab = line.indexOf("\t")
+      if (tab >= 0) {
+        current = { id: line.slice(0, tab), text: line.slice(tab + 1) }
+        out.push(current)
+      } else if (current !== null) {
+        current.text += "\n" + line
+      }
+    }
+    for (var j = out.length - 1; j >= 0; --j) {
+      out[j].text = out[j].text.replace(/\s+/g, " ").trim()
+      if (out[j].text === "") out.splice(j, 1)
+    }
+    console.log("Clipboard: parsed " + out.length + " entries")
+    if (JSON.stringify(out) !== JSON.stringify(root.entries)) {
+      // Зберігаємо прокрутку: нова модель наслідує позицію
+      var y = listView.contentY
+      root.entries = out
+      listView.contentY = y
+    }
+  }
+
   // Копіює запис у буфер обміну та закриває попап.
   // Пайп через sh: Process не вміє конвеєрів сам
   function copyEntry(id) {
@@ -62,45 +94,22 @@ AnimatedPopup {
     Qt.callLater(root.refresh)
   }
 
-  // Список записів. Формат cliphist list: рядок "{id}\t{перший рядок вмісту}",
-  // наступні рядки багаторядкового вмісту йдуть без префікса id
+  // Список записів. Парсинг — ЛИШЕ після завершення процесу: SplitParser
+  // віддає дані шматками, і оновлення моделі на кожен шматок змушувало б
+  // список "блимати" (скидання hover/фокусу) при автооновленні кожні 2 с
   Process {
     id: listProc
     command: ["cliphist", "list"]
 
-    // Новий запуск — чистий буфер
+    // Новий запуск — чистий буфер; парсинг по завершенні (onExited — сигнал)
     onStarted: root.rawList = ""
+    onExited: (exitCode, exitStatus) => {
+      if (exitCode === 0) root.applyRawList()
+    }
 
     stdout: SplitParser {
       splitMarker: "\n"
-      onRead: data => {
-        root.rawList += (data ?? "") + "\n"
-        var text = root.rawList
-        if (text === "") return
-        var out = []
-        var current = null
-        var lines = text.split("\n")
-        for (var i = 0; i < lines.length; ++i) {
-          var line = lines[i]
-          var tab = line.indexOf("\t")
-          if (tab >= 0) {
-            current = { id: line.slice(0, tab), text: line.slice(tab + 1) }
-            out.push(current)
-          } else if (current !== null) {
-            current.text += "\n" + line
-          }
-        }
-        for (var j = out.length - 1; j >= 0; --j) {
-          out[j].text = out[j].text.replace(/\s+/g, " ").trim()
-          if (out[j].text === "") out.splice(j, 1)
-        }
-        console.log("Clipboard: parsed " + out.length + " entries")
-        // Модель оновлюється лише при реальній зміні списку — інакше
-        // автооновлення таймером скидало б hover/прокрутку на кожен тік
-        if (JSON.stringify(out) !== JSON.stringify(root.entries)) {
-          root.entries = out
-        }
-      }
+      onRead: data => { root.rawList += (data ?? "") + "\n" }
     }
   }
 
