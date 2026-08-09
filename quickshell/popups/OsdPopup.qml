@@ -23,8 +23,8 @@ PopupWindow {
   property string mode: "volume"
 
   color: "transparent"
-  implicitWidth: 280
-  implicitHeight: osdLayout.implicitHeight + 16
+  implicitWidth: 240
+  implicitHeight: osdLayout.implicitHeight + 12
   grabFocus: false
   visible: false
 
@@ -89,6 +89,7 @@ PopupWindow {
     id: enterAnim
     NumberAnimation { target: container; property: "opacity"; from: 0; to: 1; duration: 180; easing.type: Easing.OutCubic }
     NumberAnimation { target: container; property: "scale"; from: 0.88; to: 1.0; duration: 260; easing.type: Easing.OutCubic }
+    NumberAnimation { target: container; property: "x"; from: 24; to: 0; duration: 220; easing.type: Easing.OutCubic }
   }
 
   SequentialAnimation {
@@ -96,6 +97,7 @@ PopupWindow {
     ParallelAnimation {
       NumberAnimation { target: container; property: "opacity"; to: 0; duration: 140; easing.type: Easing.OutCubic }
       NumberAnimation { target: container; property: "scale"; to: 0.92; duration: 140; easing.type: Easing.InCubic }
+      NumberAnimation { target: container; property: "x"; to: 24; duration: 140; easing.type: Easing.InCubic }
     }
     ScriptAction { script: root.visible = false }
   }
@@ -108,11 +110,13 @@ PopupWindow {
     onWheel: root.hide()
   }
 
-  // Гліфи іконок залежно від режиму та стану
+  // Гліфи іконок залежно від режиму та стану.
+  // Увага: у панельному шрифті (JetBrainsMonoNL Nerd Font) НЕМАЄ гліфа
+  // \uF6A9 (volume-xmark) — замість нього рендериться чужий гліф
+  // («склянка»), тому mute позначаємо \uF026 + червоний колір.
   readonly property string icon: {
     if (root.mode === "brightness") return "\uF185"
-    if (root.muted) return "\uF6A9"
-    if (root.volume <= 0.01) return "\uF026"
+    if (root.muted || root.volume <= 0.01) return "\uF026"
     if (root.volume < 0.5) return "\uF027"
     return "\uF028"
   }
@@ -155,9 +159,10 @@ PopupWindow {
     ColumnLayout {
       id: osdLayout
       anchors.fill: parent
-      anchors.margins: 10
+      anchors.margins: 8
       spacing: 8
 
+      // Все в один рядок: іконка — смужка — значення
       RowLayout {
         Layout.fillWidth: true
         spacing: 10
@@ -166,35 +171,33 @@ PopupWindow {
           text: root.icon
           color: root.iconColor
           font.family: root.palette.font
-          font.pixelSize: 26
+          font.pixelSize: 16
           Layout.alignment: Qt.AlignVCenter
+        }
+
+        // Смужка значення
+        Rectangle {
+          Layout.fillWidth: true
+          implicitHeight: 6
+          radius: 3
+          color: root.palette.bgAlpha
+
+          Rectangle {
+            width: parent.width * root.fill
+            height: parent.height
+            radius: parent.radius
+            color: root.muted ? root.palette.red : root.iconColor
+            Behavior on width { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+          }
         }
 
         Text {
           text: root.valueText
           color: root.palette.fg
           font.family: root.palette.font
-          font.pixelSize: 16
+          font.pixelSize: 13
           font.bold: true
           Layout.alignment: Qt.AlignVCenter
-          Layout.fillWidth: true
-          horizontalAlignment: Text.AlignRight
-        }
-      }
-
-      // Смужка значення
-      Rectangle {
-        Layout.fillWidth: true
-        implicitHeight: 5
-        radius: 2.5
-        color: root.palette.bgAlpha
-
-        Rectangle {
-          width: parent.width * root.fill
-          height: parent.height
-          radius: parent.radius
-          color: root.muted ? root.palette.red : root.iconColor
-          Behavior on width { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
         }
       }
     }

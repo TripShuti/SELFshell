@@ -20,7 +20,7 @@ Item {
   readonly property bool available: device !== ""
   visible: available
 
-  implicitWidth: 64
+  implicitWidth: rowLayout.implicitWidth
   implicitHeight: parent?.height ?? 36
 
   readonly property bool charging: state === "charging" || state === "pending-charge"
@@ -120,6 +120,7 @@ Item {
   }
 
   RowLayout {
+    id: rowLayout
     anchors.centerIn: parent
     spacing: 5
 
