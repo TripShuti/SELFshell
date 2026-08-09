@@ -73,6 +73,7 @@ PACMAN_DEPS=(
   grim
   slurp
   wl-clipboard
+  cliphist
   socat
   fastfetch
   yt-dlp

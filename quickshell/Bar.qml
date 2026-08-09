@@ -251,6 +251,14 @@ PanelWindow {
     notificationsModel: notifServer.trackedNotifications
   }
 
+  // Історія буфера обміну (SUPER+SHIFT+V) — прив'язана до центру керування
+  ClipboardPopup {
+    id: clipboardPopup
+    window: root
+    anchorItem: root.controlWidget
+    visible: false
+  }
+
   WallpaperPopup {
     id: wallpaperPopup
     window: root
@@ -354,6 +362,14 @@ PanelWindow {
     target: "control"
     function toggle(): void {
       controlPopup.toggle()
+    }
+  }
+
+  // IpcHandler для глобального виклику історії буфера обміну (SUPER+SHIFT+V)
+  IpcHandler {
+    target: "clipboard"
+    function toggle(): void {
+      clipboardPopup.toggle()
     }
   }
 

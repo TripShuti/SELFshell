@@ -10,9 +10,9 @@
 |------|--------------|
 | `env.lua` | Reads `env.json`, provides modules: mainMod, terminal, browser, cursor, kb layout, suspendKey, autostarts, devices, windowRules, appLayout |
 | `json.lua` | Minimal JSON parser (no dependencies) |
-| `exec.lua` | Autostart on Hyprland start (quickshell always + `autostart[]` from `env.json`) |
+| `exec.lua` | Autostart on Hyprland start (quickshell always + polkit agent + cliphist clipboard watchers + `autostart[]` from `env.json`) |
 | `general.lua` | Window settings, gaps, decorations, input (`kbLayout`/`kbOptions`); `devices[]` from `env.json` |
-| `binds.lua` | Keybindings |
+| `binds.lua` | Keybindings (incl. `SUPER+SHIFT+V` — clipboard history) |
 | `animation.lua` | Animation curves and styles |
 | `rules.lua` | Window rules (universal + data-driven from `env.json`) |
 
@@ -131,6 +131,7 @@
 | `SettingsPopup.qml` | Bar settings (drag-and-drop) | AppConfig |
 | `KeyboardLayoutPopup.qml` | Keyboard layout list | — |
 | `WorkspacesPopup.qml` | Window list per workspace | Hyprland |
+| `ClipboardPopup.qml` | Clipboard history (`SUPER+SHIFT+V`) | cliphist |
 | `WallpaperPopup.qml` | Wallpaper picker | `scripts/update-palette.sh` |
 | `TrayMenuPopup.qml` | System tray menu (QML rendering via QsMenuOpener) | TrayWidget |
 | `NotifToast.qml` | Popup notification (toast) | NotificationServer |

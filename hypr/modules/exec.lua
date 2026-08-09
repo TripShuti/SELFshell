@@ -22,6 +22,11 @@ hl.on("hyprland.start", function()
     -- Трохи пізніше за шелл, щоб сесійна D-Bus шина була готова.
     hl.exec_cmd("sleep 3 && lxqt-policykit-agent")
 
+    -- Історія буфера обміну (cliphist): wl-paste --watch перехоплює зміни
+    -- буфера (текст та зображення) і зберігає їх для ClipboardPopup
+    hl.exec_cmd("wl-paste --type text --watch cliphist store")
+    hl.exec_cmd("wl-paste --type image/png --watch cliphist store")
+
     for _, app in ipairs(s.autostart) do
         local cmd = app.command
         if app.workspace then

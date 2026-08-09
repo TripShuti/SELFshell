@@ -31,6 +31,8 @@ hl.bind(s.mainMod .. " + E", hl.dsp.exec_cmd(s.fileManager))
 hl.bind(s.mainMod .. " + R", hl.dsp.exec_cmd("qs ipc call launcher toggle"))
 hl.bind(s.mainMod .. " + C", hl.dsp.window.close())
 hl.bind(s.mainMod .. " + V", hl.dsp.window.float({ action = "toggle" }))
+-- SUPER+SHIFT+V — історія буфера обміну (cliphist)
+hl.bind(s.mainMod .. " + SHIFT + V", hl.dsp.exec_cmd("qs ipc call clipboard toggle"))
 
 hl.bind(s.mainMod .. " + left",  hl.dsp.focus({ direction = "left" }))
 hl.bind(s.mainMod .. " + right", hl.dsp.focus({ direction = "right" }))

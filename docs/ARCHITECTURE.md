@@ -57,9 +57,9 @@ files.
 |--------|---------|
 | `env.lua` | Reads `env.json`, provides modules: mainMod, terminal, browser, cursor, kb layout, suspendKey, autostarts, devices, windowRules, appLayout |
 | `json.lua` | Minimal JSON parser (no dependencies). Any error → `nil` |
-| `exec.lua` | `XCURSOR_*` env + autostart: `quickshell` (always) and the list from `env.json` |
+| `exec.lua` | `XCURSOR_*` env + autostart: `quickshell` (always), polkit agent, `wl-paste --watch cliphist store` watchers, and the list from `env.json` |
 | `general.lua` | Window settings: gaps, border, colors, dwindle, decorations, input (`kbLayout`/`kbOptions` from `env.json`); `devices[]` from `env.json` |
-| `binds.lua` | Keybindings: screenshots, launcher, workspaces, focus, window movement |
+| `binds.lua` | Keybindings: screenshots, clipboard history (`SUPER+SHIFT+V`), launcher, workspaces, focus, window movement |
 | `animation.lua` | Animation curves (`wind`, `winIn`, `winOut`, `liner`) and styles |
 | `rules.lua` | Universal window rules + data-driven per-app rules from `env.json` (`windowRules`, optional `appLayout`) |
 
@@ -267,6 +267,15 @@ container, `anchors.fill: container`.
 Each popup is attached to a widget via `anchorItem` — e.g.
 `calendarPopup.anchorItem = root.clockWidget`. The popup appears below/above
 the widget. The link is wired via `Connections` on click.
+
+Clipboard history (`ClipboardPopup`) works differently: it has no widget, it
+is opened by the `SUPER+SHIFT+V` keybind via `qs ipc call clipboard toggle`
+(`IpcHandler` in `Bar.qml`) and anchored below the control-center widget.
+The history itself is gathered by `cliphist`, fed by two
+`wl-paste --watch cliphist store` watchers started in `exec.lua` (one for
+text, one for images). Clicking an entry pipes it back into the clipboard
+(`cliphist decode <id> | wl-copy`); a hover button deletes the entry
+(`cliphist delete-index <id>`).
 
 ---
 

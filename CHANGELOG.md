@@ -21,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   not running.
 - Battery widget raises a notification when the battery drops to ≤15% while
   discharging (once per charge cycle; suppressed in DND).
+- Clipboard history via `cliphist` + `wl-paste --watch store` watchers
+  (text and images): `SUPER+SHIFT+V` opens a popup
+  (`qs ipc call clipboard toggle`);
+  click copies an entry back into the clipboard, a hover button deletes it.
 
 ### Fixed
 
