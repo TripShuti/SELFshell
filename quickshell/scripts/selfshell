@@ -227,7 +227,10 @@ doctor() {
     fi
     echo
     echo "== Polkit agent =="
-    if pgrep -x lxqt-policykit-agent >/dev/null; then
+    # -x не підходить: ім'я процесу довше за 15 символів (comm-truncation),
+    # тож шукаємо по повному командному рядку; [l] — щоб pgrep не зловив
+    # сам себе в рядку запуску.
+    if pgrep -f "[l]xqt-policykit-agent" >/dev/null; then
       ok "lxqt-policykit-agent is running"
     else
       warn "lxqt-policykit-agent is NOT running — GUI privilege prompts (Pamac etc.) will fail silently"
