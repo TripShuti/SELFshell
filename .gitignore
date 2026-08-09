@@ -21,6 +21,7 @@ quickshell/scripts/__pycache__/
 # python-кеш тестів
 tests/__pycache__/
 tests/python/__pycache__/
+quickshell/services/__pycache__/
 
 # локальні skills агентів
 quickshell/.opencode/skills/
