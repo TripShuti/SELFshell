@@ -15,10 +15,33 @@ Rectangle {
   required property QtObject context
   required property QtObject palette
 
-  readonly property string wallpaperSource: Qt.resolvedUrl("../wp/current.jpg")
-  // current.jpg генерується локально (update-palette.sh) і не в git —
-  // на свіжому клоні fallback на трековану заглушку wp1.jpg
+  // current.<ext> генерується локально (update-palette.sh) і не в git —
+  // шлях шукаємо через update-palette.py current, на свіжому клоні
+  // fallback на трековану заглушку wp1.jpg
+  readonly property string paletteScriptPath: Qt.resolvedUrl("../scripts/update-palette.py").toString().replace("file://", "")
   readonly property string wallpaperFallback: Qt.resolvedUrl("../wp/wp1.jpg")
+  property string wallpaperSource: wallpaperFallback
+
+  // Отримує шлях шпалери для lock-скріна (current-lock.jpg або фолбек).
+  // Читаємо через onDataChanged колектора (як у WallpaperPopup): у
+  // onExited текст ще може бути неповним — тоді зостається wp1.jpg.
+  Process {
+    id: curProc
+    stdout: curCollector
+    command: ["python3", root.paletteScriptPath, "current"]
+  }
+
+  StdioCollector {
+    id: curCollector
+    waitForEnd: true
+    onDataChanged: {
+      var p = curCollector.text.trim()
+      if (p)
+        root.wallpaperSource = "file://" + p
+    }
+  }
+
+  Component.onCompleted: curProc.running = true
 
   color: "#000000"
 

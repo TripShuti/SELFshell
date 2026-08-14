@@ -6,10 +6,27 @@
 set -euo pipefail
 WALLPAPER="$1"
 DIR="$(cd "$(dirname "$0")" && pwd)"
-CURRENT="$HOME/.config/quickshell/wp/current.jpg"
+EXT="${WALLPAPER##*.}"
+EXT="${EXT,,}"
+[ "$EXT" = "jpeg" ] && EXT="jpg"
+CURRENT="$HOME/.config/quickshell/wp/current.$EXT"
+LOCK_FRAME="$HOME/.config/quickshell/wp/current-lock.jpg"
+
+# awww кешує декодовані кадри ЗА ШЛЯХОМ файлу: показуємо оригінал,
+# бо current.* має щоразу той самий шлях і awww віддав би застарілий кеш
+awww img "$WALLPAPER"
 
 cp "$WALLPAPER" "$CURRENT"
-awww img "$CURRENT"
+
+# Статичний кадр для екрану блокування (FastBlur не рендерить анімовані
+# джерела — чорний екран); [0] бере перший кадр і gif, і статики
+if command -v magick >/dev/null 2>&1; then
+  magick "$CURRENT[0]" -quality 85 "$LOCK_FRAME" || true
+fi
+
+# Прибираємо застарілі current.* інших форматів
+find "$HOME/.config/quickshell/wp" -maxdepth 1 -name 'current.*' \
+  ! -name "current.$EXT" ! -name "current-lock.jpg" -delete 2>/dev/null || true
 
 /usr/bin/python3 "$DIR/update-palette.py" "$CURRENT"
 

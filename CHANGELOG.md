@@ -8,6 +8,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- GIF (аніміровані) шпалери в пікері та при застосуванні: `awww img`
+  отримує оригінальний файл замість `current.*` копії (awww кешує кадри
+  за шляхом — копія з фіксованим ім'ям віддавала застарілий кеш);
+  `update-palette.py current` повертає шлях для lock-скріну.
+- Статичний кадр `current-lock.jpg` (перший кадр шпалери через magick)
+  для екрану блокування — FastBlur не рендерить анімовані джерела
+  (чорний екран), тому lock-скрін блюрить статику замість gif.
+
+### Fixed
+
+- Пікер шпалер не показував `.gif` файли (фільтр розширень у
+  `update-palette.py list`); і, навпаки, показував службові `current.*` —
+  тепер відсікається будь-який файл з префіксом `current` (зокрема
+  `current-lock.jpg`).
+- Зміна gif-шпалери показувала кадри старої (awww кеш за шляхом
+  `current.*`), нова анімація не рухалась.
+- Чорний екран блокування: шлях шпалери зчитувався в `Process.onExited`,
+  де stdout ще неповний — лок залишався на fallback-і; тепер через
+  `StdioCollector.onDataChanged` (як у WallpaperPopup).
+- Лок-скрін зоставався чорним, якщо fallback-заглушка `wp1.jpg` видалена:
+  `update-palette.py current` має ланцюг фолбеків (статичний кадр →
+  `current.*` → будь-яка статична шпалера → будь-яка, включно з gif).
+
 - Tests: fake `upower` battery simulator (`tests/fake_upower.sh`, env-driven
   state/percentage, drop-in PATH replacement) for visual testing of
   BatteryWidget on machines without a battery; Lua unit test for the binds

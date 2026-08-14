@@ -11,17 +11,53 @@ QS_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WP_DIR = os.path.expanduser("~/.config/quickshell/wp")
 
 
-# Список шпалер з директорії wp/ (найновіші першими), без current.jpg
+# Список шпалер з директорії wp/ (найновіші першими), без current.*
 def list_wallpapers():
     if not os.path.isdir(WP_DIR):
         return
-    exts = (".jpg", ".jpeg", ".png")
+    exts = (".jpg", ".jpeg", ".png", ".gif")
     files = [
         os.path.join(WP_DIR, f) for f in os.listdir(WP_DIR)
-        if f.lower().endswith(exts) and f != "current.jpg"
+        if f.lower().endswith(exts) and not f.lower().startswith("current")
     ]
     files.sort(key=lambda p: os.path.getmtime(p), reverse=True)
     sys.stdout.write("\n".join(files))
+
+
+# Шлях поточної шпалери для lock-скріна. Ланцюг фолбеків, щоб екран
+# блокування ніколи не був порожнім:
+#  1. current-lock.jpg — статичний кадр (FastBlur не рендерить анімацію);
+#  2. найновіший current.* — якщо magick недоступний;
+#  3. будь-яка статична шпалера, потім будь-яка (включно з gif).
+def current_wallpaper():
+    if not os.path.isdir(WP_DIR):
+        return
+    exts = (".jpg", ".jpeg", ".png", ".gif")
+    static = (".jpg", ".jpeg", ".png")
+
+    def pick(paths):
+        paths.sort(key=lambda p: os.path.getmtime(p), reverse=True)
+        if paths:
+            sys.stdout.write(paths[0])
+            return True
+        return False
+
+    lock = os.path.join(WP_DIR, "current-lock.jpg")
+    if os.path.isfile(lock):
+        sys.stdout.write(lock)
+        return
+    current = [
+        os.path.join(WP_DIR, f) for f in os.listdir(WP_DIR)
+        if f.lower().startswith("current.")
+    ]
+    if pick(current):
+        return
+    wallpapers = [
+        os.path.join(WP_DIR, f) for f in os.listdir(WP_DIR)
+        if f.lower().endswith(exts) and not f.lower().startswith("current.")
+    ]
+    static_only = [p for p in wallpapers if p.lower().endswith(static)]
+    pick(static_only) or pick(wallpapers)
 
 
 # Атомарний запис: пише у tmp у тій самій директорії, потім os.replace —
@@ -116,8 +152,12 @@ def main():
         list_wallpapers()
         return 0
 
+    if len(sys.argv) >= 2 and sys.argv[1] == "current":
+        current_wallpaper()
+        return 0
+
     if len(sys.argv) < 2:
-        print(f"usage: {os.path.basename(sys.argv[0])} <wallpaper> | list", file=sys.stderr)
+        print(f"usage: {os.path.basename(sys.argv[0])} <wallpaper> | list | current", file=sys.stderr)
         return 1
 
     wallpaper = sys.argv[1]

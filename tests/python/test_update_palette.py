@@ -144,14 +144,19 @@ class ListWallpapersTest(unittest.TestCase):
         wp = tempfile.mkdtemp(prefix="wp-")
         self.addCleanup(shutil.rmtree, wp, True)
         paths = []
-        for name, mtime in [("old.jpg", 1000.0), ("new.png", 3000.0)]:
+        for name, mtime in [("old.jpg", 1000.0), ("new.gif", 3000.0)]:
             p = os.path.join(wp, name)
             with open(p, "w") as f:
                 f.write("x")
             os.utime(p, (mtime, mtime))
             paths.append(p)
+        with open(os.path.join(wp, "current.png"), "w") as f:
+            f.write("x")
+        with open(os.path.join(wp, "current-lock.jpg"), "w") as f:
+            f.write("x")
         with open(os.path.join(wp, "current.jpg"), "w") as f:
             f.write("x")
+        os.utime(os.path.join(wp, "current.jpg"), (9000.0, 9000.0))
         with mock.patch.object(up, "WP_DIR", wp), mock.patch("sys.stdout", new_callable=io.StringIO) as out:
             up.list_wallpapers()
         self.assertEqual(out.getvalue(), paths[1] + "\n" + paths[0])
@@ -160,6 +165,60 @@ class ListWallpapersTest(unittest.TestCase):
         with mock.patch.object(up, "WP_DIR", "/nonexistent-wp-dir"), \
              mock.patch("sys.stdout", new_callable=io.StringIO) as out:
             up.list_wallpapers()
+        self.assertEqual(out.getvalue(), "")
+
+
+class CurrentWallpaperTest(unittest.TestCase):
+    def test_prefers_static_lock_frame(self):
+        wp = tempfile.mkdtemp(prefix="wp-")
+        self.addCleanup(shutil.rmtree, wp, True)
+        with open(os.path.join(wp, "current-lock.jpg"), "w") as f:
+            f.write("x")
+        p = os.path.join(wp, "current.gif")
+        with open(p, "w") as f:
+            f.write("y")
+        os.utime(p, (9999.0, 9999.0))
+        with mock.patch.object(up, "WP_DIR", wp), mock.patch("sys.stdout", new_callable=io.StringIO) as out:
+            up.current_wallpaper()
+        self.assertEqual(out.getvalue(), os.path.join(wp, "current-lock.jpg"))
+
+    def test_returns_newest_current_file_without_lock_frame(self):
+        wp = tempfile.mkdtemp(prefix="wp-")
+        self.addCleanup(shutil.rmtree, wp, True)
+        for name, mtime in [("current.png", 1000.0), ("current.gif", 3000.0)]:
+            p = os.path.join(wp, name)
+            with open(p, "w") as f:
+                f.write("x")
+            os.utime(p, (mtime, mtime))
+        with mock.patch.object(up, "WP_DIR", wp), mock.patch("sys.stdout", new_callable=io.StringIO) as out:
+            up.current_wallpaper()
+        self.assertEqual(out.getvalue(), os.path.join(wp, "current.gif"))
+
+    def test_falls_back_to_any_static_wallpaper(self):
+        wp = tempfile.mkdtemp(prefix="wp-")
+        self.addCleanup(shutil.rmtree, wp, True)
+        p = os.path.join(wp, "wall.png")
+        with open(p, "w") as f:
+            f.write("x")
+        with mock.patch.object(up, "WP_DIR", wp), mock.patch("sys.stdout", new_callable=io.StringIO) as out:
+            up.current_wallpaper()
+        self.assertEqual(out.getvalue(), p)
+
+    def test_accepts_gif_as_last_resort(self):
+        wp = tempfile.mkdtemp(prefix="wp-")
+        self.addCleanup(shutil.rmtree, wp, True)
+        p = os.path.join(wp, "anim.gif")
+        with open(p, "w") as f:
+            f.write("x")
+        with mock.patch.object(up, "WP_DIR", wp), mock.patch("sys.stdout", new_callable=io.StringIO) as out:
+            up.current_wallpaper()
+        self.assertEqual(out.getvalue(), p)
+
+    def test_empty_dir_prints_nothing(self):
+        wp = tempfile.mkdtemp(prefix="wp-")
+        self.addCleanup(shutil.rmtree, wp, True)
+        with mock.patch.object(up, "WP_DIR", wp), mock.patch("sys.stdout", new_callable=io.StringIO) as out:
+            up.current_wallpaper()
         self.assertEqual(out.getvalue(), "")
 
 
