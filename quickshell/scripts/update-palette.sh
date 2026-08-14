@@ -21,7 +21,7 @@ cp "$WALLPAPER" "$CURRENT"
 # Статичний кадр для екрану блокування (FastBlur не рендерить анімовані
 # джерела — чорний екран); [0] бере перший кадр і gif, і статики
 if command -v magick >/dev/null 2>&1; then
-  magick "$CURRENT[0]" -quality 85 "$LOCK_FRAME" || true
+  magick "${CURRENT}[0]" -quality 85 "$LOCK_FRAME" || true
 fi
 
 # Прибираємо застарілі current.* інших форматів
