@@ -131,16 +131,30 @@ AnimatedPopup {
     // самим SSID ("MyWifi", "MyWifi 1", ...). Беремо не перший-ліпший, а той,
     // яким реально користувались останнім (за connection.timestamp).
     //
-    // Один nmcli-прохід з трьома полями замість N+1 підпроцесів (раніше для
-    // кожного wireless-профілю запускався окремий "nmcli con show").
-    // Обмеження: імена профілів/SSID з ":" не підтримуються (той самий компроміс,
-    // що й у попередньому варіанті через awk -F:).
+    // Один bash-прохід замість N+1 запитів на кожен профіль:
+    // 1) nmcli -e no -t -f NAME,TYPE,TIMESTAMP con show — базові поля (setting-поля
+    //    на кшталт 802-11-wireless.ssid con show НЕ приймає: "invalid field");
+    //    -e no відмикає екранування, тож імена профілів із ':' теж розбираються
+    //    (awk збирає NAME з усіх полів крім останніх двох — TYPE і TIMESTAMP).
+    // 2) Для кожного wireless-профілю — nmcli -f 802-11-wireless.ssid con show <name>
+    //    (на конкретному профілі setting-поля валідні) і порівняння SSID.
+    // 3) Вивід "timestamp|name", відсортований за новизною — той самий формат,
+    //    який очікує QML-парсер нижче.
     if (network.name) {
       resolvingBySsid = true;
       resolveConnProcess.command = ["bash", "-c",
         "SSID=" + escapeShell(network.name) + "; " +
-        "nmcli -t -f NAME,802-11-wireless.ssid,connection.timestamp con show | " +
-        "awk -v s=\"$SSID\" -F: '$2 == s { ts=$3+0; print ts \"|\" $1 }' | sort -t'|' -k1,1nr"
+        "nmcli -e no -t -f NAME,TYPE,TIMESTAMP con show | " +
+        "awk -F: '{name=$1; for (i=2; i<=NF-2; i++) name=name\":\"$i; " +
+        "if ($(NF-1) == \"802-11-wireless\") print name}' | " +
+        "while IFS= read -r name; do " +
+        "ssid=$(nmcli -f 802-11-wireless.ssid con show \"$name\" 2>/dev/null | " +
+        "sed -n 's/^802-11-wireless\\.ssid:[[:space:]]*//p'); " +
+        "[ -z \"$ssid\" ] && continue; " +
+        "if [ \"$ssid\" = \"$SSID\" ]; then " +
+        "ts=$(nmcli -e no -t -f connection.timestamp con show \"$name\" 2>/dev/null | " +
+        "sed -n 's/^connection\\.timestamp://p'); " +
+        "echo \"$ts|$name\"; fi; done | sort -t'|' -k1,1nr"
       ];
       resolveConnProcess.running = true;
     }
@@ -331,7 +345,9 @@ AnimatedPopup {
     }
     statusMessage = "Changing password...";
     statusIsError = false;
-    passwordProcess.command = ["nmcli", "con", "mod", connectionName, "wifi-sec.psk", newPassword];
+    // psk-flags 0 — секрет зберігається на диск у профілі, інакше NM трактує
+    // його як agent-owned (флаг 1) і пароль губиться після рестарту
+    passwordProcess.command = ["nmcli", "con", "mod", connectionName, "wifi-sec.psk", newPassword, "wifi-sec.psk-flags", "0"];
     passwordProcess.running = true;
   }
 

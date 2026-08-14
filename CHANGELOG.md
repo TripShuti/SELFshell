@@ -30,6 +30,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Лок-скрін зоставався чорним, якщо fallback-заглушка `wp1.jpg` видалена:
   `update-palette.py current` має ланцюг фолбеків (статичний кадр →
   `current.*` → будь-яка статична шпалера → будь-яка, включно з gif).
+- Wi-Fi пароль тепер зберігається на диску: підключення до нової мережі йде
+  через `nmcli dev wifi connect` (профіль з `psk-flags=0`) замість
+  quickshell `connectWithPsk`, який створював профіль з agent-owned
+  секретом — пароль губився після рестарту; зміна пароля в налаштуваннях
+  теж проставляє `psk-flags 0`.
+- Налаштування збереженої (непідключеної) Wi-Fi мережі видавали "Failed to
+  find NetworkManager connection profile for this network": nmcli-запит
+  мав невалідне поле `802-11-wireless.ssid` ("invalid field") — тепер
+  профіль шукається per-profile запитами з `-e no` і працює одразу.
+- Діалог пароля Wi-Fi більше не викидає в головне меню одразу після
+  кліку Connect: лишається відкритим зі статусом "Connecting...",
+  при помилці зберігає введений пароль для виправлення, успіх закриває
+  діалог сам; Enter у полі пароля підтверджує підключення; валідація
+  мінімальної довжини WPA-PSK (8 символів).
 
 - Tests: fake `upower` battery simulator (`tests/fake_upower.sh`, env-driven
   state/percentage, drop-in PATH replacement) for visual testing of

@@ -25,6 +25,11 @@ AnimatedPopup {
   property var settingsNetwork: null
   property string settingsConnKind: "wifi"
   property string settingsDeviceName: ""
+  property string statusMessage: ""
+  property bool statusIsError: false
+  // true, поки йде підключення з паролем — діалог залишається відкритим,
+  // кнопка та поле блокується, застарілі результати процесу ігноруються
+  property bool connecting: false
 
   NetworkConnectionSettingsPopup {
     id: connectionSettings
@@ -69,6 +74,52 @@ AnimatedPopup {
 
   Process {
     id: wiredProcess
+  }
+
+  // Підключення до нової мережі з паролем.
+  // Раніше використовувався quickshell connectWithPsk(), але NM створював
+  // профіль з секретом agent-owned (psk-flags=1) — пароль не зберігався на
+  // диск і втрачався після рестарту. nmcli dev wifi connect створює повноцінний
+  // профіль з psk-flags=0 (пароль персистентний) і одразу активує з'єднання.
+  Process {
+    id: wifiConnectProcess
+    onExited: (exitCode, exitStatus) => {
+      // Ігноруємо застарілий результат: користувач міг скасувати/закрити попап
+      // під час виконання nmcli
+      if (!root.connecting) return;
+      root.connecting = false;
+      if (exitCode === 0) {
+        root.statusMessage = "Connected";
+        root.statusIsError = false;
+        root.pendingNetwork = null;
+        passwordInput.text = "";
+      } else {
+        // Діалог лишається відкритим з введеним паролем — легко виправити
+        // помилку і повторити підключення
+        root.statusMessage = "Connection failed (wrong password?)";
+        root.statusIsError = true;
+      }
+    }
+  }
+
+  // Запускає підключення з паролем. Викликається і кнопкою Connect,
+  // і клавішею Enter у полі пароля.
+  function startConnect() {
+    if (!pendingNetwork || connecting) return;
+    // Мінімальна довжина WPA-PSK — 8 символів (як у NetworkConnectionSettingsPopup)
+    if (passwordInput.text.length < 8) {
+      statusMessage = "Password must be at least 8 characters";
+      statusIsError = true;
+      return;
+    }
+    connecting = true;
+    statusMessage = "Connecting...";
+    statusIsError = false;
+    // Діалог лишається відкритим — результат з'явиться в onExited
+    // argv-прямування: ім'я мережі та пароль передаються аргументами,
+    // без shell-інтерпретації
+    wifiConnectProcess.command = ["nmcli", "dev", "wifi", "connect", pendingNetwork.name, "password", passwordInput.text];
+    wifiConnectProcess.running = true;
   }
 
   readonly property var networkDevices: Networking.devices ? Networking.devices.values : []
@@ -122,6 +173,9 @@ AnimatedPopup {
     } else {
       if (wifiDevice) wifiDevice.scannerEnabled = false;
       pendingNetwork = null;
+      connecting = false;
+      statusMessage = "";
+      statusIsError = false;
     }
   }
 
@@ -274,8 +328,15 @@ AnimatedPopup {
       visible: root.pendingNetwork !== null
 
       // Фокус ставиться тоді, коли діалог СТАЄ видимим, а не при створенні —
-      // forceActiveFocus на невидимому елементі не працює
-      onVisibleChanged: if (visible) passwordInput.forceActiveFocus()
+      // forceActiveFocus на невидимому елементі не працює. Пароль очищаємо
+      // лише при новому відкритті — при невдачі діалог не закривається і
+      // введений пароль лишається для виправлення
+      onVisibleChanged: {
+        if (visible) {
+          passwordInput.text = "";
+          passwordInput.forceActiveFocus();
+        }
+      }
 
       Text {
         text: "Connect to: " + (root.pendingNetwork?.name || "")
@@ -300,6 +361,9 @@ AnimatedPopup {
           font.family: window.palette.font; font.pixelSize: 12
           echoMode: TextInput.Password
           focus: true
+          readOnly: root.connecting
+          Keys.onReturnPressed: root.startConnect()
+          Keys.onEnterPressed: root.startConnect()
         }
       }
 
@@ -315,7 +379,11 @@ AnimatedPopup {
           MouseArea {
             anchors.fill: parent
             cursorShape: Qt.PointingHandCursor
+            enabled: !root.connecting
             onClicked: {
+              root.connecting = false;
+              root.statusMessage = "";
+              root.statusIsError = false;
               root.pendingNetwork = null;
               passwordInput.text = "";
             }
@@ -323,19 +391,15 @@ AnimatedPopup {
         }
 
         Rectangle {
-          implicitWidth: 70; height: 24; radius: 4
+          implicitWidth: Math.max(70, connectLabel.implicitWidth + 12); height: 24; radius: 4
           color: window.palette.accent
-          Text { anchors.centerIn: parent; text: "Connect"; color: window.palette.bgLayer; font.family: window.palette.font; font.pixelSize: 11; font.bold: true }
+          opacity: root.connecting ? 0.6 : 1
+          Text { id: connectLabel; anchors.centerIn: parent; text: root.connecting ? "Connecting..." : "Connect"; color: window.palette.bgLayer; font.family: window.palette.font; font.pixelSize: 11; font.bold: true }
           MouseArea {
             anchors.fill: parent
             cursorShape: Qt.PointingHandCursor
-            onClicked: {
-              if (root.pendingNetwork && passwordInput.text.length > 0) {
-                root.pendingNetwork.connectWithPsk(passwordInput.text);
-              }
-              root.pendingNetwork = null;
-              passwordInput.text = "";
-            }
+            enabled: !root.connecting
+            onClicked: root.startConnect()
           }
         }
       }
@@ -582,6 +646,16 @@ AnimatedPopup {
       color: window.palette.danger
       font.family: window.palette.font; font.pixelSize: 12
       visible: root.wifiDevice === null && root.wiredDevice === null
+    }
+
+    // Статус підключення/помилок
+    Text {
+      Layout.fillWidth: true
+      visible: root.statusMessage.length > 0
+      text: root.statusMessage
+      color: root.statusIsError ? window.palette.danger : window.palette.accent
+      font.family: window.palette.font; font.pixelSize: 11
+      wrapMode: Text.WordWrap
     }
   }
 }
