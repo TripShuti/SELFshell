@@ -76,10 +76,12 @@ AnimatedPopup {
   onVisibleChanged: {
     if (visible) {
       root.positionUnderAnchor()
-      signBtn.text = "Check-in"
-      signFeedback.text = ""
-      signBtn.enabled = true
-      signSpinner.visible = false
+      // Скидаємо фідбек і розблоковуємо кнопку тільки якщо чекін не
+      // триває (попап могли закрити й відкрити під час signProc)
+      if (!signProc.running) {
+        signFeedback.text = ""
+        signBtn.enabled = true
+      }
     }
   }
 
@@ -104,15 +106,15 @@ AnimatedPopup {
         signProc._signHandled = true
         try {
           var obj = JSON.parse(text)
-          signBtn.text = obj.ok ? "✓" : "✗"
           signFeedback.text = obj.msg
           signFeedback.color = obj.ok ? window.palette.green : window.palette.red
+          // Оновлюємо індикатор одразу, не чекаючи наступного синку
+          if (obj.ok) root.isSigned = true
         } catch (e) {
           signFeedback.text = "Error: " + e
           signFeedback.color = window.palette.red
         }
         signBtn.enabled = true
-        signSpinner.visible = false
       }
     }
 
@@ -121,8 +123,6 @@ AnimatedPopup {
       // інакше вона лишилась би вимкненою назавжди
       if (!signProc._signHandled) {
         signBtn.enabled = true
-        signBtn.text = "Check-in"
-        signSpinner.visible = false
         signFeedback.text = "Check-in failed"
         signFeedback.color = window.palette.red
       }
@@ -189,6 +189,59 @@ AnimatedPopup {
           }
         }
 
+        // Кнопка-індикатор чекіну (суміщена: показує статус і запускає чекін)
+        Rectangle {
+          id: signBtn
+          implicitWidth: Math.max(signLabel.implicitWidth + 20, 80)
+          implicitHeight: 22
+          radius: 6
+          enabled: !signProc.running
+          color: root.isSigned && !signProc.running
+            ? Qt.rgba(window.palette.green.r, window.palette.green.g, window.palette.green.b, 0.15)
+            : signArea.containsMouse ? window.palette.bg2 : window.palette.bg1
+          Layout.alignment: Qt.AlignVCenter
+          Behavior on color { ColorAnimation { duration: 120 } }
+
+          Text {
+            id: signLabel
+            anchors.centerIn: parent
+            text: signProc.running
+              ? "⟳"
+              : root.isSigned ? "\uF00C Check-in" : "\uF00D Check-in"
+            color: signProc.running
+              ? window.palette.green
+              : root.isSigned ? window.palette.green : window.palette.gray
+            font.family: window.palette.font; font.pixelSize: 11
+            Behavior on color { ColorAnimation { duration: 200 } }
+
+            RotationAnimator on rotation {
+              running: signProc.running
+              loops: Animation.Infinite
+              from: 0; to: 360
+              duration: 900
+              // Скидаємо кут при зупинці — інакше текст лишається
+              // перевернутим і виходить за межі кнопки
+              onRunningChanged: {
+                if (!running) signLabel.rotation = 0
+              }
+            }
+          }
+
+          MouseArea {
+            id: signArea
+            anchors.fill: parent
+            enabled: signBtn.enabled
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: {
+              signProc._signHandled = false
+              signBtn.enabled = false
+              signFeedback.text = ""
+              signProc.running = true
+            }
+          }
+        }
+
         // Іконка смоли
         Image {
           source: root.resinIconSource
@@ -249,82 +302,6 @@ AnimatedPopup {
 
     // Роздільник
     GradientSeparator { midColor: window.palette.bg2 }
-
-    // Секція чекіну
-    RowLayout {
-      spacing: 8
-      Layout.fillWidth: true
-
-      // Статус чекіну
-      Rectangle {
-        implicitWidth: checkinLabel.implicitWidth + 20
-        implicitHeight: 22
-        radius: 6
-        color: root.isSigned ? Qt.rgba(window.palette.green.r, window.palette.green.g, window.palette.green.b, 0.15) : window.palette.bg1
-
-        Text {
-          id: checkinLabel
-          anchors.centerIn: parent
-          text: root.isSigned ? "\uF00C Check-in" : "\uF00D Check-in"
-          color: root.isSigned ? window.palette.green : window.palette.gray
-          font.family: window.palette.font; font.pixelSize: 11
-        }
-      }
-
-      // Спінер під час чекіну
-      Text {
-        id: signSpinner
-        text: "⟳"
-        color: window.palette.green
-        font.family: window.palette.font; font.pixelSize: 12; font.bold: true
-        visible: false
-        Layout.alignment: Qt.AlignVCenter
-
-        RotationAnimator on rotation {
-          running: signSpinner.visible
-          loops: Animation.Infinite
-          from: 0; to: 360
-          duration: 900
-        }
-      }
-
-      Item { Layout.fillWidth: true }
-
-      // Кнопка "Чекін"
-      Rectangle {
-        id: signBtn
-        implicitWidth: 72
-        implicitHeight: 24
-        radius: 6
-        color: signBtn.enabled ? (signArea.containsMouse ? window.palette.bg2 : window.palette.bg1) : window.palette.bg1
-        Behavior on color { ColorAnimation { duration: 120 } }
-
-        property string text: "Check-in"
-
-        Text {
-          anchors.centerIn: parent
-          text: parent.text
-          color: parent.enabled ? window.palette.fg : window.palette.gray
-          font.family: window.palette.font; font.pixelSize: 11
-        }
-
-        MouseArea {
-          id: signArea
-          anchors.fill: parent
-          enabled: signBtn.enabled
-          hoverEnabled: true
-          cursorShape: Qt.PointingHandCursor
-          onClicked: {
-            signProc._signHandled = false
-            signBtn.enabled = false
-            signBtn.text = "..."
-            signSpinner.visible = true
-            signFeedback.text = ""
-            signProc.running = true
-          }
-        }
-      }
-    }
 
     // Результат чекіну
     Text {

@@ -146,7 +146,8 @@ def do_sign(force=False):
                 "total_sign_day": cached.get("total_sign_day", 0) if cached else 0,
             }
             save_state(state)
-            return False, "Check-in already done today"
+            # Чекін фактично зроблено — повертаємо успіх, щоб UI не показував ✗
+            return True, "Already checked in today"
         else:
             return False, f"Code: {data['retcode']}\n{data['message']}"
     except Exception as e:
@@ -166,7 +167,8 @@ def estimate_local(state):
         resin = max_resin
         recovery_str = "Full"
     else:
-        elapsed = now - synced_at
+        # Кламп від'ємного elapsed (зсув годинника) — інакше смола "віднімається"
+        elapsed = max(0.0, now - synced_at)
         resin = min(max_resin, resin + int(elapsed // RESIN_REGEN_SECONDS))
         remaining = int(full_at - now)
         hours, rem = divmod(remaining, 3600)
@@ -205,6 +207,7 @@ def get_local_display(state):
         return {"text": " ...", "tooltip": "First sync...", "class": "normal"}
 
     resin, recovery_str = estimate_local(state)
+    max_resin = state.get("max_resin", 200)
 
     sign_cache = state.get("sign", {})
     if sign_cache.get("date") == today_str():
@@ -214,9 +217,9 @@ def get_local_display(state):
     else:
         sign_str = "?"
 
-    tooltip = build_tooltip(resin, state["max_resin"], recovery_str, state["notes_cache"], sign_str)
+    tooltip = build_tooltip(resin, max_resin, recovery_str, state.get("notes_cache", {}), sign_str)
     return {
-        "text": f" {resin}/{state['max_resin']}",
+        "text": f" {resin}/{max_resin}",
         "tooltip": tooltip,
         "class": "critical" if resin >= 190 else "normal",
     }
@@ -248,6 +251,7 @@ def _cached_response(state, cache_note=""):
                 "class": "error", "resin": 0, "maxResin": 200, "ok": False}
 
     resin, recovery_str = estimate_local(state)
+    max_resin = state.get("max_resin", 200)
     sign_cache = state.get("sign", {})
     if sign_cache.get("date") == today_str():
         is_signed = sign_cache.get("is_signed", False)
@@ -256,12 +260,12 @@ def _cached_response(state, cache_note=""):
     else:
         sign_str = "?"
     tooltip = build_tooltip(
-        resin, state["max_resin"], recovery_str, state["notes_cache"], sign_str,
+        resin, max_resin, recovery_str, state.get("notes_cache", {}), sign_str,
         cache_note=cache_note
     )
-    return {"text": f" {resin}/{state['max_resin']}", "tooltip": tooltip,
+    return {"text": f" {resin}/{max_resin}", "tooltip": tooltip,
             "class": "critical" if resin >= 190 else "normal",
-            "resin": resin, "maxResin": state["max_resin"]}
+            "resin": resin, "maxResin": max_resin}
 
 
 # Мінімальний інтервал між реальними запитами дайлі-ноут (сек).

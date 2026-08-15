@@ -200,6 +200,14 @@ class DoSignTest(StateFileTest):
         self.assertIn("cache", msg)
         mock_post.assert_not_called()
 
+    def test_already_done_retcode_returns_success(self):
+        with mock.patch.object(gs.requests, "post") as mock_post:
+            mock_post.return_value.json.return_value = {"retcode": -5003, "message": "Already checked in"}
+            ok, msg = gs.do_sign()
+        self.assertTrue(ok)
+        self.assertIn("already", msg.lower())
+        self.assertTrue(gs.load_state()["sign"]["is_signed"])
+
 
 if __name__ == "__main__":
     unittest.main()

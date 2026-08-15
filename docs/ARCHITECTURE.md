@@ -236,8 +236,9 @@ timers stopped). Unneeded processes do not linger in memory.
 GenshinMonitor (in GenshinMonitor.qml)
   ├── mainTimer      — every minute: local resin calc, daily sync check
   ├── highResinTimer — every 8 min: auto-sync when resin ≥ 198
-  ├── syncProc       — Process: calls genshin_stats.py sync
-  └── manualProc     — Process: manual refresh with a 30 s cooldown
+  ├── syncProc       — Process: calls genshin_stats.py sync (background and
+  │                    manual refresh; `_syncManual` tells the source apart)
+  └── refreshNow()   — manual refresh with a 30 s cooldown
 ```
 
 Thresholds (in GenshinMonitor.qml): `resinClass = "critical"` at resin ≥ 190
