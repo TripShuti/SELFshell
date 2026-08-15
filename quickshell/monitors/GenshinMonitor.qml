@@ -210,7 +210,7 @@ Item {
     onTriggered: { root.refreshStatus = "idle"; root.refreshMessage = "" }
   }
 
-  property bool monitorEnabled: appConfig ? appConfig.genshinEnabled : false
+  property bool monitorEnabled: appConfig ? appConfig.cfg.genshinEnabled : false
   onMonitorEnabledChanged: {
     if (monitorEnabled) _doSync()
     else {

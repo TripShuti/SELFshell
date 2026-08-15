@@ -56,7 +56,7 @@ Item {
     onTriggered: cavaProcess.running = true
   }
 
-  property bool monitorEnabled: appConfig ? appConfig.mprisEnabled : false
+  property bool monitorEnabled: appConfig ? appConfig.cfg.mprisEnabled : false
   // Активний коли візуалізатор реально видно: віджет панелі під час
   // відтворення або відкритий попап (керується з Bar.qml) — інакше cava
   // на 30 fps спалював би CPU вхолосту весь день

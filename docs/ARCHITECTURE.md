@@ -194,7 +194,8 @@ fresh object reference.
 ### Persistence: reading/writing data/config.json
 
 Settings are stored in `data/config.json` (JSON format).
-`AppConfig.qml` handles reads/writes via `Quickshell.Io.FileView`:
+`AppConfig.qml` handles reads/writes via `Quickshell.Io.FileView` with a
+`JsonAdapter` (typed properties with factory defaults):
 
 ```json
 {
@@ -206,12 +207,15 @@ Settings are stored in `data/config.json` (JSON format).
 }
 ```
 
-**Reading** — `Component.onCompleted` in AppConfig.qml parses
-`configFile.text()` with `JSON.parse()` and applies the values via
-`loadFromJson()`.
+**Reading** — `FileView` + `adapter: JsonAdapter` populates the typed
+properties from the file automatically at startup. Live watching is
+intentionally off on Quickshell 0.3.0: atomic-rename writes crash the shell
+(a use-after-free in the FileView watcher), so manual file edits apply after
+a restart.
 
-**Writing** — `saveToFile()` serializes the current state to JSON and calls
-`configFile.setText()`. FileView writes the changes to disk automatically.
+**Writing** — `saveToFile()` calls `configFile.writeAdapter()`, which
+serializes all adapter properties back to disk (missing keys get the
+factory defaults).
 
 Why JSON:
 - standard parser — no regex hacks

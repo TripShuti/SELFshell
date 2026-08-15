@@ -34,7 +34,7 @@ Item {
     if (!root.low) { root.lowNotified = false; return }
     if (root.lowNotified) return
     root.lowNotified = true
-    if (window.appConfig.dndEnabled) return
+    if (window.appConfig.cfg.dndEnabled) return
     window.toast.showNotif({
       appName: "Battery",
       summary: "Low battery (" + root.percent + "%)",

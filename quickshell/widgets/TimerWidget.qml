@@ -11,7 +11,7 @@ Item {
   id: root
 
   required property QtObject window
-  // Передається з Bar.qml: appConfig.timerSoundPath — кастомний звук завершення
+  // Передається з Bar.qml: appConfig.cfg.timerSoundPath — кастомний звук завершення
   property QtObject appConfig: null
 
   property bool timerRunning: false
@@ -36,7 +36,7 @@ Item {
   // 1. Кастомний шлях з конфігу (якщо користувач задав свій)
   // 2. Свій звук, що йде в комплекті з репозиторієм (assets/sounds/)
   // 3. Системний freedesktop-звук як останній фолбек
-  readonly property string _customSound: (appConfig && appConfig.timerSoundPath) ? appConfig.timerSoundPath : ""
+  readonly property string _customSound: (appConfig && appConfig.cfg.timerSoundPath) ? appConfig.cfg.timerSoundPath : ""
   readonly property string _bundledSound: Qt.resolvedUrl("../assets/sounds/timer-done.ogg").toString().replace("file://", "")
   readonly property string _systemFallbackSound: "/usr/share/sounds/freedesktop/stereo/complete.oga"
 

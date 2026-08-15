@@ -48,15 +48,106 @@ PanelWindow {
   readonly property Item netWidget: activeWidgets["net"] ?? null
   readonly property Item trayWidget: activeWidgets["tray"] ?? null
 
-  anchors {
-    top: true
-    left: true
-    right: true
+  // Всі попапи бару (крім транзитних тостів): поки будь-який відкритий,
+  // автоскривання не ховає бар
+  property var popups: [
+    calendarPopup, audioPopup, btPopup, netPopup, mprisPopup, workspacesPopup,
+    keyboardPopup, genshinPopup, controlPopup, clipboardPopup, wallpaperPopup,
+    settingsPopup, launcherPopup, trayPopup
+  ]
+  function anyPopupOpen() {
+    for (var i = 0; i < root.popups.length; i++)
+      if (root.popups[i].visible) return true
+    return false
   }
 
-  implicitHeight: root.appConfig.barHeight
+  anchors {
+    left: true
+    right: true
+    top: root.appConfig.cfg.barPos === "top"
+    bottom: root.appConfig.cfg.barPos === "bottom"
+  }
+
+  implicitHeight: root.appConfig.cfg.barHeight
   color: "transparent"
-  exclusiveZone: root.appConfig.barHeight
+
+  // --- Автоскривання ---
+  // Layer-shell не вміє від'ємних margin-ів (вікно не з'їде за кромку),
+  // тому прихований бар залишається на місці, але вміст (barContent)
+  // анімовано виїжджає за кромку і гасне, а вся площа стає click-through
+  // (mask обмежує input region лише смужкою-тригером). Лишається лише
+  // 6px-смужка (revealStrip) біля кромки з "ручкою"-підказкою —
+  // наведенням на неї бар повертається. exclusiveZone при цьому 0 —
+  // вікна отримують весь екран.
+  property bool barHidden: false
+  readonly property bool autoHideOn: root.appConfig.cfg.barAutoHide
+
+  exclusiveZone: (root.autoHideOn && root.barHidden) ? 0 : root.appConfig.cfg.barHeight
+
+  // Сховати бар не вийшло через події hover: watchdog-сиблінг ПІД
+  // пігулками (z:-1000) не отримував onExited, коли курсор ішов з панелі
+  // через віджет (hover доставляється лише по ланцюгу "лист → предки",
+  // сиблінги нижче верхнього не ховеряться взагалі). Тому:
+  // - autoHideWatch лежить у barContent як БАТЬКО пігулок — він у ланцюзі
+  //   предків будь-якого віджета, тож containsMouse вірний всюди і
+  //   hover-візуали віджетів працюють як завжди; кліки/колесо проходять
+  //   крізь нього (Qt.NoButton + відсутній onWheel — Qt 6 не приймає такі
+  //   події і віддає їх нижче).
+  // - revealWatch лежить НА РІВНІ вікна на смужці-тригері: прихований
+  //   barContent разом з autoHideWatch виїжджає за кромку, тож hover на
+  //   смужці ловить саме revealWatch. Він заввишки 6px — hover-крадіжка
+  //   у видимому стані обмежена краєм пігулок і непомітна.
+  Timer {
+    id: hideTimer
+    interval: 400
+    repeat: true
+    running: root.autoHideOn
+    onTriggered: {
+      // Відкритий будь-який попап — не ховаємось і повертаємо бар:
+      // без цього після відкриття попапа гарячою клавішею (Settings,
+      // Control, Launcher...) прихований бар не показувався б взагалі
+      if (root.anyPopupOpen()) { root.barHidden = false; return }
+      // revealWatch не входить у hover-ланцюг autoHideWatch (сиблінг),
+      // тож курсор на смужці треба враховувати окремо, інакше бар
+      // сховається прямо під нерухомим курсором
+      if (autoHideWatch.containsMouse || revealWatch.containsMouse) return
+      root.barHidden = true
+    }
+  }
+
+  // Смужка-тригер біля кромки: hover над нею (у прихованому стані це
+  // єдина точка вводу — mask) ловить revealWatch. Вона ж малює ручку-
+  // підказку — єдине видиме при прихованому барі.
+  MouseArea {
+    id: revealWatch
+    visible: root.autoHideOn
+    enabled: root.autoHideOn
+    width: parent.width
+    height: 6
+    z: 1000
+    hoverEnabled: true
+    acceptedButtons: Qt.NoButton
+    anchors.top: root.barPos === "top" ? parent.top : undefined
+    anchors.bottom: root.barPos === "bottom" ? parent.bottom : undefined
+    onEntered: { if (root.barHidden) root.barHidden = false }
+
+    Rectangle {
+      visible: root.barHidden
+      width: 36
+      height: 3
+      radius: 1.5
+      color: root.palette.fg
+      opacity: 0.3
+      anchors.horizontalCenter: parent.horizontalCenter
+      anchors.top: root.barPos === "top" ? parent.top : undefined
+      anchors.bottom: root.barPos === "bottom" ? parent.bottom : undefined
+      anchors.margins: 2
+    }
+  }
+
+  // При вимкненому autoHideOn прихований стан неприпустимий. Таймер
+  // керується через running: root.autoHideOn — окремий старт не потрібен.
+  onAutoHideOnChanged: { if (!root.autoHideOn) root.barHidden = false }
 
   required property QtObject palette
   required property QtObject appConfig
@@ -103,51 +194,108 @@ PanelWindow {
     || name === "clipboard"
   }
 
-  // Ліва пігулка
-  PillBar {
-    anchors {
-      left: parent.left
-      leftMargin: 8
-      verticalCenter: parent.verticalCenter
-    }
-    height: pillHeight
-    radius: root.appConfig.barRadius
-    appConfig: root.appConfig
-    palette: root.palette
-    orderModel: root.appConfig.leftOrder
-    widgetComponents: root.widgetComponents
-    needsFillHeight: root.widgetNeedsFillHeight
-    registerActive: root.registerActive
+  // Прихований бар не їсть кліки: input region вікна обмежується лише
+  // смужкою-тригером (mask). При видимому барі mask = null — ввід на весь
+  // екран вікна. (IgnoreArea з новіших версій Quickshell тут немає.)
+  Region {
+    id: hiddenMask
+    x: 0
+    y: root.barPos === "top" ? 0 : root.height - 6
+    width: root.width
+    height: 6
   }
+  mask: (root.autoHideOn && root.barHidden) ? hiddenMask : null
 
-  // Центральна пігулка
-  PillBar {
-    anchors.centerIn: parent
-    height: pillHeight
-    radius: root.appConfig.barRadius
-    appConfig: root.appConfig
-    palette: root.palette
-    orderModel: root.appConfig.centerOrder
-    widgetComponents: root.widgetComponents
-    needsFillHeight: root.widgetNeedsFillHeight
-    registerActive: root.registerActive
-  }
+  // Контейнер пігулок — анімується при автоскриванні: вміст виїжджає за
+  // кромку (layer-shell не вміє рухати саме вікно) і гасне.
+  // Напрямок — від кромки, на якій стоїть бар (top: вгору, bottom: вниз).
+  Item {
+    id: barContent
+    anchors.fill: parent
+    state: root.barHidden ? "hidden" : "visible"
 
-  // Права пігулка
-  PillBar {
-    anchors {
-      right: parent.right
-      rightMargin: 8
-      verticalCenter: parent.verticalCenter
+    states: [
+      State { name: "visible"; PropertyChanges { target: barContent; y: 0; opacity: 1; scale: 1 } },
+      State {
+        name: "hidden"
+        PropertyChanges {
+          target: barContent
+          y: root.barPos === "top" ? -root.height : root.height
+          opacity: 0
+          scale: 0.85
+        }
+      }
+    ]
+
+    transitions: Transition {
+      NumberAnimation { properties: "y,opacity,scale"; duration: 350; easing.type: Easing.OutCubic }
     }
-    height: pillHeight
-    radius: root.appConfig.barRadius
-    appConfig: root.appConfig
-    palette: root.palette
-    orderModel: root.appConfig.rightOrder
-    widgetComponents: root.widgetComponents
-    needsFillHeight: root.widgetNeedsFillHeight
-    registerActive: root.registerActive
+
+    // Watchdog hover-а (батько пігулок — див. коментар вище)
+    MouseArea {
+      id: autoHideWatch
+      anchors.fill: parent
+      hoverEnabled: true
+      enabled: root.autoHideOn
+      acceptedButtons: Qt.NoButton
+      onEntered: { if (root.barHidden) root.barHidden = false }
+    }
+
+    // Ліва пігулка
+    PillBar {
+      anchors {
+        left: parent.left
+        leftMargin: root.appConfig.cfg.edgeMargin
+        verticalCenter: parent.verticalCenter
+      }
+      visible: root.appConfig.cfg.leftPillEnabled
+      height: pillHeight
+      radius: root.appConfig.cfg.barRadius
+      padding: root.appConfig.cfg.pillPadding
+      contentSpacing: root.appConfig.cfg.contentSpacing
+      appConfig: root.appConfig
+      palette: root.palette
+      orderModel: root.appConfig.cfg.leftOrder
+      widgetComponents: root.widgetComponents
+      needsFillHeight: root.widgetNeedsFillHeight
+      registerActive: root.registerActive
+    }
+
+    // Центральна пігулка
+    PillBar {
+      anchors.centerIn: parent
+      visible: root.appConfig.cfg.centerPillEnabled
+      height: pillHeight
+      radius: root.appConfig.cfg.barRadius
+      padding: root.appConfig.cfg.pillPadding
+      contentSpacing: root.appConfig.cfg.contentSpacing
+      appConfig: root.appConfig
+      palette: root.palette
+      orderModel: root.appConfig.cfg.centerOrder
+      widgetComponents: root.widgetComponents
+      needsFillHeight: root.widgetNeedsFillHeight
+      registerActive: root.registerActive
+    }
+
+    // Права пігулка
+    PillBar {
+      anchors {
+        right: parent.right
+        rightMargin: root.appConfig.cfg.edgeMargin
+        verticalCenter: parent.verticalCenter
+      }
+      visible: root.appConfig.cfg.rightPillEnabled
+      height: pillHeight
+      radius: root.appConfig.cfg.barRadius
+      padding: root.appConfig.cfg.pillPadding
+      contentSpacing: root.appConfig.cfg.contentSpacing
+      appConfig: root.appConfig
+      palette: root.palette
+      orderModel: root.appConfig.cfg.rightOrder
+      widgetComponents: root.widgetComponents
+      needsFillHeight: root.widgetNeedsFillHeight
+      registerActive: root.registerActive
+    }
   }
 
   CalendarPopup {
@@ -185,7 +333,7 @@ PanelWindow {
 
     onNotification: (notif) => {
       // DND — повністю ховає сповіщення (тост, список, звук)
-      if (root.appConfig.dndEnabled) return
+      if (root.appConfig.cfg.dndEnabled) return
       notif.tracked = true
       notifToast.showNotif(notif)
       // Лічильник непрочитаних: росте, поки центр керування закритий

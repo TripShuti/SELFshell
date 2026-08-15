@@ -6,6 +6,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Система налаштувань панелі (шестерня в Control Center або IPC `settings`):
+  три розділи:
+  - **Bar** — висота, радіус пігулок, edge margin, pill padding, content
+    spacing, позиція панелі (top/bottom), автоскривання, видимість пігулок
+    (left/center/right);
+  - **Layout** — drag-and-drop: порядок віджетів між пігулками, перетягування
+    у pool вимикає віджет, роздільники додаються кнопкою "+";
+  - **Behavior** — Do not disturb, idle-таймаути (lock/dpms/suspend з
+    порядковими обмеженнями), кроки колеса (гучність/яскравість), скидання
+    усіх налаштувань до заводських.
+- Автоскривання панелі: вміст анімовано виїжджає за кромку екрана і
+  повертається наведенням на 6px смужку-тригер; прихований бар звільняє
+  екран (exclusive zone = 0), пігулки не займають input region.
+- Новий формат конфіга: 8 ключів (`barPos`, `edgeMargin`, `pillPadding`,
+  `contentSpacing`, `barAutoHide`, `leftPillEnabled`, `centerPillEnabled`,
+  `rightPillEnabled`) — усі з дефолтами, старий config.json сумісний.
+- Hover-візуали віджетів і колесо миші працюють разом з автоскриванням
+  (watchdog-батько пігулок у hover-ланцюзі, події без обробника не
+  перехоплюються).
+
+### Changed
+
+- Конфіг панелі мігрував на `JsonAdapter` (Quickshell.Io): зміни з UI
+  зберігаються одразу, зовнішні ручні правки `config.json` застосовуються
+  після рестарту шела — `watchChanges` вимкнено через use-after-free
+  FileView у Quickshell 0.3.0 (атомарний запис файлу крашив шел).
+- Видимість віджетів тепер керується з Settings (Layout) замість ручного
+  редагування конфіга.
+- Прихований бар повертається, щойно відкривається будь-який попап
+  гарячою клавішею (Settings/Control/Launcher/Clipboard).
+
 ## [0.3.0] - 2026-08-14
 
 ### Added

@@ -57,7 +57,7 @@ AnimatedPopup {
   property bool muted: false
 
   // DND — повністю ховає сповіщення (джерело істини — config.json)
-  readonly property bool dndEnabled: window.appConfig.dndEnabled
+  readonly property bool dndEnabled: window.appConfig.cfg.dndEnabled
 
   // Caffeine mode: вимикає автоблокування/гаснення екрану/suspend по idle
   // (idle-монітори в IdleManager реагують на зміну файлу control-state.json)
@@ -607,7 +607,7 @@ AnimatedPopup {
             else if (mouse.button === Qt.RightButton) root.setBrightness(100)
           }
           onWheel: wheel => {
-            var step = wheel.angleDelta.y > 0 ? window.appConfig.brightnessStep : -window.appConfig.brightnessStep
+            var step = wheel.angleDelta.y > 0 ? window.appConfig.cfg.brightnessStep : -window.appConfig.cfg.brightnessStep
             root.setBrightness(root.brightness + step)
           }
         }
@@ -1037,7 +1037,7 @@ AnimatedPopup {
           anchors.fill: parent
           hoverEnabled: true
           onClicked: {
-            window.appConfig.dndEnabled = !window.appConfig.dndEnabled
+            window.appConfig.cfg.dndEnabled = !window.appConfig.cfg.dndEnabled
             window.appConfig.saveToFile()
           }
         }

@@ -34,14 +34,17 @@ BOOL_FIELDS = [
     "launcherEnabled", "workspacesEnabled", "mprisEnabled", "clockEnabled",
     "timerEnabled", "genshinEnabled", "keyboardEnabled", "audioEnabled",
     "controlEnabled", "clipboardEnabled", "btEnabled", "netEnabled", "trayEnabled",
-    "batteryEnabled", "dndEnabled",
+    "batteryEnabled", "dndEnabled", "barAutoHide",
+    "leftPillEnabled", "centerPillEnabled", "rightPillEnabled",
 ]
 NUM_FIELDS = {
     "idleLockTimeout": (1, 86400), "idleDpmsTimeout": (1, 86400),
     "idleSuspendTimeout": (1, 86400),
     "audioStep": (0.0, 1.0), "brightnessStep": (0, 100),
     "barHeight": (1, 200), "barRadius": (0, 100),
+    "edgeMargin": (0, 200), "pillPadding": (0, 100), "contentSpacing": (0, 100),
 }
+STR_FIELDS = ["barPos"]
 ORDER_FIELDS = ["leftOrder", "centerOrder", "rightOrder"]
 
 cfg = load(CONFIG_PATH)
@@ -56,6 +59,12 @@ if cfg is not None:
             check(ok, f"config {field}: expected number in [{lo},{hi}], got {v!r}")
     if "timerSoundPath" in cfg:
         check(isinstance(cfg["timerSoundPath"], str), "config timerSoundPath: expected string")
+    for field in STR_FIELDS:
+        if field in cfg:
+            check(isinstance(cfg[field], str), f"config {field}: expected string")
+    if "barPos" in cfg:
+        check(cfg["barPos"] in ("top", "bottom"),
+              f"config barPos: expected top/bottom, got {cfg['barPos']!r}")
     for field in ORDER_FIELDS:
         if field in cfg:
             check(isinstance(cfg[field], list) and all(isinstance(x, str) for x in cfg[field]),

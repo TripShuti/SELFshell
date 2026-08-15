@@ -73,15 +73,15 @@ Item {
   // timeout = 0 у config.json означає "never" — рівень вимкнено
   // (інакше IdleMonitor з нульовим таймаутом спрацює миттєво).
   IdleMonitor {
-    timeout: root.appConfig.idleLockTimeout
-    enabled: root.appConfig.idleLockTimeout > 0 && !root.mediaPlaying && !root.caffeineEnabled
+    timeout: root.appConfig.cfg.idleLockTimeout
+    enabled: root.appConfig.cfg.idleLockTimeout > 0 && !root.mediaPlaying && !root.caffeineEnabled
     onIsIdleChanged: if (isIdle) root.lockRequested()
   }
 
   // Рівень 2: DPMS off — з автоматичним увімкненням
   IdleMonitor {
-    timeout: root.appConfig.idleDpmsTimeout
-    enabled: root.appConfig.idleDpmsTimeout > 0 && !root.mediaPlaying && !root.caffeineEnabled
+    timeout: root.appConfig.cfg.idleDpmsTimeout
+    enabled: root.appConfig.cfg.idleDpmsTimeout > 0 && !root.mediaPlaying && !root.caffeineEnabled
     onIsIdleChanged: {
       dpmsProc.command = isIdle
         ? ["hyprctl", "dispatch", "dpms", "off"]
@@ -92,8 +92,8 @@ Item {
 
   // Рівень 3: suspend
   IdleMonitor {
-    timeout: root.appConfig.idleSuspendTimeout
-    enabled: root.appConfig.idleSuspendTimeout > 0 && !root.mediaPlaying && !root.caffeineEnabled
+    timeout: root.appConfig.cfg.idleSuspendTimeout
+    enabled: root.appConfig.cfg.idleSuspendTimeout > 0 && !root.mediaPlaying && !root.caffeineEnabled
     onIsIdleChanged: if (isIdle) root.suspendRequested()
   }
 

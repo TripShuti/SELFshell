@@ -1,59 +1,100 @@
 // ============================================================
 // AppConfig.qml — спільний стан конфігурації панелі (видимість,
-// порядок віджетів) з персистентністю через FileView
+// порядок віджетів) з персистентністю через FileView + JsonAdapter
 // ============================================================
 import Quickshell.Io
 import QtQuick
 
 // Невидимий контейнер — єдиний екземпляр створюється в Bar.qml
 // і доступний усім попапам через window.appConfig.
+//
+// Патерн запозичено з Panacea: усі налаштування живуть в JsonAdapter
+// (єдина точка правди — window.appConfig.cfg), збереження —
+// writeAdapter() без ручного JSON.stringify.
+//
+// ВАЖЛИВО: watchChanges навмисно ВИМКНЕНО. У Quickshell 0.3.0 FileView
+// має use-after-free в QML-двигуні навколо inotify-watcher: атомарний
+// запис файлу (rename — так пише навіть сам writeAdapter через QSaveFile)
+// стабільно крашить шел. Тому зовнішні ручні правки config.json
+// застосовуються після перезапуску шела, а зміни з UI — одразу (в пам'яті)
+// і зберігаються у файл.
 Item {
+  id: root
   visible: false
 
   FileView {
     id: configFile
     path: Qt.resolvedUrl("../data/config.json")
-    blockLoading: true
+
+    // Типізовані дефолти адаптера — те, що буде записано у файл,
+    // якщо ключ відсутній. Назви властивостей = ключі config.json.
+    adapter: JsonAdapter {
+      id: cfgAdapter
+
+      // --- Видимість віджетів ---
+      property bool launcherEnabled: true
+      property bool workspacesEnabled: true
+      property bool mprisEnabled: true
+      property bool clockEnabled: true
+      property bool timerEnabled: true
+      property bool genshinEnabled: true
+      property bool keyboardEnabled: true
+      property bool audioEnabled: true
+      property bool controlEnabled: true
+      property bool clipboardEnabled: true
+      // Дефолти вимкнених сервісів співпадають з config.json (bt/net/tray
+      // за замовчуванням вимкнені, вмикаються через Settings)
+      property bool btEnabled: false
+      property bool netEnabled: false
+      property bool trayEnabled: false
+      property bool batteryEnabled: false
+
+      // DND — повністю ховає сповіщення (тост, список, звук)
+      property bool dndEnabled: false
+
+      // Кастомний шлях до звуку завершення таймера ("" = звук з assets/)
+      property string timerSoundPath: ""
+
+      // --- Поведінка системи ---
+      // Idle-таймаути (секунди). Порядок має бути зростаючим:
+      // lock < dpms < suspend, інакше рівні спрацьовуватимуть у несподіваному
+      // порядку.
+      property int idleLockTimeout: 300
+      property int idleDpmsTimeout: 360
+      property int idleSuspendTimeout: 900
+
+      // Інкременти змін значень (wheel/клавіші)
+      property real audioStep: 0.05
+      property int brightnessStep: 5
+
+      // --- Зовнішній вигляд і поведінка бару ---
+      property int barHeight: 32
+      property int barRadius: 5
+      // на якій кромці стоїть панель: "top" | "bottom"
+      property string barPos: "top"
+      // відступ крайніх пігулок від кромки екрана
+      property int edgeMargin: 8
+      // внутрішній відступ пігулки
+      property int pillPadding: 8
+      // зазор між віджетами всередині пігулки
+      property int contentSpacing: 4
+      // автоскривання: панель їде за кромку і повертається наведенням
+      property bool barAutoHide: false
+      // приховування пігулок цілком — довільні комбінації
+      property bool leftPillEnabled: true
+      property bool centerPillEnabled: true
+      property bool rightPillEnabled: true
+
+      // --- Порядки віджетів ---
+      property var leftOrder: ["launcher", "sep-2", "workspaces", "sep-7", "mpris"]
+      property var centerOrder: ["clock", "sep-5", "timer", "sep-6", "genshin", "battery"]
+      property var rightOrder: ["tray", "sep-12", "net", "bt", "keyboard", "sep-10", "audio", "sep-11", "control", "clipboard"]
+    }
   }
 
-  property bool launcherEnabled: true
-  property bool workspacesEnabled: true
-  property bool mprisEnabled: true
-  property bool clockEnabled: true
-  property bool timerEnabled: true
-  property bool genshinEnabled: true
-  property bool keyboardEnabled: true
-  property bool audioEnabled: true
-  property bool controlEnabled: true
-  property bool clipboardEnabled: true
-  // Дефолти вимкнених сервісів співпадають з config.json (bt/net/tray
-  // за замовчуванням вимкнені, вмикаються через Settings)
-  property bool btEnabled: false
-  property bool netEnabled: false
-  property bool trayEnabled: false
-  property bool batteryEnabled: false
-
-  // DND — повністю ховає сповіщення (тост, список, звук)
-  property bool dndEnabled: false
-
-  // Кастомний шлях до звуку завершення таймера ("" = звук з assets/)
-  property string timerSoundPath: ""
-
-  // --- Поведінка системи (JSON-налаштування) ---
-  // Idle-таймаути (секунди). Порядок має бути зростаючим:
-  // lock < dpms < suspend, інакше рівні спрацьовуватимуть у несподіваному
-  // порядку.
-  property int idleLockTimeout: 300
-  property int idleDpmsTimeout: 360
-  property int idleSuspendTimeout: 900
-
-  // Інкременти змін значень (wheel/клавіші)
-  property real audioStep: 0.05
-  property int brightnessStep: 5
-
-  // Зовнішній вигляд панелі — дефолти = робочій системі
-  property int barHeight: 32
-  property int barRadius: 5
+  // Єдина точка правди — адаптер config.json
+  readonly property var cfg: cfgAdapter
+  function saveToFile() { configFile.writeAdapter() }
 
   // Фіксований канонічний список усіх віджетів — використовується
   // Settings-попапом для стабільного порядку рядків (не залежить від
@@ -69,10 +110,7 @@ Item {
   // Фабричні дефолти — на випадок відсутнього/порожнього config.json.
   // Містять сепаратори (sep-N) — інакше свіжий клон без config.json
   // рендерив би бар без роздільників. При старті перезаписуються
-  // реальними значеннями з config.json.
-  property var leftOrder: ["launcher", "sep-2", "workspaces", "sep-7", "mpris"]
-  property var centerOrder: ["clock", "sep-5", "timer", "sep-6", "genshin", "battery"]
-  property var rightOrder: ["tray", "sep-12", "net", "bt", "keyboard", "sep-10", "audio", "sep-11", "control", "clipboard"]
+  // реальними значеннями з config.json (через адаптер).
 
   function isSep(name) {
     return name === "sep" || String(name).startsWith("sep-")
@@ -80,7 +118,7 @@ Item {
 
   function addSep(pillName) {
     var maxId = -1
-    var all = [leftOrder, centerOrder, rightOrder]
+    var all = [root.cfg.leftOrder, root.cfg.centerOrder, root.cfg.rightOrder]
     for (var a = 0; a < all.length; a++) {
       for (var i = 0; i < all[a].length; i++) {
         var m = String(all[a][i]).match(/^sep-(\d+)$/)
@@ -90,42 +128,42 @@ Item {
     var name = "sep-" + (maxId + 1)
     var arr = pillOrderFor(pillName).slice()
     arr.push(name)
-    if (pillName === "left") leftOrder = arr
-    else if (pillName === "center") centerOrder = arr
-    else rightOrder = arr
+    if (pillName === "left") root.cfg.leftOrder = arr
+    else if (pillName === "center") root.cfg.centerOrder = arr
+    else root.cfg.rightOrder = arr
   }
 
   function pillOrderFor(pillName) {
-    return pillName === "left" ? leftOrder : pillName === "center" ? centerOrder : rightOrder
+    return pillName === "left" ? root.cfg.leftOrder : pillName === "center" ? root.cfg.centerOrder : root.cfg.rightOrder
   }
 
   function pillOf(name) {
-    if (leftOrder.indexOf(name) !== -1) return "left"
-    if (centerOrder.indexOf(name) !== -1) return "center"
-    if (rightOrder.indexOf(name) !== -1) return "right"
+    if (root.cfg.leftOrder.indexOf(name) !== -1) return "left"
+    if (root.cfg.centerOrder.indexOf(name) !== -1) return "center"
+    if (root.cfg.rightOrder.indexOf(name) !== -1) return "right"
     return "left"
   }
 
   // Переносить віджет в іншу пігулку (додається в кінець її списку)
   function moveToPill(name, targetPill) {
-    leftOrder = leftOrder.filter(n => n !== name)
-    centerOrder = centerOrder.filter(n => n !== name)
-    rightOrder = rightOrder.filter(n => n !== name)
-    if (targetPill === "left") leftOrder = leftOrder.concat([name])
-    else if (targetPill === "center") centerOrder = centerOrder.concat([name])
-    else rightOrder = rightOrder.concat([name])
+    root.cfg.leftOrder = root.cfg.leftOrder.filter(n => n !== name)
+    root.cfg.centerOrder = root.cfg.centerOrder.filter(n => n !== name)
+    root.cfg.rightOrder = root.cfg.rightOrder.filter(n => n !== name)
+    if (targetPill === "left") root.cfg.leftOrder = root.cfg.leftOrder.concat([name])
+    else if (targetPill === "center") root.cfg.centerOrder = root.cfg.centerOrder.concat([name])
+    else root.cfg.rightOrder = root.cfg.rightOrder.concat([name])
   }
 
   function moveToPillAt(name, targetPill, targetIndex) {
-    leftOrder = leftOrder.filter(n => n !== name)
-    centerOrder = centerOrder.filter(n => n !== name)
-    rightOrder = rightOrder.filter(n => n !== name)
+    root.cfg.leftOrder = root.cfg.leftOrder.filter(n => n !== name)
+    root.cfg.centerOrder = root.cfg.centerOrder.filter(n => n !== name)
+    root.cfg.rightOrder = root.cfg.rightOrder.filter(n => n !== name)
     var arr = pillOrderFor(targetPill).slice()
     var idx = Math.max(0, Math.min(targetIndex, arr.length))
     arr.splice(idx, 0, name)
-    if (targetPill === "left") leftOrder = arr
-    else if (targetPill === "center") centerOrder = arr
-    else rightOrder = arr
+    if (targetPill === "left") root.cfg.leftOrder = arr
+    else if (targetPill === "center") root.cfg.centerOrder = arr
+    else root.cfg.rightOrder = arr
   }
 
   function cyclePill(name) {
@@ -144,78 +182,34 @@ Item {
     var newIdx = idx + direction
     if (newIdx < 0 || newIdx >= arr.length) return
     var tmp = arr[idx]; arr[idx] = arr[newIdx]; arr[newIdx] = tmp
-    if (p === "left") leftOrder = arr
-    else if (p === "center") centerOrder = arr
-    else rightOrder = arr
+    if (p === "left") root.cfg.leftOrder = arr
+    else if (p === "center") root.cfg.centerOrder = arr
+    else root.cfg.rightOrder = arr
   }
 
-  function loadFromJson(data) {
-    if (data.launcherEnabled !== undefined)   launcherEnabled   = data.launcherEnabled
-    if (data.workspacesEnabled !== undefined) workspacesEnabled = data.workspacesEnabled
-    if (data.mprisEnabled !== undefined)      mprisEnabled      = data.mprisEnabled
-    if (data.clockEnabled !== undefined)      clockEnabled      = data.clockEnabled
-    if (data.timerEnabled !== undefined)      timerEnabled      = data.timerEnabled
-    if (data.genshinEnabled !== undefined)    genshinEnabled    = data.genshinEnabled
-    if (data.keyboardEnabled !== undefined)   keyboardEnabled   = data.keyboardEnabled
-    if (data.audioEnabled !== undefined)      audioEnabled      = data.audioEnabled
-    if (data.controlEnabled !== undefined)    controlEnabled    = data.controlEnabled
-    if (data.clipboardEnabled !== undefined)  clipboardEnabled  = data.clipboardEnabled
-    if (data.btEnabled !== undefined)         btEnabled         = data.btEnabled
-    if (data.netEnabled !== undefined)        netEnabled        = data.netEnabled
-    if (data.trayEnabled !== undefined)       trayEnabled       = data.trayEnabled
-    if (data.batteryEnabled !== undefined)    batteryEnabled    = data.batteryEnabled
-    if (data.dndEnabled !== undefined)        dndEnabled        = data.dndEnabled
-    if (data.timerSoundPath !== undefined)    timerSoundPath    = data.timerSoundPath
-    if (data.idleLockTimeout !== undefined)   idleLockTimeout   = data.idleLockTimeout
-    if (data.idleDpmsTimeout !== undefined)   idleDpmsTimeout   = data.idleDpmsTimeout
-    if (data.idleSuspendTimeout !== undefined) idleSuspendTimeout = data.idleSuspendTimeout
-    if (data.audioStep !== undefined)         audioStep         = data.audioStep
-    if (data.brightnessStep !== undefined)    brightnessStep    = data.brightnessStep
-    if (data.barHeight !== undefined)         barHeight         = data.barHeight
-    if (data.barRadius !== undefined)         barRadius         = data.barRadius
-    if (data.leftOrder !== undefined)         leftOrder         = data.leftOrder
-    if (data.centerOrder !== undefined)       centerOrder       = data.centerOrder
-    if (data.rightOrder !== undefined)        rightOrder        = data.rightOrder
-  }
+  // Заводські значення всього, що правиться в налаштуваннях. Список
+  // збігається з дефолтами адаптера, але окрема копія потрібна кнопці
+  // «Скинути», щоб повертати рівно заводські значення незалежно від
+  // того, що зараз у файлі.
+  readonly property var defaultCfg: ({
+    launcherEnabled: true, workspacesEnabled: true, mprisEnabled: true,
+    clockEnabled: true, timerEnabled: true, genshinEnabled: true,
+    keyboardEnabled: true, audioEnabled: true, controlEnabled: true,
+    clipboardEnabled: true, btEnabled: false, netEnabled: false,
+    trayEnabled: false, batteryEnabled: false, dndEnabled: false,
+    timerSoundPath: "",
+    idleLockTimeout: 300, idleDpmsTimeout: 360, idleSuspendTimeout: 900,
+    audioStep: 0.05, brightnessStep: 5,
+    barHeight: 32, barRadius: 5, barPos: "top", edgeMargin: 8,
+    pillPadding: 8, contentSpacing: 4, barAutoHide: false,
+    leftPillEnabled: true, centerPillEnabled: true, rightPillEnabled: true,
+    leftOrder: ["launcher", "sep-2", "workspaces", "sep-7", "mpris"],
+    centerOrder: ["clock", "sep-5", "timer", "sep-6", "genshin", "battery"],
+    rightOrder: ["tray", "sep-12", "net", "bt", "keyboard", "sep-10", "audio", "sep-11", "control", "clipboard"]
+  })
 
-  function saveToFile() {
-    configFile.setText(JSON.stringify({
-      launcherEnabled:   launcherEnabled,
-      workspacesEnabled: workspacesEnabled,
-      mprisEnabled:      mprisEnabled,
-      clockEnabled:      clockEnabled,
-      timerEnabled:      timerEnabled,
-      genshinEnabled:    genshinEnabled,
-      keyboardEnabled:   keyboardEnabled,
-      audioEnabled:      audioEnabled,
-      controlEnabled:    controlEnabled,
-      clipboardEnabled:  clipboardEnabled,
-      btEnabled:         btEnabled,
-      netEnabled:        netEnabled,
-      trayEnabled:       trayEnabled,
-      batteryEnabled:    batteryEnabled,
-      dndEnabled:        dndEnabled,
-      timerSoundPath:    timerSoundPath,
-      idleLockTimeout:   idleLockTimeout,
-      idleDpmsTimeout:   idleDpmsTimeout,
-      idleSuspendTimeout: idleSuspendTimeout,
-      audioStep:         audioStep,
-      brightnessStep:    brightnessStep,
-      barHeight:         barHeight,
-      barRadius:         barRadius,
-      leftOrder:         leftOrder,
-      centerOrder:       centerOrder,
-      rightOrder:        rightOrder
-    }, null, 2))
-  }
-
-  // Читає збережені налаштування з config.json при старті.
-  // Якщо файл відсутній або пошкоджений — залишаються фабричні дефолти.
-  Component.onCompleted: {
-    var text = configFile.text()
-    if (text) {
-      try { loadFromJson(JSON.parse(text)) }
-      catch (e) { console.warn("AppConfig: не вдалось розпарсити config.json", e) }
-    }
+  function resetCfg() {
+    for (var k in root.defaultCfg) root.cfg[k] = root.defaultCfg[k]
+    root.saveToFile()
   }
 }

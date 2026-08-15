@@ -32,6 +32,14 @@ Edited through SettingsPopup (UI) or manually.
 | `brightnessStep` | `number` | `5` | Mouse-wheel brightness step (0–100) |
 | `barHeight` | `number` | `32` | Bar height in pixels |
 | `barRadius` | `number` | `5` | Bar pill corner radius |
+| `barPos` | `string` | `"top"` | Bar edge: `top` or `bottom` |
+| `edgeMargin` | `number` | `8` | Gap from the screen edge to the side pills, px |
+| `pillPadding` | `number` | `8` | Inner padding of a pill, px |
+| `contentSpacing` | `number` | `4` | Gap between widgets inside a pill, px |
+| `barAutoHide` | `boolean` | `false` | Slide the bar behind the screen edge; hover the 6px edge strip to bring it back |
+| `leftPillEnabled` | `boolean` | `true` | Show the left pill as a whole (its widgets stay configured) |
+| `centerPillEnabled` | `boolean` | `true` | Show the center pill as a whole |
+| `rightPillEnabled` | `boolean` | `true` | Show the right pill as a whole |
 | `leftOrder` | `string[]` | — | Widget names in the left pill (including `sep-N`) |
 | `centerOrder` | `string[]` | — | Widget names in the center pill |
 | `rightOrder` | `string[]` | — | Widget names in the right pill |
@@ -41,15 +49,19 @@ Generated automatically by `addSep()` in AppConfig.
 
 Idle timeouts must be ascending: `idleLockTimeout < idleDpmsTimeout <
 idleSuspendTimeout`. A timeout of `0` disables that level ("never") and
-exempts it from the ordering constraint. The widgets/bar apply
-`barHeight`/`barRadius` after a shell restart (they are read at startup).
+exempts it from the ordering constraint. All bar settings are applied
+immediately (the shell reads them reactively); no restart is needed.
 
 ### Read/write
 
-The file is read at startup through `Quickshell.Io.FileView`.
-AppConfig.qml parses the text with `JSON.parse()` in `Component.onCompleted`.
-Writing — `JSON.stringify()` + `configFile.setText()`. Details in
-[ARCHITECTURE.md #9.2](ARCHITECTURE.md).
+The file is read at startup through `Quickshell.Io.FileView` with a
+`JsonAdapter` (typed properties with factory defaults). The adapter is the
+single source of truth (`window.appConfig.cfg`); writing — `configFile.writeAdapter()` (AppConfig `saveToFile()`). Details in [ARCHITECTURE.md #9.2](ARCHITECTURE.md).
+
+Changes from the SettingsPopup apply immediately and are persisted. Manual
+file edits apply after a shell restart: FileView live-watching is disabled
+on Quickshell 0.3.0 (atomic-rename writes crash the shell due to a
+use-after-free in the file watcher).
 
 All fields are optional: missing or broken ones fall back to the factory
 defaults from AppConfig.qml (the shell does not crash).

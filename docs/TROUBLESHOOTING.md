@@ -171,8 +171,10 @@ killall quickshell && quickshell &
 ## quickshell does not see config.json changes
 **Symptom:** edited `data/config.json` by hand, but the bar did not update.
 
-**Fix:** `selfshell reload`. (FileView changes from the UI apply
-immediately; manual file edits — after a restart.)
+**Fix:** `selfshell reload`. Changes from the SettingsPopup apply
+immediately; manual file edits — after a restart (FileView live-watching
+is disabled on Quickshell 0.3.0: atomic-rename writes crash the shell due
+to a use-after-free in the file watcher).
 
 ## selfshell update fails with a "not a git clone" error
 **Cause:** this was fixed — `selfshell update` now falls back to a GitHub

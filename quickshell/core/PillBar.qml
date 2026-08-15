@@ -53,7 +53,7 @@ Item {
     spacing: root.contentSpacing
 
     Repeater {
-      model: root.orderModel.filter(name => root.appConfig.isSep(name) || root.appConfig[name + "Enabled"])
+      model: root.orderModel.filter(name => root.appConfig.isSep(name) || root.appConfig.cfg[name + "Enabled"])
       delegate: RowLayout {
         required property string modelData
         spacing: 4
