@@ -53,7 +53,7 @@ Item {
         text: "All settings apply immediately."
         color: window.palette.mutedAlt
         font.family: window.palette.font
-        font.pixelSize: 8
+        font.pixelSize: window.appConfig.scaled(10)
         Layout.fillWidth: true
         wrapMode: Text.WordWrap
       }
@@ -89,17 +89,17 @@ Item {
       text: field.label
       color: root.window.palette.fg
       font.family: root.window.palette.font
-      font.pixelSize: 9
+      font.pixelSize: window.appConfig.scaled(10)
       elide: Text.ElideRight
       Layout.fillWidth: true
     }
 
     Rectangle {
-      implicitWidth: 16
-      implicitHeight: 16
+      implicitWidth: 18
+      implicitHeight: 18
       radius: 3
       color: fieldMouseMin.pressed ? root.window.palette.bgAlpha : root.window.palette.bg2
-      Text { anchors.centerIn: parent; text: "\u2212"; color: root.window.palette.fg; font.pixelSize: 10; font.bold: true }
+      Text { anchors.centerIn: parent; text: "\u2212"; color: root.window.palette.fg; font.pixelSize: window.appConfig.scaled(11); font.bold: true }
       MouseArea {
         id: fieldMouseMin
         anchors.fill: parent
@@ -112,17 +112,17 @@ Item {
       text: root.cfg[field.prop].toFixed(field.decimals)
       color: root.window.palette.fg
       font.family: root.window.palette.font
-      font.pixelSize: 9
+      font.pixelSize: window.appConfig.scaled(10)
       horizontalAlignment: Text.AlignHCenter
-      Layout.preferredWidth: 44
+      Layout.preferredWidth: 46
     }
 
     Rectangle {
-      implicitWidth: 16
-      implicitHeight: 16
+      implicitWidth: 18
+      implicitHeight: 18
       radius: 3
       color: fieldMousePlus.pressed ? root.window.palette.bgAlpha : root.window.palette.bg2
-      Text { anchors.centerIn: parent; text: "+"; color: root.window.palette.fg; font.pixelSize: 10; font.bold: true }
+      Text { anchors.centerIn: parent; text: "+"; color: root.window.palette.fg; font.pixelSize: window.appConfig.scaled(11); font.bold: true }
       MouseArea {
         id: fieldMousePlus
         anchors.fill: parent

@@ -13,15 +13,18 @@ AnimatedPopup {
 
   required property QtObject window
   palette: window.palette
+  appConfig: window.appConfig
 
-  implicitWidth: 800
-  implicitHeight: contentColumn.implicitHeight + 30
+  // Фіксований розмір вікна: якщо контенту сторінки забагато,
+  // він скролиться всередині (pageFlick) замість розтягування вікна
+  implicitWidth: 760
+  implicitHeight: 560
   enterScale: 0.75
   slideDistance: 6
   transformOrigin: Item.Center
 
-  property int screenW: window ? window.screen.width : 1920
-  property int screenH: window ? window.screen.height : 1080
+  readonly property int screenW: window ? window.screen.width : 1920
+  readonly property int screenH: window ? window.screen.height : 1080
 
   // Адаптер config.json (дані) і обгортка (хелпери isSep/addSep/...)
   readonly property var cfg: window.appConfig.cfg
@@ -31,14 +34,15 @@ AnimatedPopup {
   readonly property var sections: [
     { title: "Bar", page: "settings/BarSection.qml" },
     { title: "Layout", page: "settings/LayoutSection.qml" },
+    { title: "Wallpaper", page: "settings/WallpaperSection.qml" },
+    { title: "Appearance", page: "settings/AppearanceSection.qml" },
     { title: "Behavior", page: "settings/BehaviorSection.qml" }
   ]
   property int section: 0
 
   Component.onCompleted: { anchor.window = window }
 
-  // Висота попапа залежить від розділу — центруємо заново при кожній зміні
-  onImplicitHeightChanged: { if (visible) root.recenter() }
+  // Вікно фіксоване — центруємо один раз при показі
   function recenter() {
     anchor.rect = Qt.rect(
       (screenW - root.implicitWidth) / 2,
@@ -60,32 +64,26 @@ AnimatedPopup {
     }
   }
 
-  Item {
-    id: coordSpace
+  RowLayout {
     anchors.fill: parent
+    anchors.margins: 14
+    spacing: 12
 
-    ColumnLayout {
-      id: contentColumn
-      anchors.fill: parent
-      anchors.margins: 15
-      spacing: 12
+    // --- Бічна панель розділів: ширина під текст (плюс паддинги) ---
+    Rectangle {
+      Layout.preferredWidth: tabsCol.implicitWidth + 16
+      Layout.fillHeight: true
+      radius: 8
+      color: window.palette.bg1
+      border.width: 1
+      border.color: window.palette.bg2
 
-      RowLayout {
-        Layout.fillWidth: true
-        Text {
-          text: "\u2699 Settings"
-          color: window.palette.fg
-          font.family: window.palette.font
-          font.pixelSize: 14
-          font.bold: true
-        }
-        Item { Layout.fillWidth: true }
-      }
-
-      // Перемикач розділів
-      RowLayout {
-        Layout.fillWidth: true
+      ColumnLayout {
+        id: tabsCol
+        anchors.fill: parent
+        anchors.margins: 8
         spacing: 6
+
         Repeater {
           model: root.sections
           delegate: Rectangle {
@@ -94,21 +92,27 @@ AnimatedPopup {
             required property int index
             readonly property bool active: root.section === tabBtn.index
 
-            Layout.preferredWidth: tabText.implicitWidth + 24
-            Layout.preferredHeight: 24
-            radius: 4
+            // fillWidth розтягує кнопку на всю панель, preferredWidth
+            // задає панелі ширину по тексту (tabsCol.implicitWidth)
+            Layout.fillWidth: true
+            Layout.preferredWidth: tabText.implicitWidth + 32
+            Layout.preferredHeight: 36
+            radius: 5
             color: tabBtn.active
                    ? window.palette.accent
-                   : (tabMa.containsMouse ? window.palette.bg2 : window.palette.bg1)
+                   : (tabMa.containsMouse ? window.palette.bg2 : "transparent")
             Behavior on color { ColorAnimation { duration: 120 } }
 
             Text {
               id: tabText
               anchors.centerIn: parent
+              width: parent.width - 16
+              horizontalAlignment: Text.AlignHCenter
+              elide: Text.ElideRight
               text: tabBtn.modelData.title
               color: tabBtn.active ? window.palette.bg0H : window.palette.fg
               font.family: window.palette.font
-              font.pixelSize: 9
+              font.pixelSize: appConfig.scaled(11)
               font.bold: true
             }
 
@@ -121,23 +125,53 @@ AnimatedPopup {
             }
           }
         }
-        Item { Layout.fillWidth: true }
+
+        Item { Layout.fillHeight: true }
+      }
+    }
+
+    // --- Контент: заголовок + скролована сторінка розділу ---
+    ColumnLayout {
+      Layout.fillWidth: true
+      Layout.fillHeight: true
+      spacing: 10
+
+      Text {
+        text: "\u2699 Settings"
+        color: window.palette.fg
+        font.family: window.palette.font
+        font.pixelSize: appConfig.scaled(16)
+        font.bold: true
       }
 
-      // Вміст поточного розділу: setSource з готовим sys, щоб сторінка
-      // не будувалась із порожньою прив'язкою до палітри
-      Loader {
-        id: sectionLoader
+      // Скрол сторінки: контент заввишки як сама сторінка, в'юпорт —
+      // висота вікна; коли сторінка вища за в'юпорт, з'являється
+      // прокрутка. Патерн той самий, що в ControlPopup (notifFlick).
+      Flickable {
+        id: pageFlick
         Layout.fillWidth: true
+        Layout.fillHeight: true
+        clip: true
+        contentWidth: pageFlick.width
+        contentHeight: sectionLoader.item?.implicitHeight ?? 0
+        boundsBehavior: Flickable.StopAtBounds
+        interactive: contentHeight > pageFlick.height
 
-        function reload() {
-          setSource(root.sections[root.section].page, { sys: root })
-        }
-        Component.onCompleted: reload()
+        // Вміст поточного розділу: setSource з готовим sys, щоб сторінка
+        // не будувалась із порожньою прив'язкою до палітри
+        Loader {
+          id: sectionLoader
+          width: pageFlick.width
 
-        Connections {
-          target: root
-          function onSectionChanged() { sectionLoader.reload() }
+          function reload() {
+            setSource(root.sections[root.section].page, { sys: root })
+          }
+          Component.onCompleted: reload()
+
+          Connections {
+            target: root
+            function onSectionChanged() { sectionLoader.reload() }
+          }
         }
       }
     }

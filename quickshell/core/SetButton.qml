@@ -24,7 +24,7 @@ Rectangle {
     text: btn.text
     color: btn.sys.palette.fg
     font.family: btn.sys.palette.font
-    font.pixelSize: 9
+    font.pixelSize: 10
   }
 
   MouseArea {

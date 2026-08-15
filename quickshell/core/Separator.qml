@@ -5,7 +5,13 @@ import QtQuick
 
 // Вертикальний роздільник між секціями панелі
 Item {
+  id: root
+
   required property QtObject pal
+
+  // Прозорість центральної лінії та світіння (керуються з Appearance)
+  property real lineOpacity: 0.65
+  property real glowOpacity: 0.10
 
   implicitWidth: 5
   implicitHeight: 16
@@ -23,7 +29,7 @@ Item {
       GradientStop { position: 0.5; color: pal.green }
       GradientStop { position: 1.0; color: "#00000000" }
     }
-    opacity: 0.65
+    opacity: root.lineOpacity
   }
 
   // М'яке світіння з боків лінії
@@ -33,6 +39,6 @@ Item {
     height: parent.height * 0.7
     radius: 1.5
     color: pal.aqua
-    opacity: 0.10
+    opacity: root.glowOpacity
   }
 }

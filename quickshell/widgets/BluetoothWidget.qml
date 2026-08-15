@@ -52,7 +52,7 @@ Item {
       }
 
       font.family: window.palette.font
-      font.pixelSize: 14
+      font.pixelSize: window.appConfig.scaled(14)
       scale: root.hovered ? 1.2 : 1.0
 
       Behavior on color { ColorAnimation { duration: 220 } }
@@ -83,7 +83,7 @@ Item {
       }
 
       font.family: window.palette.font
-      font.pixelSize: 12
+      font.pixelSize: window.appConfig.scaled(12)
       scale: root.hovered ? 1.15 : 1.0
 
       Behavior on color { ColorAnimation { duration: 220 } }

@@ -18,6 +18,7 @@ AnimatedPopup {
   required property QtObject anchorItem
   required property QtObject window
   palette: window.palette
+  appConfig: window.appConfig
 
   implicitWidth: 320
   implicitHeight: layout.implicitHeight + 20
@@ -421,7 +422,7 @@ AnimatedPopup {
           text: "󰖩"
           color: netArea.containsMouse ? window.palette.green : window.palette.gray
           Behavior on color { ColorAnimation { duration: 120 } }
-          font.family: window.palette.font; font.pixelSize: 13
+          font.family: window.palette.font; font.pixelSize: appConfig.scaled(13)
         }
 
         MouseArea {
@@ -445,7 +446,7 @@ AnimatedPopup {
           text: ""
           color: btArea.containsMouse ? window.palette.green : window.palette.gray
           Behavior on color { ColorAnimation { duration: 120 } }
-          font.family: window.palette.font; font.pixelSize: 13
+          font.family: window.palette.font; font.pixelSize: appConfig.scaled(13)
         }
 
         MouseArea {
@@ -469,7 +470,7 @@ AnimatedPopup {
           text: "\uF03E"
           color: wallArea.containsMouse ? window.palette.green : window.palette.gray
           Behavior on color { ColorAnimation { duration: 120 } }
-          font.family: window.palette.font; font.pixelSize: 13
+          font.family: window.palette.font; font.pixelSize: appConfig.scaled(13)
         }
 
         MouseArea {
@@ -493,7 +494,7 @@ AnimatedPopup {
           text: ""
           color: settingsArea.containsMouse ? window.palette.green : window.palette.gray
           Behavior on color { ColorAnimation { duration: 120 } }
-          font.family: window.palette.font; font.pixelSize: 13
+          font.family: window.palette.font; font.pixelSize: appConfig.scaled(13)
         }
 
         MouseArea {
@@ -517,7 +518,7 @@ AnimatedPopup {
           text: "\uF030"
           color: fullArea.containsMouse ? window.palette.green : window.palette.gray
           Behavior on color { ColorAnimation { duration: 120 } }
-          font.family: window.palette.font; font.pixelSize: 13
+          font.family: window.palette.font; font.pixelSize: appConfig.scaled(13)
         }
 
         MouseArea {
@@ -544,7 +545,7 @@ AnimatedPopup {
           text: "\uF125"
           color: regionArea.containsMouse ? window.palette.green : window.palette.gray
           Behavior on color { ColorAnimation { duration: 120 } }
-          font.family: window.palette.font; font.pixelSize: 13
+          font.family: window.palette.font; font.pixelSize: appConfig.scaled(13)
         }
 
         MouseArea {
@@ -572,7 +573,7 @@ AnimatedPopup {
         text: "\uF185"
         color: window.palette.yellow
         font.family: window.palette.font
-        font.pixelSize: 14
+        font.pixelSize: appConfig.scaled(14)
         Layout.alignment: Qt.AlignVCenter
       }
 
@@ -618,7 +619,7 @@ AnimatedPopup {
         text: root.brightness + "%"
         color: window.palette.textLight
         font.family: window.palette.font
-        font.pixelSize: 11
+        font.pixelSize: appConfig.scaled(11)
         Layout.preferredWidth: 32
         horizontalAlignment: Text.AlignRight
         Layout.alignment: Qt.AlignVCenter
@@ -634,7 +635,7 @@ AnimatedPopup {
         text: "\uF186"
         color: root.readingTemp < 6400 ? window.palette.orange : window.palette.gray
         font.family: window.palette.font
-        font.pixelSize: 14
+        font.pixelSize: appConfig.scaled(14)
         Layout.alignment: Qt.AlignVCenter
       }
 
@@ -680,7 +681,7 @@ AnimatedPopup {
         text: root.readingTemp >= 6500 ? "OFF" : root.readingTemp + "K"
         color: root.readingTemp < 6400 ? window.palette.orange : window.palette.textLight
         font.family: window.palette.font
-        font.pixelSize: 11
+        font.pixelSize: appConfig.scaled(11)
         Layout.preferredWidth: 36
         horizontalAlignment: Text.AlignRight
         Layout.alignment: Qt.AlignVCenter
@@ -740,7 +741,7 @@ AnimatedPopup {
                 Text {
                   text: modelData.appName
                   color: window.palette.green
-                  font.family: window.palette.font; font.pixelSize: 11; font.bold: true
+                  font.family: window.palette.font; font.pixelSize: appConfig.scaled(11); font.bold: true
                   elide: Text.ElideRight
                   Layout.fillWidth: true
                 }
@@ -748,7 +749,7 @@ AnimatedPopup {
                 Text {
                   text: modelData.notifs.length
                   color: window.palette.gray
-                  font.family: window.palette.font; font.pixelSize: 10
+                  font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
                 }
 
                 Rectangle {
@@ -759,7 +760,7 @@ AnimatedPopup {
                     anchors.centerIn: parent
                     text: "\uF00D"
                     color: groupClearArea.containsMouse ? window.palette.bg0H : window.palette.gray
-                    font.family: window.palette.font; font.pixelSize: 8
+                    font.family: window.palette.font; font.pixelSize: appConfig.scaled(8)
                   }
                   MouseArea {
                     id: groupClearArea
@@ -845,7 +846,7 @@ AnimatedPopup {
                         Text {
                           text: notif.summary
                           color: window.palette.fg
-                          font.family: window.palette.font; font.pixelSize: 12; font.bold: true
+                          font.family: window.palette.font; font.pixelSize: appConfig.scaled(12); font.bold: true
                           wrapMode: Text.WordWrap
                           Layout.fillWidth: true
                           maximumLineCount: 2
@@ -855,7 +856,7 @@ AnimatedPopup {
                         Text {
                           text: notif.body
                           color: window.palette.gray
-                          font.family: window.palette.font; font.pixelSize: 11
+                          font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
                           wrapMode: Text.WordWrap
                           Layout.fillWidth: true
                           maximumLineCount: 2
@@ -884,7 +885,7 @@ AnimatedPopup {
                           anchors.centerIn: parent
                           text: "\uF00D"
                           color: closeArea.containsMouse ? window.palette.bg0H : window.palette.gray
-                          font.family: window.palette.font; font.pixelSize: 9
+                          font.family: window.palette.font; font.pixelSize: appConfig.scaled(9)
                         }
 
                         MouseArea {
@@ -926,7 +927,7 @@ AnimatedPopup {
                             anchors.centerIn: parent
                             text: action.text
                             color: window.palette.light
-                            font.family: window.palette.font; font.pixelSize: 9
+                            font.family: window.palette.font; font.pixelSize: appConfig.scaled(9)
                           }
 
                           MouseArea {
@@ -957,14 +958,14 @@ AnimatedPopup {
           Layout.alignment: Qt.AlignHCenter
           text: "\uF0F3"
           color: window.palette.gray
-          font.family: window.palette.font; font.pixelSize: 22
+          font.family: window.palette.font; font.pixelSize: appConfig.scaled(22)
         }
 
         Text {
           Layout.alignment: Qt.AlignHCenter
           text: "No notifications"
           color: window.palette.gray
-          font.family: window.palette.font; font.pixelSize: 12
+          font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
         }
       }
     }
@@ -984,7 +985,7 @@ AnimatedPopup {
           anchors.centerIn: parent
           text: "\uF12D"
           color: window.palette.gray
-          font.family: window.palette.font; font.pixelSize: 11
+          font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
         }
 
         MouseArea {
@@ -1005,7 +1006,7 @@ AnimatedPopup {
           anchors.centerIn: parent
           text: root.muted ? "\uF026" : "\uF028"
           color: root.muted ? window.palette.red : window.palette.gray
-          font.family: window.palette.font; font.pixelSize: 11
+          font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
           Behavior on color { ColorAnimation { duration: 120 } }
         }
 
@@ -1028,7 +1029,7 @@ AnimatedPopup {
           anchors.centerIn: parent
           text: root.dndEnabled ? "\uF1F6" : "\uF0F3"
           color: root.dndEnabled ? window.palette.red : window.palette.gray
-          font.family: window.palette.font; font.pixelSize: 11
+          font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
           Behavior on color { ColorAnimation { duration: 120 } }
         }
 
@@ -1054,7 +1055,7 @@ AnimatedPopup {
           anchors.centerIn: parent
           text: "󰅶"
           color: root.caffeineEnabled ? window.palette.green : window.palette.gray
-          font.family: window.palette.font; font.pixelSize: 11
+          font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
           Behavior on color { ColorAnimation { duration: 120 } }
         }
 
@@ -1103,7 +1104,7 @@ AnimatedPopup {
             anchors.centerIn: parent
             text: act.icon
             color: window.palette.fg
-            font.family: window.palette.font; font.pixelSize: 16
+            font.family: window.palette.font; font.pixelSize: appConfig.scaled(16)
             Behavior on color { ColorAnimation { duration: 150 } }
           }
 

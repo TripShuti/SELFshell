@@ -6,6 +6,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Розділ налаштувань **Appearance**: дизайн поза автопалітрою для бара і
+  попапів:
+  - **Popups** — прозорість фону, градієнт (lighten), радіус кутів, товщина
+    рамки, зовнішнє сяйво (застосовуються до всіх 15 попапів через базу
+    AnimatedPopup);
+  - **Toast & OSD** — радіус, градієнт, сяйво тоста сповіщень та OSD;
+  - **Bar** — прозорість фону пігулок, градієнт, товщина рамки, розмір і
+    прозорість сяйва (повзунок прозорості тьмяніє, доки розмір = 0, як у
+    Panacea);
+  - **Separators** — прозорість лінії та світіння роздільників між групами
+    віджетів;
+  - **Scale** — глобальний `uiScale` (0.8–1.5): множник усіх шрифтів і
+    гліфів у барі, попапах і налаштуваннях.
+- 18 нових ключів конфіга (`popupBgOpacity`, `popupBgLighten`, `popupRadius`,
+  `popupBorderWidth`, `popupGlowOpacity`, `toastRadius`, `toastLighten`,
+  `toastGlowOpacity`, `osdRadius`, `osdLighten`, `barLighten`, `barGlowSize`,
+  `barGlowOpacity`, `barBgOpacity`, `barBorderWidth`, `separatorOpacity`,
+  `separatorGlowOpacity`, `uiScale`) — усі з дефолтами, що повторюють поточний
+  вигляд; старий config.json сумісний.
+- Необов'язковий підпис-підказка `sub` у `SetSlider`.
+
+### Fixed
+
+- Повзунки налаштувань із діапазоном меншим за 1 (opacity-слайдери,
+  `uiScale`) насичувалися на максимумі ще на половині треку і не давали
+  повного ходу — `span` у `SetSlider` рахувався через `Math.max(1, ...)`
+  замість реальної різниці `to - from`.
+
 ## [0.4.0] - 2026-08-15
 
 ### Added

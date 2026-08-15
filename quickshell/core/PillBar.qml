@@ -19,6 +19,12 @@ Item {
   property real contentSpacing: 4
   property real glowSize: 0
   property real glowOpacity: 0.1
+  // наскільки верх градієнта світліший за низ (1.0 = суцільний колір)
+  property real lighten: 1.30
+  // множник прозорості фону (1.0 = колір з палітри як є)
+  property real bgOpacity: 1.0
+  // товщина рамки пігулки (0 = без рамки)
+  property real borderWidth: 0
 
   implicitWidth: row.implicitWidth + 2 * root.padding
 
@@ -37,11 +43,13 @@ Item {
     anchors.fill: parent
     radius: root.radius
     color: root.palette.bgAlpha
+    border.width: root.borderWidth
     border.color: root.palette.outlineVariant
+    opacity: root.bgOpacity
 
     gradient: Gradient {
       orientation: Gradient.Vertical
-      GradientStop { position: 0.0; color: Qt.lighter(root.palette.baseOverlay, 1.30) }
+      GradientStop { position: 0.0; color: Qt.lighter(root.palette.baseOverlay, root.lighten) }
       GradientStop { position: 1.0; color: root.palette.bgAlpha }
     }
   }
@@ -69,6 +77,8 @@ Item {
         Separator {
           Layout.alignment: Qt.AlignVCenter
           pal: root.palette
+          lineOpacity: root.appConfig.cfg.separatorOpacity
+          glowOpacity: root.appConfig.cfg.separatorGlowOpacity
           visible: root.appConfig.isSep(modelData)
         }
       }

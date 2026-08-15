@@ -43,6 +43,24 @@ Edited through SettingsPopup (UI) or manually.
 | `leftOrder` | `string[]` | — | Widget names in the left pill (including `sep-N`) |
 | `centerOrder` | `string[]` | — | Widget names in the center pill |
 | `rightOrder` | `string[]` | — | Widget names in the right pill |
+| `popupBgOpacity` | `number` | `0.9` | Popup background opacity (0.5–1.0) |
+| `popupBgLighten` | `number` | `1.5` | Popup background gradient lighten; 1.0 = flat color (1.0–2.0) |
+| `popupRadius` | `number` | `10` | Popup corner radius, px (0–24) |
+| `popupBorderWidth` | `number` | `1` | Popup border width, px (0–4) |
+| `popupGlowOpacity` | `number` | `0.1` | Popup outer glow opacity; 0 = no glow (0–0.4) |
+| `toastRadius` | `number` | `6` | Notification toast corner radius, px (0–24) |
+| `toastLighten` | `number` | `1.16` | Toast background gradient lighten (1.0–2.0) |
+| `toastGlowOpacity` | `number` | `0.2` | Toast outer glow opacity (0–0.5) |
+| `osdRadius` | `number` | `10` | OSD corner radius, px (0–24) |
+| `osdLighten` | `number` | `1.5` | OSD background gradient lighten (1.0–2.0) |
+| `barLighten` | `number` | `1.3` | Bar pill gradient lighten; 1.0 = flat color (1.0–2.0) |
+| `barGlowSize` | `number` | `0` | Colored halo around pills, px; 0 = no glow (0–24) |
+| `barGlowOpacity` | `number` | `0.1` | Pill glow opacity (0–0.5) |
+| `barBgOpacity` | `number` | `1.0` | Pill background opacity multiplier; 1.0 = palette color as-is (0.2–1.0) |
+| `barBorderWidth` | `number` | `0` | Pill outline width, px; 0 = no border (0–4) |
+| `separatorOpacity` | `number` | `0.65` | Separator line opacity between widget groups (0–1.0) |
+| `separatorGlowOpacity` | `number` | `0.1` | Separator glow opacity (0–0.5) |
+| `uiScale` | `number` | `1.0` | Global multiplier for all text/icon-glyph sizes in bar, popups and settings (0.8–1.5) |
 
 Separators look like `sep-N`, where N is a unique numeric ID.
 Generated automatically by `addSep()` in AppConfig.

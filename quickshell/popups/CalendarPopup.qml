@@ -15,6 +15,7 @@ AnimatedPopup {
   required property QtObject anchorItem
   required property QtObject window
   palette: window.palette
+  appConfig: window.appConfig
 
   implicitWidth: 280
   implicitHeight: layout.implicitHeight + 16
@@ -168,7 +169,7 @@ AnimatedPopup {
         Text {
           anchors.centerIn: parent
           text: "\uF053"; color: window.palette.fg
-          font.family: window.palette.font; font.pixelSize: 14
+          font.family: window.palette.font; font.pixelSize: appConfig.scaled(14)
         }
         MouseArea {
           anchors.fill: parent
@@ -184,7 +185,7 @@ AnimatedPopup {
         Layout.fillWidth: true
         horizontalAlignment: Text.AlignHCenter
         text: monthNames[currentMonth] + " " + currentYear
-        color: window.palette.fg; font.family: window.palette.font; font.pixelSize: 14; font.bold: true
+        color: window.palette.fg; font.family: window.palette.font; font.pixelSize: appConfig.scaled(14); font.bold: true
       }
 
       // Кнопка вперед
@@ -196,7 +197,7 @@ AnimatedPopup {
         Text {
           anchors.centerIn: parent
           text: "\uF054"; color: window.palette.fg
-          font.family: window.palette.font; font.pixelSize: 14
+          font.family: window.palette.font; font.pixelSize: appConfig.scaled(14)
         }
         MouseArea {
           anchors.fill: parent
@@ -218,7 +219,7 @@ AnimatedPopup {
           Layout.fillWidth: true
           Layout.preferredWidth: (root.implicitWidth - 32) / 7
           horizontalAlignment: Text.AlignHCenter
-          text: modelData; color: window.palette.muted; font.family: window.palette.font; font.pixelSize: 12
+          text: modelData; color: window.palette.muted; font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
         }
       }
     }
@@ -264,7 +265,7 @@ AnimatedPopup {
                    : isToday ? window.palette.fg
                    : isInside ? window.palette.fg
                    : "transparent"
-              font.family: window.palette.font; font.pixelSize: 13
+              font.family: window.palette.font; font.pixelSize: appConfig.scaled(13)
             }
 
             // Точка-індикатор наявності задач
@@ -302,7 +303,7 @@ AnimatedPopup {
     Text {
       text: selectedLabel
       color: window.palette.green
-      font.family: window.palette.font; font.pixelSize: 13; font.bold: true
+      font.family: window.palette.font; font.pixelSize: appConfig.scaled(13); font.bold: true
       visible: selectedDate !== ""
     }
 
@@ -328,7 +329,7 @@ AnimatedPopup {
           anchors.rightMargin: 6
           verticalAlignment: Text.AlignVCenter
           color: window.palette.fg
-          font.family: window.palette.font; font.pixelSize: 12
+          font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
           clip: true
 
           onAccepted: root.addTask()
@@ -347,7 +348,7 @@ AnimatedPopup {
           anchors.centerIn: parent
           text: "\u271A"
           color: taskInput.text.trim() !== "" ? window.palette.baseOverlay : window.palette.gray
-          font.family: window.palette.font; font.pixelSize: 14
+          font.family: window.palette.font; font.pixelSize: appConfig.scaled(14)
         }
 
         MouseArea {
@@ -397,7 +398,7 @@ AnimatedPopup {
                 anchors.centerIn: parent
                 text: "\u2713"
                 color: window.palette.baseOverlay
-                font.family: window.palette.font; font.pixelSize: 10
+                font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
                 visible: modelData.done
               }
 
@@ -414,7 +415,7 @@ AnimatedPopup {
               Layout.alignment: Qt.AlignVCenter
               text: modelData.text
               color: modelData.done ? window.palette.muted : window.palette.fg
-              font.family: window.palette.font; font.pixelSize: 12
+              font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
               elide: Text.ElideRight
               style: modelData.done ? Text.Sunken : Text.Normal
               styleColor: modelData.done ? window.palette.muted : "transparent"
@@ -439,7 +440,7 @@ AnimatedPopup {
                 anchors.centerIn: parent
                 text: "x"
                 color: hovered ? window.palette.textLight : window.palette.fg
-                font.family: window.palette.font; font.pixelSize: 12; font.bold: true
+                font.family: window.palette.font; font.pixelSize: appConfig.scaled(12); font.bold: true
               }
 
               MouseArea {

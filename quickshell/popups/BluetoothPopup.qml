@@ -15,6 +15,7 @@ AnimatedPopup {
 
   required property QtObject window
   palette: window.palette
+  appConfig: window.appConfig
 
   implicitWidth: 380
   implicitHeight: layout.implicitHeight + 16
@@ -63,7 +64,7 @@ AnimatedPopup {
       Text {
         text: "Bluetooth"
         color: window.palette.accent
-        font.family: window.palette.font; font.pixelSize: 16; font.bold: true
+        font.family: window.palette.font; font.pixelSize: appConfig.scaled(16); font.bold: true
         Layout.fillWidth: true
       }
 
@@ -85,7 +86,7 @@ AnimatedPopup {
       Text {
         text: adapter?.name ?? "No adapter"
         color: window.palette.mutedAlt
-        font.family: window.palette.font; font.pixelSize: 12
+        font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
         Layout.fillWidth: true
       }
 
@@ -108,7 +109,7 @@ AnimatedPopup {
           anchors.centerIn: parent
           text: scanning ? "Scanning..." : "Scan"
           color: window.palette.textLight
-          font.family: window.palette.font; font.pixelSize: 11
+          font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
         }
         MouseArea {
           anchors.fill: parent
@@ -131,7 +132,7 @@ AnimatedPopup {
       Text {
         text: "Discoverable"
         color: window.palette.textLight
-        font.family: window.palette.font; font.pixelSize: 12
+        font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
       }
 
       ToggleSwitch {
@@ -158,7 +159,7 @@ AnimatedPopup {
     Text {
       text: "Devices"
       color: window.palette.accent
-      font.family: window.palette.font; font.pixelSize: 12; font.bold: true
+      font.family: window.palette.font; font.pixelSize: appConfig.scaled(12); font.bold: true
     }
 
     // Список Bluetooth пристроїв
@@ -195,7 +196,7 @@ AnimatedPopup {
             Text {
               text: modelData.name || modelData.deviceName || modelData.address
               color: window.palette.textLight
-              font.family: window.palette.font; font.pixelSize: 12
+              font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
               elide: Text.ElideRight
               Layout.fillWidth: true
               opacity: device.devLoading ? 0.5 : 1
@@ -212,7 +213,7 @@ AnimatedPopup {
                   return modelData.address
                 }
                 color: device.devConnected ? window.palette.accent : window.palette.mutedAlt
-                font.family: window.palette.font; font.pixelSize: 10
+                font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
                 opacity: device.devLoading ? 0.5 : 1
               }
 
@@ -221,7 +222,7 @@ AnimatedPopup {
                 visible: device.devConnected && modelData.batteryAvailable
                 text: "• " + batteryIcon(modelData.battery) + " " + Math.round((modelData.battery || 0) * 100) + "%"
                 color: batteryColor(modelData.battery)
-                font.family: window.palette.font; font.pixelSize: 10
+                font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
                 opacity: device.devLoading ? 0.5 : 1
 
                 function batteryIcon(level) {
@@ -259,7 +260,7 @@ AnimatedPopup {
                 return "Pair"
               }
               color: modelData.paired && !device.devConnected ? window.palette.bgLayer : window.palette.textLight
-              font.family: window.palette.font; font.pixelSize: 10
+              font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
             }
             MouseArea {
               anchors.fill: parent
@@ -292,7 +293,7 @@ AnimatedPopup {
               anchors.centerIn: parent
               text: "\u2716"
               color: window.palette.danger
-              font.family: window.palette.font; font.pixelSize: 12
+              font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
             }
             MouseArea {
               anchors.fill: parent
@@ -310,7 +311,7 @@ AnimatedPopup {
     Text {
       text: adapter && adapter.devices.values.length === 0 ? "No devices" : ""
       color: window.palette.mutedAlt
-      font.family: window.palette.font; font.pixelSize: 12
+      font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
       visible: adapter != null
     }
 
@@ -318,7 +319,7 @@ AnimatedPopup {
     Text {
       text: adapter == null ? "Bluetooth adapter not available" : ""
       color: window.palette.danger
-      font.family: window.palette.font; font.pixelSize: 12
+      font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
       visible: adapter == null
     }
   }

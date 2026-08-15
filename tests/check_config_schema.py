@@ -43,6 +43,14 @@ NUM_FIELDS = {
     "audioStep": (0.0, 1.0), "brightnessStep": (0, 100),
     "barHeight": (1, 200), "barRadius": (0, 100),
     "edgeMargin": (0, 200), "pillPadding": (0, 100), "contentSpacing": (0, 100),
+    "popupBgOpacity": (0.0, 1.0), "popupBgLighten": (1.0, 2.0),
+    "popupRadius": (0, 24), "popupBorderWidth": (0, 4), "popupGlowOpacity": (0.0, 1.0),
+    "toastRadius": (0, 24), "toastLighten": (1.0, 2.0), "toastGlowOpacity": (0.0, 1.0),
+    "osdRadius": (0, 24), "osdLighten": (1.0, 2.0),
+    "barLighten": (1.0, 2.0), "barGlowSize": (0, 100), "barGlowOpacity": (0.0, 1.0),
+    "barBgOpacity": (0.0, 1.0), "barBorderWidth": (0, 4),
+    "separatorOpacity": (0.0, 1.0), "separatorGlowOpacity": (0.0, 1.0),
+    "uiScale": (0.5, 2.0),
 }
 STR_FIELDS = ["barPos"]
 ORDER_FIELDS = ["leftOrder", "centerOrder", "rightOrder"]

@@ -18,6 +18,7 @@ AnimatedPopup {
   required property QtObject window
   required property QtObject anchorItem
   palette: window.palette
+  appConfig: window.appConfig
 
   // Воркспейс, для якого відкрито попап (задається з Bar.qml)
   property var workspace: null
@@ -69,7 +70,7 @@ AnimatedPopup {
           : "Workspace"
         color: window.palette.fg
         font.family: window.palette.font
-        font.pixelSize: 12
+        font.pixelSize: appConfig.scaled(12)
         font.bold: true
         elide: Text.ElideRight
         Layout.fillWidth: true
@@ -94,7 +95,7 @@ AnimatedPopup {
         text: "Windows"
         color: window.palette.gray
         font.family: window.palette.font
-        font.pixelSize: 9
+        font.pixelSize: appConfig.scaled(9)
         font.bold: true
       }
 
@@ -114,7 +115,7 @@ AnimatedPopup {
         text: "No windows"
         color: window.palette.muted
         font.family: window.palette.font
-        font.pixelSize: 10
+        font.pixelSize: appConfig.scaled(10)
         width: listCol.width
         horizontalAlignment: Text.AlignHCenter
       }
@@ -174,7 +175,7 @@ AnimatedPopup {
           text: row.win.title || row.winClass || "Window"
           color: window.palette.fg
           font.family: window.palette.font
-          font.pixelSize: 10
+          font.pixelSize: appConfig.scaled(10)
           elide: Text.ElideRight
           Layout.fillWidth: true
         }
@@ -183,7 +184,7 @@ AnimatedPopup {
           text: row.winClass || ""
           color: window.palette.muted
           font.family: window.palette.font
-          font.pixelSize: 8
+          font.pixelSize: appConfig.scaled(8)
           elide: Text.ElideRight
           visible: text !== ""
           Layout.fillWidth: true
@@ -215,7 +216,7 @@ AnimatedPopup {
       text: btn.text
       color: window.palette.fg
       font.family: window.palette.font
-      font.pixelSize: 9
+      font.pixelSize: appConfig.scaled(9)
       font.bold: true
     }
 

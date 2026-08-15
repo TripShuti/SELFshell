@@ -14,6 +14,7 @@ AnimatedPopup {
   required property QtObject anchorItem
   required property QtObject window
   palette: window.palette
+  appConfig: window.appConfig
 
   implicitWidth: 400
   implicitHeight: layout.implicitHeight + 4
@@ -313,7 +314,7 @@ AnimatedPopup {
           anchors.centerIn: parent
           text: "\uF025"
           color: window.palette.gray
-          font.family: window.palette.font; font.pixelSize: 28
+          font.family: window.palette.font; font.pixelSize: appConfig.scaled(28)
           visible: root.player == null || root._artUrl === "" || artImg.status === Image.Error
         }
 
@@ -346,7 +347,7 @@ AnimatedPopup {
         Text {
           text: root.player?.trackTitle ?? "No track"
           color: root.player?.isPlaying ? window.palette.green : window.palette.fg
-          font.family: window.palette.font; font.pixelSize: 14; font.bold: true
+          font.family: window.palette.font; font.pixelSize: appConfig.scaled(14); font.bold: true
           elide: Text.ElideRight
           Layout.fillWidth: true
           wrapMode: Text.WordWrap
@@ -356,7 +357,7 @@ AnimatedPopup {
         Text {
           text: root.player?.trackArtist ?? ""
           color: window.palette.fg
-          font.family: window.palette.font; font.pixelSize: 11
+          font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
           elide: Text.ElideRight
           Layout.fillWidth: true
           visible: root.player != null && root.player.trackArtist !== ""
@@ -365,7 +366,7 @@ AnimatedPopup {
         Text {
           text: root.player?.trackAlbum ?? ""
           color: window.palette.gray
-          font.family: window.palette.font; font.pixelSize: 10
+          font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
           elide: Text.ElideRight
           Layout.fillWidth: true
           visible: root.player != null && root.player.trackAlbum !== ""
@@ -390,7 +391,7 @@ AnimatedPopup {
         Text {
           anchors.centerIn: parent
           text: "\uF04A"
-          color: window.palette.fg; font.family: window.palette.font; font.pixelSize: 12
+          color: window.palette.fg; font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
         }
         MouseArea {
           anchors.fill: parent
@@ -412,7 +413,7 @@ AnimatedPopup {
         Text {
           anchors.centerIn: parent
           text: root.player?.isPlaying ? "\uF04C" : "\uF04B"
-          color: window.palette.bg0H; font.family: window.palette.font; font.pixelSize: 14
+          color: window.palette.bg0H; font.family: window.palette.font; font.pixelSize: appConfig.scaled(14)
         }
         MouseArea {
           anchors.fill: parent
@@ -432,7 +433,7 @@ AnimatedPopup {
         Text {
           anchors.centerIn: parent
           text: "\uF04E"
-          color: window.palette.fg; font.family: window.palette.font; font.pixelSize: 12
+          color: window.palette.fg; font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
         }
         MouseArea {
           anchors.fill: parent
@@ -459,7 +460,7 @@ AnimatedPopup {
         Text {
           text: "\uF028"
           color: window.palette.gray
-          font.family: window.palette.font; font.pixelSize: 9
+          font.family: window.palette.font; font.pixelSize: appConfig.scaled(9)
         }
 
         // Тонкий трек з круглою ручкою, як у типових плеєрах
@@ -509,7 +510,7 @@ AnimatedPopup {
           anchors.centerIn: parent
           text: "\uF074"
           color: root.player?.shuffle ? window.palette.bg0H : window.palette.gray
-          font.family: window.palette.font; font.pixelSize: 10
+          font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
         }
         visible: root.player != null && root.player.shuffleSupported
         MouseArea {
@@ -531,7 +532,7 @@ AnimatedPopup {
           anchors.centerIn: parent
           text: root.player?.loopState === MprisLoopState.Track ? "\uF01E" : "\uF0E2"
           color: root.player?.loopState !== MprisLoopState.None ? window.palette.bg0H : window.palette.gray
-          font.family: window.palette.font; font.pixelSize: 10
+          font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
         }
         visible: root.player != null && root.player.loopSupported
         MouseArea {
@@ -561,7 +562,7 @@ AnimatedPopup {
           anchors.centerIn: parent
           text: "\uF03A"
           color: root.playlistOpen ? window.palette.bg0H : window.palette.gray
-          font.family: window.palette.font; font.pixelSize: 10
+          font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
         }
         visible: root.player != null && tracklistService.supported
         MouseArea {
@@ -585,7 +586,7 @@ AnimatedPopup {
       Text {
         text: formatTime(Math.min(root.player?.position ?? 0, root.player?.length ?? 0))
         color: window.palette.gray
-        font.family: window.palette.font; font.pixelSize: 9
+        font.family: window.palette.font; font.pixelSize: appConfig.scaled(9)
       }
 
       // Трек прогресу
@@ -631,7 +632,7 @@ AnimatedPopup {
       Text {
         text: formatTime(root.player?.length ?? 0)
         color: window.palette.gray
-        font.family: window.palette.font; font.pixelSize: 9
+        font.family: window.palette.font; font.pixelSize: appConfig.scaled(9)
       }
     }
 
@@ -657,13 +658,13 @@ AnimatedPopup {
           Text {
             text: "Playlist"
             color: window.palette.fg
-            font.family: window.palette.font; font.pixelSize: 11; font.bold: true
+            font.family: window.palette.font; font.pixelSize: appConfig.scaled(11); font.bold: true
           }
 
           Text {
             text: tracklistService.trackIds.length + " tracks"
             color: window.palette.gray
-            font.family: window.palette.font; font.pixelSize: 9
+            font.family: window.palette.font; font.pixelSize: appConfig.scaled(9)
           }
 
           Item { Layout.fillWidth: true }
@@ -672,7 +673,7 @@ AnimatedPopup {
             text: "Loading..."
             visible: tracklistService.loading
             color: window.palette.gray
-            font.family: window.palette.font; font.pixelSize: 9
+            font.family: window.palette.font; font.pixelSize: appConfig.scaled(9)
           }
         }
 
@@ -712,7 +713,7 @@ AnimatedPopup {
             text: "No tracks"
             visible: !tracklistService.loading && parent.count === 0
             color: window.palette.gray
-            font.family: window.palette.font; font.pixelSize: 10
+            font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
           }
 
           delegate: Item {
@@ -739,7 +740,7 @@ AnimatedPopup {
                 Text {
                   text: isCurrent ? "\uF04B" : ""
                   color: window.palette.green
-                  font.family: window.palette.font; font.pixelSize: 9
+                  font.family: window.palette.font; font.pixelSize: appConfig.scaled(9)
                   Layout.preferredWidth: 14
                 }
 
@@ -750,7 +751,7 @@ AnimatedPopup {
                   Text {
                     text: modelData?.title ?? "Unknown"
                     color: isCurrent ? window.palette.green : window.palette.fg
-                    font.family: window.palette.font; font.pixelSize: 11
+                    font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
                     font.bold: isCurrent
                     elide: Text.ElideRight
                     Layout.fillWidth: true
@@ -760,7 +761,7 @@ AnimatedPopup {
                     text: modelData?.artist ?? ""
                     visible: (modelData?.artist ?? "") !== ""
                     color: window.palette.gray
-                    font.family: window.palette.font; font.pixelSize: 9
+                    font.family: window.palette.font; font.pixelSize: appConfig.scaled(9)
                     elide: Text.ElideRight
                     Layout.fillWidth: true
                   }
@@ -769,7 +770,7 @@ AnimatedPopup {
                 Text {
                   text: root.formatTime((modelData?.length ?? 0) / 1000000)
                   color: window.palette.gray
-                  font.family: window.palette.font; font.pixelSize: 9
+                  font.family: window.palette.font; font.pixelSize: appConfig.scaled(9)
                 }
               }
 
@@ -799,14 +800,14 @@ AnimatedPopup {
         Layout.alignment: Qt.AlignHCenter
         text: "\uF001"
         color: window.palette.gray
-        font.family: window.palette.font; font.pixelSize: 22
+        font.family: window.palette.font; font.pixelSize: appConfig.scaled(22)
       }
 
       Text {
         Layout.alignment: Qt.AlignHCenter
         text: "No player detected"
         color: window.palette.gray
-        font.family: window.palette.font; font.pixelSize: 12
+        font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
       }
     }
   }

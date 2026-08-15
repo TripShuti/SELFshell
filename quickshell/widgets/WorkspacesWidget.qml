@@ -50,7 +50,7 @@ Item {
             text: modelData.id
             color: parent.parent.dotColor
             font.family: window.palette.font
-            font.pixelSize: 11
+            font.pixelSize: window.appConfig.scaled(11)
             font.bold: modelData.focused
             scale: modelData.focused ? 1.15 : 1.0
 
@@ -83,7 +83,7 @@ Item {
               text: "+" + (wnds.length - 3)
               color: window.palette.muted
               font.family: window.palette.font
-              font.pixelSize: 7
+              font.pixelSize: window.appConfig.scaled(7)
             }
           }
         }

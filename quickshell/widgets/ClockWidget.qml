@@ -27,7 +27,7 @@ HoverItem {
     palette: window.palette
     normalColor: window.palette.widgetFg
     hoverColor: window.palette.widgetFg
-    font.pixelSize: 14
+    font.pixelSize: window.appConfig.scaled(14)
     verticalAlignment: Text.AlignVCenter
     horizontalAlignment: Text.AlignHCenter
   }

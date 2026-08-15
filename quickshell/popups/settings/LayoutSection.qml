@@ -143,99 +143,93 @@ Item {
         text: "Bar layout — drag widgets between pills, or down to the pool to disable"
         color: window.palette.gray
         font.family: window.palette.font
-        font.pixelSize: 10
+        font.pixelSize: window.appConfig.scaled(11)
         wrapMode: Text.WordWrap
         Layout.fillWidth: true
       }
 
-      RowLayout {
+      // Пігулки одна під одною: кожна на всю ширину сторінки, чипи
+      // заповнюють рядки під реальну ширину зони (maxPerRow у DnDZone).
+      ColumnLayout {
         Layout.fillWidth: true
-        spacing: 10
-
-        ColumnLayout {
+        spacing: 4
+        RowLayout {
           Layout.fillWidth: true
-          Layout.preferredWidth: 1
-          spacing: 4
-          RowLayout {
-            Layout.fillWidth: true
-            Text { text: "Left"; color: window.palette.gray; font.family: window.palette.font; font.pixelSize: 9; font.bold: true }
-            Item { Layout.fillWidth: true }
-            Text {
-              visible: !root.cfg.leftPillEnabled
-              text: "hidden"
-              color: window.palette.gray
-              font.family: window.palette.font
-              font.pixelSize: 8
-              font.italic: true
-            }
-            Rectangle {
-              implicitWidth: 16; implicitHeight: 16; radius: 3
-              color: window.palette.bg2
-              Text { anchors.centerIn: parent; text: "+"; color: window.palette.fg; font.pixelSize: 10; font.bold: true }
-              MouseArea {
-                anchors.fill: parent; cursorShape: Qt.PointingHandCursor
-                onClicked: { ac.addSep("left"); ac.saveToFile() }
-              }
+          Text { text: "Left"; color: window.palette.gray; font.family: window.palette.font; font.pixelSize: window.appConfig.scaled(10); font.bold: true }
+          Item { Layout.fillWidth: true }
+          Text {
+            visible: !root.cfg.leftPillEnabled
+            text: "hidden"
+            color: window.palette.gray
+            font.family: window.palette.font
+            font.pixelSize: window.appConfig.scaled(9)
+            font.italic: true
+          }
+          Rectangle {
+            implicitWidth: 18; implicitHeight: 18; radius: 3
+            color: window.palette.bg2
+            Text { anchors.centerIn: parent; text: "+"; color: window.palette.fg; font.pixelSize: window.appConfig.scaled(11); font.bold: true }
+            MouseArea {
+              anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+              onClicked: { ac.addSep("left"); ac.saveToFile() }
             }
           }
-          DnDZone { id: leftZone; pillName: "left"; wrap: true; Layout.fillWidth: true }
         }
-        ColumnLayout {
+        DnDZone { id: leftZone; pillName: "left"; wrap: true; Layout.fillWidth: true }
+      }
+      ColumnLayout {
+        Layout.fillWidth: true
+        spacing: 4
+        RowLayout {
           Layout.fillWidth: true
-          Layout.preferredWidth: 1
-          spacing: 4
-          RowLayout {
-            Layout.fillWidth: true
-            Text { text: "Center"; color: window.palette.gray; font.family: window.palette.font; font.pixelSize: 9; font.bold: true }
-            Item { Layout.fillWidth: true }
-            Text {
-              visible: !root.cfg.centerPillEnabled
-              text: "hidden"
-              color: window.palette.gray
-              font.family: window.palette.font
-              font.pixelSize: 8
-              font.italic: true
-            }
-            Rectangle {
-              implicitWidth: 16; implicitHeight: 16; radius: 3
-              color: window.palette.bg2
-              Text { anchors.centerIn: parent; text: "+"; color: window.palette.fg; font.pixelSize: 10; font.bold: true }
-              MouseArea {
-                anchors.fill: parent; cursorShape: Qt.PointingHandCursor
-                onClicked: { ac.addSep("center"); ac.saveToFile() }
-              }
+          Text { text: "Center"; color: window.palette.gray; font.family: window.palette.font; font.pixelSize: window.appConfig.scaled(10); font.bold: true }
+          Item { Layout.fillWidth: true }
+          Text {
+            visible: !root.cfg.centerPillEnabled
+            text: "hidden"
+            color: window.palette.gray
+            font.family: window.palette.font
+            font.pixelSize: window.appConfig.scaled(9)
+            font.italic: true
+          }
+          Rectangle {
+            implicitWidth: 18; implicitHeight: 18; radius: 3
+            color: window.palette.bg2
+            Text { anchors.centerIn: parent; text: "+"; color: window.palette.fg; font.pixelSize: window.appConfig.scaled(11); font.bold: true }
+            MouseArea {
+              anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+              onClicked: { ac.addSep("center"); ac.saveToFile() }
             }
           }
-          DnDZone { id: centerZone; pillName: "center"; wrap: true; Layout.fillWidth: true }
         }
-        ColumnLayout {
+        DnDZone { id: centerZone; pillName: "center"; wrap: true; Layout.fillWidth: true }
+      }
+      ColumnLayout {
+        Layout.fillWidth: true
+        spacing: 4
+        RowLayout {
           Layout.fillWidth: true
-          Layout.preferredWidth: 1
-          spacing: 4
-          RowLayout {
-            Layout.fillWidth: true
-            Text { text: "Right"; color: window.palette.gray; font.family: window.palette.font; font.pixelSize: 9; font.bold: true }
-            Item { Layout.fillWidth: true }
-            Text {
-              visible: !root.cfg.rightPillEnabled
-              text: "hidden"
-              color: window.palette.gray
-              font.family: window.palette.font
-              font.pixelSize: 8
-              font.italic: true
-            }
-            Rectangle {
-              implicitWidth: 16; implicitHeight: 16; radius: 3
-              color: window.palette.bg2
-              Text { anchors.centerIn: parent; text: "+"; color: window.palette.fg; font.pixelSize: 10; font.bold: true }
-              MouseArea {
-                anchors.fill: parent; cursorShape: Qt.PointingHandCursor
-                onClicked: { ac.addSep("right"); ac.saveToFile() }
-              }
+          Text { text: "Right"; color: window.palette.gray; font.family: window.palette.font; font.pixelSize: window.appConfig.scaled(10); font.bold: true }
+          Item { Layout.fillWidth: true }
+          Text {
+            visible: !root.cfg.rightPillEnabled
+            text: "hidden"
+            color: window.palette.gray
+            font.family: window.palette.font
+            font.pixelSize: window.appConfig.scaled(9)
+            font.italic: true
+          }
+          Rectangle {
+            implicitWidth: 18; implicitHeight: 18; radius: 3
+            color: window.palette.bg2
+            Text { anchors.centerIn: parent; text: "+"; color: window.palette.fg; font.pixelSize: window.appConfig.scaled(11); font.bold: true }
+            MouseArea {
+              anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+              onClicked: { ac.addSep("right"); ac.saveToFile() }
             }
           }
-          DnDZone { id: rightZone; pillName: "right"; wrap: true; Layout.fillWidth: true }
         }
+        DnDZone { id: rightZone; pillName: "right"; wrap: true; Layout.fillWidth: true }
       }
 
       GradientSeparator { midColor: window.palette.bg2 }
@@ -243,7 +237,7 @@ Item {
       ColumnLayout {
         Layout.fillWidth: true
         spacing: 4
-        Text { text: "Pool (disabled)"; color: window.palette.gray; font.family: window.palette.font; font.pixelSize: 9; font.bold: true }
+        Text { text: "Pool (disabled)"; color: window.palette.gray; font.family: window.palette.font; font.pixelSize: window.appConfig.scaled(10); font.bold: true }
         DnDZone {
           id: poolZone
           pillName: "pool"
@@ -280,12 +274,16 @@ Item {
       ? ac.allWidgetNames.filter(n => !cfg[n + "Enabled"])
       : ac.pillOrderFor(pillName).filter(n => ac.isSep(n) || cfg[n + "Enabled"])
 
+    // Скільки чипів у ряд: під реальну ширину зони, щоб усе вміщалося
+    // у висоту вікна (повний рядок — один ряд; при багатьох віджетах
+    // зона росте вгору і сторінка скролиться)
+    readonly property int maxPerRow: Math.max(1, Math.floor((zone.width - 8) / (chipW + spacing2)))
+
     readonly property var chipLayout: {
       var items = []
       var row = 0
       var x = 4, y = 4
       var widgetCount = 0
-      var maxPerRow = 3
       for (var i = 0; i < allNames.length; i++) {
         var isSep = ac.isSep(allNames[i])
         var w = isSep ? 6 : chipW
@@ -397,7 +395,7 @@ Item {
           text: root.displayNames[chip.modelData] ?? chip.modelData
           color: _isDragged ? window.palette.mutedAlt : window.palette.fg
           font.family: window.palette.font
-          font.pixelSize: 9
+          font.pixelSize: window.appConfig.scaled(10)
           elide: Text.ElideRight
           width: parent.width - 6
           horizontalAlignment: Text.AlignHCenter
@@ -446,7 +444,7 @@ Item {
       text: ghost.text
       color: window.palette.bg0H
       font.family: window.palette.font
-      font.pixelSize: 9
+      font.pixelSize: window.appConfig.scaled(10)
       font.bold: true
       elide: Text.ElideRight
       width: parent.width - 6

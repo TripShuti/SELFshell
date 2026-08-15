@@ -16,6 +16,7 @@ AnimatedPopup {
   required property QtObject window
   required property QtObject anchorItem
   palette: window.palette
+  appConfig: window.appConfig
 
   popupWindow: window
   anchorTarget: anchorItem
@@ -139,14 +140,14 @@ AnimatedPopup {
         text: "\uF0EA"
         color: window.palette.gray
         font.family: window.palette.font
-        font.pixelSize: 9
+        font.pixelSize: appConfig.scaled(9)
       }
 
       Text {
         text: "Clipboard History"
         color: window.palette.gray
         font.family: window.palette.font
-        font.pixelSize: 9
+        font.pixelSize: appConfig.scaled(9)
         font.bold: true
       }
 
@@ -157,7 +158,7 @@ AnimatedPopup {
         text: root.entries.length + " items"
         color: window.palette.muted
         font.family: window.palette.font
-        font.pixelSize: 9
+        font.pixelSize: appConfig.scaled(9)
       }
     }
 
@@ -212,7 +213,7 @@ AnimatedPopup {
             text: modelData.text
             color: window.palette.fg
             font.family: window.palette.font
-            font.pixelSize: 11
+            font.pixelSize: appConfig.scaled(11)
             elide: Text.ElideRight
           }
 
@@ -247,7 +248,7 @@ AnimatedPopup {
               text: "\uF00D"
               color: delArea.containsMouse ? window.palette.bg0H : window.palette.muted
               font.family: window.palette.font
-              font.pixelSize: 13
+              font.pixelSize: appConfig.scaled(13)
             }
 
             MouseArea {
@@ -272,7 +273,7 @@ AnimatedPopup {
           text: "\uF328"
           color: window.palette.mutedAlt
           font.family: window.palette.font
-          font.pixelSize: 20
+          font.pixelSize: appConfig.scaled(20)
         }
 
         Text {
@@ -280,7 +281,7 @@ AnimatedPopup {
           text: "Clipboard is empty"
           color: window.palette.mutedAlt
           font.family: window.palette.font
-          font.pixelSize: 12
+          font.pixelSize: appConfig.scaled(12)
         }
       }
     }

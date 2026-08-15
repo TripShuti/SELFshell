@@ -9,7 +9,7 @@ Text {
 
   color: sys.palette.gray
   font.family: sys.palette.font
-  font.pixelSize: 9
+  font.pixelSize: 11
   font.bold: true
   Layout.fillWidth: true
 }

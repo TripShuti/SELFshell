@@ -17,6 +17,7 @@ AnimatedPopup {
   required property QtObject anchorItem
   required property QtObject window
   palette: window.palette
+  appConfig: window.appConfig
 
   // QsMenuHandle меню апки (SystemTrayItem.menu)
   property var menu: null
@@ -143,7 +144,7 @@ AnimatedPopup {
               Layout.fillWidth: true
               text: modelData.text
               color: window.palette.fg
-              font.family: window.palette.font; font.pixelSize: 12
+              font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
               elide: Text.ElideRight
             }
 
@@ -152,7 +153,7 @@ AnimatedPopup {
               visible: modelData.buttonType !== QsMenuButtonType.None && modelData.checkState === Qt.Checked
               text: modelData.buttonType === QsMenuButtonType.RadioButton ? "\uF111" : "\uF00C"
               color: window.palette.mutedAlt
-              font.family: window.palette.font; font.pixelSize: 10
+              font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
             }
 
             // Стрілка наявності підменю
@@ -160,7 +161,7 @@ AnimatedPopup {
               visible: modelData.hasChildren
               text: "\uF078"
               color: window.palette.mutedAlt
-              font.family: window.palette.font; font.pixelSize: 10
+              font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
             }
           }
 
@@ -215,13 +216,13 @@ AnimatedPopup {
             Text {
               text: "\uF075"
               color: window.palette.mutedAlt
-              font.family: window.palette.font; font.pixelSize: 10
+              font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
             }
 
             Text {
               text: "Back"
               color: window.palette.fg
-              font.family: window.palette.font; font.pixelSize: 12
+              font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
             }
           }
 

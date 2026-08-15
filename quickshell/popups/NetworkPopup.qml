@@ -14,6 +14,7 @@ AnimatedPopup {
 
   required property QtObject window
   palette: window.palette
+  appConfig: window.appConfig
 
   implicitWidth: 380
   implicitHeight: layout.implicitHeight + 16
@@ -203,14 +204,14 @@ AnimatedPopup {
         Text {
           text: "Wired"
           color: window.palette.accent
-          font.family: window.palette.font; font.pixelSize: 16; font.bold: true
+          font.family: window.palette.font; font.pixelSize: appConfig.scaled(16); font.bold: true
           Layout.fillWidth: true
         }
         
         Text {
           text: root.wiredDevice?.connected ? "Connected" : "Disconnected"
           color: root.wiredDevice?.connected ? window.palette.accent : window.palette.mutedAlt
-          font.family: window.palette.font; font.pixelSize: 14
+          font.family: window.palette.font; font.pixelSize: appConfig.scaled(14)
         }
       }
 
@@ -222,7 +223,7 @@ AnimatedPopup {
         Text {
           text: root.wiredDevice?.name || "Wired Interface"
           color: window.palette.textLight
-          font.family: window.palette.font; font.pixelSize: 14
+          font.family: window.palette.font; font.pixelSize: appConfig.scaled(14)
           Layout.fillWidth: true
           elide: Text.ElideRight
         }
@@ -240,7 +241,7 @@ AnimatedPopup {
             anchors.centerIn: parent
             text: "Settings"
             color: window.palette.textLight
-            font.family: window.palette.font; font.pixelSize: 10
+            font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
           }
 
           MouseArea {
@@ -266,7 +267,7 @@ AnimatedPopup {
             anchors.centerIn: parent
             text: root.wiredDevice?.connected ? "Disconnect" : "Connect"
             color: window.palette.textLight
-            font.family: window.palette.font; font.pixelSize: 10
+            font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
           }
           
           MouseArea {
@@ -308,7 +309,7 @@ AnimatedPopup {
       Text {
         text: "Wi-Fi"
         color: window.palette.accent
-        font.family: window.palette.font; font.pixelSize: 16; font.bold: true
+        font.family: window.palette.font; font.pixelSize: appConfig.scaled(16); font.bold: true
         Layout.fillWidth: true
       }
 
@@ -341,7 +342,7 @@ AnimatedPopup {
       Text {
         text: "Connect to: " + (root.pendingNetwork?.name || "")
         color: window.palette.accent
-        font.family: window.palette.font; font.pixelSize: 14; font.bold: true
+        font.family: window.palette.font; font.pixelSize: appConfig.scaled(14); font.bold: true
       }
 
       // Поле пароля
@@ -358,7 +359,7 @@ AnimatedPopup {
           anchors.fill: parent
           anchors.margins: 8
           color: window.palette.textLight
-          font.family: window.palette.font; font.pixelSize: 12
+          font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
           echoMode: TextInput.Password
           focus: true
           readOnly: root.connecting
@@ -375,7 +376,7 @@ AnimatedPopup {
         Rectangle {
           implicitWidth: 70; height: 24; radius: 4
           color: window.palette.bgLayer
-          Text { anchors.centerIn: parent; text: "Cancel"; color: window.palette.mutedAlt; font.family: window.palette.font; font.pixelSize: 11 }
+          Text { anchors.centerIn: parent; text: "Cancel"; color: window.palette.mutedAlt; font.family: window.palette.font; font.pixelSize: appConfig.scaled(11) }
           MouseArea {
             anchors.fill: parent
             cursorShape: Qt.PointingHandCursor
@@ -394,7 +395,7 @@ AnimatedPopup {
           implicitWidth: Math.max(70, connectLabel.implicitWidth + 12); height: 24; radius: 4
           color: window.palette.accent
           opacity: root.connecting ? 0.6 : 1
-          Text { id: connectLabel; anchors.centerIn: parent; text: root.connecting ? "Connecting..." : "Connect"; color: window.palette.bgLayer; font.family: window.palette.font; font.pixelSize: 11; font.bold: true }
+          Text { id: connectLabel; anchors.centerIn: parent; text: root.connecting ? "Connecting..." : "Connect"; color: window.palette.bgLayer; font.family: window.palette.font; font.pixelSize: appConfig.scaled(11); font.bold: true }
           MouseArea {
             anchors.fill: parent
             cursorShape: Qt.PointingHandCursor
@@ -414,7 +415,7 @@ AnimatedPopup {
       Text {
         text: "Available Networks"
         color: window.palette.mutedAlt
-        font.family: window.palette.font; font.pixelSize: 12
+        font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
         Layout.fillWidth: true
       }
 
@@ -438,7 +439,7 @@ AnimatedPopup {
           anchors.centerIn: parent
           text: root.scanning ? "Scanning..." : "Scan"
           color: window.palette.textLight
-          font.family: window.palette.font; font.pixelSize: 11
+          font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
         }
         
         MouseArea {
@@ -506,7 +507,7 @@ AnimatedPopup {
             Text {
               text: modelData.name || "Hidden Network"
               color: window.palette.textLight
-              font.family: window.palette.font; font.pixelSize: 12
+              font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
               elide: Text.ElideRight
               Layout.fillWidth: true
             }
@@ -516,7 +517,7 @@ AnimatedPopup {
               Text {
                 text: modelData.connected ? "Connected" : (modelData.known ? "Saved" : (modelData.security ? "Secured" : "Open"))
                 color: modelData.connected ? window.palette.accent : window.palette.mutedAlt
-                font.family: window.palette.font; font.pixelSize: 10
+                font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
               }
               // Графічні bars сили сигналу замість тексту "Signal: N/4"
               RowLayout {
@@ -554,7 +555,7 @@ AnimatedPopup {
               anchors.centerIn: parent
               text: "\u2699"
               color: window.palette.textLight
-              font.family: window.palette.font; font.pixelSize: 11
+              font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
             }
             MouseArea {
               anchors.fill: parent
@@ -578,7 +579,7 @@ AnimatedPopup {
               anchors.centerIn: parent
               text: "\u2716"
               color: window.palette.danger
-              font.family: window.palette.font; font.pixelSize: 10
+              font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
             }
             MouseArea {
               anchors.fill: parent
@@ -607,7 +608,7 @@ AnimatedPopup {
               anchors.centerIn: parent
               text: modelData.connected ? "Disconnect" : "Connect"
               color: modelData.known && !modelData.connected ? window.palette.bgLayer : window.palette.textLight
-              font.family: window.palette.font; font.pixelSize: 10
+              font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
             }
             
             MouseArea {
@@ -635,7 +636,7 @@ AnimatedPopup {
     Text {
       text: "No networks found"
       color: window.palette.mutedAlt
-      font.family: window.palette.font; font.pixelSize: 12
+      font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
       visible: root.wifiEnabled && root.wifiDevice !== null && root.pendingNetwork === null &&
                (!root.wifiDevice.networks || root.wifiDevice.networks.values.length === 0)
     }
@@ -644,7 +645,7 @@ AnimatedPopup {
     Text {
       text: "Network adapter not available"
       color: window.palette.danger
-      font.family: window.palette.font; font.pixelSize: 12
+      font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
       visible: root.wifiDevice === null && root.wiredDevice === null
     }
 
@@ -654,7 +655,7 @@ AnimatedPopup {
       visible: root.statusMessage.length > 0
       text: root.statusMessage
       color: root.statusIsError ? window.palette.danger : window.palette.accent
-      font.family: window.palette.font; font.pixelSize: 11
+      font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
       wrapMode: Text.WordWrap
     }
   }

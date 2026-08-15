@@ -11,6 +11,7 @@ ColumnLayout {
 
   property QtObject sys
   property string label: ""
+  property string sub: ""
   property real from: 0
   property real to: 100
   property real step: 1
@@ -33,13 +34,13 @@ ColumnLayout {
       color: sl.sys.palette.fg
       elide: Text.ElideRight
       font.family: sl.sys.palette.font
-      font.pixelSize: 9
+      font.pixelSize: 10
     }
     Text {
       text: sl.value.toFixed(sl.decimals) + (sl.suffix ? " " + sl.suffix : "")
       color: sl.sys.palette.gray
       font.family: sl.sys.palette.font
-      font.pixelSize: 9
+      font.pixelSize: 10
     }
   }
 
@@ -48,7 +49,11 @@ ColumnLayout {
     Layout.fillWidth: true
     implicitHeight: 18
 
-    readonly property real span: Math.max(1, sl.to - sl.from)
+    // Реальна ширина діапазону. Math.max(1, ...) тут НЕ можна: для
+    // діапазонів менших за 1 (opacity-слайдери 0..0.4, 0.5..1.0 тощо)
+    // span ставав 1, і значення насичувалося на максимумі ще на половині
+    // треку. Захищаємось лише від ділення на нуль при from === to.
+    readonly property real span: (sl.to - sl.from) !== 0 ? (sl.to - sl.from) : 0.0001
     readonly property real frac: Math.max(0, Math.min(1, (sl.value - sl.from) / span))
 
     function pick(px) {
@@ -101,5 +106,16 @@ ColumnLayout {
       onPressed: mouse => bar.pick(mouse.x + grab.x)
       onPositionChanged: mouse => { if (pressed) bar.pick(mouse.x + grab.x) }
     }
+  }
+
+  // Необов'язковий підпис-підказка під доріжкою
+  Text {
+    Layout.fillWidth: true
+    visible: sl.sub !== ""
+    text: sl.sub
+    color: sl.sys.palette.gray
+    wrapMode: Text.WordWrap
+    font.family: sl.sys.palette.font
+    font.pixelSize: 9
   }
 }

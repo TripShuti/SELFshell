@@ -23,6 +23,6 @@ HoverItem {
     normalColor: window.palette.widgetFg
     hoverColor: window.palette.green
     hoverScale: 1.2
-    font.pixelSize: 18
+    font.pixelSize: window.appConfig.scaled(18)
   }
 }

@@ -10,13 +10,18 @@ PopupWindow {
   id: root
 
   property QtObject palette: null
+  // Джерело дизайн-налаштувань (window.appConfig). Якщо не передано —
+  // працюють хардкод-дефолти нижче, тож компонент безпечно
+  // використовувати і без конфіга.
+  property QtObject appConfig: null
 
   // Налаштовувані кольори та параметри анімації
   property color bgColor: palette ? palette.bg0H : "#34302a"
-  property real bgOpacity: 0.90
-  property real bgLighten: 1.5
-  property real cornerRadius: 10
+  property real bgOpacity: appConfig ? appConfig.cfg.popupBgOpacity : 0.90
+  property real bgLighten: appConfig ? appConfig.cfg.popupBgLighten : 1.5
+  property real cornerRadius: appConfig ? appConfig.cfg.popupRadius : 10
   property color borderColor: palette ? palette.bg2 : "#57514b"
+  property real borderWidth: appConfig ? appConfig.cfg.popupBorderWidth : 1
   property real enterScale: 0.85
   property real overshootAmount: 2.5
   property int enterDuration: 350
@@ -63,7 +68,7 @@ PopupWindow {
     anchors.fill: container
     radius: container.radius
     color: root.borderColor
-    opacity: 0.10
+    opacity: appConfig ? appConfig.cfg.popupGlowOpacity : 0.10
     scale: container.scale
     transformOrigin: root.transformOrigin
   }
@@ -77,7 +82,7 @@ PopupWindow {
     anchors.fill: parent
     radius: root.cornerRadius
     color: "transparent"
-    border.width: 1
+    border.width: root.borderWidth
     border.color: root.borderColor
     opacity: 0.50
     scale: root.enterScale

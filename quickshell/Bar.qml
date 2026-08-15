@@ -253,6 +253,11 @@ PanelWindow {
       radius: root.appConfig.cfg.barRadius
       padding: root.appConfig.cfg.pillPadding
       contentSpacing: root.appConfig.cfg.contentSpacing
+      glowSize: root.appConfig.cfg.barGlowSize
+      glowOpacity: root.appConfig.cfg.barGlowOpacity
+      lighten: root.appConfig.cfg.barLighten
+      bgOpacity: root.appConfig.cfg.barBgOpacity
+      borderWidth: root.appConfig.cfg.barBorderWidth
       appConfig: root.appConfig
       palette: root.palette
       orderModel: root.appConfig.cfg.leftOrder
@@ -269,6 +274,11 @@ PanelWindow {
       radius: root.appConfig.cfg.barRadius
       padding: root.appConfig.cfg.pillPadding
       contentSpacing: root.appConfig.cfg.contentSpacing
+      glowSize: root.appConfig.cfg.barGlowSize
+      glowOpacity: root.appConfig.cfg.barGlowOpacity
+      lighten: root.appConfig.cfg.barLighten
+      bgOpacity: root.appConfig.cfg.barBgOpacity
+      borderWidth: root.appConfig.cfg.barBorderWidth
       appConfig: root.appConfig
       palette: root.palette
       orderModel: root.appConfig.cfg.centerOrder
@@ -289,6 +299,11 @@ PanelWindow {
       radius: root.appConfig.cfg.barRadius
       padding: root.appConfig.cfg.pillPadding
       contentSpacing: root.appConfig.cfg.contentSpacing
+      glowSize: root.appConfig.cfg.barGlowSize
+      glowOpacity: root.appConfig.cfg.barGlowOpacity
+      lighten: root.appConfig.cfg.barLighten
+      bgOpacity: root.appConfig.cfg.barBgOpacity
+      borderWidth: root.appConfig.cfg.barBorderWidth
       appConfig: root.appConfig
       palette: root.palette
       orderModel: root.appConfig.cfg.rightOrder

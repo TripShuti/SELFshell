@@ -28,7 +28,7 @@ RowLayout {
       color: row.sys.palette.fg
       elide: Text.ElideRight
       font.family: row.sys.palette.font
-      font.pixelSize: 9
+      font.pixelSize: 10
     }
     Text {
       Layout.fillWidth: true
@@ -37,7 +37,7 @@ RowLayout {
       color: row.sys.palette.gray
       wrapMode: Text.WordWrap
       font.family: row.sys.palette.font
-      font.pixelSize: 8
+      font.pixelSize: 9
     }
   }
 

@@ -20,6 +20,7 @@ PopupWindow {
   property QtObject anchorWindow: null
   property bool muted: false
   readonly property QtObject palette: anchorWindow ? anchorWindow.palette : null
+  readonly property QtObject appConfig: anchorWindow ? anchorWindow.appConfig : null
 
   // Є дії, окрім default (default — на клік по тосту)
   readonly property bool hasActions: {
@@ -126,7 +127,7 @@ PopupWindow {
     color: "transparent"
     border.width: 1
     border.color: anchorWindow.palette.green
-    opacity: container.opacity * 0.2
+    opacity: container.opacity * (appConfig ? appConfig.cfg.toastGlowOpacity : 0.2)
     scale: container.scale
   }
 
@@ -135,7 +136,7 @@ PopupWindow {
     id: container
     width: parent.width
     implicitHeight: toastLayout.implicitHeight + 16
-    radius: 6
+    radius: appConfig ? appConfig.cfg.toastRadius : 6
     border.width: 1
     border.color: anchorWindow.palette.green
     opacity: 0
@@ -143,7 +144,7 @@ PopupWindow {
     clip: true
     gradient: Gradient {
       orientation: Gradient.Vertical
-      GradientStop { position: 0.0; color: Qt.lighter(anchorWindow.palette.bg0H, 1.16) }
+      GradientStop { position: 0.0; color: Qt.lighter(anchorWindow.palette.bg0H, appConfig ? appConfig.cfg.toastLighten : 1.16) }
       GradientStop { position: 1.0; color: anchorWindow.palette.bg0H }
     }
 
@@ -178,7 +179,7 @@ PopupWindow {
       Text {
         text: root.toastAppName
         color: anchorWindow.palette.green
-        font.family: anchorWindow.palette.font; font.pixelSize: 13; font.bold: true
+        font.family: anchorWindow.palette.font; font.pixelSize: appConfig.scaled(13); font.bold: true
       }
     }
 
@@ -186,7 +187,7 @@ PopupWindow {
     Text {
       text: root.toastSummary
       color: anchorWindow.palette.fg
-      font.family: anchorWindow.palette.font; font.pixelSize: 13; font.bold: true
+      font.family: anchorWindow.palette.font; font.pixelSize: appConfig.scaled(13); font.bold: true
       wrapMode: Text.WordWrap
       Layout.fillWidth: true
       maximumLineCount: 2
@@ -197,7 +198,7 @@ PopupWindow {
     Text {
       text: root.toastBody
       color: anchorWindow.palette.gray
-      font.family: anchorWindow.palette.font; font.pixelSize: 12
+      font.family: anchorWindow.palette.font; font.pixelSize: appConfig.scaled(12)
       wrapMode: Text.WordWrap
       Layout.fillWidth: true
       maximumLineCount: 3
@@ -230,7 +231,7 @@ PopupWindow {
             anchors.centerIn: parent
             text: modelData.text
             color: anchorWindow.palette.light
-            font.family: anchorWindow.palette.font; font.pixelSize: 9
+            font.family: anchorWindow.palette.font; font.pixelSize: appConfig.scaled(9)
           }
 
           MouseArea {

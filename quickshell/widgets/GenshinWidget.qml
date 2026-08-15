@@ -55,7 +55,7 @@ Item {
       text: root.resinDisplayText
       color: root.resinClass === "critical" ? window.palette.orange : window.palette.blue
       font.family: window.palette.font
-      font.pixelSize: 12
+      font.pixelSize: window.appConfig.scaled(12)
       Layout.alignment: Qt.AlignVCenter
 
       Behavior on color { ColorAnimation { duration: 220 } }

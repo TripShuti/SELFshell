@@ -13,6 +13,7 @@ AnimatedPopup {
 
   required property QtObject window
   palette: window.palette
+  appConfig: window.appConfig
 
   implicitWidth: 780
   implicitHeight: 210
@@ -99,7 +100,7 @@ AnimatedPopup {
       Text {
         text: statusText !== "" ? statusText : "\uF03E  Wallpapers"
         color: window.palette.green
-        font.family: window.palette.font; font.pixelSize: 14; font.bold: true
+        font.family: window.palette.font; font.pixelSize: appConfig.scaled(14); font.bold: true
         elide: Text.ElideRight
         Layout.fillWidth: true
       }
@@ -114,7 +115,7 @@ AnimatedPopup {
           text: "\uF00D"
           color: closeArea.containsMouse ? window.palette.fg : window.palette.gray
           Behavior on color { ColorAnimation { duration: 120 } }
-          font.family: window.palette.font; font.pixelSize: 11
+          font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
         }
 
         MouseArea {

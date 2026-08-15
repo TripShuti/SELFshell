@@ -15,6 +15,7 @@ AnimatedPopup {
 
   required property QtObject window
   palette: window.palette
+  appConfig: window.appConfig
 
   // Мережа: Wi-Fi об'єкт з .name, .known, .connected, .security
   // або Ethernet: { name: <iface>, connected: bool }
@@ -365,14 +366,14 @@ AnimatedPopup {
       Text {
         text: "Settings: " + (root.network ? root.network.name : "")
         color: window.palette.accent
-        font.family: window.palette.font; font.pixelSize: 16; font.bold: true
+        font.family: window.palette.font; font.pixelSize: appConfig.scaled(16); font.bold: true
         Layout.fillWidth: true
         elide: Text.ElideRight
       }
       Rectangle {
         width: 24; height: 24; radius: 4
         color: window.palette.bgLayer
-        Text { anchors.centerIn: parent; text: "\u2716"; color: window.palette.mutedAlt; font.family: window.palette.font; font.pixelSize: 11 }
+        Text { anchors.centerIn: parent; text: "\u2716"; color: window.palette.mutedAlt; font.family: window.palette.font; font.pixelSize: appConfig.scaled(11) }
         MouseArea {
           anchors.fill: parent
           cursorShape: Qt.PointingHandCursor
@@ -386,7 +387,7 @@ AnimatedPopup {
       visible: !root.resolved
       text: "Looking for connection profile..."
       color: window.palette.mutedAlt
-      font.family: window.palette.font; font.pixelSize: 12
+      font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
     }
 
     // Попередження: знайдено кілька профілів NetworkManager з однаковим SSID.
@@ -399,7 +400,7 @@ AnimatedPopup {
       visible: root.resolved && root.duplicateProfileCount > 1
       text: "⚠ Found " + root.duplicateProfileCount + " NetworkManager profiles with this SSID. Using the newest one (\"" + root.connectionName + "\"). Remove duplicates with nmcli con delete."
       color: window.palette.yellow
-      font.family: window.palette.font; font.pixelSize: 10
+      font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
       wrapMode: Text.WordWrap
     }
 
@@ -412,7 +413,7 @@ AnimatedPopup {
       Text {
         text: "Auto-connect"
         color: window.palette.textLight
-        font.family: window.palette.font; font.pixelSize: 12
+        font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
         Layout.fillWidth: true
       }
 
@@ -445,7 +446,7 @@ AnimatedPopup {
             anchors.centerIn: parent
             text: modelData
             color: root.activeTab === index ? window.palette.bgLayer : window.palette.textLight
-            font.family: window.palette.font; font.pixelSize: 11; font.bold: root.activeTab === index
+            font.family: window.palette.font; font.pixelSize: appConfig.scaled(11); font.bold: root.activeTab === index
           }
           MouseArea {
             anchors.fill: parent
@@ -471,17 +472,17 @@ AnimatedPopup {
 
         RowLayout {
           spacing: 8
-          Text { text: "Method:"; color: window.palette.mutedAlt; font.family: window.palette.font; font.pixelSize: 12 }
+          Text { text: "Method:"; color: window.palette.mutedAlt; font.family: window.palette.font; font.pixelSize: appConfig.scaled(12) }
           Rectangle {
             implicitWidth: autoLabel.implicitWidth + 16; height: 22; radius: 4
             color: !root.ipv4Manual ? window.palette.accent : window.palette.bgLayer
-            Text { id: autoLabel; anchors.centerIn: parent; text: "Auto (DHCP)"; color: !root.ipv4Manual ? window.palette.bgLayer : window.palette.textLight; font.family: window.palette.font; font.pixelSize: 10 }
+            Text { id: autoLabel; anchors.centerIn: parent; text: "Auto (DHCP)"; color: !root.ipv4Manual ? window.palette.bgLayer : window.palette.textLight; font.family: window.palette.font; font.pixelSize: appConfig.scaled(10) }
             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.ipv4Manual = false }
           }
           Rectangle {
             implicitWidth: manLabel.implicitWidth + 16; height: 22; radius: 4
             color: root.ipv4Manual ? window.palette.accent : window.palette.bgLayer
-            Text { id: manLabel; anchors.centerIn: parent; text: "Manual"; color: root.ipv4Manual ? window.palette.bgLayer : window.palette.textLight; font.family: window.palette.font; font.pixelSize: 10 }
+            Text { id: manLabel; anchors.centerIn: parent; text: "Manual"; color: root.ipv4Manual ? window.palette.bgLayer : window.palette.textLight; font.family: window.palette.font; font.pixelSize: appConfig.scaled(10) }
             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.ipv4Manual = true }
           }
         }
@@ -517,17 +518,17 @@ AnimatedPopup {
 
         RowLayout {
           spacing: 8
-          Text { text: "DNS:"; color: window.palette.mutedAlt; font.family: window.palette.font; font.pixelSize: 12 }
+          Text { text: "DNS:"; color: window.palette.mutedAlt; font.family: window.palette.font; font.pixelSize: appConfig.scaled(12) }
           Rectangle {
             implicitWidth: autoDnsLabel.implicitWidth + 16; height: 22; radius: 4
             color: !root.dnsManual ? window.palette.accent : window.palette.bgLayer
-            Text { id: autoDnsLabel; anchors.centerIn: parent; text: "Automatic"; color: !root.dnsManual ? window.palette.bgLayer : window.palette.textLight; font.family: window.palette.font; font.pixelSize: 10 }
+            Text { id: autoDnsLabel; anchors.centerIn: parent; text: "Automatic"; color: !root.dnsManual ? window.palette.bgLayer : window.palette.textLight; font.family: window.palette.font; font.pixelSize: appConfig.scaled(10) }
             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.dnsManual = false }
           }
           Rectangle {
             implicitWidth: manDnsLabel.implicitWidth + 16; height: 22; radius: 4
             color: root.dnsManual ? window.palette.accent : window.palette.bgLayer
-            Text { id: manDnsLabel; anchors.centerIn: parent; text: "Manual"; color: root.dnsManual ? window.palette.bgLayer : window.palette.textLight; font.family: window.palette.font; font.pixelSize: 10 }
+            Text { id: manDnsLabel; anchors.centerIn: parent; text: "Manual"; color: root.dnsManual ? window.palette.bgLayer : window.palette.textLight; font.family: window.palette.font; font.pixelSize: appConfig.scaled(10) }
             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.dnsManual = true }
           }
         }
@@ -549,8 +550,8 @@ AnimatedPopup {
 
         RowLayout {
           spacing: 6
-          Text { text: "Security type:"; color: window.palette.mutedAlt; font.family: window.palette.font; font.pixelSize: 12 }
-          Text { text: root.keyMgmt; color: window.palette.textLight; font.family: window.palette.font; font.pixelSize: 12; font.bold: true }
+          Text { text: "Security type:"; color: window.palette.mutedAlt; font.family: window.palette.font; font.pixelSize: appConfig.scaled(12) }
+          Text { text: root.keyMgmt; color: window.palette.textLight; font.family: window.palette.font; font.pixelSize: appConfig.scaled(12); font.bold: true }
         }
 
         // Кнопка зміни пароля
@@ -566,7 +567,7 @@ AnimatedPopup {
             anchors.centerIn: parent
             text: "Change Password"
             color: window.palette.textLight
-            font.family: window.palette.font; font.pixelSize: 12
+            font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
           }
           MouseArea {
             anchors.fill: parent
@@ -591,7 +592,7 @@ AnimatedPopup {
               anchors.fill: parent
               anchors.margins: 8
               color: window.palette.textLight
-              font.family: window.palette.font; font.pixelSize: 12
+              font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
               echoMode: TextInput.Password
               text: root.newPassword
               onTextEdited: root.newPassword = text
@@ -603,13 +604,13 @@ AnimatedPopup {
             Rectangle {
               implicitWidth: 90; height: 24; radius: 4
               color: window.palette.accent
-              Text { anchors.centerIn: parent;               text: "Save Password"; color: window.palette.bgLayer; font.family: window.palette.font; font.pixelSize: 10; font.bold: true }
+              Text { anchors.centerIn: parent;               text: "Save Password"; color: window.palette.bgLayer; font.family: window.palette.font; font.pixelSize: appConfig.scaled(10); font.bold: true }
               MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.applyPassword() }
             }
             Rectangle {
               implicitWidth: 70; height: 24; radius: 4
               color: window.palette.bgLayer
-              Text { anchors.centerIn: parent;                 text: "Cancel"; color: window.palette.mutedAlt; font.family: window.palette.font; font.pixelSize: 10 }
+              Text { anchors.centerIn: parent;                 text: "Cancel"; color: window.palette.mutedAlt; font.family: window.palette.font; font.pixelSize: appConfig.scaled(10) }
               MouseArea {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
@@ -633,7 +634,7 @@ AnimatedPopup {
             anchors.centerIn: parent
             text: "Forget Network"
             color: window.palette.danger
-            font.family: window.palette.font; font.pixelSize: 12
+            font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
           }
           MouseArea {
             anchors.fill: parent
@@ -655,7 +656,7 @@ AnimatedPopup {
       visible: root.statusMessage.length > 0
       text: root.statusMessage
       color: root.statusIsError ? window.palette.danger : window.palette.accent
-      font.family: window.palette.font; font.pixelSize: 11
+      font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
       wrapMode: Text.WordWrap
     }
 
@@ -669,7 +670,7 @@ AnimatedPopup {
       Rectangle {
         implicitWidth: 70; height: 26; radius: 4
         color: window.palette.accent
-        Text { anchors.centerIn: parent; text: "Apply"; color: window.palette.bgLayer; font.family: window.palette.font; font.pixelSize: 11; font.bold: true }
+        Text { anchors.centerIn: parent; text: "Apply"; color: window.palette.bgLayer; font.family: window.palette.font; font.pixelSize: appConfig.scaled(11); font.bold: true }
         MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.applyIpv4AndDns() }
       }
     }
@@ -687,7 +688,7 @@ AnimatedPopup {
     Text {
       text: label
       color: window.palette.mutedAlt
-      font.family: window.palette.font; font.pixelSize: 10
+      font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
     }
     Rectangle {
       Layout.fillWidth: true
@@ -699,7 +700,7 @@ AnimatedPopup {
         anchors.fill: parent
         anchors.margins: 8
         color: window.palette.textLight
-        font.family: window.palette.font; font.pixelSize: 12
+        font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
         text: parent.parent.text
         onTextEdited: parent.parent.textEdited(text)
       }

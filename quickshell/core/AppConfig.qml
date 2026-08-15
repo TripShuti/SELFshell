@@ -85,6 +85,39 @@ Item {
       property bool centerPillEnabled: true
       property bool rightPillEnabled: true
 
+      // --- Зовнішній вигляд: дизайн поза автопалітрою (Appearance) ---
+      // Дефолти збігаються з поточними хардкод-значеннями в QML, тож
+      // вигляд не змінюється, доки користувач не посуне повзунки.
+
+      // Попапи (база AnimatedPopup — всі 15 вікон)
+      property real popupBgOpacity: 0.90
+      property real popupBgLighten: 1.5
+      property int popupRadius: 10
+      property int popupBorderWidth: 1
+      property real popupGlowOpacity: 0.10
+
+      // Тост і OSD (автономні поверхні)
+      property int toastRadius: 6
+      property real toastLighten: 1.16
+      property real toastGlowOpacity: 0.2
+      property int osdRadius: 10
+      property real osdLighten: 1.5
+
+      // Бар (пігулки)
+      property real barLighten: 1.30
+      property int barGlowSize: 0
+      property real barGlowOpacity: 0.10
+      // множник прозорості фону пігулки (1.0 = колір з палітри як є)
+      property real barBgOpacity: 1.0
+      // товщина рамки пігулки (0 = без рамки)
+      property int barBorderWidth: 0
+      // роздільники між віджетами
+      property real separatorOpacity: 0.65
+      property real separatorGlowOpacity: 0.10
+
+      // Глобальний множник шрифтів/гліфів (1.0 = база)
+      property real uiScale: 1.0
+
       // --- Порядки віджетів ---
       property var leftOrder: ["launcher", "sep-2", "workspaces", "sep-7", "mpris"]
       property var centerOrder: ["clock", "sep-5", "timer", "sep-6", "genshin", "battery"]
@@ -95,6 +128,10 @@ Item {
   // Єдина точка правди — адаптер config.json
   readonly property var cfg: cfgAdapter
   function saveToFile() { configFile.writeAdapter() }
+
+  // Масштаб шрифтів/гліфів: усі font.pixelSize у віджетах і попапах
+  // домножуються на uiScale через цей хелпер
+  function scaled(v) { return v * root.cfg.uiScale }
 
   // Фіксований канонічний список усіх віджетів — використовується
   // Settings-попапом для стабільного порядку рядків (не залежить від
@@ -203,6 +240,14 @@ Item {
     barHeight: 32, barRadius: 5, barPos: "top", edgeMargin: 8,
     pillPadding: 8, contentSpacing: 4, barAutoHide: false,
     leftPillEnabled: true, centerPillEnabled: true, rightPillEnabled: true,
+    popupBgOpacity: 0.90, popupBgLighten: 1.5, popupRadius: 10,
+    popupBorderWidth: 1, popupGlowOpacity: 0.10,
+    toastRadius: 6, toastLighten: 1.16, toastGlowOpacity: 0.2,
+    osdRadius: 10, osdLighten: 1.5,
+    barLighten: 1.30, barGlowSize: 0, barGlowOpacity: 0.10,
+    barBgOpacity: 1.0, barBorderWidth: 0,
+    separatorOpacity: 0.65, separatorGlowOpacity: 0.10,
+    uiScale: 1.0,
     leftOrder: ["launcher", "sep-2", "workspaces", "sep-7", "mpris"],
     centerOrder: ["clock", "sep-5", "timer", "sep-6", "genshin", "battery"],
     rightOrder: ["tray", "sep-12", "net", "bt", "keyboard", "sep-10", "audio", "sep-11", "control", "clipboard"]

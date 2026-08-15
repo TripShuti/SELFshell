@@ -15,6 +15,7 @@ AnimatedPopup {
   required property QtObject window
   required property QtObject anchorItem
   palette: window.palette
+  appConfig: window.appConfig
 
   popupWindow: window
   anchorTarget: anchorItem
@@ -162,7 +163,7 @@ AnimatedPopup {
       text: "Keyboard Layout"
       color: window.palette.gray
       font.family: window.palette.font
-      font.pixelSize: 9
+      font.pixelSize: appConfig.scaled(9)
       font.bold: true
     }
 
@@ -185,7 +186,7 @@ AnimatedPopup {
           text: modelData.label
           color: isActive ? window.palette.green : window.palette.fg
           font.family: window.palette.font
-          font.pixelSize: 11
+          font.pixelSize: appConfig.scaled(11)
           font.bold: isActive
         }
 
@@ -220,7 +221,7 @@ AnimatedPopup {
       text: "No layouts"
       color: window.palette.muted
       font.family: window.palette.font
-      font.pixelSize: 10
+      font.pixelSize: appConfig.scaled(10)
       Layout.fillWidth: true
       horizontalAlignment: Text.AlignHCenter
     }

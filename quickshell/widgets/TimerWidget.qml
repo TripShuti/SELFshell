@@ -137,7 +137,7 @@ Item {
          : root.timerClass === "done" ? window.palette.red
          :  window.palette.widgetFg
     font.family: window.palette.font
-    font.pixelSize: 13
+    font.pixelSize: window.appConfig.scaled(13)
     anchors.verticalCenter: parent.verticalCenter
 
     Behavior on color { ColorAnimation { duration: 220 } }

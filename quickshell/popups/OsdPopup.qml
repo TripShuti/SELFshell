@@ -18,6 +18,7 @@ PopupWindow {
 
   property QtObject anchorWindow: null
   readonly property QtObject palette: anchorWindow ? anchorWindow.palette : null
+  readonly property QtObject appConfig: anchorWindow ? anchorWindow.appConfig : null
 
   // "volume" | "brightness"
   property string mode: "volume"
@@ -148,15 +149,15 @@ PopupWindow {
     width: parent.width
     implicitHeight: osdLayout.implicitHeight + 14
     // Стиль рамки — як у решти попапів (AnimatedPopup): тонка обводка
-    // bg2, radius 10, градієнт lighten 1.5 (без зеленої рамки)
-    radius: 10
+    // bg2, radius, градієнт lighten (без зеленої рамки)
+    radius: appConfig ? appConfig.cfg.osdRadius : 10
     border.width: 1
     border.color: root.palette.bg2
     opacity: 0
     scale: 0.88
     gradient: Gradient {
       orientation: Gradient.Vertical
-      GradientStop { position: 0.0; color: Qt.lighter(root.palette.bg0H, 1.5) }
+      GradientStop { position: 0.0; color: Qt.lighter(root.palette.bg0H, appConfig ? appConfig.cfg.osdLighten : 1.5) }
       GradientStop { position: 1.0; color: root.palette.bg0H }
     }
 
@@ -175,7 +176,7 @@ PopupWindow {
           text: root.icon
           color: root.iconColor
           font.family: root.palette.font
-          font.pixelSize: 16
+          font.pixelSize: appConfig.scaled(16)
           Layout.alignment: Qt.AlignVCenter
         }
 
@@ -199,7 +200,7 @@ PopupWindow {
           text: root.valueText
           color: root.palette.fg
           font.family: root.palette.font
-          font.pixelSize: 13
+          font.pixelSize: appConfig.scaled(13)
           font.bold: true
           Layout.alignment: Qt.AlignVCenter
         }

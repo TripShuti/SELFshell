@@ -14,6 +14,7 @@ AnimatedPopup {
   required property QtObject anchorItem
   required property QtObject window
   palette: window.palette
+  appConfig: window.appConfig
 
   implicitWidth: 320
   implicitHeight: layout.implicitHeight + 16
@@ -47,7 +48,7 @@ AnimatedPopup {
     Text {
       text: "Output Devices"
       color: window.palette.green
-      font.family: window.palette.font; font.pixelSize: 12; font.bold: true
+      font.family: window.palette.font; font.pixelSize: appConfig.scaled(12); font.bold: true
     }
 
     // Список аудіо-пристроїв (sinks)
@@ -70,7 +71,7 @@ AnimatedPopup {
           Text {
             text: modelData.description || modelData.name || modelData.nickname
             color: window.palette.fg
-            font.family: window.palette.font; font.pixelSize: 12
+            font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
             elide: Text.ElideRight
             Layout.preferredWidth: 80
           }
@@ -112,7 +113,7 @@ AnimatedPopup {
               anchors.centerIn: parent
               text: modelData.audio?.muted ? "\uF026" : "\uF028"
               color: modelData.audio?.muted ? window.palette.baseOverlay : window.palette.fg
-              font.family: window.palette.font; font.pixelSize: 12
+              font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
             }
             MouseArea {
               anchors.fill: parent
@@ -135,7 +136,7 @@ AnimatedPopup {
               anchors.centerIn: parent
               text: "\uF00C"
               color: Pipewire.defaultAudioSink === modelData ? window.palette.baseOverlay : window.palette.muted
-              font.family: window.palette.font; font.pixelSize: 12
+              font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
             }
             MouseArea {
               anchors.fill: parent
@@ -167,7 +168,7 @@ AnimatedPopup {
     Text {
       text: "Playback Streams"
       color: window.palette.green
-      font.family: window.palette.font; font.pixelSize: 12; font.bold: true
+      font.family: window.palette.font; font.pixelSize: appConfig.scaled(12); font.bold: true
     }
 
     // Список аудіо-потоків (streams)
@@ -193,7 +194,7 @@ AnimatedPopup {
               return n || "Stream"
             }
             color: window.palette.fg
-            font.family: window.palette.font; font.pixelSize: 12
+            font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
             elide: Text.ElideRight
             Layout.preferredWidth: 80
           }
@@ -234,7 +235,7 @@ AnimatedPopup {
               anchors.centerIn: parent
               text: modelData.audio?.muted ? "\uF026" : "\uF028"
               color: modelData.audio?.muted ? window.palette.baseOverlay : window.palette.fg
-              font.family: window.palette.font; font.pixelSize: 12
+              font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
             }
             MouseArea {
               anchors.fill: parent

@@ -123,7 +123,7 @@ Item {
     text: root.displayText
     color: window.palette.widgetFg
     font.family: window.palette.font
-    font.pixelSize: 12
+    font.pixelSize: window.appConfig.scaled(12)
     anchors.verticalCenter: parent.verticalCenter
   }
 

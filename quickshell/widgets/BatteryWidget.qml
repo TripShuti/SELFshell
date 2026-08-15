@@ -128,13 +128,13 @@ Item {
       text: root.icon
       color: root.iconColor
       font.family: window.palette.font
-      font.pixelSize: 13
+      font.pixelSize: window.appConfig.scaled(13)
     }
     Text {
       text: root.percent >= 0 ? root.percent + "%" : "--"
       color: root.iconColor
       font.family: window.palette.font
-      font.pixelSize: 12
+      font.pixelSize: window.appConfig.scaled(12)
     }
   }
 }

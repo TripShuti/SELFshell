@@ -14,6 +14,7 @@ AnimatedPopup {
   required property QtObject anchorItem
   required property QtObject window
   palette: window.palette
+  appConfig: window.appConfig
 
   implicitWidth: 400
   implicitHeight: layout.implicitHeight + 16
@@ -144,7 +145,7 @@ AnimatedPopup {
       Text {
         text: "Genshin Impact"
         color: window.palette.green
-        font.family: window.palette.font; font.pixelSize: 13; font.bold: true
+        font.family: window.palette.font; font.pixelSize: appConfig.scaled(13); font.bold: true
       }
 
       Item { Layout.fillWidth: true }
@@ -165,7 +166,7 @@ AnimatedPopup {
             id: refreshIcon
             anchors.centerIn: parent
             text: "⟳"
-            font.family: window.palette.font; font.pixelSize: 13
+            font.family: window.palette.font; font.pixelSize: appConfig.scaled(13)
             color: root.refreshStatus === "error" ? window.palette.red
                  : root.refreshStatus === "ok" ? window.palette.green
                  : window.palette.gray
@@ -211,7 +212,7 @@ AnimatedPopup {
             color: signProc.running
               ? window.palette.green
               : root.isSigned ? window.palette.green : window.palette.gray
-            font.family: window.palette.font; font.pixelSize: 11
+            font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
             Behavior on color { ColorAnimation { duration: 200 } }
 
             RotationAnimator on rotation {
@@ -257,7 +258,7 @@ AnimatedPopup {
         Text {
           text: root.resinDisplayText
           color: root.resinClass === "critical" ? window.palette.red : window.palette.green
-          font.family: window.palette.font; font.pixelSize: 13
+          font.family: window.palette.font; font.pixelSize: appConfig.scaled(13)
           font.bold: true
         }
       }
@@ -269,7 +270,7 @@ AnimatedPopup {
       visible: root.refreshMessage !== ""
       text: root.refreshMessage
       color: root.refreshStatus === "error" ? window.palette.red : window.palette.green
-      font.family: window.palette.font; font.pixelSize: 10
+      font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
       opacity: visible ? 1 : 0
       Layout.alignment: Qt.AlignRight
       Behavior on opacity { NumberAnimation { duration: 200 } }
@@ -291,7 +292,7 @@ AnimatedPopup {
           required property var modelData
           text: modelData.text
           color: window.palette.fg
-          font.family: window.palette.font; font.pixelSize: 13
+          font.family: window.palette.font; font.pixelSize: appConfig.scaled(13)
           wrapMode: Text.NoWrap
           elide: Text.ElideRight
           Layout.fillWidth: true
@@ -306,7 +307,7 @@ AnimatedPopup {
     // Результат чекіну
     Text {
       id: signFeedback
-      font.family: window.palette.font; font.pixelSize: 11
+      font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
       wrapMode: Text.WordWrap
       Layout.fillWidth: true
       lineHeight: 1.3

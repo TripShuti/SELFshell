@@ -17,6 +17,7 @@ AnimatedPopup {
   required property QtObject anchorItem
   required property QtObject window
   palette: window.palette
+  appConfig: window.appConfig
 
   property string searchText: ""
   property var entries: []
@@ -133,7 +134,7 @@ AnimatedPopup {
       Text {
         text: "\uDB82\uDCC7"
         color: window.palette.mutedAlt
-        font.family: window.palette.font; font.pixelSize: 16
+        font.family: window.palette.font; font.pixelSize: appConfig.scaled(16)
       }
 
       // Поле введення
@@ -143,7 +144,7 @@ AnimatedPopup {
         placeholderText: "Search applications..."
         placeholderTextColor: window.palette.gray
         color: window.palette.fg
-        font.family: window.palette.font; font.pixelSize: 14
+        font.family: window.palette.font; font.pixelSize: appConfig.scaled(14)
         focus: true
         selectByMouse: true
 
@@ -270,7 +271,7 @@ AnimatedPopup {
                   text: modelData.name || ""
                   color: isCurrent ? window.palette.green : window.palette.fg
                   Behavior on color { ColorAnimation { duration: 120 } }
-                  font.family: window.palette.font; font.pixelSize: 13; font.bold: true
+                  font.family: window.palette.font; font.pixelSize: appConfig.scaled(13); font.bold: true
                   elide: Text.ElideRight
                   Layout.fillWidth: true
                 }
@@ -278,7 +279,7 @@ AnimatedPopup {
                 Text {
                   text: modelData.genericName || ""
                   color: window.palette.mutedAlt
-                  font.family: window.palette.font; font.pixelSize: 10
+                  font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
                   elide: Text.ElideRight
                   Layout.fillWidth: true
                   visible: modelData.genericName !== ""
@@ -314,14 +315,14 @@ AnimatedPopup {
           Layout.alignment: Qt.AlignHCenter
           text: "\uF002"
           color: window.palette.mutedAlt
-          font.family: window.palette.font; font.pixelSize: 22
+          font.family: window.palette.font; font.pixelSize: appConfig.scaled(22)
         }
 
         Text {
           Layout.alignment: Qt.AlignHCenter
           text: root.searchText.trim() === "" ? "No applications found" : "No results for \"" + root.searchText.trim() + "\""
           color: window.palette.mutedAlt
-          font.family: window.palette.font; font.pixelSize: 12
+          font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
         }
       }
     }

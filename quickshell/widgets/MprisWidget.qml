@@ -83,7 +83,7 @@ Item {
     Text {
       text: root.player?.isPlaying ? "\uF04B" : "\uF04C"
       color: root.player?.isPlaying ? window.palette.green : window.palette.fg
-      font.family: window.palette.font; font.pixelSize: 10
+      font.family: window.palette.font; font.pixelSize: window.appConfig.scaled(10)
       Layout.alignment: Qt.AlignVCenter
       Behavior on color { ColorAnimation { duration: 220 } }
     }
@@ -92,7 +92,7 @@ Item {
     Text {
       text: root.player?.trackTitle ?? ""
       color: root.player?.isPlaying ? window.palette.green : window.palette.fg
-      font.family: window.palette.font; font.pixelSize: 12
+      font.family: window.palette.font; font.pixelSize: window.appConfig.scaled(12)
       elide: Text.ElideRight
       Layout.fillWidth: true
       Layout.maximumWidth: root.maxTrackWidth
