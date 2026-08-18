@@ -12,7 +12,7 @@ no separate lock/idle daemons.
 ## Features
 
 **Shell & Bar**
-- 13 built-in widgets across three configurable pill sections (left / center / right)
+- 14 built-in widgets across three configurable pill sections (left / center / right)
 - Drag-and-drop widget reordering via a built-in Settings popup
 - System Tray, MPRIS player with cava visualizer, Battery, Bluetooth, Network
 
@@ -176,7 +176,7 @@ kitty/       - terminal config
 quickshell/  - QML panels, core, popups, widgets, monitors, scripts, data, assets, services
              - core/ — shell infrastructure (AppConfig, IdleManager, LockScreen, etc.)
              - monitors/ — background data monitors (Cava, Genshin)
-             - widgets/ — panel widgets (13 total)
+             - widgets/ — panel widgets (14 total)
              - popups/ — popup windows (15 total)
              - scripts/ — helper scripts (palette, Genshin, etc.)
              - data/ — persisted state (config.json, calendar-tasks, etc.)

@@ -11,7 +11,7 @@ selfshell/                       # git repo root (cloned into ~/.config)
   │   ├── core/                  # infrastructure (AppConfig, PaletteService,
   │   │                          #   IdleManager, LockContext/Surface, AnimatedPopup,
   │   │                          #   PillBar, HoverItem/Text, ToggleSwitch, ...)
-  │   ├── widgets/               # 13 bar widgets
+  │   ├── widgets/               # 14 bar widgets
   │   ├── popups/                # 15 popup windows
   │   ├── monitors/              # 2 background monitors (Cava, Genshin)
   │   ├── services/              # systemd units and QML services (qs-bt-agent,
@@ -285,14 +285,25 @@ feeding its id to `cliphist delete` through stdin.
 
 ---
 
-### 9.5. Settings — drag-and-drop
+### 9.5. Settings — sections
 
-SettingsPopup allows:
-- enabling/disabling widgets (checkboxes)
-- dragging widgets between pills (drag-and-drop)
-- reordering inside a pill
+SettingsPopup is a fixed-size popup (760x560) with a sidebar of sections,
+each loaded as a separate file via `Loader` (`settings/*.qml`, each gets
+`sys` = the popup root):
+- **Bar** — height, pill radius, edge margin, padding, spacing, bar
+  position (top/bottom), auto-hide, pill visibility (left/center/right)
+- **Layout** — drag-and-drop widget order: dragging between pills,
+  dragging into the pool disables the widget, separators are added with
+  a "+" button
+- **Wallpaper** — picker and palette regeneration
+- **Appearance** — popup/toast/OSD/bar/separator design keys and global
+  `uiScale` (beyond the auto palette)
+- **Behavior** — Do not disturb, idle timeouts (lock/dpms/suspend with
+  ordering constraints), wheel steps (volume/brightness), resetting all
+  settings to factory defaults
+- **About** — shell and component versions, machine info, project link
 
-Implementation:
+Layout (drag-and-drop) implementation:
 - the dragged element is **not filtered** out of the `Repeater` model; it
   stays in place (its visual state is controlled via opacity/height)
 - intermediate `readonly property`s are replaced with functions to avoid
