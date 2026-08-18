@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-08-18
+
 ### Added
 
 - `selfshell doctor`: Hyprland version check (≥ 0.52 — the config is
