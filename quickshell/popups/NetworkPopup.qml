@@ -234,7 +234,7 @@ AnimatedPopup {
           property bool hovered: false
           implicitWidth: settingsLabel.implicitWidth + 12; height: 24; radius: 4
           color: hovered ? window.palette.hoverOverlay : window.palette.bgLayer
-          Behavior on color { ColorAnimation { duration: 150 } }
+          Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
 
           Text {
             id: settingsLabel
@@ -260,7 +260,7 @@ AnimatedPopup {
           property bool hovered: false
           implicitWidth: wiredActionLabel.implicitWidth + 12; height: 24; radius: 4
           color: hovered ? window.palette.hoverOverlay : window.palette.bgLayer
-          Behavior on color { ColorAnimation { duration: 150 } }
+          Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
 
           Text {
             id: wiredActionLabel
@@ -317,6 +317,7 @@ AnimatedPopup {
       ToggleSwitch {
         checked: root.wifiEnabled
         palette: window.palette
+        appConfig: window.appConfig
         Layout.alignment: Qt.AlignVCenter
         onToggled: value => Networking.wifiEnabled = value
       }
@@ -395,6 +396,7 @@ AnimatedPopup {
           implicitWidth: Math.max(70, connectLabel.implicitWidth + 12); height: 24; radius: 4
           color: window.palette.accent
           opacity: root.connecting ? 0.6 : 1
+          Behavior on opacity { NumberAnimation { duration: appConfig.anim(150); easing.type: Easing.OutCubic } }
           Text { id: connectLabel; anchors.centerIn: parent; text: root.connecting ? "Connecting..." : "Connect"; color: window.palette.bgLayer; font.family: window.palette.font; font.pixelSize: appConfig.scaled(11); font.bold: true }
           MouseArea {
             anchors.fill: parent
@@ -424,14 +426,14 @@ AnimatedPopup {
         property bool hovered: false
         implicitWidth: scanLabel.implicitWidth + 16; height: 24; radius: 4
         color: root.scanning ? window.palette.sepBg : (hovered ? window.palette.hoverOverlay : window.palette.bgLayer)
-        Behavior on color { ColorAnimation { duration: 150 } }
+        Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
 
         // Пульсація під час сканування
         SequentialAnimation on opacity {
           running: root.scanning
           loops: Animation.Infinite
-          NumberAnimation { to: 0.5; duration: 800; easing.type: Easing.InOutSine }
-          NumberAnimation { to: 1.0; duration: 800; easing.type: Easing.InOutSine }
+          NumberAnimation { to: 0.5; duration: appConfig.anim(800); easing.type: Easing.InOutSine }
+          NumberAnimation { to: 1.0; duration: appConfig.anim(800); easing.type: Easing.InOutSine }
         }
 
         Text {
@@ -536,7 +538,7 @@ AnimatedPopup {
                     radius: 1
                     color: index < activeBars ? window.palette.accent : window.palette.bg2
                     Layout.alignment: Qt.AlignBottom
-                    Behavior on color { ColorAnimation { duration: 150 } }
+                    Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
                   }
                 }
               }
@@ -601,7 +603,7 @@ AnimatedPopup {
             property bool hovered: false
             implicitWidth: actionLabel.implicitWidth + 12; height: 24; radius: 4
             color: modelData.connected ? (hovered ? window.palette.hoverOverlay : window.palette.bgLayer) : (modelData.known ? (hovered ? window.palette.widgetFg : window.palette.accent) : (hovered ? window.palette.hoverOverlay : window.palette.bgLayer))
-            Behavior on color { ColorAnimation { duration: 150 } }
+            Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
 
             Text {
               id: actionLabel

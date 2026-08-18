@@ -58,12 +58,13 @@ Item {
         Text {
           id: projectLink
           text: "github.com/TripShuti/SELFshell"
-          color: linkMouse.containsMouse ? root.window.palette.bg0H : root.window.palette.accent
+          color: linkMouse.containsMouse ? Qt.lighter(root.window.palette.accent, 1.25) : root.window.palette.accent
           font.family: root.window.palette.font
           font.pixelSize: window.appConfig.scaled(10)
           font.underline: linkMouse.containsMouse
           elide: Text.ElideRight
           Layout.alignment: Qt.AlignRight
+          Behavior on color { ColorAnimation { duration: root.ac.anim(120) } }
 
           MouseArea {
             id: linkMouse

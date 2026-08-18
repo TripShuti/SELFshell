@@ -25,8 +25,9 @@ HoverItem {
     anchors.centerIn: parent
     text: Qt.formatDateTime(clock.date, "HH:mm")
     palette: window.palette
+    appConfig: window.appConfig
     normalColor: window.palette.widgetFg
-    hoverColor: window.palette.widgetFg
+    hoverColor: window.palette.green
     font.pixelSize: window.appConfig.scaled(14)
     verticalAlignment: Text.AlignVCenter
     horizontalAlignment: Text.AlignHCenter

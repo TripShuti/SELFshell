@@ -32,8 +32,13 @@ Item {
       delegate: Item {
         required property HyprlandWorkspace modelData
 
+        // Hover-стан рядка (HoverText-рецепт: колір + масштаб)
+        property bool hovered: false
+
         readonly property color dotColor: modelData.focused ? window.palette.green
-          : (modelData.urgent ? window.palette.red : (modelData.active ? window.palette.light : window.palette.muted))
+          : (modelData.urgent ? window.palette.red
+          : (hovered ? window.palette.green
+          : (modelData.active ? window.palette.light : window.palette.muted)))
 
         readonly property var wnds: modelData.windows ?? []
 
@@ -52,11 +57,11 @@ Item {
             font.family: window.palette.font
             font.pixelSize: window.appConfig.scaled(11)
             font.bold: modelData.focused
-            scale: modelData.focused ? 1.15 : 1.0
+            scale: (modelData.focused || hovered) ? 1.15 : 1.0
 
-            Behavior on color { ColorAnimation { duration: 220 } }
+            Behavior on color { ColorAnimation { duration: window.appConfig.anim(220) } }
             Behavior on scale {
-              NumberAnimation { duration: 220; easing.type: Easing.OutBack; easing.overshoot: 2.2 }
+              NumberAnimation { duration: window.appConfig.anim(220); easing.type: Easing.OutBack; easing.overshoot: 2.2 }
             }
           }
 
@@ -91,6 +96,9 @@ Item {
         MouseArea {
           anchors.fill: parent
           acceptedButtons: Qt.LeftButton | Qt.RightButton
+          hoverEnabled: true
+          onEntered: hovered = true
+          onExited: hovered = false
           onClicked: mouse => {
             if (mouse.button === Qt.LeftButton) modelData.activate()
             else root.openPopup(modelData, parent)

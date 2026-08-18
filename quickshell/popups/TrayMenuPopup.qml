@@ -65,7 +65,7 @@ AnimatedPopup {
   }
 
   component NoAnim: Transition {
-    NumberAnimation { duration: 0 }
+    NumberAnimation { duration: appConfig.anim(0) }
   }
 
   // Сторінка меню: QsMenuOpener віддає пункти DBusMenu, Repeater рендерить.
@@ -88,8 +88,8 @@ AnimatedPopup {
     StackView.onActivating: shown = true
     StackView.onDeactivating: shown = false
 
-    Behavior on opacity { NumberAnimation { duration: 100 } }
-    Behavior on scale { NumberAnimation { duration: 100 } }
+    Behavior on opacity { NumberAnimation { duration: appConfig.anim(100) } }
+    Behavior on scale { NumberAnimation { duration: appConfig.anim(100) } }
 
     QsMenuOpener {
       id: opener
@@ -125,7 +125,7 @@ AnimatedPopup {
           color: ma.containsMouse ? window.palette.bg2 : "transparent"
           opacity: modelData.enabled ? 1.0 : 0.45
 
-          Behavior on color { ColorAnimation { duration: 120 } }
+          Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
 
           RowLayout {
             anchors.fill: parent
@@ -206,7 +206,7 @@ AnimatedPopup {
           radius: 6
           color: backMa.containsMouse ? window.palette.bg2 : "transparent"
 
-          Behavior on color { ColorAnimation { duration: 120 } }
+          Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
 
           RowLayout {
             anchors.fill: parent

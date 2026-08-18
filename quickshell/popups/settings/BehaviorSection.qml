@@ -99,6 +99,7 @@ Item {
       implicitHeight: 18
       radius: 3
       color: fieldMouseMin.pressed ? root.window.palette.bgAlpha : root.window.palette.bg2
+      Behavior on color { ColorAnimation { duration: root.ac.anim(120) } }
       Text { anchors.centerIn: parent; text: "\u2212"; color: root.window.palette.fg; font.pixelSize: window.appConfig.scaled(11); font.bold: true }
       MouseArea {
         id: fieldMouseMin
@@ -122,6 +123,7 @@ Item {
       implicitHeight: 18
       radius: 3
       color: fieldMousePlus.pressed ? root.window.palette.bgAlpha : root.window.palette.bg2
+      Behavior on color { ColorAnimation { duration: root.ac.anim(120) } }
       Text { anchors.centerIn: parent; text: "+"; color: root.window.palette.fg; font.pixelSize: window.appConfig.scaled(11); font.bold: true }
       MouseArea {
         id: fieldMousePlus

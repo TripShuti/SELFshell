@@ -14,6 +14,8 @@ Rectangle {
 
   required property QtObject context
   required property QtObject palette
+  // Опційно: для глобального множника тривалостей анімацій
+  property QtObject appConfig: null
 
   // current.<ext> генерується локально (update-palette.sh) і не в git —
   // шлях шукаємо через update-palette.py current, на свіжому клоні
@@ -41,9 +43,35 @@ Rectangle {
     }
   }
 
-  Component.onCompleted: curProc.running = true
+  Component.onCompleted: {
+    curProc.running = true
+    entranceAnim.start()
+  }
 
   color: "#000000"
+
+  // М'яка поява елементів при блокуванні: годинник → користувач+пароль →
+  // кнопки живлення. Швидка і стримана (групи по 200ms з паузою 60ms).
+  function _d(ms) { return root.appConfig ? root.appConfig.anim(ms) : ms }
+
+  SequentialAnimation {
+    id: entranceAnim
+    ParallelAnimation {
+      NumberAnimation { target: clockText; property: "opacity"; from: 0; to: 1; duration: root._d(200); easing.type: Easing.OutCubic }
+      NumberAnimation { target: dateText; property: "opacity"; from: 0; to: 1; duration: root._d(200); easing.type: Easing.OutCubic }
+      NumberAnimation { target: clockText; property: "scale"; from: 0.98; to: 1; duration: root._d(200); easing.type: Easing.OutCubic }
+    }
+    PauseAnimation { duration: root._d(60) }
+    ParallelAnimation {
+      NumberAnimation { target: userText; property: "opacity"; from: 0; to: 1; duration: root._d(200); easing.type: Easing.OutCubic }
+      NumberAnimation { target: passwordLayout; property: "opacity"; from: 0; to: 1; duration: root._d(200); easing.type: Easing.OutCubic }
+      NumberAnimation { target: passwordLayout; property: "scale"; from: 0.97; to: 1; duration: root._d(200); easing.type: Easing.OutCubic }
+    }
+    PauseAnimation { duration: root._d(60) }
+    ParallelAnimation {
+      NumberAnimation { target: powerRow; property: "opacity"; from: 0; to: 1; duration: root._d(200); easing.type: Easing.OutCubic }
+    }
+  }
 
   SystemClock {
     id: clock
@@ -107,6 +135,7 @@ Rectangle {
   }
 
   Text {
+    id: dateText
     anchors {
       horizontalCenter: parent.horizontalCenter
       top: clockText.bottom
@@ -128,6 +157,7 @@ Rectangle {
   }
 
   Text {
+    id: userText
     anchors {
       horizontalCenter: parent.horizontalCenter
       bottom: passwordLayout.top
@@ -158,7 +188,7 @@ Rectangle {
       opacity: hiddenInput.activeFocus ? 0.7 : 0.5
       border.width: hiddenInput.activeFocus ? 1 : 0
       border.color: root.palette.mutedAlt
-      Behavior on opacity { NumberAnimation { duration: 200 } }
+      Behavior on opacity { NumberAnimation { duration: root._d(200) } }
 
       // Прихований TextInput — тільки приймає введення
       TextInput {
@@ -188,8 +218,8 @@ Rectangle {
             font.family: root.palette.font
             font.pixelSize: 12
 
-            NumberAnimation on scale { from: 0; to: 1; duration: 400; easing.type: Easing.OutCubic }
-            NumberAnimation on opacity { from: 0; to: 1; duration: 350 }
+            NumberAnimation on scale { from: 0; to: 1; duration: root._d(400); easing.type: Easing.OutCubic }
+            NumberAnimation on opacity { from: 0; to: 1; duration: root._d(350) }
           }
         }
       }
@@ -207,7 +237,7 @@ Rectangle {
       font.pixelSize: 14
       opacity: visible ? 1 : 0
 
-      Behavior on opacity { NumberAnimation { duration: 200 } }
+      Behavior on opacity { NumberAnimation { duration: root._d(200) } }
 
       Timer {
         running: root.context.showFailure
@@ -228,6 +258,7 @@ Rectangle {
   }
 
   RowLayout {
+    id: powerRow
     anchors {
       horizontalCenter: parent.horizontalCenter
       bottom: parent.bottom
@@ -255,7 +286,7 @@ Rectangle {
           anchors.fill: parent
           radius: 14
           color: btnArea.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
-          Behavior on color { ColorAnimation { duration: 150 } }
+          Behavior on color { ColorAnimation { duration: root._d(150) } }
 
           Text {
             anchors.centerIn: parent
@@ -263,7 +294,7 @@ Rectangle {
             color: btnArea.containsMouse ? root.palette.textLight : root.palette.mutedAlt
             font.family: root.palette.font
             font.pixelSize: 24
-            Behavior on color { ColorAnimation { duration: 150 } }
+            Behavior on color { ColorAnimation { duration: root._d(150) } }
           }
 
           MouseArea {

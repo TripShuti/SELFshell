@@ -108,13 +108,13 @@ AnimatedPopup {
       Rectangle {
         implicitWidth: 22; implicitHeight: 22; radius: 4
         color: closeArea.containsMouse ? window.palette.bg2 : window.palette.bg1
-        Behavior on color { ColorAnimation { duration: 100 } }
+        Behavior on color { ColorAnimation { duration: appConfig.anim(100) } }
 
         Text {
           anchors.centerIn: parent
           text: "\uF00D"
           color: closeArea.containsMouse ? window.palette.fg : window.palette.gray
-          Behavior on color { ColorAnimation { duration: 120 } }
+          Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
           font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
         }
 
@@ -156,7 +156,7 @@ AnimatedPopup {
             color: window.palette.bg1
             border.width: 1
             border.color: ma.containsMouse ? window.palette.green : "transparent"
-            Behavior on border.color { ColorAnimation { duration: 120 } }
+            Behavior on border.color { ColorAnimation { duration: appConfig.anim(120) } }
 
             Image {
               anchors.fill: parent

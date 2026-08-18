@@ -82,12 +82,12 @@
 
 | File | Type | What it does | Dependencies |
 |------|------|--------------|--------------|
-| `AppConfig.qml` | state | Shared bar state: visibility, pill order; FileView persistence into `data/config.json` | Quickshell.Io |
+| `AppConfig.qml` | state | Shared bar state: visibility, pill order; FileView persistence into `data/config.json`; global animation controls + `anim(ms)` duration helper | Quickshell.Io |
 | `PaletteService.qml` | service | Reactive palette (FileView + IPC updates) | `data/palette.json` |
 | `AnimatedPopup.qml` | util | Base animated popup window (scale+fade+slide, outerGlow) | PaletteService |
 | `PillBar.qml` | util | Bar pill: Repeater + Loader with `widgetComponents` | AppConfig |
-| `HoverItem.qml` | util | Item with a built-in MouseArea for hover/click | — |
-| `HoverText.qml` | util | Text with animated hover color/scale | — |
+| `HoverItem.qml` | util | Item with a built-in MouseArea for hover/click (exposes `hovered`/`pressed`) | — |
+| `HoverText.qml` | util | Text with animated hover color/scale and press squash | — |
 | `ToggleSwitch.qml` | util | Toggle switch (SettingsPopup) | — |
 | `Separator.qml` | util | Vertical pill separator | PaletteService |
 | `GradientSeparator.qml` | util | Gradient separator | — |
@@ -133,7 +133,7 @@
 | `settings/BarSection.qml` | Settings: bar geometry, auto-hide | AppConfig |
 | `settings/LayoutSection.qml` | Settings: drag-and-drop widget order | AppConfig |
 | `settings/WallpaperSection.qml` | Settings: wallpaper picker | PaletteService |
-| `settings/AppearanceSection.qml` | Settings: design keys, `uiScale` | AppConfig |
+| `settings/AppearanceSection.qml` | Settings: design keys, `uiScale`, animation master switch + speed | AppConfig |
 | `settings/BehaviorSection.qml` | Settings: DND, idle timeouts, wheel steps | AppConfig |
 | `settings/AboutSection.qml` | Settings: versions, machine info, project link | Quickshell.Io |
 | `KeyboardLayoutPopup.qml` | Keyboard layout list | — |

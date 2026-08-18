@@ -11,6 +11,8 @@ SequentialAnimation {
 
   property real minOpacity: 0.4
   property int blinkDuration: 600
+  // Опційно: для глобального множника тривалостей анімацій
+  property QtObject appConfig: null
 
   loops: Animation.Infinite
 
@@ -25,14 +27,14 @@ SequentialAnimation {
     id: fadeOut
     property: "opacity"
     to: root.minOpacity
-    duration: root.blinkDuration
+    duration: root.appConfig ? root.appConfig.anim(root.blinkDuration) : root.blinkDuration
     easing.type: Easing.InOutSine
   }
   NumberAnimation {
     id: fadeIn
     property: "opacity"
     to: 1.0
-    duration: root.blinkDuration
+    duration: root.appConfig ? root.appConfig.anim(root.blinkDuration) : root.blinkDuration
     easing.type: Easing.InOutSine
   }
 }

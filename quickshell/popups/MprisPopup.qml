@@ -224,7 +224,7 @@ AnimatedPopup {
   // Анімована висота секції плейлісту; вікно підлаштовується кожен кадр
   playlistHeight: root.playlistOpen ? root.playlistTarget : 0
   Behavior on playlistHeight {
-    NumberAnimation { duration: 260; easing.type: Easing.OutCubic }
+    NumberAnimation { duration: appConfig.anim(260); easing.type: Easing.OutCubic }
   }
   onPlaylistHeightChanged: root._updateAnchor()
 
@@ -275,7 +275,7 @@ AnimatedPopup {
           // Тільки Behavior on height: ColorAnimation тут рестартувала б
           // ~28 разів на кожен кадр cava (30 fps)
           Behavior on height {
-            NumberAnimation { duration: 140; easing.type: Easing.OutBack; easing.overshoot: 0.6 }
+            NumberAnimation { duration: appConfig.anim(140); easing.type: Easing.OutBack; easing.overshoot: 0.6 }
           }
         }
       }
@@ -293,7 +293,7 @@ AnimatedPopup {
         color: window.palette.bg1
         border.width: 1
         border.color: root.player?.isPlaying ? window.palette.green : window.palette.bg2
-        Behavior on border.color { ColorAnimation { duration: 200 } }
+        Behavior on border.color { ColorAnimation { duration: appConfig.anim(200) } }
 
         Image {
           id: artImg
@@ -332,8 +332,8 @@ AnimatedPopup {
           SequentialAnimation on opacity {
             running: root.player?.isPlaying ?? false
             loops: Animation.Infinite
-            NumberAnimation { to: 0.4; duration: 700 }
-            NumberAnimation { to: 1.0; duration: 700 }
+            NumberAnimation { to: 0.4; duration: appConfig.anim(700) }
+            NumberAnimation { to: 1.0; duration: appConfig.anim(700) }
           }
         }
       }
@@ -387,7 +387,7 @@ AnimatedPopup {
         property bool hovered: false
         width: 28; height: 28; radius: 14
         color: hovered ? window.palette.bg2 : window.palette.bg1
-        Behavior on color { ColorAnimation { duration: 150 } }
+        Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
         Text {
           anchors.centerIn: parent
           text: "\uF04A"
@@ -409,7 +409,7 @@ AnimatedPopup {
         color: window.palette.green
         border.width: hovered ? 2 : 0
         border.color: window.palette.fg
-        Behavior on color { ColorAnimation { duration: 150 } }
+        Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
         Text {
           anchors.centerIn: parent
           text: root.player?.isPlaying ? "\uF04C" : "\uF04B"
@@ -429,7 +429,7 @@ AnimatedPopup {
         property bool hovered: false
         width: 28; height: 28; radius: 14
         color: hovered ? window.palette.bg2 : window.palette.bg1
-        Behavior on color { ColorAnimation { duration: 150 } }
+        Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
         Text {
           anchors.centerIn: parent
           text: "\uF04E"
@@ -477,6 +477,7 @@ AnimatedPopup {
             height: parent.height
             radius: 1.5
             color: window.palette.green
+            Behavior on width { enabled: !volTrack.maVol.pressed; NumberAnimation { duration: appConfig.anim(120); easing.type: Easing.OutCubic } }
           }
 
           // Ручка — круглий індикатор поточної гучності
@@ -485,10 +486,12 @@ AnimatedPopup {
             color: window.palette.fg
             x: Math.min(Math.max(parent.width * Math.min(root.player?.volume ?? 0, 1) - width / 2, 0), parent.width - width)
             y: (parent.height - height) / 2
+            Behavior on x { enabled: !volTrack.maVol.pressed; NumberAnimation { duration: appConfig.anim(120); easing.type: Easing.OutCubic } }
           }
 
           // Drag: ведення миші після натискання змінює гучність плавно
           MouseArea {
+            id: maVol
             anchors.fill: parent
             onPressed: mouse => root._setVolumeFrom(volTrack, mouse)
             onPositionChanged: mouse => {
@@ -505,7 +508,7 @@ AnimatedPopup {
         property bool hovered: false
         width: 20; height: 20; radius: 4
         color: root.player?.shuffle ? window.palette.green : (hovered ? window.palette.bg2 : "transparent")
-        Behavior on color { ColorAnimation { duration: 150 } }
+        Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
         Text {
           anchors.centerIn: parent
           text: "\uF074"
@@ -527,7 +530,7 @@ AnimatedPopup {
         property bool hovered: false
         width: 20; height: 20; radius: 4
         color: root.player?.loopState !== MprisLoopState.None ? window.palette.green : (hovered ? window.palette.bg2 : "transparent")
-        Behavior on color { ColorAnimation { duration: 150 } }
+        Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
         Text {
           anchors.centerIn: parent
           text: root.player?.loopState === MprisLoopState.Track ? "\uF01E" : "\uF0E2"
@@ -557,7 +560,7 @@ AnimatedPopup {
         property bool hovered: false
         width: 20; height: 20; radius: 4
         color: root.playlistOpen ? window.palette.green : (hovered ? window.palette.bg2 : "transparent")
-        Behavior on color { ColorAnimation { duration: 150 } }
+        Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
         Text {
           anchors.centerIn: parent
           text: "\uF03A"
@@ -604,16 +607,17 @@ AnimatedPopup {
           width: parent.width * _ratio
           color: root.player?.isPlaying ? window.palette.green : window.palette.gray
           height: parent.height; radius: 2.5
-          Behavior on width { NumberAnimation { duration: 300; easing.type: Easing.Linear } }
+          Behavior on width { NumberAnimation { duration: appConfig.anim(300); easing.type: Easing.Linear } }
         }
 
-        // Повзунок при наведенні
+        // Повзунок при наведенні (fade замість visible)
         Rectangle {
-          visible: progArea.containsMouse
+          opacity: progArea.containsMouse ? 1 : 0
           width: 10; height: 10; radius: 5
           color: window.palette.yellow
           anchors.verticalCenter: parent.verticalCenter
           x: Math.min(Math.max(progArea.mouseX - 5, 0), parent.width - 10)
+          Behavior on opacity { NumberAnimation { duration: appConfig.anim(120); easing.type: Easing.OutCubic } }
         }
 
         // Drag: ведення миші після натискання перемотує трек плавно

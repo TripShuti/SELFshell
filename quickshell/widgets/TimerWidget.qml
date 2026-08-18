@@ -130,29 +130,41 @@ Item {
     }
   }
 
+  // Hover-стан для фідбеку (HoverText-рецепт: колір + масштаб)
+  property bool hovered: false
+
   Text {
     id: txt
     text: root.displayText
-    color: root.timerClass === "running" ? window.palette.green
+    color: root.hovered && root.timerClass === "idle" ? window.palette.green
+         : root.timerClass === "running" ? window.palette.green
          : root.timerClass === "done" ? window.palette.red
-         :  window.palette.widgetFg
+         : window.palette.widgetFg
     font.family: window.palette.font
     font.pixelSize: window.appConfig.scaled(13)
     anchors.verticalCenter: parent.verticalCenter
+    scale: root.hovered ? 1.08 : 1.0
 
-    Behavior on color { ColorAnimation { duration: 220 } }
+    Behavior on color { ColorAnimation { duration: window.appConfig.anim(220) } }
+    Behavior on scale {
+      NumberAnimation { duration: window.appConfig.anim(120); easing.type: Easing.OutBack; easing.overshoot: 2.5 }
+    }
 
     // Блимання при завершенні
     BlinkAnimation {
       running: root.timerClass === "done"
       minOpacity: 0.4
       blinkDuration: 600
+      appConfig: window.appConfig
     }
   }
 
   MouseArea {
     anchors.fill: parent
     acceptedButtons: Qt.LeftButton
+    hoverEnabled: true
+    onEntered: root.hovered = true
+    onExited: root.hovered = false
     onClicked: root.toggle()
     onWheel: wheel => {
       if (wheel.angleDelta.y > 0)

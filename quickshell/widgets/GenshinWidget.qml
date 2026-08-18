@@ -15,6 +15,9 @@ Item {
   property string resinText: "\uF737 0/200"
   property string resinClass: "normal"
 
+  // Hover-стан для фідбеку (HoverText-рецепт: колір + масштаб)
+  property bool hovered: false
+
   // Іконка смоли
   property string resinIconSource: "../assets/resin2.png"
 
@@ -46,6 +49,7 @@ Item {
         running: root.resinClass === "critical"
         minOpacity: 0.45
         blinkDuration: 700
+        appConfig: window.appConfig
       }
     }
 
@@ -53,18 +57,25 @@ Item {
     Text {
       id: txt
       text: root.resinDisplayText
-      color: root.resinClass === "critical" ? window.palette.orange : window.palette.blue
+      color: root.resinClass === "critical" ? window.palette.orange
+           : root.hovered ? window.palette.green
+           : window.palette.blue
       font.family: window.palette.font
       font.pixelSize: window.appConfig.scaled(12)
       Layout.alignment: Qt.AlignVCenter
+      scale: root.hovered ? 1.08 : 1.0
 
-      Behavior on color { ColorAnimation { duration: 220 } }
+      Behavior on color { ColorAnimation { duration: window.appConfig.anim(220) } }
+      Behavior on scale {
+        NumberAnimation { duration: window.appConfig.anim(120); easing.type: Easing.OutBack; easing.overshoot: 2.5 }
+      }
 
       // Блимання тексту при critical
       BlinkAnimation {
         running: root.resinClass === "critical"
         minOpacity: 0.45
         blinkDuration: 700
+        appConfig: window.appConfig
       }
 
       onVisibleChanged: if (!visible) opacity = 1.0
@@ -74,6 +85,9 @@ Item {
   MouseArea {
     anchors.fill: parent
     acceptedButtons: Qt.LeftButton | Qt.RightButton
+    hoverEnabled: true
+    onEntered: root.hovered = true
+    onExited: root.hovered = false
     onClicked: mouse => {
       if (mouse.button === Qt.LeftButton)
         root.clicked()

@@ -15,6 +15,9 @@ Item {
   // ПКМ — запит попапа зі списком розкладок (обробляється в Bar.qml)
   signal openPopup(Item anchor)
 
+  // Hover-стан для фідбеку (HoverText-рецепт: колір + масштаб)
+  property bool hovered: false
+
   readonly property string displayText: {
     var l = root.layout
     if (l.indexOf("Ukrainian") >= 0) return "UA"
@@ -121,16 +124,25 @@ Item {
   Text {
     id: txt
     text: root.displayText
-    color: window.palette.widgetFg
+    color: root.hovered ? window.palette.green : window.palette.widgetFg
     font.family: window.palette.font
     font.pixelSize: window.appConfig.scaled(12)
     anchors.verticalCenter: parent.verticalCenter
+    scale: root.hovered ? 1.08 : 1.0
+
+    Behavior on color { ColorAnimation { duration: window.appConfig.anim(220) } }
+    Behavior on scale {
+      NumberAnimation { duration: window.appConfig.anim(120); easing.type: Easing.OutBack; easing.overshoot: 2.5 }
+    }
   }
 
   MouseArea {
     anchors.fill: parent
     cursorShape: Qt.PointingHandCursor
     acceptedButtons: Qt.LeftButton | Qt.RightButton
+    hoverEnabled: true
+    onEntered: root.hovered = true
+    onExited: root.hovered = false
     onClicked: mouse => {
       if (mouse.button === Qt.LeftButton) devsProc.running = true
       else root.openPopup(root)

@@ -77,6 +77,7 @@ HoverItem {
     HoverText {
       text: root.mainIcon
       palette: window.palette
+      appConfig: window.appConfig
       hoverScale: 1.2
       color: root.iconColor
     }

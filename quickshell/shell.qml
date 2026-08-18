@@ -28,6 +28,7 @@ ShellRoot {
         anchors.fill: parent
         context: lockContext
         palette: paletteService
+        appConfig: rootAppConfig
       }
     }
   }

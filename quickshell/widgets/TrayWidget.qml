@@ -45,7 +45,7 @@ Item {
           sourceSize: Qt.size(16, 16)
           scale: ma.containsMouse ? 1.15 : 1.0
 
-          Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutBack; easing.overshoot: 2.5 } }
+          Behavior on scale { NumberAnimation { duration: window.appConfig.anim(120); easing.type: Easing.OutBack; easing.overshoot: 2.5 } }
         }
 
         MouseArea {

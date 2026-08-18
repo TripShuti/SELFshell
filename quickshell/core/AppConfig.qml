@@ -118,6 +118,12 @@ Item {
       // Глобальний множник шрифтів/гліфів (1.0 = база)
       property real uiScale: 1.0
 
+      // --- Анімації ---
+      // Вимикач усіх анімацій (0-дурації = миттєві зміни)
+      property bool animationsEnabled: true
+      // Множник тривалостей усіх анімацій (1.0 = база)
+      property real animSpeed: 1.0
+
       // --- Порядки віджетів ---
       property var leftOrder: ["launcher", "sep-2", "workspaces", "sep-7", "mpris"]
       property var centerOrder: ["clock", "sep-5", "timer", "sep-6", "genshin", "battery"]
@@ -132,6 +138,14 @@ Item {
   // Масштаб шрифтів/гліфів: усі font.pixelSize у віджетах і попапах
   // домножуються на uiScale через цей хелпер
   function scaled(v) { return v * root.cfg.uiScale }
+
+  // Тривалість анімації з урахуванням глобальних налаштувань:
+  // вимкнені анімації (0) або множник швидкості з Appearance.
+  // Всі duration у QML обгортаються цим хелпером — біндинг реактивний,
+  // зміни animSpeed/animationsEnabled застосовуються на льоту.
+  function anim(ms) {
+    return root.cfg.animationsEnabled ? Math.round(ms * root.cfg.animSpeed) : 0
+  }
 
   // Фіксований канонічний список усіх віджетів — використовується
   // Settings-попапом для стабільного порядку рядків (не залежить від
@@ -248,6 +262,7 @@ Item {
     barBgOpacity: 1.0, barBorderWidth: 0,
     separatorOpacity: 0.65, separatorGlowOpacity: 0.10,
     uiScale: 1.0,
+    animationsEnabled: true, animSpeed: 1.0,
     leftOrder: ["launcher", "sep-2", "workspaces", "sep-7", "mpris"],
     centerOrder: ["clock", "sep-5", "timer", "sep-6", "genshin", "battery"],
     rightOrder: ["tray", "sep-12", "net", "bt", "keyboard", "sep-10", "audio", "sep-11", "control", "clipboard"]

@@ -61,6 +61,8 @@ Edited through SettingsPopup (UI) or manually.
 | `separatorOpacity` | `number` | `0.65` | Separator line opacity between widget groups (0–1.0) |
 | `separatorGlowOpacity` | `number` | `0.1` | Separator glow opacity (0–0.5) |
 | `uiScale` | `number` | `1.0` | Global multiplier for all text/icon-glyph sizes in bar, popups and settings (0.8–1.5) |
+| `animationsEnabled` | `boolean` | `true` | Master switch for all shell animations (hover, popups, sliders, lock screen) |
+| `animSpeed` | `number` | `1.0` | Multiplier for every animation duration; e.g. `1.5` = 50% slower, `0.5` = 2× faster (0.5–2.0) |
 
 Separators look like `sep-N`, where N is a unique numeric ID.
 Generated automatically by `addSep()` in AppConfig.

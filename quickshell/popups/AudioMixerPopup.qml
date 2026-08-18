@@ -63,6 +63,11 @@ AnimatedPopup {
         Layout.fillWidth: true
         clip: true
 
+        // Fade-in при появі нового пристрою (делегат живе стільки ж,
+        // скільки вузол у моделі)
+        opacity: 0
+        NumberAnimation on opacity { to: 1; duration: appConfig.anim(150); easing.type: Easing.OutCubic }
+
         RowLayout {
           anchors.fill: parent
           spacing: 6
@@ -89,7 +94,7 @@ AnimatedPopup {
               height: parent.height
               radius: 3
               color: modelData.audio?.muted ? window.palette.muted : window.palette.green
-              Behavior on width { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+              Behavior on width { NumberAnimation { duration: appConfig.anim(150); easing.type: Easing.OutCubic } }
             }
 
             // Зміна гучності кліком
@@ -108,7 +113,7 @@ AnimatedPopup {
             property bool hovered: false
             width: 24; height: 24; radius: 4
             color: modelData.audio?.muted ? window.palette.red : (hovered ? window.palette.hoverBg : window.palette.bgAlpha)
-            Behavior on color { ColorAnimation { duration: 150 } }
+            Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
             Text {
               anchors.centerIn: parent
               text: modelData.audio?.muted ? "\uF026" : "\uF028"
@@ -131,7 +136,7 @@ AnimatedPopup {
             property bool hovered: false
             width: 24; height: 24; radius: 4
             color: Pipewire.defaultAudioSink === modelData ? window.palette.green : (hovered ? window.palette.hoverBg : window.palette.bgAlpha)
-            Behavior on color { ColorAnimation { duration: 150 } }
+            Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
             Text {
               anchors.centerIn: parent
               text: "\uF00C"
@@ -183,6 +188,10 @@ AnimatedPopup {
         Layout.fillWidth: true
         clip: true
 
+        // Fade-in при появі нового потоку (див. sinks вище)
+        opacity: 0
+        NumberAnimation on opacity { to: 1; duration: appConfig.anim(150); easing.type: Easing.OutCubic }
+
         RowLayout {
           anchors.fill: parent
           spacing: 6
@@ -212,7 +221,7 @@ AnimatedPopup {
               height: parent.height
               radius: 3
               color: modelData.audio?.muted ? window.palette.muted : window.palette.green
-              Behavior on width { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+              Behavior on width { NumberAnimation { duration: appConfig.anim(150); easing.type: Easing.OutCubic } }
             }
 
             MouseArea {
@@ -230,7 +239,7 @@ AnimatedPopup {
             property bool hovered: false
             width: 24; height: 24; radius: 4
             color: modelData.audio?.muted ? window.palette.red : (hovered ? window.palette.hoverBg : window.palette.bgAlpha)
-            Behavior on color { ColorAnimation { duration: 150 } }
+            Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
             Text {
               anchors.centerIn: parent
               text: modelData.audio?.muted ? "\uF026" : "\uF028"

@@ -155,7 +155,7 @@ AnimatedPopup {
           border.width: 1
           border.color: searchField.activeFocus ? window.palette.green : "transparent"
 
-          Behavior on border.color { ColorAnimation { duration: 220 } }
+          Behavior on border.color { ColorAnimation { duration: appConfig.anim(220) } }
         }
 
         leftPadding: 10
@@ -204,7 +204,7 @@ AnimatedPopup {
         spacing: 2
         currentIndex: 0
         visible: root.entries.length > 0
-        Behavior on opacity { NumberAnimation { duration: 80 } }
+        Behavior on opacity { NumberAnimation { duration: appConfig.anim(80) } }
 
         model: appModel.values
 
@@ -224,12 +224,12 @@ AnimatedPopup {
             antialiasing: true
             color: isCurrent ? window.palette.bg2 : (ma.containsMouse ? window.palette.bg2 : window.palette.bg1)
             opacity: 0.85
-            Behavior on color { ColorAnimation { duration: 120 } }
+            Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
 
-            // Акцентна смужка для вибраного
+            // Акцентна смужка для вибраного (fade замість visible)
             Rectangle {
               id: accentBar
-              visible: isCurrent
+              opacity: isCurrent ? 1 : 0
               width: 3
               height: parent.height - 14
               anchors.verticalCenter: parent.verticalCenter
@@ -238,6 +238,7 @@ AnimatedPopup {
               radius: 2
               antialiasing: true
               color: window.palette.green
+              Behavior on opacity { NumberAnimation { duration: appConfig.anim(120); easing.type: Easing.OutCubic } }
             }
 
             RowLayout {
@@ -270,7 +271,7 @@ AnimatedPopup {
                 Text {
                   text: modelData.name || ""
                   color: isCurrent ? window.palette.green : window.palette.fg
-                  Behavior on color { ColorAnimation { duration: 120 } }
+                  Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
                   font.family: window.palette.font; font.pixelSize: appConfig.scaled(13); font.bold: true
                   elide: Text.ElideRight
                   Layout.fillWidth: true

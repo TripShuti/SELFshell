@@ -200,7 +200,7 @@ AnimatedPopup {
             radius: 6
             antialiasing: true
             color: (rowArea.containsMouse || delArea.containsMouse) ? window.palette.bg2 : "transparent"
-            Behavior on color { ColorAnimation { duration: 120 } }
+            Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
           }
 
           // Перший рядок вмісту запису
@@ -239,9 +239,15 @@ AnimatedPopup {
             height: 24
             radius: 6
             antialiasing: true
-            visible: rowArea.containsMouse || delArea.containsMouse
+            // Fade замість visible: прозора кнопка не має перехоплювати кліки
+            opacity: (rowArea.containsMouse || delArea.containsMouse) ? 1 : 0
+            scale: (rowArea.containsMouse || delArea.containsMouse) ? 1 : 0.6
             color: delArea.containsMouse ? window.palette.red : "transparent"
-            Behavior on color { ColorAnimation { duration: 120 } }
+            Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
+            Behavior on opacity { NumberAnimation { duration: appConfig.anim(120); easing.type: Easing.OutCubic } }
+            Behavior on scale {
+              NumberAnimation { duration: appConfig.anim(120); easing.type: Easing.OutBack; easing.overshoot: 1.5 }
+            }
 
             Text {
               anchors.centerIn: parent
@@ -256,6 +262,7 @@ AnimatedPopup {
               anchors.fill: parent
               cursorShape: Qt.PointingHandCursor
               hoverEnabled: true
+              enabled: rowArea.containsMouse || delArea.containsMouse
               onClicked: root.deleteEntry(modelData.id)
             }
           }

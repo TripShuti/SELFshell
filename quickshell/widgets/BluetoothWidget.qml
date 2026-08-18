@@ -55,8 +55,8 @@ Item {
       font.pixelSize: window.appConfig.scaled(14)
       scale: root.hovered ? 1.2 : 1.0
 
-      Behavior on color { ColorAnimation { duration: 220 } }
-      Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutBack; easing.overshoot: 2.5 } }
+      Behavior on color { ColorAnimation { duration: window.appConfig.anim(220) } }
+      Behavior on scale { NumberAnimation { duration: window.appConfig.anim(120); easing.type: Easing.OutBack; easing.overshoot: 2.5 } }
 
       function batteryIcon(level) {
         var pct = (level || 0) * 100
@@ -86,8 +86,8 @@ Item {
       font.pixelSize: window.appConfig.scaled(12)
       scale: root.hovered ? 1.15 : 1.0
 
-      Behavior on color { ColorAnimation { duration: 220 } }
-      Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutBack; easing.overshoot: 2.5 } }
+      Behavior on color { ColorAnimation { duration: window.appConfig.anim(220) } }
+      Behavior on scale { NumberAnimation { duration: window.appConfig.anim(120); easing.type: Easing.OutBack; easing.overshoot: 2.5 } }
     }
   }
 

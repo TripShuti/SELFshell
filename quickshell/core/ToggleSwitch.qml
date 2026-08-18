@@ -10,6 +10,8 @@ Item {
 
   property bool checked: false
   property QtObject palette: null
+  // Опційно: для глобального множника тривалостей анімацій
+  property QtObject appConfig: null
   signal toggled(bool value)
 
   // Розміри та колір увімкненого стану — різні копії в попапах
@@ -27,10 +29,10 @@ Item {
     anchors.fill: parent
     radius: root.trackHeight / 2
     color: root.checked ? root.checkedColor : root.palette.bg2
-    Behavior on color { ColorAnimation { duration: 150 } }
+    Behavior on color { ColorAnimation { duration: root.appConfig ? root.appConfig.anim(150) : 150 } }
     border.width: bgArea.containsMouse ? 1 : 0
     border.color: root.palette.hoverOverlay
-    Behavior on border.width { NumberAnimation { duration: 120 } }
+    Behavior on border.width { NumberAnimation { duration: root.appConfig ? root.appConfig.anim(120) : 120 } }
   }
 
   Rectangle {
@@ -38,8 +40,8 @@ Item {
     width: root.knobSize; height: root.knobSize; radius: root.knobSize / 2
     color: root.checked ? root.palette.bg1 : root.palette.gray
     anchors.verticalCenter: parent.verticalCenter
-    Behavior on x { NumberAnimation { duration: 150 } }
-    Behavior on color { ColorAnimation { duration: 150 } }
+    Behavior on x { NumberAnimation { duration: root.appConfig ? root.appConfig.anim(150) : 150 } }
+    Behavior on color { ColorAnimation { duration: root.appConfig ? root.appConfig.anim(150) : 150 } }
   }
 
   MouseArea {

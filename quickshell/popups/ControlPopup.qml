@@ -415,13 +415,13 @@ AnimatedPopup {
         implicitHeight: 24
         radius: 6
         color: netArea.containsMouse ? window.palette.bg2 : window.palette.bg1
-        Behavior on color { ColorAnimation { duration: 120 } }
+        Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
 
         Text {
           anchors.centerIn: parent
           text: "󰖩"
           color: netArea.containsMouse ? window.palette.green : window.palette.gray
-          Behavior on color { ColorAnimation { duration: 120 } }
+          Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
           font.family: window.palette.font; font.pixelSize: appConfig.scaled(13)
         }
 
@@ -439,13 +439,13 @@ AnimatedPopup {
         implicitHeight: 24
         radius: 6
         color: btArea.containsMouse ? window.palette.bg2 : window.palette.bg1
-        Behavior on color { ColorAnimation { duration: 120 } }
+        Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
 
         Text {
           anchors.centerIn: parent
           text: ""
           color: btArea.containsMouse ? window.palette.green : window.palette.gray
-          Behavior on color { ColorAnimation { duration: 120 } }
+          Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
           font.family: window.palette.font; font.pixelSize: appConfig.scaled(13)
         }
 
@@ -463,13 +463,13 @@ AnimatedPopup {
         implicitHeight: 24
         radius: 6
         color: wallArea.containsMouse ? window.palette.bg2 : window.palette.bg1
-        Behavior on color { ColorAnimation { duration: 120 } }
+        Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
 
         Text {
           anchors.centerIn: parent
           text: "\uF03E"
           color: wallArea.containsMouse ? window.palette.green : window.palette.gray
-          Behavior on color { ColorAnimation { duration: 120 } }
+          Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
           font.family: window.palette.font; font.pixelSize: appConfig.scaled(13)
         }
 
@@ -487,13 +487,13 @@ AnimatedPopup {
         implicitHeight: 24
         radius: 6
         color: settingsArea.containsMouse ? window.palette.bg2 : window.palette.bg1
-        Behavior on color { ColorAnimation { duration: 120 } }
+        Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
 
         Text {
           anchors.centerIn: parent
           text: ""
           color: settingsArea.containsMouse ? window.palette.green : window.palette.gray
-          Behavior on color { ColorAnimation { duration: 120 } }
+          Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
           font.family: window.palette.font; font.pixelSize: appConfig.scaled(13)
         }
 
@@ -511,13 +511,13 @@ AnimatedPopup {
         implicitHeight: 24
         radius: 6
         color: fullArea.containsMouse ? window.palette.bg2 : window.palette.bg1
-        Behavior on color { ColorAnimation { duration: 120 } }
+        Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
 
         Text {
           anchors.centerIn: parent
           text: "\uF030"
           color: fullArea.containsMouse ? window.palette.green : window.palette.gray
-          Behavior on color { ColorAnimation { duration: 120 } }
+          Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
           font.family: window.palette.font; font.pixelSize: appConfig.scaled(13)
         }
 
@@ -538,13 +538,13 @@ AnimatedPopup {
         implicitHeight: 24
         radius: 6
         color: regionArea.containsMouse ? window.palette.bg2 : window.palette.bg1
-        Behavior on color { ColorAnimation { duration: 120 } }
+        Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
 
         Text {
           anchors.centerIn: parent
           text: "\uF125"
           color: regionArea.containsMouse ? window.palette.green : window.palette.gray
-          Behavior on color { ColorAnimation { duration: 120 } }
+          Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
           font.family: window.palette.font; font.pixelSize: appConfig.scaled(13)
         }
 
@@ -594,7 +594,7 @@ AnimatedPopup {
             height: parent.height
             radius: 3
             color: window.palette.yellow
-            Behavior on width { NumberAnimation { duration: 350; easing.type: Easing.OutSine } }
+            Behavior on width { NumberAnimation { duration: appConfig.anim(350); easing.type: Easing.OutSine } }
           }
         }
 
@@ -657,7 +657,7 @@ AnimatedPopup {
             height: parent.height
             radius: 3
             color: window.palette.orange
-            Behavior on width { NumberAnimation { duration: 250; easing.type: Easing.OutSine } }
+            Behavior on width { NumberAnimation { duration: appConfig.anim(250); easing.type: Easing.OutSine } }
           }
         }
 
@@ -703,6 +703,9 @@ AnimatedPopup {
       implicitHeight: root.unread > 0
         ? Math.min(notifColumn.implicitHeight, notifMaxHeight)
         : 46
+      Behavior on implicitHeight {
+        NumberAnimation { duration: appConfig.anim(260); easing.type: Easing.OutCubic }
+      }
       clip: true
 
       Flickable {
@@ -755,7 +758,7 @@ AnimatedPopup {
                 Rectangle {
                   implicitWidth: 16; implicitHeight: 16; radius: 8
                   color: groupClearArea.containsMouse ? window.palette.red : window.palette.bg1
-                  Behavior on color { ColorAnimation { duration: 120 } }
+                  Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
                   Text {
                     anchors.centerIn: parent
                     text: "\uF00D"
@@ -788,7 +791,7 @@ AnimatedPopup {
                   height: notifRow.implicitHeight + 10
                   radius: 6
                   color: hovered ? window.palette.bg2 : window.palette.bg1
-                  Behavior on color { ColorAnimation { duration: 120 } }
+                  Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
 
                   HoverHandler { onHoveredChanged: parent.hovered = hovered }
 
@@ -879,7 +882,7 @@ AnimatedPopup {
                       Rectangle {
                         implicitWidth: 18; implicitHeight: 18; radius: 9
                         color: closeArea.containsMouse ? window.palette.red : window.palette.bg1
-                        Behavior on color { ColorAnimation { duration: 120 } }
+                        Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
 
                         Text {
                           anchors.centerIn: parent
@@ -920,7 +923,7 @@ AnimatedPopup {
                           height: 20
                           radius: 4
                           color: actionArea.containsMouse ? window.palette.bgAlpha : window.palette.bg2
-                          Behavior on color { ColorAnimation { duration: 120 } }
+                          Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
 
                           Text {
                             id: actionText
@@ -979,7 +982,7 @@ AnimatedPopup {
       Rectangle {
         implicitWidth: 24; implicitHeight: 24; radius: 6
         color: clearArea.containsMouse ? window.palette.bg2 : window.palette.bg1
-        Behavior on color { ColorAnimation { duration: 120 } }
+        Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
 
         Text {
           anchors.centerIn: parent
@@ -1000,14 +1003,14 @@ AnimatedPopup {
         implicitWidth: 24; implicitHeight: 24; radius: 6
         color: root.muted ? Qt.rgba(window.palette.red.r, window.palette.red.g, window.palette.red.b, 0.15)
              : (muteArea.containsMouse ? window.palette.bg2 : window.palette.bg1)
-        Behavior on color { ColorAnimation { duration: 120 } }
+        Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
 
         Text {
           anchors.centerIn: parent
           text: root.muted ? "\uF026" : "\uF028"
           color: root.muted ? window.palette.red : window.palette.gray
           font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
-          Behavior on color { ColorAnimation { duration: 120 } }
+          Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
         }
 
         MouseArea {
@@ -1023,14 +1026,14 @@ AnimatedPopup {
         implicitWidth: 24; implicitHeight: 24; radius: 6
         color: root.dndEnabled ? Qt.rgba(window.palette.red.r, window.palette.red.g, window.palette.red.b, 0.15)
              : (dndArea.containsMouse ? window.palette.bg2 : window.palette.bg1)
-        Behavior on color { ColorAnimation { duration: 120 } }
+        Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
 
         Text {
           anchors.centerIn: parent
           text: root.dndEnabled ? "\uF1F6" : "\uF0F3"
           color: root.dndEnabled ? window.palette.red : window.palette.gray
           font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
-          Behavior on color { ColorAnimation { duration: 120 } }
+          Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
         }
 
         MouseArea {
@@ -1049,14 +1052,14 @@ AnimatedPopup {
         implicitWidth: 24; implicitHeight: 24; radius: 6
         color: root.caffeineEnabled ? Qt.rgba(window.palette.green.r, window.palette.green.g, window.palette.green.b, 0.15)
              : (caffeineArea.containsMouse ? window.palette.bg2 : window.palette.bg1)
-        Behavior on color { ColorAnimation { duration: 120 } }
+        Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
 
         Text {
           anchors.centerIn: parent
           text: "󰅶"
           color: root.caffeineEnabled ? window.palette.green : window.palette.gray
           font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
-          Behavior on color { ColorAnimation { duration: 120 } }
+          Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
         }
 
         MouseArea {
@@ -1098,14 +1101,14 @@ AnimatedPopup {
           implicitHeight: 36
           radius: 6
           color: hovered ? window.palette.bg2 : window.palette.bg1
-          Behavior on color { ColorAnimation { duration: 150 } }
+          Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
 
           Text {
             anchors.centerIn: parent
             text: act.icon
             color: window.palette.fg
             font.family: window.palette.font; font.pixelSize: appConfig.scaled(16)
-            Behavior on color { ColorAnimation { duration: 150 } }
+            Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
           }
 
           MouseArea {

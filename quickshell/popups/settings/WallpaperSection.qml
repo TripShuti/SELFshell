@@ -87,7 +87,7 @@ Item {
       Rectangle {
         implicitWidth: 22; implicitHeight: 22; radius: 4
         color: refreshMa.containsMouse ? window.palette.bg2 : window.palette.bg1
-        Behavior on color { ColorAnimation { duration: 120 } }
+        Behavior on color { ColorAnimation { duration: window.appConfig.anim(120) } }
         Text {
           anchors.centerIn: parent
           text: "\uF021"
@@ -124,7 +124,7 @@ Item {
           color: window.palette.bg1
           border.width: 1
           border.color: ma.containsMouse ? window.palette.green : "transparent"
-          Behavior on border.color { ColorAnimation { duration: 120 } }
+          Behavior on border.color { ColorAnimation { duration: window.appConfig.anim(120) } }
 
           Image {
             anchors.fill: parent

@@ -263,12 +263,12 @@ Item {
     color: root.dragHoverZoneItem === zone ? Qt.lighter(window.palette.bg1, 1.15) : window.palette.bg1
     border.width: 1
     border.color: root.dragHoverZoneItem === zone ? window.palette.green : window.palette.bg2
-    Behavior on color { ColorAnimation { duration: 120 } }
-    Behavior on border.color { ColorAnimation { duration: 120 } }
+    Behavior on color { ColorAnimation { duration: root.ac.anim(120) } }
+    Behavior on border.color { ColorAnimation { duration: root.ac.anim(120) } }
 
     // Прихована пігулка показується притемненою, але залишається робочою
     opacity: zone.pillName !== "pool" && !root.cfg[zone.pillName + "PillEnabled"] ? 0.55 : 1
-    Behavior on opacity { NumberAnimation { duration: 120 } }
+    Behavior on opacity { NumberAnimation { duration: root.ac.anim(120) } }
 
     readonly property var allNames: pillName === "pool"
       ? ac.allWidgetNames.filter(n => !cfg[n + "Enabled"])
@@ -334,8 +334,8 @@ Item {
       height: zone.chipH
       x: root.dragDropIndex >= 0 && root.dragDropIndex < zone.chipLayout.length ? zone.chipLayout[root.dragDropIndex].x : lastItemEndX()
       y: root.dragDropIndex >= 0 && root.dragDropIndex < zone.chipLayout.length ? zone.chipLayout[root.dragDropIndex].y : lastItemEndY()
-      Behavior on x { NumberAnimation { duration: 100 } }
-      Behavior on y { NumberAnimation { duration: 100 } }
+      Behavior on x { NumberAnimation { duration: root.ac.anim(100) } }
+      Behavior on y { NumberAnimation { duration: root.ac.anim(100) } }
     }
 
     function lastItemEndX() {
@@ -371,8 +371,8 @@ Item {
         y: index < zone.chipLayout.length ? zone.chipLayout[index].y : 0
         opacity: _isDragged ? 0.35 : 1.0
 
-        Behavior on x { enabled: !root.dragActive; NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
-        Behavior on y { enabled: !root.dragActive; NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
+        Behavior on x { enabled: !root.dragActive; NumberAnimation { duration: root.ac.anim(120); easing.type: Easing.OutCubic } }
+        Behavior on y { enabled: !root.dragActive; NumberAnimation { duration: root.ac.anim(120); easing.type: Easing.OutCubic } }
 
         radius: _isSep ? 2 : 4
         color: _isSep ? "transparent" : (chipArea.pressed ? window.palette.bg2 : window.palette.bgAlpha)

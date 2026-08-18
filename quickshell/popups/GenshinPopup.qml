@@ -160,7 +160,7 @@ AnimatedPopup {
           color: refreshArea.containsMouse ? window.palette.bg2 : window.palette.bg1
           enabled: root.refreshStatus !== "loading"
           Layout.alignment: Qt.AlignVCenter
-          Behavior on color { ColorAnimation { duration: 120 } }
+          Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
 
           Text {
             id: refreshIcon
@@ -170,13 +170,13 @@ AnimatedPopup {
             color: root.refreshStatus === "error" ? window.palette.red
                  : root.refreshStatus === "ok" ? window.palette.green
                  : window.palette.gray
-            Behavior on color { ColorAnimation { duration: 200 } }
+            Behavior on color { ColorAnimation { duration: appConfig.anim(200) } }
 
             RotationAnimator on rotation {
               running: root.refreshStatus === "loading"
               loops: Animation.Infinite
               from: 0; to: 360
-              duration: 800
+              duration: appConfig.anim(800)
             }
           }
 
@@ -201,7 +201,7 @@ AnimatedPopup {
             ? Qt.rgba(window.palette.green.r, window.palette.green.g, window.palette.green.b, 0.15)
             : signArea.containsMouse ? window.palette.bg2 : window.palette.bg1
           Layout.alignment: Qt.AlignVCenter
-          Behavior on color { ColorAnimation { duration: 120 } }
+          Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
 
           Text {
             id: signLabel
@@ -213,13 +213,13 @@ AnimatedPopup {
               ? window.palette.green
               : root.isSigned ? window.palette.green : window.palette.gray
             font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
-            Behavior on color { ColorAnimation { duration: 200 } }
+            Behavior on color { ColorAnimation { duration: appConfig.anim(200) } }
 
             RotationAnimator on rotation {
               running: signProc.running
               loops: Animation.Infinite
               from: 0; to: 360
-              duration: 900
+              duration: appConfig.anim(900)
               // Скидаємо кут при зупинці — інакше текст лишається
               // перевернутим і виходить за межі кнопки
               onRunningChanged: {
@@ -273,7 +273,7 @@ AnimatedPopup {
       font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
       opacity: visible ? 1 : 0
       Layout.alignment: Qt.AlignRight
-      Behavior on opacity { NumberAnimation { duration: 200 } }
+      Behavior on opacity { NumberAnimation { duration: appConfig.anim(200) } }
     }
 
     // Роздільник

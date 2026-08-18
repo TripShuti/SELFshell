@@ -88,7 +88,7 @@ Item {
     color: window.palette.bgAlpha
     clip: true
 
-    Behavior on height { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
+    Behavior on height { NumberAnimation { duration: window.appConfig.anim(120); easing.type: Easing.OutCubic } }
 
     // Заповнення з градієнтом
     Rectangle {
@@ -102,7 +102,7 @@ Item {
         GradientStop { position: 1.0; color: root.audio?.muted ? window.palette.muted : window.palette.green }
       }
 
-      Behavior on width { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
+      Behavior on width { NumberAnimation { duration: window.appConfig.anim(120); easing.type: Easing.OutCubic } }
     }
   }
 }

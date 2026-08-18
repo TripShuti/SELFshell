@@ -52,7 +52,7 @@ RowLayout {
           color: seg.active
                  ? sel.sys.palette.accent
                  : (segMa.containsMouse ? sel.sys.palette.bgAlpha : "transparent")
-          Behavior on color { ColorAnimation { duration: 120 } }
+          Behavior on color { ColorAnimation { duration: sel.sys.ac.anim(120) } }
 
           Text {
             id: segText

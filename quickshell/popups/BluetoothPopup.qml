@@ -72,6 +72,7 @@ AnimatedPopup {
       ToggleSwitch {
         checked: adapter?.enabled ?? false
         palette: window.palette
+        appConfig: window.appConfig
         checkedColor: window.palette.widgetFg
         Layout.alignment: Qt.AlignVCenter
         onToggled: value => { if (adapter) adapter.enabled = value }
@@ -95,13 +96,13 @@ AnimatedPopup {
         property bool hovered: false
         implicitWidth: scanLabel.implicitWidth + 16; height: 24; radius: 4
         color: scanning ? window.palette.danger : (hovered ? window.palette.hoverOverlay : window.palette.bgLayer)
-        Behavior on color { ColorAnimation { duration: 150 } }
+        Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
 
         SequentialAnimation on opacity {
           running: scanning
           loops: Animation.Infinite
-          NumberAnimation { to: 0.5; duration: 800; easing.type: Easing.InOutSine }
-          NumberAnimation { to: 1.0; duration: 800; easing.type: Easing.InOutSine }
+          NumberAnimation { to: 0.5; duration: appConfig.anim(800); easing.type: Easing.InOutSine }
+          NumberAnimation { to: 1.0; duration: appConfig.anim(800); easing.type: Easing.InOutSine }
         }
 
         Text {
@@ -138,6 +139,7 @@ AnimatedPopup {
       ToggleSwitch {
         checked: adapter?.discoverable ?? false
         palette: window.palette
+        appConfig: window.appConfig
         checkedColor: window.palette.widgetFg
         trackWidth: 32; trackHeight: 18; knobSize: 14
         Layout.alignment: Qt.AlignVCenter
@@ -200,6 +202,7 @@ AnimatedPopup {
               elide: Text.ElideRight
               Layout.fillWidth: true
               opacity: device.devLoading ? 0.5 : 1
+              Behavior on opacity { NumberAnimation { duration: window.appConfig.anim(150); easing.type: Easing.OutCubic } }
             }
 
             RowLayout {
@@ -215,6 +218,7 @@ AnimatedPopup {
                 color: device.devConnected ? window.palette.accent : window.palette.mutedAlt
                 font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
                 opacity: device.devLoading ? 0.5 : 1
+              Behavior on opacity { NumberAnimation { duration: window.appConfig.anim(150); easing.type: Easing.OutCubic } }
               }
 
               // Рівень заряду пристрою (навушники, миша тощо), якщо девайс його повідомляє
@@ -224,6 +228,7 @@ AnimatedPopup {
                 color: batteryColor(modelData.battery)
                 font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
                 opacity: device.devLoading ? 0.5 : 1
+              Behavior on opacity { NumberAnimation { duration: window.appConfig.anim(150); easing.type: Easing.OutCubic } }
 
                 function batteryIcon(level) {
                   var pct = (level || 0) * 100
@@ -246,7 +251,7 @@ AnimatedPopup {
             property bool hovered: false
             implicitWidth: actionLabel.implicitWidth + 12; height: 24; radius: 4
             color: device.devConnected ? window.palette.bgLayer : (modelData.pairing ? window.palette.yellow : (modelData.paired ? (hovered ? window.palette.widgetFg : window.palette.accent) : (hovered ? window.palette.hoverOverlay : window.palette.bgLayer)))
-            Behavior on color { ColorAnimation { duration: 150 } }
+            Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
             opacity: device.devLoading ? 0.5 : 1
             enabled: !device.devLoading
 
@@ -287,7 +292,7 @@ AnimatedPopup {
             property bool hovered: false
             width: 24; height: 24; radius: 4
             color: hovered ? window.palette.hoverOverlay : window.palette.bgLayer
-            Behavior on color { ColorAnimation { duration: 150 } }
+            Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
             visible: modelData.paired
             Text {
               anchors.centerIn: parent

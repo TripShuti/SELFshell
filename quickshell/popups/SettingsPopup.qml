@@ -103,7 +103,7 @@ AnimatedPopup {
             color: tabBtn.active
                    ? window.palette.accent
                    : (tabMa.containsMouse ? window.palette.bg2 : "transparent")
-            Behavior on color { ColorAnimation { duration: 120 } }
+            Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
 
             Text {
               id: tabText
@@ -116,6 +116,7 @@ AnimatedPopup {
               font.family: window.palette.font
               font.pixelSize: appConfig.scaled(11)
               font.bold: true
+              Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
             }
 
             MouseArea {

@@ -135,7 +135,7 @@ Item {
         Layout.fillWidth: true
         spacing: 6
         opacity: root.cfg.barGlowSize > 0 ? 1.0 : 0.4
-        Behavior on opacity { NumberAnimation { duration: 120 } }
+        Behavior on opacity { NumberAnimation { duration: root.ac.anim(120) } }
         SetSlider {
           sys: root.sys
           label: "Pill glow opacity"; from: 0; to: 0.5; step: 0.01; decimals: 2
@@ -175,6 +175,26 @@ Item {
         sub: "Multiplies all text and icon glyph sizes in the bar, popups and settings. 1.0 = default."
         value: root.cfg.uiScale
         onMoved: v => { root.cfg.uiScale = v; root.ac.saveToFile() }
+      }
+    }
+
+    // --- Глобальні анімації ---
+    SetCard {
+      sys: root.sys
+      SetLabel { sys: root.sys; text: "Animations" }
+      SetToggle {
+        sys: root.sys
+        label: "Enable animations"
+        sub: "Disables all transitions: changes apply instantly."
+        value: root.cfg.animationsEnabled
+        onToggled: v => { root.cfg.animationsEnabled = v; root.ac.saveToFile() }
+      }
+      SetSlider {
+        sys: root.sys
+        label: "Animation speed"; from: 0.5; to: 2.0; step: 0.1; decimals: 1; suffix: "\u00D7"
+        sub: "Multiplies every animation duration in the shell. 1.0 = default, 0.5 = twice as fast."
+        value: root.cfg.animSpeed
+        onMoved: v => { root.cfg.animSpeed = v; root.ac.saveToFile() }
       }
     }
   }

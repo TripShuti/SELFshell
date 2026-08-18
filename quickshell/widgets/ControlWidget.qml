@@ -20,6 +20,7 @@ HoverItem {
     id: txt
     text: ""
     palette: window.palette
+    appConfig: window.appConfig
     color: {
       if (root.unread > 0) return window.palette.green
       if (root.hovered) return window.palette.light
@@ -33,6 +34,7 @@ HoverItem {
       running: root.unread > 0
       minOpacity: 0.4
       blinkDuration: 1000
+      appConfig: window.appConfig
     }
   }
 }

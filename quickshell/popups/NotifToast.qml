@@ -94,17 +94,17 @@ PopupWindow {
   // Анімація появи — прозорість + масштаб + зсув
   ParallelAnimation {
     id: enterAnim
-    NumberAnimation { target: container; property: "opacity"; from: 0; to: 1; duration: 220; easing.type: Easing.OutCubic }
-    NumberAnimation { target: container; property: "scale"; from: 0.85; to: 1.0; duration: 350; easing.type: Easing.OutBack; easing.overshoot: 2.5 }
-    NumberAnimation { target: container; property: "x"; from: 32; to: 0; duration: 350; easing.type: Easing.OutCubic }
+    NumberAnimation { target: container; property: "opacity"; from: 0; to: 1; duration: appConfig ? appConfig.anim(220) : 220; easing.type: Easing.OutCubic }
+    NumberAnimation { target: container; property: "scale"; from: 0.85; to: 1.0; duration: appConfig ? appConfig.anim(350) : 350; easing.type: Easing.OutBack; easing.overshoot: 1.5 }
+    NumberAnimation { target: container; property: "x"; from: 32; to: 0; duration: appConfig ? appConfig.anim(350) : 350; easing.type: Easing.OutCubic }
   }
 
   // Анімація зникнення
   SequentialAnimation {
     id: exitAnim
     ParallelAnimation {
-      NumberAnimation { target: container; property: "opacity"; to: 0; duration: 120; easing.type: Easing.OutCubic }
-      NumberAnimation { target: container; property: "scale"; to: 0.85; duration: 120; easing.type: Easing.InCubic }
+      NumberAnimation { target: container; property: "opacity"; to: 0; duration: appConfig ? appConfig.anim(120) : 120; easing.type: Easing.OutCubic }
+      NumberAnimation { target: container; property: "scale"; to: 0.85; duration: appConfig ? appConfig.anim(120) : 120; easing.type: Easing.InCubic }
     }
     ScriptAction { script: root.visible = false }
   }
@@ -224,7 +224,7 @@ PopupWindow {
           height: 20
           radius: 4
           color: actionArea.containsMouse ? anchorWindow.palette.bgAlpha : anchorWindow.palette.bg2
-          Behavior on color { ColorAnimation { duration: 120 } }
+          Behavior on color { ColorAnimation { duration: appConfig ? appConfig.anim(120) : 120 } }
 
           Text {
             id: actionText

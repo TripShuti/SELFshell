@@ -18,6 +18,9 @@ Item {
   property var player: null
   property var cavBars: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 
+  // Hover-стан для фідбеку (HoverText-рецепт: колір + масштаб)
+  property bool hovered: false
+
   // Знаходить плеєр за назвою або перший доступний.
   // Не перезаписує player, якщо той самий об'єкт — інакше таймер
   // періодичного пошуку спамив би перепризначенням.
@@ -82,22 +85,30 @@ Item {
     // Іконка play/pause
     Text {
       text: root.player?.isPlaying ? "\uF04B" : "\uF04C"
-      color: root.player?.isPlaying ? window.palette.green : window.palette.fg
+      color: root.player?.isPlaying ? window.palette.green
+           : root.hovered ? window.palette.green
+           : window.palette.fg
       font.family: window.palette.font; font.pixelSize: window.appConfig.scaled(10)
       Layout.alignment: Qt.AlignVCenter
-      Behavior on color { ColorAnimation { duration: 220 } }
+      scale: root.hovered ? 1.15 : 1.0
+      Behavior on color { ColorAnimation { duration: window.appConfig.anim(220) } }
+      Behavior on scale {
+        NumberAnimation { duration: window.appConfig.anim(120); easing.type: Easing.OutBack; easing.overshoot: 2.5 }
+      }
     }
 
     // Назва треку (текст, що біжить)
     Text {
       text: root.player?.trackTitle ?? ""
-      color: root.player?.isPlaying ? window.palette.green : window.palette.fg
+      color: root.player?.isPlaying ? window.palette.green
+           : root.hovered ? window.palette.green
+           : window.palette.fg
       font.family: window.palette.font; font.pixelSize: window.appConfig.scaled(12)
       elide: Text.ElideRight
       Layout.fillWidth: true
       Layout.maximumWidth: root.maxTrackWidth
       Layout.alignment: Qt.AlignVCenter
-      Behavior on color { ColorAnimation { duration: 220 } }
+      Behavior on color { ColorAnimation { duration: window.appConfig.anim(220) } }
     }
 
     // Аудіо-візуалізатор (cava) — 28 смужок
@@ -123,7 +134,7 @@ Item {
           // Тільки Behavior on height: кольорова анімація тут прибирає
           // ~28 рестартів ColorAnimation на кожен кадр cava (30 fps)
           Behavior on height {
-            NumberAnimation { duration: 130; easing.type: Easing.OutBack; easing.overshoot: 0.6 }
+            NumberAnimation { duration: window.appConfig.anim(130); easing.type: Easing.OutBack; easing.overshoot: 0.6 }
           }
         }
       }
@@ -134,6 +145,9 @@ Item {
   MouseArea {
     anchors.fill: parent
     acceptedButtons: Qt.LeftButton | Qt.RightButton
+    hoverEnabled: true
+    onEntered: root.hovered = true
+    onExited: root.hovered = false
     onClicked: mouse => {
       if (mouse.button === Qt.RightButton)
         root.clicked()

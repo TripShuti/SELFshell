@@ -26,6 +26,14 @@ Item {
   // товщина рамки пігулки (0 = без рамки)
   property real borderWidth: 0
 
+  // Зміни візуальних параметрів з Appearance застосовуються плавно
+  Behavior on glowSize { NumberAnimation { duration: appConfig.anim(150); easing.type: Easing.OutCubic } }
+  Behavior on glowOpacity { NumberAnimation { duration: appConfig.anim(150); easing.type: Easing.OutCubic } }
+  Behavior on lighten { NumberAnimation { duration: appConfig.anim(150); easing.type: Easing.OutCubic } }
+  Behavior on bgOpacity { NumberAnimation { duration: appConfig.anim(150); easing.type: Easing.OutCubic } }
+  Behavior on borderWidth { NumberAnimation { duration: appConfig.anim(150); easing.type: Easing.OutCubic } }
+  Behavior on radius { NumberAnimation { duration: appConfig.anim(150); easing.type: Easing.OutCubic } }
+
   implicitWidth: row.implicitWidth + 2 * root.padding
 
   Rectangle {

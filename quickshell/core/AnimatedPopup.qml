@@ -23,9 +23,11 @@ PopupWindow {
   property color borderColor: palette ? palette.bg2 : "#57514b"
   property real borderWidth: appConfig ? appConfig.cfg.popupBorderWidth : 1
   property real enterScale: 0.85
-  property real overshootAmount: 2.5
-  property int enterDuration: 350
-  property int exitDuration: 120
+  // Стриманий overshoot (2.5 раніше давав помітне "пружинне" переміщення)
+  property real overshootAmount: 1.0
+  // Тривалості поважають глобальний множник анімацій (AppConfig.anim)
+  property int enterDuration: appConfig ? appConfig.anim(350) : 350
+  property int exitDuration: appConfig ? appConfig.anim(120) : 120
   property int transformOrigin: Item.Top
   property real slideDistance: 10
 
@@ -142,7 +144,7 @@ PopupWindow {
       NumberAnimation {
         target: container; property: "opacity"
         from: 0; to: 1
-        duration: 120; easing.type: Easing.OutCubic
+        duration: appConfig ? appConfig.anim(120) : 120; easing.type: Easing.OutCubic
       }
       NumberAnimation {
         target: container; property: "scale"

@@ -165,7 +165,7 @@ AnimatedPopup {
         property bool hovered: false
         width: 26; height: 26; radius: 4
         color: hovered ? window.palette.hoverBg : window.palette.bgAlpha
-        Behavior on color { ColorAnimation { duration: 150 } }
+        Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
         Text {
           anchors.centerIn: parent
           text: "\uF053"; color: window.palette.fg
@@ -193,7 +193,7 @@ AnimatedPopup {
         property bool hovered: false
         width: 26; height: 26; radius: 4
         color: hovered ? window.palette.hoverBg : window.palette.bgAlpha
-        Behavior on color { ColorAnimation { duration: 150 } }
+        Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
         Text {
           anchors.centerIn: parent
           text: "\uF054"; color: window.palette.fg
@@ -248,10 +248,13 @@ AnimatedPopup {
           Layout.preferredHeight: (root.implicitWidth - 32) / 7
           radius: 4
 
-          // Колір комірки: вибрана → акцент, сьогодні → bg2, інакше прозорий
+          // Колір комірки: вибрана → акцент, сьогодні → bg2, hover → hoverBg,
+          // інакше прозорий
           color: isSelected ? window.palette.accent
                : isToday ? window.palette.bg2
+               : (cellMa.containsMouse && isInside) ? window.palette.hoverBg
                : "transparent"
+          Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
 
           ColumnLayout {
             anchors.centerIn: parent
@@ -281,7 +284,10 @@ AnimatedPopup {
           }
 
           MouseArea {
+            id: cellMa
             anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: isInside ? Qt.PointingHandCursor : Qt.ArrowCursor
             onClicked: {
               if (isInside) {
                 root.selectDate(dayNum)
@@ -342,7 +348,7 @@ AnimatedPopup {
         implicitHeight: 28
         radius: 4
         color: taskInput.text.trim() !== "" && maAdd.containsMouse ? window.palette.green : window.palette.bg2
-        Behavior on color { ColorAnimation { duration: 120 } }
+        Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
 
         Text {
           anchors.centerIn: parent
@@ -365,6 +371,9 @@ AnimatedPopup {
     Item {
       Layout.fillWidth: true
       Layout.preferredHeight: root.dayTasks.length > 0 ? Math.min(root.dayTasks.length * 30 - 2, 160) : 0
+      Behavior on Layout.preferredHeight {
+        NumberAnimation { duration: appConfig.anim(180); easing.type: Easing.OutCubic }
+      }
       clip: true
       visible: selectedDate !== ""
 
@@ -393,6 +402,8 @@ AnimatedPopup {
               border.width: 1
               border.color: modelData.done ? window.palette.green : window.palette.muted
               Layout.alignment: Qt.AlignVCenter
+              Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
+              Behavior on border.color { ColorAnimation { duration: appConfig.anim(150) } }
 
               Text {
                 anchors.centerIn: parent
@@ -400,6 +411,8 @@ AnimatedPopup {
                 color: window.palette.baseOverlay
                 font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
                 visible: modelData.done
+                opacity: visible ? 1 : 0
+                Behavior on opacity { NumberAnimation { duration: appConfig.anim(120) } }
               }
 
               MouseArea {
@@ -420,6 +433,8 @@ AnimatedPopup {
               style: modelData.done ? Text.Sunken : Text.Normal
               styleColor: modelData.done ? window.palette.muted : "transparent"
               leftPadding: 2
+              Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
+              Behavior on styleColor { ColorAnimation { duration: appConfig.anim(150) } }
 
               MouseArea {
                 anchors.fill: parent
@@ -433,7 +448,7 @@ AnimatedPopup {
               property bool hovered: false
               width: 22; height: 22; radius: 4
               color: hovered ? window.palette.red : window.palette.bg2
-              Behavior on color { ColorAnimation { duration: 120 } }
+              Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
               Layout.alignment: Qt.AlignVCenter
 
               Text {

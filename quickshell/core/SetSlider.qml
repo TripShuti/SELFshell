@@ -75,6 +75,9 @@ ColumnLayout {
         height: parent.height
         radius: parent.radius
         color: sl.sys.palette.accent
+        // Під час драгу Behavior вимкнено — ручка йде за курсором миттєво,
+        // анімація лишається лише для зовнішніх змін значення
+        Behavior on width { enabled: !grab.pressed; NumberAnimation { duration: sl.sys.ac.anim(120); easing.type: Easing.OutCubic } }
       }
     }
 
@@ -89,6 +92,7 @@ ColumnLayout {
       color: sl.sys.palette.accent
       border.width: 2
       border.color: Qt.lighter(sl.sys.palette.accent, 1.3)
+      Behavior on x { enabled: !grab.pressed; NumberAnimation { duration: sl.sys.ac.anim(120); easing.type: Easing.OutCubic } }
     }
 
     // Зона натискання ширша за доріжку: влучити в шестипіксельну смужку

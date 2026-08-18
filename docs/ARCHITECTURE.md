@@ -223,6 +223,35 @@ Why JSON:
 - backward compatibility: unknown fields are simply ignored
 - changes apply immediately, no shell restart needed
 
+### Animation system: `AppConfig.anim()`
+
+Every animation duration in the shell goes through the helper
+`AppConfig.anim(ms)` (core/AppConfig.qml) instead of a raw number:
+
+```qml
+NumberAnimation { duration: appConfig.anim(200) }
+```
+
+It returns `Math.round(ms * animSpeed)` when `animationsEnabled` is true
+and `0` when it is disabled — so the two settings act as a global master
+switch and a duration multiplier. The binding is reactive: moving the
+sliders in Settings → Appearance retimes running animations live.
+
+Where the config object is out of reach (core components like
+`ToggleSwitch`, `HoverText`, `AnimatedPopup`), the component takes an
+optional `property QtObject appConfig` and falls back to the raw
+duration when it is null (e.g. `appConfig ? appConfig.anim(200) : 200`).
+Bar widgets reach it via `window.appConfig`; settings sections via the
+popup root (`root.ac.anim(...)`); popups via their `appConfig` property.
+
+Rules of thumb applied throughout:
+- hover feedback: color + scale (`Easing.OutBack`, overshoot ≈ 1.5),
+  durations 120–220 ms
+- geometry/opacity transitions: `Easing.OutCubic`, 150–350 ms
+- slider drags: `Behavior` on the knob is disabled while the drag grab is
+  held (`enabled: !grab.pressed`) so the knob never lags behind the cursor
+- press feedback: instant-ish color darkening / glyph squash (0.92 scale)
+
 ---
 
 ### 9.3. Monitors — background data collection
@@ -296,8 +325,9 @@ each loaded as a separate file via `Loader` (`settings/*.qml`, each gets
   dragging into the pool disables the widget, separators are added with
   a "+" button
 - **Wallpaper** — picker and palette regeneration
-- **Appearance** — popup/toast/OSD/bar/separator design keys and global
-  `uiScale` (beyond the auto palette)
+- **Appearance** — popup/toast/OSD/bar/separator design keys, global
+  `uiScale` (beyond the auto palette) and animation controls
+  (`animationsEnabled` master switch, `animSpeed` duration multiplier)
 - **Behavior** — Do not disturb, idle timeouts (lock/dpms/suspend with
   ordering constraints), wheel steps (volume/brightness), resetting all
   settings to factory defaults

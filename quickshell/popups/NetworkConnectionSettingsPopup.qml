@@ -420,8 +420,10 @@ AnimatedPopup {
       ToggleSwitch {
         checked: root.autoconnect
         palette: window.palette
+        appConfig: window.appConfig
         checkedColor: window.palette.widgetFg
         opacity: root.autoconnectPending ? 0.6 : 1
+        Behavior on opacity { NumberAnimation { duration: appConfig.anim(150); easing.type: Easing.OutCubic } }
         enabled: !root.autoconnectPending
         Layout.alignment: Qt.AlignVCenter
         onToggled: root.toggleAutoconnect()
@@ -440,16 +442,21 @@ AnimatedPopup {
           required property string modelData
           required property int index
           implicitWidth: tabLabel.implicitWidth + 20; height: 26; radius: 4
-          color: root.activeTab === index ? window.palette.accent : window.palette.bgLayer
+          color: root.activeTab === index ? window.palette.accent
+               : (tabMa.containsMouse ? window.palette.bg2 : window.palette.bgLayer)
+          Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
           Text {
             id: tabLabel
             anchors.centerIn: parent
             text: modelData
             color: root.activeTab === index ? window.palette.bgLayer : window.palette.textLight
             font.family: window.palette.font; font.pixelSize: appConfig.scaled(11); font.bold: root.activeTab === index
+            Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
           }
           MouseArea {
+            id: tabMa
             anchors.fill: parent
+            hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
             onClicked: root.activeTab = index
           }
@@ -476,12 +483,14 @@ AnimatedPopup {
           Rectangle {
             implicitWidth: autoLabel.implicitWidth + 16; height: 22; radius: 4
             color: !root.ipv4Manual ? window.palette.accent : window.palette.bgLayer
+            Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
             Text { id: autoLabel; anchors.centerIn: parent; text: "Auto (DHCP)"; color: !root.ipv4Manual ? window.palette.bgLayer : window.palette.textLight; font.family: window.palette.font; font.pixelSize: appConfig.scaled(10) }
             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.ipv4Manual = false }
           }
           Rectangle {
             implicitWidth: manLabel.implicitWidth + 16; height: 22; radius: 4
             color: root.ipv4Manual ? window.palette.accent : window.palette.bgLayer
+            Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
             Text { id: manLabel; anchors.centerIn: parent; text: "Manual"; color: root.ipv4Manual ? window.palette.bgLayer : window.palette.textLight; font.family: window.palette.font; font.pixelSize: appConfig.scaled(10) }
             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.ipv4Manual = true }
           }
@@ -522,12 +531,14 @@ AnimatedPopup {
           Rectangle {
             implicitWidth: autoDnsLabel.implicitWidth + 16; height: 22; radius: 4
             color: !root.dnsManual ? window.palette.accent : window.palette.bgLayer
+            Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
             Text { id: autoDnsLabel; anchors.centerIn: parent; text: "Automatic"; color: !root.dnsManual ? window.palette.bgLayer : window.palette.textLight; font.family: window.palette.font; font.pixelSize: appConfig.scaled(10) }
             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.dnsManual = false }
           }
           Rectangle {
             implicitWidth: manDnsLabel.implicitWidth + 16; height: 22; radius: 4
             color: root.dnsManual ? window.palette.accent : window.palette.bgLayer
+            Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
             Text { id: manDnsLabel; anchors.centerIn: parent; text: "Manual"; color: root.dnsManual ? window.palette.bgLayer : window.palette.textLight; font.family: window.palette.font; font.pixelSize: appConfig.scaled(10) }
             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.dnsManual = true }
           }
@@ -559,7 +570,8 @@ AnimatedPopup {
           Layout.fillWidth: true
           implicitHeight: pwLabel.implicitHeight + 12
           radius: 4
-          color: window.palette.bgLayer
+          color: pwMa.containsMouse ? window.palette.bg2 : window.palette.bgLayer
+          Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
           visible: !root.changingPassword
 
           Text {
@@ -570,7 +582,9 @@ AnimatedPopup {
             font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
           }
           MouseArea {
+            id: pwMa
             anchors.fill: parent
+            hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
             onClicked: root.changingPassword = true
           }
@@ -603,16 +617,26 @@ AnimatedPopup {
             spacing: 8
             Rectangle {
               implicitWidth: 90; height: 24; radius: 4
-              color: window.palette.accent
+              color: saveMa.containsMouse ? Qt.lighter(window.palette.accent, 1.1) : window.palette.accent
+              Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
               Text { anchors.centerIn: parent;               text: "Save Password"; color: window.palette.bgLayer; font.family: window.palette.font; font.pixelSize: appConfig.scaled(10); font.bold: true }
-              MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.applyPassword() }
+              MouseArea {
+                id: saveMa
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.applyPassword()
+              }
             }
             Rectangle {
               implicitWidth: 70; height: 24; radius: 4
-              color: window.palette.bgLayer
+              color: cancelMa.containsMouse ? window.palette.bg2 : window.palette.bgLayer
+              Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
               Text { anchors.centerIn: parent;                 text: "Cancel"; color: window.palette.mutedAlt; font.family: window.palette.font; font.pixelSize: appConfig.scaled(10) }
               MouseArea {
+                id: cancelMa
                 anchors.fill: parent
+                hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: { root.changingPassword = false; root.newPassword = ""; }
               }
@@ -627,7 +651,8 @@ AnimatedPopup {
           Layout.fillWidth: true
           implicitHeight: forgetLabel.implicitHeight + 12
           radius: 4
-          color: window.palette.bgLayer
+          color: forgetMa.containsMouse ? window.palette.bg2 : window.palette.bgLayer
+          Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
 
           Text {
             id: forgetLabel
@@ -637,7 +662,9 @@ AnimatedPopup {
             font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
           }
           MouseArea {
+            id: forgetMa
             anchors.fill: parent
+            hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
             onClicked: {
               if (root.network && typeof root.network.forget === "function") {
@@ -669,9 +696,16 @@ AnimatedPopup {
 
       Rectangle {
         implicitWidth: 70; height: 26; radius: 4
-        color: window.palette.accent
+        color: applyMa.containsMouse ? Qt.lighter(window.palette.accent, 1.1) : window.palette.accent
+        Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
         Text { anchors.centerIn: parent; text: "Apply"; color: window.palette.bgLayer; font.family: window.palette.font; font.pixelSize: appConfig.scaled(11); font.bold: true }
-        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.applyIpv4AndDns() }
+        MouseArea {
+          id: applyMa
+          anchors.fill: parent
+          hoverEnabled: true
+          cursorShape: Qt.PointingHandCursor
+          onClicked: root.applyIpv4AndDns()
+        }
       }
     }
   }

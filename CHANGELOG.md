@@ -11,6 +11,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **About** section: "Updates" status row — compares the installed version
   with `main` and suggests `selfshell update` when a new version is
   available (offline-safe, shows nothing when GitHub is unreachable).
+- **Appearance** section: "Animations" card — global `animationsEnabled`
+  master switch and an `animSpeed` duration multiplier (0.5–2.0×), applied
+  to every animation in the shell on the fly.
+
+### Changed
+
+- All shell animations now respect `animationsEnabled`/`animSpeed` via the
+  `AppConfig.anim(ms)` helper; disabling animations snaps states instantly
+  (useful for low-power and accessibility).
+- Animation polish pass: restrained popup overshoot (2.5 → 1.0), hover
+  feedback (color + scale) on bar widgets and workspace dots, fade/scale
+  transitions instead of hard `visible` toggles in popups, drag-safe slider
+  behaviors, press feedback on settings buttons, and a staggered entrance
+  fade for the lock screen.
 
 ## [0.6.0] - 2026-08-18
 

@@ -145,7 +145,7 @@ AnimatedPopup {
     height: 34
     radius: 6
     color: rowColor
-    Behavior on color { ColorAnimation { duration: 120 } }
+    Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
 
     MouseArea {
       id: rowMouse
@@ -209,7 +209,7 @@ AnimatedPopup {
     implicitHeight: 20
     radius: 4
     color: btnMouse.containsMouse ? window.palette.bgAlpha : window.palette.bg2
-    Behavior on color { ColorAnimation { duration: 120 } }
+    Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
 
     Text {
       anchors.centerIn: parent

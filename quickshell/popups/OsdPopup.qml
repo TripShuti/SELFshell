@@ -90,17 +90,17 @@ PopupWindow {
 
   ParallelAnimation {
     id: enterAnim
-    NumberAnimation { target: container; property: "opacity"; from: 0; to: 1; duration: 180; easing.type: Easing.OutCubic }
-    NumberAnimation { target: container; property: "scale"; from: 0.88; to: 1.0; duration: 260; easing.type: Easing.OutCubic }
-    NumberAnimation { target: container; property: "x"; from: 24; to: 0; duration: 220; easing.type: Easing.OutCubic }
+    NumberAnimation { target: container; property: "opacity"; from: 0; to: 1; duration: appConfig ? appConfig.anim(180) : 180; easing.type: Easing.OutCubic }
+    NumberAnimation { target: container; property: "scale"; from: 0.88; to: 1.0; duration: appConfig ? appConfig.anim(260) : 260; easing.type: Easing.OutCubic }
+    NumberAnimation { target: container; property: "x"; from: 24; to: 0; duration: appConfig ? appConfig.anim(220) : 220; easing.type: Easing.OutCubic }
   }
 
   SequentialAnimation {
     id: exitAnim
     ParallelAnimation {
-      NumberAnimation { target: container; property: "opacity"; to: 0; duration: 140; easing.type: Easing.OutCubic }
-      NumberAnimation { target: container; property: "scale"; to: 0.92; duration: 140; easing.type: Easing.InCubic }
-      NumberAnimation { target: container; property: "x"; to: 24; duration: 140; easing.type: Easing.InCubic }
+      NumberAnimation { target: container; property: "opacity"; to: 0; duration: appConfig ? appConfig.anim(140) : 140; easing.type: Easing.OutCubic }
+      NumberAnimation { target: container; property: "scale"; to: 0.92; duration: appConfig ? appConfig.anim(140) : 140; easing.type: Easing.InCubic }
+      NumberAnimation { target: container; property: "x"; to: 24; duration: appConfig ? appConfig.anim(140) : 140; easing.type: Easing.InCubic }
     }
     ScriptAction { script: root.visible = false }
   }
@@ -192,7 +192,7 @@ PopupWindow {
             height: parent.height
             radius: parent.radius
             color: root.muted ? root.palette.red : root.iconColor
-            Behavior on width { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+            Behavior on width { NumberAnimation { duration: appConfig ? appConfig.anim(140) : 140; easing.type: Easing.OutCubic } }
           }
         }
 

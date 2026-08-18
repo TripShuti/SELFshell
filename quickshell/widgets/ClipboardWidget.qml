@@ -20,6 +20,7 @@ HoverItem {
     anchors.centerIn: parent
     text: "\uF0EA"
     palette: window.palette
+    appConfig: window.appConfig
     normalColor: window.palette.widgetFg
     hoverColor: window.palette.green
     hoverScale: 1.2

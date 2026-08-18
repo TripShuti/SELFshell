@@ -179,7 +179,7 @@ AnimatedPopup {
         height: 26
         radius: 5
         color: rowArea.containsMouse ? window.palette.bg2 : "transparent"
-        Behavior on color { ColorAnimation { duration: 120 } }
+        Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
 
         Text {
           anchors { left: parent.left; leftMargin: 8; verticalCenter: parent.verticalCenter }
@@ -191,12 +191,18 @@ AnimatedPopup {
         }
 
         Rectangle {
-          visible: isActive
+          // Fade замість visible: плавна поява точки активної розкладки
+          opacity: isActive ? 1 : 0
+          scale: isActive ? 1 : 0.4
           anchors { right: parent.right; rightMargin: 8; verticalCenter: parent.verticalCenter }
           width: 6
           height: 6
           radius: 3
           color: window.palette.green
+          Behavior on opacity { NumberAnimation { duration: appConfig.anim(150); easing.type: Easing.OutCubic } }
+          Behavior on scale {
+            NumberAnimation { duration: appConfig.anim(150); easing.type: Easing.OutBack; easing.overshoot: 1.5 }
+          }
         }
 
         MouseArea {

@@ -44,6 +44,7 @@ RowLayout {
   ToggleSwitch {
     Layout.alignment: Qt.AlignVCenter
     palette: row.sys.palette
+    appConfig: row.sys.ac
     checked: row.on
     onToggled: v => row.toggled(v)
   }

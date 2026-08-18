@@ -20,6 +20,9 @@ Item {
   readonly property bool available: device !== ""
   visible: available
 
+  // Hover-стан для фідбеку (HoverText-рецепт: колір + масштаб)
+  property bool hovered: false
+
   implicitWidth: rowLayout.implicitWidth
   implicitHeight: parent?.height ?? 36
 
@@ -56,7 +59,9 @@ Item {
   }
 
   readonly property color iconColor: root.low ? window.palette.danger
-      : root.charging ? window.palette.green : window.palette.fg
+      : root.charging ? window.palette.green
+      : root.hovered ? window.palette.green
+      : window.palette.fg
 
   // sysfs не підтримує inotify, тому раз на 30 с опитуємо upower
   Timer {
@@ -116,6 +121,9 @@ Item {
   MouseArea {
     anchors.fill: parent
     cursorShape: Qt.PointingHandCursor
+    hoverEnabled: true
+    onEntered: root.hovered = true
+    onExited: root.hovered = false
     onClicked: devsProc.running = true
   }
 
@@ -123,18 +131,24 @@ Item {
     id: rowLayout
     anchors.centerIn: parent
     spacing: 5
+    scale: root.hovered ? 1.08 : 1.0
+    Behavior on scale {
+      NumberAnimation { duration: window.appConfig.anim(120); easing.type: Easing.OutBack; easing.overshoot: 2.5 }
+    }
 
     Text {
       text: root.icon
       color: root.iconColor
       font.family: window.palette.font
       font.pixelSize: window.appConfig.scaled(13)
+      Behavior on color { ColorAnimation { duration: window.appConfig.anim(220) } }
     }
     Text {
       text: root.percent >= 0 ? root.percent + "%" : "--"
       color: root.iconColor
       font.family: window.palette.font
       font.pixelSize: window.appConfig.scaled(12)
+      Behavior on color { ColorAnimation { duration: window.appConfig.anim(220) } }
     }
   }
 }

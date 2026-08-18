@@ -14,10 +14,12 @@ Rectangle {
   Layout.fillWidth: true
   Layout.preferredHeight: 28
   radius: 5
-  color: btnArea.containsMouse ? btn.sys.palette.bg2 : btn.sys.palette.bgAlpha
+  color: btnArea.pressed
+       ? Qt.darker(btn.sys.palette.bg2, 1.2)
+       : (btnArea.containsMouse ? btn.sys.palette.bg2 : btn.sys.palette.bgAlpha)
   border.width: 1
   border.color: btn.sys.palette.bg2
-  Behavior on color { ColorAnimation { duration: 120 } }
+  Behavior on color { ColorAnimation { duration: btn.sys.ac.anim(120) } }
 
   Text {
     anchors.centerIn: parent

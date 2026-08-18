@@ -228,7 +228,7 @@ PanelWindow {
     ]
 
     transitions: Transition {
-      NumberAnimation { properties: "y,opacity,scale"; duration: 350; easing.type: Easing.OutCubic }
+      NumberAnimation { properties: "y,opacity,scale"; duration: root.appConfig.anim(350); easing.type: Easing.OutCubic }
     }
 
     // Watchdog hover-а (батько пігулок — див. коментар вище)
