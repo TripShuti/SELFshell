@@ -16,7 +16,7 @@ jobs:
 
       - name: Shell syntax (install.sh, CLI, scripts)
         run: |
-          for f in install.sh quickshell/scripts/selfshell quickshell/scripts/update-palette.sh; do
+          for f in install.sh quickshell/scripts/selfshell quickshell/scripts/update-palette.sh tests/install_test.sh tests/fake_upower.sh; do
             bash -n "$f"
             echo "ok: $f"
           done
@@ -78,6 +78,23 @@ jobs:
           done
           luajit tests/lua/json_test.lua "$PWD"
           luajit tests/lua/env_rules_test.lua "$PWD"
+          luajit tests/lua/binds_test.lua "$PWD"
+
+      - name: Fish syntax
+        run: |
+          sudo apt-get install -y -qq fish
+          fish -n fish/config.fish fish/conf.d/*.fish
+
+      - name: Fake upower fixture (BatteryWidget contract)
+        run: |
+          export FAKE_BATTERY_PCT=12 FAKE_BATTERY_STATE=discharging
+          [ "$(bash tests/fake_upower.sh -e)" = "/org/freedesktop/UPower/devices/battery_BAT0" ] || exit 1
+          out="$(bash tests/fake_upower.sh -i)"
+          echo "$out" | grep -qE "^[[:space:]]*state[[:space:]]*:[[:space:]]*discharging[[:space:]]*$" || exit 1
+          line="$(echo "$out" | grep -E "^[[:space:]]*percentage" | head -1)"
+          python3 -c "import re,sys; m=re.match(r\"^\s*percentage\s*:\s*(\d+)%\", sys.argv[1]); assert m and int(m.group(1)) == 12, sys.argv[1]" "$line" || exit 1
+          export FAKE_BATTERY_STATE=charging
+          bash tests/fake_upower.sh -i | grep -q "state:[[:space:]]*charging" || exit 1
 
       - name: Python unit tests (genshin_stats, update-palette)
         run: |
@@ -88,6 +105,10 @@ jobs:
         run: |
           python3 tests/check_config_schema.py
           python3 tests/check_md_links.py
+
+      - name: Canonical repo URL casing
+        run: |
+          ! grep -rn "TripShuti/[s]elfshell" . --exclude-dir=.git --exclude-dir=__pycache__ 2>/dev/null
 
       - name: Installer logic tests (helpers, rollback, prompts)
         run: |
