@@ -186,7 +186,7 @@ Item {
         sys: root.sys
         label: "Enable animations"
         sub: "Disables all transitions: changes apply instantly."
-        value: root.cfg.animationsEnabled
+        on: root.cfg.animationsEnabled
         onToggled: v => { root.cfg.animationsEnabled = v; root.ac.saveToFile() }
       }
       SetSlider {

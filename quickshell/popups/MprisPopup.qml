@@ -477,7 +477,7 @@ AnimatedPopup {
             height: parent.height
             radius: 1.5
             color: window.palette.green
-            Behavior on width { enabled: !volTrack.maVol.pressed; NumberAnimation { duration: appConfig.anim(120); easing.type: Easing.OutCubic } }
+            Behavior on width { enabled: !maVol.pressed; NumberAnimation { duration: appConfig.anim(120); easing.type: Easing.OutCubic } }
           }
 
           // Ручка — круглий індикатор поточної гучності
@@ -486,7 +486,7 @@ AnimatedPopup {
             color: window.palette.fg
             x: Math.min(Math.max(parent.width * Math.min(root.player?.volume ?? 0, 1) - width / 2, 0), parent.width - width)
             y: (parent.height - height) / 2
-            Behavior on x { enabled: !volTrack.maVol.pressed; NumberAnimation { duration: appConfig.anim(120); easing.type: Easing.OutCubic } }
+            Behavior on x { enabled: !maVol.pressed; NumberAnimation { duration: appConfig.anim(120); easing.type: Easing.OutCubic } }
           }
 
           // Drag: ведення миші після натискання змінює гучність плавно
