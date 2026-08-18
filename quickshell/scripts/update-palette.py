@@ -105,7 +105,10 @@ def qt_argb(h):
 def ensure_qt6ct_palette(scheme_path):
     conf_path = os.path.expanduser("~/.config/qt6ct/qt6ct.conf")
     os.makedirs(os.path.dirname(conf_path), exist_ok=True)
-    lines = open(conf_path).read().splitlines() if os.path.isfile(conf_path) else []
+    lines = []
+    if os.path.isfile(conf_path):
+        with open(conf_path) as f:
+            lines = f.read().splitlines()
     if not any(l.strip() == "[Appearance]" for l in lines):
         if lines and lines[-1].strip() != "":
             lines.append("")

@@ -110,7 +110,8 @@ class Qt6ctConfTest(unittest.TestCase):
     def test_creates_section_with_missing_keys(self):
         with self.env:
             up.ensure_qt6ct_palette("/x/Quickshell.conf")
-        content = open(self.conf).read()
+        with open(self.conf) as f:
+            content = f.read()
         self.assertIn("[Appearance]", content)
         self.assertIn("color_scheme_path=/x/Quickshell.conf", content)
         self.assertIn("custom_palette=true", content)
@@ -121,7 +122,8 @@ class Qt6ctConfTest(unittest.TestCase):
             f.write("[Appearance]\ncolor_scheme_path=/old\ncustom_palette=false\n\n[Window]\nstyle=kvantum\n")
         with self.env:
             up.ensure_qt6ct_palette("/new/Quickshell.conf")
-        content = open(self.conf).read()
+        with open(self.conf) as f:
+            content = f.read()
         self.assertIn("color_scheme_path=/new/Quickshell.conf", content)
         self.assertNotIn("/old", content)
         self.assertIn("custom_palette=true", content)
@@ -133,7 +135,8 @@ class Qt6ctConfTest(unittest.TestCase):
             f.write("[IconTheme]\nname=Test\n")
         with self.env:
             up.ensure_qt6ct_palette("/y/Quickshell.conf")
-        content = open(self.conf).read()
+        with open(self.conf) as f:
+            content = f.read()
         self.assertIn("[IconTheme]", content)
         self.assertIn("[Appearance]", content)
         self.assertIn("color_scheme_path=/y/Quickshell.conf", content)
