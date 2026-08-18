@@ -8,109 +8,119 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Розділ налаштувань **Appearance**: дизайн поза автопалітрою для бара і
-  попапів:
-  - **Popups** — прозорість фону, градієнт (lighten), радіус кутів, товщина
-    рамки, зовнішнє сяйво (застосовуються до всіх 15 попапів через базу
-    AnimatedPopup);
-  - **Toast & OSD** — радіус, градієнт, сяйво тоста сповіщень та OSD;
-  - **Bar** — прозорість фону пігулок, градієнт, товщина рамки, розмір і
-    прозорість сяйва (повзунок прозорості тьмяніє, доки розмір = 0, як у
+- **About** settings section — SELFshell version (from `VERSION`), GitHub
+  project link, machine info (OS, kernel) and versions of the shell
+  components (Hyprland, Quickshell, Kitty, Yazi); components that are not
+  installed show as "—".
+- **Appearance** settings section — design beyond the auto palette for the
+  bar and popups:
+  - **Popups** — background opacity, gradient (lighten), corner radius,
+    border width, outer glow (applied to all 15 popups through the
+    AnimatedPopup base);
+  - **Toast & OSD** — radius, gradient, glow of the notification toast
+    and the OSD;
+  - **Bar** — pill background opacity, gradient, border width, glow size
+    and opacity (the opacity slider dims while size = 0, like in
     Panacea);
-  - **Separators** — прозорість лінії та світіння роздільників між групами
-    віджетів;
-  - **Scale** — глобальний `uiScale` (0.8–1.5): множник усіх шрифтів і
-    гліфів у барі, попапах і налаштуваннях.
-- 18 нових ключів конфіга (`popupBgOpacity`, `popupBgLighten`, `popupRadius`,
+  - **Separators** — line opacity and glow of the separators between
+    widget groups;
+  - **Scale** — global `uiScale` (0.8–1.5): a multiplier for all fonts
+    and glyphs in the bar, popups and settings.
+- 18 new config keys (`popupBgOpacity`, `popupBgLighten`, `popupRadius`,
   `popupBorderWidth`, `popupGlowOpacity`, `toastRadius`, `toastLighten`,
   `toastGlowOpacity`, `osdRadius`, `osdLighten`, `barLighten`, `barGlowSize`,
   `barGlowOpacity`, `barBgOpacity`, `barBorderWidth`, `separatorOpacity`,
-  `separatorGlowOpacity`, `uiScale`) — усі з дефолтами, що повторюють поточний
-  вигляд; старий config.json сумісний.
-- Необов'язковий підпис-підказка `sub` у `SetSlider`.
+  `separatorGlowOpacity`, `uiScale`) — all with defaults that replicate the
+  current look; the old config.json stays compatible.
+- Optional `sub` hint in `SetSlider`.
 
 ### Fixed
 
-- Повзунки налаштувань із діапазоном меншим за 1 (opacity-слайдери,
-  `uiScale`) насичувалися на максимумі ще на половині треку і не давали
-  повного ходу — `span` у `SetSlider` рахувався через `Math.max(1, ...)`
-  замість реальної різниці `to - from`.
+- Settings sliders with a range smaller than 1 (opacity sliders,
+  `uiScale`) saturated at maximum halfway down the track and did not
+  offer full travel — `span` in `SetSlider` was computed through
+  `Math.max(1, ...)` instead of the real `to - from` difference.
 
 ## [0.4.0] - 2026-08-15
 
 ### Added
 
-- Система налаштувань панелі (шестерня в Control Center або IPC `settings`):
-  три розділи:
-  - **Bar** — висота, радіус пігулок, edge margin, pill padding, content
-    spacing, позиція панелі (top/bottom), автоскривання, видимість пігулок
+- Bar settings system (gear icon in the Control Center or the `settings`
+  IPC): three sections:
+  - **Bar** — height, pill radius, edge margin, pill padding, content
+    spacing, bar position (top/bottom), auto-hide, pill visibility
     (left/center/right);
-  - **Layout** — drag-and-drop: порядок віджетів між пігулками, перетягування
-    у pool вимикає віджет, роздільники додаються кнопкою "+";
-  - **Behavior** — Do not disturb, idle-таймаути (lock/dpms/suspend з
-    порядковими обмеженнями), кроки колеса (гучність/яскравість), скидання
-    усіх налаштувань до заводських.
-- Автоскривання панелі: вміст анімовано виїжджає за кромку екрана і
-  повертається наведенням на 6px смужку-тригер; прихований бар звільняє
-  екран (exclusive zone = 0), пігулки не займають input region.
-- Новий формат конфіга: 8 ключів (`barPos`, `edgeMargin`, `pillPadding`,
+  - **Layout** — drag-and-drop: widget order between pills, dragging into
+    the pool disables the widget, separators are added with the "+"
+    button;
+  - **Behavior** — Do not disturb, idle timeouts (lock/dpms/suspend with
+    ordering constraints), wheel steps (volume/brightness), resetting all
+    settings to factory defaults.
+- Bar auto-hide: the content slides behind the screen edge with an
+  animation and returns on hover over the 6px trigger strip; the hidden
+  bar releases the screen (exclusive zone = 0) and the pills do not
+  occupy an input region.
+- New config format: 8 keys (`barPos`, `edgeMargin`, `pillPadding`,
   `contentSpacing`, `barAutoHide`, `leftPillEnabled`, `centerPillEnabled`,
-  `rightPillEnabled`) — усі з дефолтами, старий config.json сумісний.
-- Hover-візуали віджетів і колесо миші працюють разом з автоскриванням
-  (watchdog-батько пігулок у hover-ланцюзі, події без обробника не
-  перехоплюються).
+  `rightPillEnabled`) — all with defaults, the old config.json stays
+  compatible.
+- Widget hover visuals and the mouse wheel work together with auto-hide
+  (a watchdog parent for the pills in the hover chain, events without a
+  handler are not intercepted).
 
 ### Changed
 
-- Конфіг панелі мігрував на `JsonAdapter` (Quickshell.Io): зміни з UI
-  зберігаються одразу, зовнішні ручні правки `config.json` застосовуються
-  після рестарту шела — `watchChanges` вимкнено через use-after-free
-  FileView у Quickshell 0.3.0 (атомарний запис файлу крашив шел).
-- Видимість віджетів тепер керується з Settings (Layout) замість ручного
-  редагування конфіга.
-- Прихований бар повертається, щойно відкривається будь-який попап
-  гарячою клавішею (Settings/Control/Launcher/Clipboard).
+- The bar config migrated to `JsonAdapter` (Quickshell.Io): UI changes
+  save immediately, external manual edits to `config.json` apply after a
+  shell restart — `watchChanges` is disabled due to a use-after-free of
+  FileView in Quickshell 0.3.0 (atomic file writes crashed the shell).
+- Widget visibility is now controlled from Settings (Layout) instead of
+  manual config editing.
+- A hidden bar returns as soon as any popup is opened by a hotkey
+  (Settings/Control/Launcher/Clipboard).
 
 ## [0.3.0] - 2026-08-14
 
 ### Added
 
-- GIF (аніміровані) шпалери в пікері та при застосуванні: `awww img`
-  отримує оригінальний файл замість `current.*` копії (awww кешує кадри
-  за шляхом — копія з фіксованим ім'ям віддавала застарілий кеш);
-  `update-palette.py current` повертає шлях для lock-скріну.
-- Статичний кадр `current-lock.jpg` (перший кадр шпалери через magick)
-  для екрану блокування — FastBlur не рендерить анімовані джерела
-  (чорний екран), тому lock-скрін блюрить статику замість gif.
+- GIF (animated) wallpapers in the picker and on apply: `awww img` now
+  receives the original file instead of a `current.*` copy (awww caches
+  frames by path — a fixed-name copy served a stale cache);
+  `update-palette.py current` returns the path for the lock screen.
+- Static frame `current-lock.jpg` (first frame of the wallpaper via
+  magick) for the lock screen — FastBlur cannot render animated sources
+  (black screen), so the lock screen blurs the static frame instead of
+  the gif.
 
 ### Fixed
 
-- Пікер шпалер не показував `.gif` файли (фільтр розширень у
-  `update-palette.py list`); і, навпаки, показував службові `current.*` —
-  тепер відсікається будь-який файл з префіксом `current` (зокрема
-  `current-lock.jpg`).
-- Зміна gif-шпалери показувала кадри старої (awww кеш за шляхом
-  `current.*`), нова анімація не рухалась.
-- Чорний екран блокування: шлях шпалери зчитувався в `Process.onExited`,
-  де stdout ще неповний — лок залишався на fallback-і; тепер через
-  `StdioCollector.onDataChanged` (як у WallpaperPopup).
-- Лок-скрін зоставався чорним, якщо fallback-заглушка `wp1.jpg` видалена:
-  `update-palette.py current` має ланцюг фолбеків (статичний кадр →
-  `current.*` → будь-яка статична шпалера → будь-яка, включно з gif).
-- Wi-Fi пароль тепер зберігається на диску: підключення до нової мережі йде
-  через `nmcli dev wifi connect` (профіль з `psk-flags=0`) замість
-  quickshell `connectWithPsk`, який створював профіль з agent-owned
-  секретом — пароль губився після рестарту; зміна пароля в налаштуваннях
-  теж проставляє `psk-flags 0`.
-- Налаштування збереженої (непідключеної) Wi-Fi мережі видавали "Failed to
-  find NetworkManager connection profile for this network": nmcli-запит
-  мав невалідне поле `802-11-wireless.ssid` ("invalid field") — тепер
-  профіль шукається per-profile запитами з `-e no` і працює одразу.
-- Діалог пароля Wi-Fi більше не викидає в головне меню одразу після
-  кліку Connect: лишається відкритим зі статусом "Connecting...",
-  при помилці зберігає введений пароль для виправлення, успіх закриває
-  діалог сам; Enter у полі пароля підтверджує підключення; валідація
-  мінімальної довжини WPA-PSK (8 символів).
+- The wallpaper picker did not show `.gif` files (extension filter in
+  `update-palette.py list`); and, conversely, showed service files
+  `current.*` — now any file with the `current` prefix is filtered out
+  (including `current-lock.jpg`).
+- Changing a gif wallpaper showed frames of the old one (awww cache by
+  path `current.*`), the new animation did not move.
+- Black lock screen: the wallpaper path was read in `Process.onExited`,
+  where stdout is still incomplete — the lock stayed on the fallback; now
+  via `StdioCollector.onDataChanged` (like in WallpaperPopup).
+- The lock screen stayed black if the fallback placeholder `wp1.jpg` was
+  deleted: `update-palette.py current` has a fallback chain (static frame
+  → `current.*` → any static wallpaper → any, including gif).
+- Wi-Fi password is now persisted on disk: connecting to a new network
+  goes through `nmcli dev wifi connect` (profile with `psk-flags=0`)
+  instead of the quickshell `connectWithPsk`, which created a profile
+  with an agent-owned secret — the password was lost after a restart;
+  changing the password in settings also sets `psk-flags 0`.
+- Settings of a saved (disconnected) Wi-Fi network showed "Failed to find
+  NetworkManager connection profile for this network": the nmcli query
+  had an invalid `802-11-wireless.ssid` field ("invalid field") — the
+  profile is now looked up with per-profile queries and `-e no` and works
+  immediately.
+- The Wi-Fi password dialog no longer kicks back to the main menu right
+  after clicking Connect: it stays open with a "Connecting..." status,
+  keeps the entered password on error for correction, success closes the
+  dialog itself; Enter in the password field confirms the connection;
+  minimum WPA-PSK length validation (8 characters).
 
 - Tests: fake `upower` battery simulator (`tests/fake_upower.sh`, env-driven
   state/percentage, drop-in PATH replacement) for visual testing of
