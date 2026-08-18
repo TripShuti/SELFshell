@@ -160,6 +160,21 @@ update_from_archive() {
     error "Archive is corrupt — quickshell/ not found."
     exit 1
   fi
+  # Guard проти розсинхрону: архів старіший за встановлену версію майже
+  # завжди означає помилку (stale кеш, відкат), тож питаємо дозвіл
+  local old_v new_v
+  old_v="$(cat "$QS_CONFIG_DIR/VERSION" 2>/dev/null)"
+  new_v="$(cat "$src/VERSION" 2>/dev/null)"
+  if [ -n "$old_v" ] && [ -n "$new_v" ] && [ "$old_v" != "$new_v" ] \
+     && [ "$(printf '%s\n%s' "$old_v" "$new_v" | sort -V | head -1)" = "$new_v" ]; then
+    warn "Downgrade detected: installed $old_v, archive has $new_v."
+    warn "This usually means a stale archive — update anyway?"
+    read -r -p "[y/N] " ans
+    case "$ans" in
+      y|Y|yes) ;;
+      *) rm -rf "$tmp"; error "Update aborted."; exit 1 ;;
+    esac
+  fi
   # Копіюємо через tar: виключення не пропустять локальні файли
   local excludes=()
   for f in "${LOCAL_FILES[@]}"; do excludes+=(--exclude="*/$f"); done
@@ -219,6 +234,19 @@ doctor() {
       error "Hyprland is not running"
       problems=$((problems + 1))
     fi
+    # Lua-конфіг вимагає Hyprland >= 0.52 (Lua API в конфігах)
+    local hver
+    hver="$(command -v hyprctl &>/dev/null && hyprctl version 2>/dev/null | grep -oP 'Hyprland \K[0-9]+\.[0-9]+' | head -1)"
+    if [ -n "$hver" ]; then
+      if [ "$(printf '%s\n0.52' "$hver" | sort -V | head -1)" = "0.52" ]; then
+        ok "Hyprland $hver (>= 0.52 required)"
+      else
+        error "Hyprland $hver — too old, Lua config requires >= 0.52"
+        problems=$((problems + 1))
+      fi
+    else
+      warn "cannot read Hyprland version (hyprctl failed)"
+    fi
     if qs_running; then
       ok "quickshell is running"
     else
@@ -270,6 +298,34 @@ doctor() {
     ok "wp/current.jpg (lock screen background)"
   else
     warn "wp/current.jpg is missing — the wp1.jpg fallback will be used (set it up: selfshell palette-reload)"
+  fi
+
+  echo
+  echo "== Version =="
+  # Ручне копіювання файлів конфігу часто лишає застарілий VERSION —
+  # показуємо розбіжність з main, щоб про це можна було дізнатись
+  # заздалегідь (правильний шлях оновлення — selfshell update)
+  local live_v
+  live_v="$(cat "$QS_CONFIG_DIR/VERSION" 2>/dev/null)"
+  if [ -n "$live_v" ]; then
+    ok "installed: $live_v"
+    if ! $preboot && command -v curl &>/dev/null; then
+      local remote_v
+      remote_v="$(timeout 8 curl -fsSL "https://raw.githubusercontent.com/TripShuti/SELFshell/main/quickshell/VERSION" 2>/dev/null)"
+      if [ -n "$remote_v" ]; then
+        if [ "$live_v" = "$remote_v" ]; then
+          ok "up to date with main ($remote_v)"
+        else
+          warn "VERSION drift: installed $live_v, main has $remote_v — run 'selfshell update'"
+        fi
+      else
+        warn "cannot reach GitHub — remote version check skipped"
+      fi
+    elif ! command -v curl &>/dev/null; then
+      warn "curl not found — remote version check skipped"
+    fi
+  else
+    warn "VERSION file is missing — install looks incomplete"
   fi
 
   echo

@@ -6,6 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `selfshell doctor`: Hyprland version check (≥ 0.52 — the config is
+  Lua-based) and VERSION drift detection against `main` (warns when the
+  installed config was updated by hand and the version file went stale).
+- `selfshell update`: refuses to downgrade from a stale archive
+  (confirmation prompt), preventing silent config rollbacks.
+
+### Changed
+
+- README declares Hyprland ≥ 0.52 as the required compositor version.
+- `docs/CONFIG_FORMAT.md` documents `windowRules` with worked examples
+  (float/center/size, workspace/pin, match restrictors, opacity).
+
 ## [0.5.0] - 2026-08-18
 
 ### Added
