@@ -31,6 +31,12 @@ AnimatedPopup {
   property bool devsDone: false
   property bool layoutsDone: false
 
+  // hyprctl -j друкує pretty-printed JSON (поле на рядок), тому SplitParser
+  // ріже його по рядках і JSON.parse одного рядка завжди падає. Накопичуємо
+  // рядки в буфер і парсимо лише коли накопичився повний документ.
+  property string devsBuf: ""
+  property string layoutsBuf: ""
+
   Component.onCompleted: { anchor.window = window }
 
   onVisibleChanged: {
@@ -100,23 +106,23 @@ AnimatedPopup {
     stdout: SplitParser {
       splitMarker: "\n"
       onRead: data => {
-        var text = (data ?? "").trim()
-        if (text === "") return
-        try {
-          var obj = JSON.parse(text)
-          var keyboards = obj.keyboards ?? []
-          for (var i = 0; i < keyboards.length; ++i) {
-            if (keyboards[i].main === true) {
-              root.mainKeyboard = keyboards[i].name
-              root.activeKeymap = keyboards[i].active_keymap ?? ""
-              break
-            }
+        root.devsBuf += (data ?? "")
+        var obj = null
+        try { obj = JSON.parse(root.devsBuf) } catch (e) {}
+        if (obj === null) return
+        root.devsBuf = ""
+        var keyboards = obj.keyboards ?? []
+        for (var i = 0; i < keyboards.length; ++i) {
+          if (keyboards[i].main === true) {
+            root.mainKeyboard = keyboards[i].name
+            root.activeKeymap = keyboards[i].active_keymap ?? ""
+            break
           }
-          if (root.mainKeyboard === "" && keyboards.length > 0) {
-            root.mainKeyboard = keyboards[0].name
-            root.activeKeymap = keyboards[0].active_keymap ?? ""
-          }
-        } catch (e) {}
+        }
+        if (root.mainKeyboard === "" && keyboards.length > 0) {
+          root.mainKeyboard = keyboards[0].name
+          root.activeKeymap = keyboards[0].active_keymap ?? ""
+        }
         root.devsDone = true
         root.rebuildModel()
       }
@@ -131,18 +137,18 @@ AnimatedPopup {
     stdout: SplitParser {
       splitMarker: "\n"
       onRead: data => {
-        var text = (data ?? "").trim()
-        if (text === "") return
-        try {
-          var obj = JSON.parse(text)
-          var codes = String(obj.str ?? "").split(",")
-          var out = []
-          for (var i = 0; i < codes.length; ++i) {
-            var code = codes[i].trim()
-            if (code !== "") out.push(code)
-          }
-          root.rawCodes = out
-        } catch (e) {}
+        root.layoutsBuf += (data ?? "")
+        var obj = null
+        try { obj = JSON.parse(root.layoutsBuf) } catch (e) {}
+        if (obj === null) return
+        root.layoutsBuf = ""
+        var codes = String(obj.str ?? "").split(",")
+        var out = []
+        for (var i = 0; i < codes.length; ++i) {
+          var code = codes[i].trim()
+          if (code !== "") out.push(code)
+        }
+        root.rawCodes = out
         root.layoutsDone = true
         root.rebuildModel()
       }

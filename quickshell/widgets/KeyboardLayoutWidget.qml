@@ -18,6 +18,12 @@ Item {
   // Hover-стан для фідбеку (HoverText-рецепт: колір + масштаб)
   property bool hovered: false
 
+  // hyprctl -j друкує pretty-printed JSON (поле на рядок), тому SplitParser
+  // ріже його по рядках і JSON.parse одного рядка завжди падає. Накопичуємо
+  // рядки в буфер і парсимо лише коли накопичився повний документ.
+  property string initialBuf: ""
+  property string devsBuf: ""
+
   readonly property string displayText: {
     var l = root.layout
     if (l.indexOf("Ukrainian") >= 0) return "UA"
@@ -42,26 +48,26 @@ Item {
     stdout: SplitParser {
       splitMarker: "\n"
       onRead: data => {
-        var text = (data ?? "").trim()
-        if (text === "") return
-        try {
-          var obj = JSON.parse(text)
-          var keyboards = obj.keyboards ?? []
-          for (var i = 0; i < keyboards.length; ++i) {
-            if (keyboards[i].active_keymap && keyboards[i].main === true) {
-              root.layout = keyboards[i].active_keymap; return
-            }
+        root.initialBuf += (data ?? "")
+        var obj = null
+        try { obj = JSON.parse(root.initialBuf) } catch (e) {}
+        if (obj === null) return
+        root.initialBuf = ""
+        var keyboards = obj.keyboards ?? []
+        for (var i = 0; i < keyboards.length; ++i) {
+          if (keyboards[i].active_keymap && keyboards[i].main === true) {
+            root.layout = keyboards[i].active_keymap; return
           }
-          for (var i = 0; i < keyboards.length; ++i) {
-            var k = keyboards[i]
-            if (k.active_keymap && k.name.indexOf("keyboard") < 0 && k.name.indexOf("system") < 0 && k.name.indexOf("consumer") < 0) {
-              root.layout = k.active_keymap; return
-            }
+        }
+        for (var i = 0; i < keyboards.length; ++i) {
+          var k = keyboards[i]
+          if (k.active_keymap && k.name.indexOf("keyboard") < 0 && k.name.indexOf("system") < 0 && k.name.indexOf("consumer") < 0) {
+            root.layout = k.active_keymap; return
           }
-          if (keyboards.length > 0 && keyboards[0].active_keymap) {
-            root.layout = keyboards[0].active_keymap
-          }
-        } catch (e) {}
+        }
+        if (keyboards.length > 0 && keyboards[0].active_keymap) {
+          root.layout = keyboards[0].active_keymap
+        }
       }
     }
   }
@@ -97,17 +103,17 @@ Item {
     stdout: SplitParser {
       splitMarker: "\n"
       onRead: data => {
-        var text = (data ?? "").trim()
-        if (text === "") return
+        root.devsBuf += (data ?? "")
+        var obj = null
+        try { obj = JSON.parse(root.devsBuf) } catch (e) {}
+        if (obj === null) return
+        root.devsBuf = ""
         var mainName = ""
-        try {
-          var obj = JSON.parse(text)
-          var keyboards = obj.keyboards ?? []
-          for (var i = 0; i < keyboards.length; ++i) {
-            if (keyboards[i].main === true) { mainName = keyboards[i].name; break }
-          }
-          if (mainName === "" && keyboards.length > 0) mainName = keyboards[0].name
-        } catch (e) {}
+        var keyboards = obj.keyboards ?? []
+        for (var i = 0; i < keyboards.length; ++i) {
+          if (keyboards[i].main === true) { mainName = keyboards[i].name; break }
+        }
+        if (mainName === "" && keyboards.length > 0) mainName = keyboards[0].name
         if (mainName !== "") {
           switchProc.command = ["hyprctl", "switchxkblayout", mainName, "next"]
           switchProc.running = true
