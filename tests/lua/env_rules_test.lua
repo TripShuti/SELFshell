@@ -87,7 +87,7 @@ for _, c in ipairs(calls) do
   if c.kind == "on" and c.e == "window.active" then has_active_handler = true end
 end
 assert(not has_active_handler, "no window.active handler when appLayout is empty")
-assert(#calls >= 2, "universal rules registered (2 window_rule + config)")
+assert(#calls >= 2, "universal rules registered (2 window_rule)")
 
 -- 4) appLayout активний → handler перемикає розкладку за класом вікна
 local custom = HOME .. "/.config/hypr/env.json"
@@ -119,6 +119,18 @@ for _, c in ipairs(calls) do
   end
 end
 assert(found, "data-driven window rule applied")
+
+-- 6) Неправильні типи в env.json → дефолти (конфіг не падає)
+f = io.open(custom, "w")
+f:write('{"mod": 42, "kbLayout": 7, "cursorSize": "big", "autostart": "kitty", "devices": {}, "windowRules": true, "appLayout": "x"}')
+f:close()
+e = fresh_env(HOME)
+assert(e.mainMod == "SUPER", "wrong-typed mod -> default")
+assert(e.kbLayout == "us", "wrong-typed kbLayout -> default")
+assert(e.cursorSize == 24, "wrong-typed cursorSize -> default")
+assert(#e.autostart == 0 and #e.devices == 0, "non-list arrays -> empty")
+assert(#e.windowRules == 0 and #e.appLayout == 0, "non-list arrays -> empty")
+assert(e.appLayoutActive == false, "appLayout off on bad type")
 
 os.execute("rm -rf '" .. HOME .. "'")
 print("OK: env.lua defaults, shipped env.json, rules.lua data-driven, appLayout")

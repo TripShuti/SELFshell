@@ -48,8 +48,8 @@ copies the files from the matching repo subdirectories into place.
 
 ## 2. Hyprland — the compositor
 
-Hyprland is configured via Lua + `env.json` (Lua modules) and two `.conf`
-files.
+Hyprland is configured via Lua + `env.json` (Lua modules) and one `.conf`
+file.
 
 ### Lua modules (`hypr/modules/`)
 
@@ -68,8 +68,9 @@ files.
 `~/.config/hypr/env.json` (copied from the repo). If the file is missing or
 broken → defaults from `env.lua` (behavior unchanged).
 Schema: `mod`, `terminal`, `fileManager`, `browser`, `cursorTheme`,
-`cursorSize`, `autostart[]` (`command`, `workspace`?),
-`devices[]` (`name`, `sensitivity`, `accel_profile`, `scroll_factor`).
+`cursorSize`, `kbLayout`, `kbOptions`, `suspendKey`, `autostart[]`
+(`command`, `workspace`?), `devices[]` (`name`, `sensitivity`,
+`accel_profile`, `scroll_factor`), `windowRules[]`, `appLayout[]`.
 Details in [CONFIG_FORMAT.md](CONFIG_FORMAT.md).
 
 ### `.conf` files

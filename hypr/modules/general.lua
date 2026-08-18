@@ -29,7 +29,7 @@ hl.config({
         default_split_ratio          = 1.0,
         split_bias                   = 0,
         precise_mouse_move           = false,
-  },
+    },
 
     cursor = {
         no_warps = true,
@@ -41,16 +41,17 @@ hl.config({
 
     decoration = {
         blur = {
-        enabled = true,
-        popups = true,
+            enabled = true,
+            popups = true,
+            popups_ignorealpha = 0.6,
 
-        vibrancy = 0.35,
-        vibrancy_darkness = 0.2,
-        passes = 3,
-        size = 6,
-        noise = 0.02,
-        contrast = 1.05,
-        brightness = 1.0,
+            vibrancy = 0.35,
+            vibrancy_darkness = 0.2,
+            passes = 3,
+            size = 6,
+            noise = 0.02,
+            contrast = 1.05,
+            brightness = 1.0,
         },
     },
 
@@ -58,10 +59,6 @@ hl.config({
         kb_layout  = s.kbLayout,
         kb_options = s.kbOptions,
         follow_mouse = 1,
-    },
-
-    animations = {
-        enabled = true,
     },
 })
 

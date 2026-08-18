@@ -8,21 +8,27 @@ local ENV_PATH = os.getenv("HOME") .. "/.config/hypr/env.json"
 
 local env = json.read(ENV_PATH) or {}
 
+-- Тип-перевірки: валідний JSON з неправильним типом поля не має
+-- ламати конфіг — замість нього підставляється дефолт.
+local function str(v, def) return type(v) == "string" and v or def end
+local function num(v, def) return type(v) == "number" and v or def end
+local function list(v)     return type(v) == "table" and v or {} end
+
 local M = {}
 
-M.mainMod      = env.mod or "SUPER"
-M.terminal     = env.terminal or "kitty"
-M.fileManager  = env.fileManager or "kitty -e yazi"
-M.browser      = env.browser or "chromium"
-M.cursorTheme  = env.cursorTheme or "Bibata-Modern-Classic"
-M.cursorSize   = env.cursorSize or 24
-M.kbLayout     = env.kbLayout or "us"
-M.kbOptions    = env.kbOptions or ""
-M.suspendKey   = env.suspendKey or ""
-M.autostart    = env.autostart or {}
-M.devices      = env.devices or {}
-M.windowRules  = env.windowRules or {}
-M.appLayout    = env.appLayout or {}
+M.mainMod      = str(env.mod, "SUPER")
+M.terminal     = str(env.terminal, "kitty")
+M.fileManager  = str(env.fileManager, "kitty -e yazi")
+M.browser      = str(env.browser, "chromium")
+M.cursorTheme  = str(env.cursorTheme, "Bibata-Modern-Classic")
+M.cursorSize   = num(env.cursorSize, 24)
+M.kbLayout     = str(env.kbLayout, "us")
+M.kbOptions    = str(env.kbOptions, "")
+M.suspendKey   = str(env.suspendKey, "")
+M.autostart    = list(env.autostart)
+M.devices      = list(env.devices)
+M.windowRules  = list(env.windowRules)
+M.appLayout    = list(env.appLayout)
 M.appLayoutActive = #M.appLayout > 0
 
 return M

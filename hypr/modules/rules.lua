@@ -27,15 +27,6 @@ if s.appLayoutActive and string.find(s.kbLayout, ",") ~= nil then
     end)
 end
 
-hl.config({
-  decoration = {
-    blur = {
-      popups = true,
-      popups_ignorealpha = 0.6,
-    }
-  }
-})
-
 -- Універсальні правила, які не залежать від набору програм користувача.
 hl.window_rule({
     name           = "suppress-maximize-events",
