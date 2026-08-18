@@ -1,7 +1,8 @@
 // ============================================================
 // SettingsPopup.qml — налаштування бару: розділи Bar / Layout /
-// Behavior. Кожен розділ — окремий файл у settings/, завантажується
-// через Loader (патерн SettingsView з Panacea).
+// Wallpaper / Appearance / Behavior / About. Кожен розділ — окремий
+// файл у settings/, завантажується через Loader (патерн SettingsView
+// з Panacea).
 // ============================================================
 import QtQuick
 import QtQuick.Layouts
@@ -36,7 +37,8 @@ AnimatedPopup {
     { title: "Layout", page: "settings/LayoutSection.qml" },
     { title: "Wallpaper", page: "settings/WallpaperSection.qml" },
     { title: "Appearance", page: "settings/AppearanceSection.qml" },
-    { title: "Behavior", page: "settings/BehaviorSection.qml" }
+    { title: "Behavior", page: "settings/BehaviorSection.qml" },
+    { title: "About", page: "settings/AboutSection.qml" }
   ]
   property int section: 0
 

@@ -129,7 +129,13 @@
 | `NetworkConnectionSettingsPopup.qml` | Details of a specific Wi-Fi/connection | NetworkPopup |
 | `ControlPopup.qml` | Notifications + quick actions | NotificationServer |
 | `OsdPopup.qml` | Volume/brightness overlay for media keys | PipeWire, ddcutil |
-| `SettingsPopup.qml` | Bar settings (drag-and-drop) | AppConfig |
+| `SettingsPopup.qml` | Bar settings (6 sections, drag-and-drop) | AppConfig |
+| `settings/BarSection.qml` | Settings: bar geometry, auto-hide | AppConfig |
+| `settings/LayoutSection.qml` | Settings: drag-and-drop widget order | AppConfig |
+| `settings/WallpaperSection.qml` | Settings: wallpaper picker | PaletteService |
+| `settings/AppearanceSection.qml` | Settings: design keys, `uiScale` | AppConfig |
+| `settings/BehaviorSection.qml` | Settings: DND, idle timeouts, wheel steps | AppConfig |
+| `settings/AboutSection.qml` | Settings: versions, machine info, project link | Quickshell.Io |
 | `KeyboardLayoutPopup.qml` | Keyboard layout list | — |
 | `WorkspacesPopup.qml` | Window list per workspace | Hyprland |
 | `ClipboardPopup.qml` | Clipboard history (`SUPER+SHIFT+V`) | cliphist |
