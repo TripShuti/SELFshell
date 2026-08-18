@@ -15,6 +15,25 @@ exactly — the release workflow refuses to publish otherwise.
 | MINOR | New features (new widgets, popups, commands) |
 | PATCH | Bug fixes, refactors without user-visible changes |
 
+Before 1.0.0, breaking changes are allowed in any release (0.x
+does not promise stability). The 1.0.0 release freezes the public
+surface — see "Config freeze" below.
+
+## Config freeze (before 1.0.0)
+
+The 1.0.0 release is a **stability declaration**: from then on, the
+public surface must evolve without breaking. Prepare it in a dedicated
+milestone:
+
+1. Freeze the config formats: `docs/CONFIG_FORMAT.md` becomes the single
+   source of truth for `data/config.json` and `hypr/env.json` keys, the
+   IPC targets (`qs ipc call ...`), and the CLI commands. New keys after
+   the freeze are only allowed with a MAJOR bump.
+2. Run one or more fix-only 0.x releases after the freeze so real-world
+   bugs shake out without schema churn.
+3. When the fix-only period has been stable for at least two weeks, cut
+   the 1.0.0 release (same procedure as any release).
+
 ## Procedure
 
 1. In `CHANGELOG.md`, rename `## [Unreleased]` to

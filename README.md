@@ -50,7 +50,7 @@ no separate lock/idle daemons.
 
 | Component | Role |
 |-----------|------|
-| [Hyprland](https://hyprland.org) | Wayland compositor 
+| [Hyprland](https://hyprland.org) | Wayland compositor (≥ 0.52 — the config is Lua-based) |
 | [Quickshell](https://github.com/Quickshell/Quickshell) | QML-based shell/panel 
 | [Kitty](https://sw.kovidgoyal.net/kitty/) | Terminal
 | [Fish](https://fishshell.com) | Shell 

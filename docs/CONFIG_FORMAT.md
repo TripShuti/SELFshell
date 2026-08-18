@@ -146,15 +146,6 @@ hardcoded values).
 Notes:
 - `quickshell` always starts, regardless of `autostart`
   (shell infrastructure, not a user choice).
-- `windowRules` entries are passed to `hl.window_rule()` as-is — the rule
-  becomes active only while the corresponding window class is running.
-  Example (float a calculator):
-  ```json
-  "windowRules": [
-    { "name": "calculator-float", "match": { "class": "galculator" },
-      "float": true, "center": true, "size": "400 540" }
-  ]
-  ```
 - `appLayout` only works with 2+ layouts in `kbLayout` (the feature is
   based on `hyprctl switchxkblayout all N`). It is disabled by default.
   Example — Russian/Ukrainian typing in the terminal only:
@@ -162,6 +153,42 @@ Notes:
   "kbLayout": "us, ua",
   "appLayout": [ { "class": "kitty", "layout": 1 } ]
   ```
+
+### `windowRules` examples
+
+Every entry is passed to `hl.window_rule()` as-is (Hyprland ≥ 0.52 Lua
+API). `match` selects the windows, the rest of the entry is the rule
+body — the full windowrule list is documented in the
+[Hyprland wiki](https://wiki.hyprland.org/Configuring/Window-Rules/).
+Rules apply when the config loads (and on `hyprctl reload`).
+
+Float a calculator, centered, with a fixed size:
+```json
+{ "name": "calculator-float", "match": { "class": "galculator" },
+  "float": true, "center": true, "size": "400 540" }
+```
+
+Send an app to a workspace and keep it on top:
+```json
+{ "name": "discord-workspace", "match": { "class": "discord" },
+  "workspace": "5", "pin": true }
+```
+
+Match restrictors (`xwayland`, `float`, `fullscreen`, `pin`) narrow the
+rule to specific window states — e.g. only XWayland windows without a
+class (drag overlays):
+```json
+{ "name": "fix-xwayland-drags", "match": { "class": "^$", "title": "^$",
+    "xwayland": true, "float": true, "fullscreen": false, "pin": false },
+  "no_focus": true }
+```
+
+Opacity per state, translucent inactive windows:
+```json
+{ "name": "ghost-inactive", "match": { "class": "kitty" },
+  "opacity": "0.95 0.75" }
+```
+
 
 ---
 
