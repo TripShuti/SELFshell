@@ -1,6 +1,6 @@
 // ============================================================
 // settings/AboutSection.qml — розділ About: версія шела, версії
-// компонентів, дані про машину, посилання на проєкт
+// компонентів, перевірка оновлень, дані про машину, посилання на проєкт
 // ============================================================
 import QtQuick
 import QtQuick.Layouts
@@ -33,6 +33,13 @@ Item {
       SetLabel { sys: root.sys; text: "SELFshell" }
 
       VersionRow { label: "Version"; value: root.shellVersion }
+      VersionRow {
+        label: "Updates"
+        value: root.updateAvailable
+               ? "v" + root.remoteVersion + " available (selfshell update)"
+               : (root.upToDate ? "up to date" : "")
+        valueColor: root.updateAvailable ? root.window.palette.danger : root.window.palette.mutedAlt
+      }
 
       // Посилання на проєкт — клікабельне, без явного URL у тексті,
       // щоб рядок не розтягувався
@@ -93,6 +100,24 @@ Item {
   }
   property string shellVersion: ""
 
+  // --- Актуальність: порівнюємо встановлену версію з main (raw GitHub).
+  // curl — вже залежність (selfshell update); офлайн/без curl → порожньо
+  // і рядок Updates просто не показує статус ---
+  readonly property string remoteVersion: remoteProbe.value
+  readonly property bool upToDate: root.shellVersion !== "" && root.remoteVersion !== "" && root.shellVersion === root.remoteVersion
+  readonly property bool updateAvailable: root.shellVersion !== "" && root.remoteVersion !== "" && root.isNewer(root.remoteVersion, root.shellVersion)
+
+  function isNewer(a, b) {
+    var pa = a.split(".").map(Number)
+    var pb = b.split(".").map(Number)
+    for (var i = 0; i < 3; i++) {
+      var x = pa[i] || 0
+      var y = pb[i] || 0
+      if (x !== y) return x > y
+    }
+    return false
+  }
+
   // --- Ім'я ОС: один рядок PRETTY_NAME з /etc/os-release ---
   FileView {
     id: osReleaseFile
@@ -139,6 +164,7 @@ Item {
   VersionProbe { id: kittyProbe; command: ["kitty", "--version"]; pattern: /kitty (\S+)/ }
   VersionProbe { id: yaziProbe; command: ["yazi", "--version"]; pattern: /yazi (\S+)/i }
   VersionProbe { id: kernelProbe; command: ["uname", "-r"]; pattern: /(.+)/ }
+  VersionProbe { id: remoteProbe; command: ["curl", "-fsSL", "https://raw.githubusercontent.com/TripShuti/SELFshell/main/quickshell/VERSION"]; pattern: /(\d+\.\d+\.\d+)/ }
 
   // Рядок "назва — значення" для списку версій; порожнє значення
   // означає непідключений компонент і показується як "—"
@@ -146,6 +172,7 @@ Item {
     id: row
     required property string label
     required property string value
+    property color valueColor: root.window.palette.mutedAlt
     spacing: 4
     Layout.fillWidth: true
 
@@ -159,7 +186,7 @@ Item {
 
     Text {
       text: row.value || "\u2014"
-      color: root.window.palette.mutedAlt
+      color: row.valueColor
       font.family: root.window.palette.font
       font.pixelSize: window.appConfig.scaled(10)
       elide: Text.ElideRight
