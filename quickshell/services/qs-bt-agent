@@ -29,16 +29,21 @@ class Agent(dbus.service.Object):
     def RequestPasskey(self, device):
         return dbus.UInt32(0)
 
-    @dbus.service.method('org.bluez.Agent1', in_signature='ou', out_signature='')
-    def DisplayPasskey(self, device, passkey):
+    @dbus.service.method('org.bluez.Agent1', in_signature='ouq', out_signature='')
+    def DisplayPasskey(self, device, passkey, entered):
         pass
 
-    @dbus.service.method('org.bluez.Agent1', in_signature='ou', out_signature='')
+    @dbus.service.method('org.bluez.Agent1', in_signature='os', out_signature='')
     def DisplayPinCode(self, device, pincode):
         pass
 
-    @dbus.service.method('org.bluez.Agent1', in_signature='o', out_signature='')
-    def RequestConfirmation(self, device):
+    # Сигнатури — за org.bluez.Agent (BlueZ): RequestConfirmation(device,
+    # passkey) = 'ou'. Під NoInputNoOutput (Just Works) BlueZ ці методи
+    # не викликає, але сигнатури тримаємо коректними на випадок
+    # нестандартних пристроїв/змін bluetoothd — інакше виклик повернув би
+    # InvalidArgs і паринг провалився б
+    @dbus.service.method('org.bluez.Agent1', in_signature='ou', out_signature='')
+    def RequestConfirmation(self, device, passkey):
         return
 
     @dbus.service.method('org.bluez.Agent1', in_signature='o', out_signature='')

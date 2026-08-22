@@ -33,6 +33,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Genshin widget: the state file is now written atomically (tmp + rename),
   so an interrupted write can no longer corrupt it and silently reset
   resin tracking and sign-in cache.
+- Bluetooth agent: corrected D-Bus signatures of `RequestConfirmation`,
+  `DisplayPasskey` and `DisplayPinCode` to match org.bluez.Agent (no
+  behavior change — under NoInputNoOutput BlueZ does not call them).
 
 ## [0.6.0] - 2026-08-18
 
