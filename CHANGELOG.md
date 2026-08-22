@@ -30,6 +30,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Genshin widget: all HoYoLAB requests now use an HTTP timeout (5 s connect /
   15 s read) — a hung connection no longer freezes sync with stale data.
+- Genshin widget: the state file is now written atomically (tmp + rename),
+  so an interrupted write can no longer corrupt it and silently reset
+  resin tracking and sign-in cache.
 
 ## [0.6.0] - 2026-08-18
 
