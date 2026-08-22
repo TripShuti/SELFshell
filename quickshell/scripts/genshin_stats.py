@@ -22,6 +22,9 @@ STATE_FILE = os.path.join(os.path.dirname(__file__), ".genshin_state.json")
 REQUEST_LOG_FILE = os.path.join(os.path.dirname(__file__), ".genshin_requests.log")
 REQUEST_LOG_MAX_SIZE = 1024 * 1024
 RESIN_REGEN_SECONDS = 480
+# (connect, read) у секундах: без таймауту завислий сокет лишав би
+# sync-процес живим назавжди, а QML-монітор — на застарілих даних
+HTTP_TIMEOUT = (5, 15)
 
 
 def log_request(kind):
@@ -47,9 +50,14 @@ def load_state():
 
 
 def save_state(state):
+    # Атомарний запис (tmp + os.replace, як в update-palette.py):
+    # читач, що потрапив на наполовину записаний файл, отримав би
+    # JSONDecodeError і скинув стан у {}
     try:
-        with open(STATE_FILE, "w") as f:
+        tmp = STATE_FILE + ".tmp"
+        with open(tmp, "w") as f:
             json.dump(state, f)
+        os.replace(tmp, STATE_FILE)
     except OSError:
         pass
 
@@ -88,7 +96,7 @@ def _real_check_sign_status():
     log_request("check_sign_status (GET /event/sol/info)")
     url = f"https://sg-hk4e-api.hoyolab.com/event/sol/info?act_id={ACT_ID}"
     try:
-        r = requests.get(url, headers=make_headers())
+        r = requests.get(url, headers=make_headers(), timeout=HTTP_TIMEOUT)
         data = r.json()
         if data["retcode"] != 0:
             return None, f"Code: {data['retcode']}\n{data['message']}"
@@ -129,7 +137,7 @@ def do_sign(force=False):
     log_request("do_sign (POST /event/sol/sign)")
     url = f"https://sg-hk4e-api.hoyolab.com/event/sol/sign?act_id={ACT_ID}"
     try:
-        r = requests.post(url, headers=make_headers(), json={})
+        r = requests.post(url, headers=make_headers(), json={}, timeout=HTTP_TIMEOUT)
         data = r.json()
         if data["retcode"] == 0:
             state["sign"] = {
@@ -231,7 +239,7 @@ def _real_get_notes():
     log_request("get_notes (GET /dailyNote)")
     url = f"https://bbs-api-os.hoyolab.com/game_record/genshin/api/dailyNote?server={SERVER}&role_id={UID}"
     try:
-        response = requests.get(url, headers=make_headers(generate_ds()))
+        response = requests.get(url, headers=make_headers(generate_ds()), timeout=HTTP_TIMEOUT)
         data = response.json()
 
         if data["retcode"] != 0:

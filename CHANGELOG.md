@@ -26,6 +26,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   behaviors, press feedback on settings buttons, and a staggered entrance
   fade for the lock screen.
 
+### Fixed
+
+- Genshin widget: all HoYoLAB requests now use an HTTP timeout (5 s connect /
+  15 s read) — a hung connection no longer freezes sync with stale data.
+
 ## [0.6.0] - 2026-08-18
 
 ### Added
