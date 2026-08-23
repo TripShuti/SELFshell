@@ -37,6 +37,11 @@ AnimatedPopup {
 
   property var btAdapter: Bluetooth.defaultAdapter
 
+  // Останній показаний id: onReqChanged стреляє лише на ЗМІНУ значення,
+  // тож початковий запит (що прийшов до завершення завантаження бару)
+  // треба підхоплювати вручну в Component.onCompleted
+  property int shownRequestId: -1
+
   function deviceName(address) {
     if (!btAdapter) return address
     var devices = [...btAdapter.devices.values]
@@ -65,6 +70,7 @@ AnimatedPopup {
   }
 
   function openFor(req) {
+    shownRequestId = req.id
     secondsLeft = timeoutSeconds
     pinInput = ""
     countdown.restart()
@@ -78,12 +84,26 @@ AnimatedPopup {
     close()
   }
 
-  onReqChanged: {
-    if (actionable) openFor(req)
-    else if (visible) close()
+  // Єдина точка синхронізації з агентом:
+  //  - новий запит (включно з display/displaypin — вони показують код
+  //    лише з кнопкою Close) — відкрити;
+  //  - done/cancel або порожній req — закрити (повторний close після
+  //    власного decide() безпечний — AnimatedPopup ігнорує його під час
+  //    анімації виходу).
+  function syncToRequest() {
+    if (!req || req.method === "done" || req.method === "cancel") {
+      if (visible) close()
+      return
+    }
+    if (req.id !== shownRequestId) openFor(req)
   }
 
-  Component.onCompleted: anchor.window = window
+  onReqChanged: syncToRequest()
+
+  Component.onCompleted: {
+    anchor.window = window
+    syncToRequest()
+  }
 
   // Escape закриває попап лише візуально (обробник у AnimatedPopup):
   // запит усе одно відхилиться таймаутом агента через 55 c — свідомо
