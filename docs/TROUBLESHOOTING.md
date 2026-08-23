@@ -116,6 +116,45 @@ Verify: `systemctl --user status qs-bt-agent` (active) and
 `selfshell doctor` (line `qs-bt-agent (user service) is active`).
 (install.sh does this automatically on the next run.)
 
+## Bluetooth pairing fails after restarting bluetooth
+**Symptom:** `systemctl restart bluetooth` was run (manually or by a bluez
+package update), and new devices can no longer pair. Already-bonded ones
+keep working.
+
+**Cause:** a bluetoothd restart forgets all registered agents, but
+`qs-bt-agent` registers only at its own startup — it stays "active"
+while representing nobody.
+
+**Fix:**
+```sh
+systemctl --user restart qs-bt-agent
+```
+
+## Phone says "incorrect PIN or passkey" when pairing
+**Symptom:** the phone reports a wrong PIN although the shell never asks
+for one (pairing is Just Works / popup-confirmed).
+
+**Cause:** stale bond state — the phone still holds an old link key for
+this computer from an earlier pairing. The Android message is a generic
+label for any key-mismatch failure, not an actual PIN prompt. Note that
+Android also **hides already-bonded computers from the scan list**, so the
+PC may not appear in "Available devices" at all.
+
+**Fix:** remove the old bond on BOTH sides, then pair fresh:
+```sh
+bluetoothctl remove XX:XX:XX:XX:XX:XX   # PC side
+```
+and "Forget device" for this computer in the phone's Bluetooth settings.
+
+## Pairing request while the screen is locked
+**Symptom:** no pairing popup appeared, the device failed to pair.
+
+**Cause:** the popup lives under the lock surface — it cannot be shown.
+Requests arriving while locked are rejected by the agent's 55 s timeout
+by design (fail-closed).
+
+**Fix:** none needed; unlock first, then ask the device to pair again.
+
 ## Sharp corners on popups (clipped glow)
 **Symptom:** sharp "wedges" in the popup corners instead of a smooth rounding.
 

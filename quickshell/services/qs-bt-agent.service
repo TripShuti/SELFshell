@@ -2,7 +2,7 @@
 # qs-bt-agent.service — systemd unit для BlueZ pairing agent
 # ============================================================
 [Unit]
-Description=BlueZ pairing agent for SELFshell (NoInputNoOutput)
+Description=BlueZ pairing agent for SELFshell (KeyboardDisplay)
 # User-менеджер не бачить system-сервіси: Requires/After на
 # bluetooth.service тут безглузді і БЛОКУЮТЬ рестарт
 # ("Unit bluetooth.service not found"). Відсутність bluez покривається

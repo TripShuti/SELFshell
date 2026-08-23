@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Secure Bluetooth pairing** — the pairing agent now uses the
+  `KeyboardDisplay` capability instead of silent Just Works: every
+  attempt shows a confirmation popup (passkey numeric comparison, PIN
+  entry for legacy devices, pair/service authorization) with Confirm /
+  Reject and a 55 s countdown. Requests arriving while the screen is
+  locked are rejected automatically. The Discoverable toggle doubles as
+  an explicit "pairing mode": `Pairable` follows it and both flags drop
+  together on timeout, so unknown devices cannot even start pairing
+  outside that window.
 - **About** section: "Updates" status row — compares the installed version
   with `main` and suggests `selfshell update` when a new version is
   available (offline-safe, shows nothing when GitHub is unreachable).

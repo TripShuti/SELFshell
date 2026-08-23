@@ -466,15 +466,57 @@ Connections {
 
 ### 9.8. Bluetooth Agent
 
-`qs-bt-agent` is a separate Python script implementing the BlueZ pairing
-agent. It runs as a **systemd user service**, not through Hyprland
-`exec-once`.
+`qs-bt-agent` is a Python script implementing the BlueZ pairing agent.
+It runs as a **systemd user service**, not through Hyprland `exec-once`.
 
 Why a separate process + systemd instead of exec-once:
 - the agent must be up before any Bluetooth client attempts pairing
 - a systemd user service guarantees autostart at login regardless of
   whether Hyprland finished loading
 - if the agent crashes, systemd restarts it automatically
+
+#### Secure pairing (KeyboardDisplay)
+
+The agent registers with the `KeyboardDisplay` capability, so BlueZ never
+pairs silently (the previous `NoInputNoOutput` setup auto-accepted every
+device — "Just Works"). Every pairing attempt now requires explicit user
+action through a popup:
+
+| BlueZ call | Popup |
+|------------|-------|
+| `RequestConfirmation(device, passkey)` | "Confirm this passkey matches" — numeric comparison with the code shown |
+| `RequestPinCode` / `RequestPasskey` | input field for legacy devices |
+| `RequestAuthorization` | "wants to pair with this computer" |
+| `AuthorizeService(device, uuid)` | "requests access to \<service\>" |
+| `DisplayPasskey` / `DisplayPinCode` | shows the code to type on the other device |
+
+The handshake between the agent and the QML shell goes through two files
+in `$XDG_RUNTIME_DIR/selfshell-pairing/` (`request.json`, `response.json`),
+watched by `FileView` on both sides — no new IPC dependencies:
+
+```
+bluetoothd ──► qs-bt-agent ──► request.json ──► PairingAgent.qml
+                   ▲                                   │ PairingPopup
+                   └────── response.json ◄─────────────┘ (Confirm/Reject)
+```
+
+Details that matter:
+- agent-side timeout is 55 s, just below bluetoothd's own (~60 s), so a
+  rejection always comes from us; the popup shows a countdown bar
+- `Cancel()` from bluetoothd closes the popup via a `done` marker
+- while the screen is locked the popup is invisible → the request times
+  out and is rejected automatically (fail-closed)
+- requests are written atomically (tmp + rename) and stale files are
+  cleaned up at service start
+
+#### Pairing mode policy
+
+Incoming pairing additionally requires `Pairable: yes`. The Discoverable
+toggle in the Bluetooth popup acts as an explicit "pairing mode": turning
+it on sets both `Discoverable` and `Pairable`, and when the
+`DiscoverableTimeout` (180 s) flips discoverability back off, pairability
+follows. Already-bonded devices reconnect without either flag, so normal
+daily use never needs pairing mode.
 
 ---
 

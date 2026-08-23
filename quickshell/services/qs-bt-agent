@@ -1,62 +1,227 @@
 #!/usr/bin/env python3
 # ============================================================
-# qs-bt-agent — BlueZ pairing agent (NoInputNoOutput).
+# qs-bt-agent — BlueZ pairing agent (KeyboardDisplay) з підтвердженням
+# у шеллі: кожен запит парингу пишеться в $XDG_RUNTIME_DIR/selfshell-pairing/
+# request.json, рішення користувача чекається в response.json
+# (QML-бік — core/PairingAgent.qml + popups/PairingPopup.qml).
 # Запускається як systemd user-сервіс.
+#
+# Попап видно тільки в активній сесії: під локскріном запит просто
+# не показується і через REQUEST_TIMEOUT_S відхиляється — свідомо
+# безпечний дефолт ("хто чужий" не отримує нічого мовчки).
 # ============================================================
 
-import sys
+import json
+import os
+import time
 
 import dbus
-import dbus.service
+import dbus.exceptions
 import dbus.mainloop.glib
+import dbus.service
+from gi.repository import Gio
 from gi.repository import GLib
 
 BLUEZ = 'org.bluez'
 AGENT_PATH = '/org/bluez/agent/qs_bt'
-CAPABILITY = 'NoInputNoOutput'
+AGENT_IFACE = 'org.bluez.Agent1'
+# NoInputNoOutput давав би Just Works: будь-який пристрій спарювався б
+# мовчки. KeyboardDisplay змушує BlueZ питати нас про numeric comparison,
+# PIN/passkey та авторизацію — усе йде в попап на підтвердження людині.
+CAPABILITY = 'KeyboardDisplay'
+
+RUNTIME_DIR = os.environ.get('XDG_RUNTIME_DIR') or f'/run/user/{os.getuid()}'
+PAIR_DIR = os.path.join(RUNTIME_DIR, 'selfshell-pairing')
+REQUEST_FILE = os.path.join(PAIR_DIR, 'request.json')
+RESPONSE_FILE = os.path.join(PAIR_DIR, 'response.json')
+
+# Відповідаємо трохи раніше за власний таймаут bluetoothd (~60 c), щоб
+# відмова завжди приходила від нас і попап встигав показати результат
+REQUEST_TIMEOUT_S = 55
+
+
+class Rejected(dbus.exceptions.DBusException):
+    _dbus_error_name = 'org.bluez.Error.Rejected'
+
+
+class Canceled(dbus.exceptions.DBusException):
+    _dbus_error_name = 'org.bluez.Error.Canceled'
+
+
+def device_address(object_path):
+    # /org/bluez/hci0/dev_78_D8_40_AB_22_CA -> 78:D8:40:AB:22:CA
+    tail = object_path.rsplit('/', 1)[-1]
+    if not tail.startswith('dev_'):
+        return object_path
+    return tail[4:].replace('_', ':')
 
 
 class Agent(dbus.service.Object):
-    @dbus.service.method('org.bluez.Agent1', in_signature='', out_signature='')
+    def __init__(self, bus, path):
+        super().__init__(bus, path)
+        self._next_id = 0
+        self._pending = None  # {'id', 'reply(ok, value)', 'timeout_id'}
+
+        os.makedirs(PAIR_DIR, exist_ok=True)
+        # Застарілі файли минулої сесії (tmpfs чиститься ребутом, але не
+        # рестартом сервісу) — прибираємо, щоб QML не показав старий попап
+        for stale in (REQUEST_FILE, RESPONSE_FILE):
+            try:
+                os.unlink(stale)
+            except OSError:
+                pass
+        # Порожні файли до створення монітора: QML FileView не лається
+        # на відсутність request.json, а writer пише атомарно через rename
+        open(REQUEST_FILE, 'w').close()
+        open(RESPONSE_FILE, 'w').close()
+        monitor = Gio.File.new_for_path(RESPONSE_FILE).monitor_file(
+            Gio.FileMonitorFlags.NONE, None)
+        monitor.connect('changed', lambda *_: self._consume_response())
+        # Страхування монітора: повільний опитувач ловить подію, яку Gio
+        # міг згаяти (rename поверх файлу буває ворожим до inotify-подій)
+        GLib.timeout_add_seconds(1, self._poll_response)
+
+    # ---------- канал обміну з QML ----------
+
+    def _write_request(self, obj):
+        tmp = REQUEST_FILE + '.tmp'
+        with open(tmp, 'w') as f:
+            json.dump(obj, f)
+        os.replace(tmp, REQUEST_FILE)
+
+    def _close_popup(self, req_id):
+        self._write_request({'id': req_id, 'method': 'done'})
+
+    def _settle(self, ok, value=None, err=None):
+        """Завершує активний запит: відповідь BlueZ + маркер done для QML."""
+        pending = self._pending
+        if pending is None:
+            return
+        self._pending = None
+        if pending.get('timeout_id') is not None:
+            GLib.source_remove(pending['timeout_id'])
+        self._close_popup(pending['id'])
+        if ok:
+            pending['reply'](True, value)
+        else:
+            pending['reply'](False, err or Rejected())
+
+    def _ask(self, method, device_path, reply, error, extra=None, wrap=None):
+        """Пише запит у QML і відкладає відповідь до рішення людини.
+
+        wrap — перетворює рядок-відповідь у тип поверту (для PIN/passkey);
+        для методів без повернення wrap=None і reply викликається без аргументів.
+        """
+        if self._pending is not None:
+            # BlueZ не веде два паринги паралельно, але перестраховка:
+            # старий запит відхиляємо, щоб не зависнув назавжди
+            self._settle(False)
+
+        self._next_id += 1
+        req = {
+            'id': self._next_id,
+            'ts': int(time.time()),
+            'method': method,
+            'address': device_address(device_path),
+        }
+        if extra:
+            req.update(extra)
+        self._write_request(req)
+
+        if wrap is None:
+            def do_reply(ok, value):
+                reply() if ok else error(Rejected())
+        else:
+            def do_reply(ok, value):
+                reply(wrap(value)) if ok else error(Rejected())
+
+        timeout_id = GLib.timeout_add_seconds(
+            REQUEST_TIMEOUT_S, self._on_timeout, self._next_id)
+        self._pending = {'id': self._next_id, 'reply': do_reply,
+                         'timeout_id': timeout_id}
+
+    def _on_timeout(self, req_id):
+        if self._pending is not None and self._pending['id'] == req_id:
+            self._settle(False)
+        return False
+
+    def _consume_response(self):
+        pending = self._pending
+        if pending is None:
+            return
+        try:
+            with open(RESPONSE_FILE, 'r') as f:
+                data = json.load(f)
+        except (OSError, ValueError):
+            return
+        if data.get('id') != pending['id']:
+            return
+        pin = str(data.get('pin') or '')
+        self._settle(bool(data.get('accepted')), pin)
+
+    def _poll_response(self):
+        self._consume_response()
+        return True  # постійний таймер, дешеве читання маленького JSON
+
+    # ---------- org.bluez.Agent1 ----------
+
+    @dbus.service.method(AGENT_IFACE, in_signature='', out_signature='')
     def Release(self):
         pass
 
-    @dbus.service.method('org.bluez.Agent1', in_signature='o', out_signature='s')
-    def RequestPinCode(self, device):
-        return '0000'
+    # Рідкісні legacy-пристрої (BT 2.0 і старше) просять фіксований PIN:
+    # вводимо його в попапі з клавіатури
+    @dbus.service.method(AGENT_IFACE, in_signature='o', out_signature='s',
+                         async_callbacks=('reply', 'error'))
+    def RequestPinCode(self, device, reply, error):
+        self._ask('pin', device, reply, error)
 
-    @dbus.service.method('org.bluez.Agent1', in_signature='o', out_signature='u')
-    def RequestPasskey(self, device):
-        return dbus.UInt32(0)
+    @dbus.service.method(AGENT_IFACE, in_signature='o', out_signature='u',
+                         async_callbacks=('reply', 'error'))
+    def RequestPasskey(self, device, reply, error):
+        self._ask('passkey', device, reply, error, wrap=lambda v: dbus.UInt32(int(v)))
 
-    @dbus.service.method('org.bluez.Agent1', in_signature='ouq', out_signature='')
+    # Основний сценарій сучасних телефонів (numeric comparison):
+    # на обох екранах один код — людина підтверджує збіг
+    @dbus.service.method(AGENT_IFACE, in_signature='ou', out_signature='',
+                         async_callbacks=('reply', 'error'))
+    def RequestConfirmation(self, device, passkey, reply, error):
+        self._ask('confirm', device, reply, error,
+                  extra={'passkey': '%06u' % passkey})
+
+    @dbus.service.method(AGENT_IFACE, in_signature='ouq', out_signature='')
     def DisplayPasskey(self, device, passkey, entered):
-        pass
+        # Вихідний паринг, коли код набирають на іншому пристрої:
+        # лише показуємо, відповіді не чекаємо
+        self._next_id += 1
+        self._write_request({
+            'id': self._next_id, 'ts': int(time.time()), 'method': 'display',
+            'address': device_address(device), 'passkey': '%06u' % passkey,
+        })
 
-    @dbus.service.method('org.bluez.Agent1', in_signature='os', out_signature='')
+    @dbus.service.method(AGENT_IFACE, in_signature='os', out_signature='')
     def DisplayPinCode(self, device, pincode):
-        pass
+        self._next_id += 1
+        self._write_request({
+            'id': self._next_id, 'ts': int(time.time()), 'method': 'displaypin',
+            'address': device_address(device), 'passkey': str(pincode),
+        })
 
-    # Сигнатури — за org.bluez.Agent (BlueZ): RequestConfirmation(device,
-    # passkey) = 'ou'. Під NoInputNoOutput (Just Works) BlueZ ці методи
-    # не викликає, але сигнатури тримаємо коректними на випадок
-    # нестандартних пристроїв/змін bluetoothd — інакше виклик повернув би
-    # InvalidArgs і паринг провалився б
-    @dbus.service.method('org.bluez.Agent1', in_signature='ou', out_signature='')
-    def RequestConfirmation(self, device, passkey):
-        return
+    @dbus.service.method(AGENT_IFACE, in_signature='o', out_signature='',
+                         async_callbacks=('reply', 'error'))
+    def RequestAuthorization(self, device, reply, error):
+        self._ask('authorize', device, reply, error)
 
-    @dbus.service.method('org.bluez.Agent1', in_signature='o', out_signature='')
-    def RequestAuthorization(self, device):
-        return
+    @dbus.service.method(AGENT_IFACE, in_signature='os', out_signature='',
+                         async_callbacks=('reply', 'error'))
+    def AuthorizeService(self, device, uuid, reply, error):
+        self._ask('service', device, reply, error, extra={'uuid': str(uuid)})
 
-    @dbus.service.method('org.bluez.Agent1', in_signature='os', out_signature='')
-    def AuthorizeService(self, device, uuid):
-        return
-
-    @dbus.service.method('org.bluez.Agent1', in_signature='', out_signature='')
+    @dbus.service.method(AGENT_IFACE, in_signature='', out_signature='')
     def Cancel(self):
-        pass
+        # BlueZ скасував запит сам (пристрій передумав) — гасимо попап
+        if self._pending is not None:
+            self._settle(False, err=Canceled())
 
 
 def main():

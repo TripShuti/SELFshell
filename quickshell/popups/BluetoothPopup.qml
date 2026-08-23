@@ -31,6 +31,22 @@ AnimatedPopup {
 
   Component.onCompleted: {
     anchor.window = window
+    // Політика "режиму парингу": поки Discoverable вимкнений, адаптер
+    // не приймає вхідний паринг узагалі — чужий пристрій не може навіть
+    // почати підключення поза вікном видимості. Вже спарені пристрої
+    // реконектяться і без pairable
+    if (adapter && !adapter.discoverable) adapter.pairable = false
+  }
+
+  // DiscoverableTimeout сам скидає discoverable через таймаут — гасимо
+  // pairable слідом, щоб "режим парингу" завжди закривався цілком
+  Connections {
+    // адаптер може з'явитись/зникнути динамічно (USB-донгл) — біндинг на
+    // властивість, а не на об'єкт
+    target: root.adapter
+    function onDiscoverableChanged() {
+      if (root.adapter && !root.adapter.discoverable) root.adapter.pairable = false
+    }
   }
 
   onVisibleChanged: {
@@ -143,7 +159,12 @@ AnimatedPopup {
         checkedColor: window.palette.widgetFg
         trackWidth: 32; trackHeight: 18; knobSize: 14
         Layout.alignment: Qt.AlignVCenter
-        onToggled: value => { if (adapter) adapter.discoverable = value }
+        onToggled: value => {
+          if (!adapter) return
+          adapter.discoverable = value
+          // pairable слідує за discoverable: тумблер = "режим парингу"
+          adapter.pairable = value
+        }
       }
 
       Item { Layout.fillWidth: true }

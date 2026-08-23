@@ -53,7 +53,7 @@ PanelWindow {
   property var popups: [
     calendarPopup, audioPopup, btPopup, netPopup, mprisPopup, workspacesPopup,
     keyboardPopup, genshinPopup, controlPopup, clipboardPopup, wallpaperPopup,
-    settingsPopup, launcherPopup, trayPopup
+    settingsPopup, launcherPopup, trayPopup, pairingPopup
   ]
   function anyPopupOpen() {
     for (var i = 0; i < root.popups.length; i++)
@@ -514,6 +514,18 @@ PanelWindow {
     id: trayPopup
     window: root
     anchorItem: root.trayWidget
+    visible: false
+  }
+
+  // Підтвердження Bluetooth-парингу (запити пише services/qs-bt-agent).
+  // Попап центрований, без прив'язки до віджета: має з'явитись незалежно
+  // від того, який попап відкритий зараз
+  PairingAgent { id: pairingAgent }
+
+  PairingPopup {
+    id: pairingPopup
+    window: root
+    agent: pairingAgent
     visible: false
   }
 
