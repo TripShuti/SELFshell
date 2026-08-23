@@ -308,6 +308,38 @@ AnimatedPopup {
             }
           }
 
+          // Довіра пристрою: trusted-пристрої підключають сервіси без
+          // запиту авторизації. Клік перемикає Device1.Trusted на місці —
+          // не лише в момент парингу
+          Rectangle {
+            property bool hovered: false
+            width: 24; height: 24; radius: 4
+            color: hovered ? window.palette.hoverOverlay : window.palette.bgLayer
+            Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
+            visible: modelData.paired
+
+            HoverText {
+              anchors.centerIn: parent
+              // замок: закритий — довіряємо, відкритий — ні
+              text: modelData.trusted ? "\uF023" : "\uF09C"
+              palette: window.palette
+              appConfig: window.appConfig
+              normalColor: modelData.trusted ? window.palette.accent : window.palette.mutedAlt
+              hovered: parent.hovered
+              font.pixelSize: appConfig.scaled(11)
+            }
+
+            MouseArea {
+              id: trustArea
+              anchors.fill: parent
+              hoverEnabled: true
+              cursorShape: Qt.PointingHandCursor
+              onEntered: parent.hovered = true
+              onExited: parent.hovered = false
+              onClicked: modelData.trusted = !modelData.trusted
+            }
+          }
+
           // Кнопка забути пристрій
           Rectangle {
             property bool hovered: false

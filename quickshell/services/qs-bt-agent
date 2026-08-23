@@ -59,8 +59,11 @@ def device_address(object_path):
 class Agent(dbus.service.Object):
     def __init__(self, bus, path):
         super().__init__(bus, path)
+        self._bus = bus
         self._next_id = 0
-        self._pending = None  # {'id', 'reply(ok, value)', 'timeout_id'}
+        self._pending = None  # {'id', 'reply(ok, value)', 'timeout_id', ...}
+        self._trust = None    # {'path', 'tries'} — активний полінг довіри
+        self._trust_source = 0
 
         os.makedirs(PAIR_DIR, exist_ok=True)
         # Застарілі файли минулої сесії (tmpfs чиститься ребутом, але не
@@ -138,7 +141,8 @@ class Agent(dbus.service.Object):
         timeout_id = GLib.timeout_add_seconds(
             REQUEST_TIMEOUT_S, self._on_timeout, self._next_id)
         self._pending = {'id': self._next_id, 'reply': do_reply,
-                         'timeout_id': timeout_id}
+                         'timeout_id': timeout_id,
+                         'method': method, 'device_path': device_path}
 
     def _on_timeout(self, req_id):
         if self._pending is not None and self._pending['id'] == req_id:
@@ -157,7 +161,47 @@ class Agent(dbus.service.Object):
         if data.get('id') != pending['id']:
             return
         pin = str(data.get('pin') or '')
-        self._settle(bool(data.get('accepted')), pin)
+        trust = bool(data.get('trust'))
+        accepted = bool(data.get('accepted'))
+        self._settle(accepted, pin)
+        # Довіра — лише після успішного рішення людини: чекаємо завершення
+        # бонда і ставимо Device1.Trusted, щоб сервіси підключались без
+        # повторних запитів
+        if accepted and trust and pending.get('method') in (
+                'confirm', 'pin', 'passkey', 'authorize', 'service'):
+            self._schedule_trust(pending.get('device_path'))
+
+    def _schedule_trust(self, device_path):
+        if not device_path:
+            return
+        if self._trust_source:
+            GLib.source_remove(self._trust_source)
+        self._trust = {'path': device_path, 'tries': 15}
+        self._trust_source = GLib.timeout_add_seconds(1, self._try_trust)
+
+    def _try_trust(self):
+        trust = self._trust
+        if trust is None:
+            self._trust_source = 0
+            return False
+        try:
+            props = dbus.Interface(
+                self._bus.get_object(BLUEZ, trust['path']),
+                'org.freedesktop.DBus.Properties')
+            if props.Get('org.bluez.Device1', 'Paired'):
+                props.Set('org.bluez.Device1', 'Trusted', dbus.Boolean(True))
+                self._trust = None
+                self._trust_source = 0
+                return False
+        except dbus.DBusException:
+            pass
+        trust['tries'] -= 1
+        if trust['tries'] <= 0:
+            # Паринг так і не завершився (пристрій передумав) — тихо здаємось
+            self._trust = None
+            self._trust_source = 0
+            return False
+        return True
 
     def _poll_response(self):
         self._consume_response()

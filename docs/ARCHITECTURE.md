@@ -518,6 +518,21 @@ it on sets both `Discoverable` and `Pairable`, and when the
 follows. Already-bonded devices reconnect without either flag, so normal
 daily use never needs pairing mode.
 
+#### Device trust
+
+Trust decides whether an already-bonded device may connect its services
+without an authorization popup. It is managed in two places:
+
+- the pairing popup has a "Trust this device" toggle (default on): after
+  the user confirms, the agent waits for the bond to complete and writes
+  `Device1.Trusted` itself
+- the Bluetooth manager shows a lock icon per paired device — clicking it
+  toggles trust at any time (e.g. for devices paired before this feature
+  existed)
+
+Untrusted devices keep prompting on every service connection; if the
+prompt is missed, the connect fails after the 55 s timeout.
+
 ---
 
 ## 10. The `selfshell` CLI

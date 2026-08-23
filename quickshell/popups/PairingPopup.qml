@@ -31,9 +31,26 @@ AnimatedPopup {
   // Таймаут має збігатися з REQUEST_TIMEOUT_S у services/qs-bt-agent
   readonly property int timeoutSeconds: 55
 
+  readonly property int screenW: window ? window.screen.width : 1920
+  readonly property int screenH: window ? window.screen.height : 1080
+
+  // Центрування на екрані — як у BluetoothPopup. Без цього popup-window
+  // дефолтно липне у лівий верхній кут anchor-вікна
+  function recenter() {
+    anchor.edges = PopupAnchor.None
+    anchor.gravity = PopupAnchor.None
+    anchor.rect = Qt.rect(
+      (screenW - implicitWidth) / 2,
+      (screenH - implicitHeight) / 2,
+      implicitWidth,
+      implicitHeight
+    )
+  }
+
   property string btAddress: req ? (req.address || "") : ""
   property int secondsLeft: timeoutSeconds
   property string pinInput: ""
+  property bool trustDevice: true
 
   property var btAdapter: Bluetooth.defaultAdapter
 
@@ -73,14 +90,16 @@ AnimatedPopup {
     shownRequestId = req.id
     secondsLeft = timeoutSeconds
     pinInput = ""
+    trustDevice = true
     countdown.restart()
+    recenter()
     if (!visible) visible = true
   }
 
   function decide(accepted) {
     if (!req) return
     countdown.stop()
-    agent.respond(req.id, accepted, pinInput)
+    agent.respond(req.id, accepted, pinInput, trustDevice)
     close()
   }
 
@@ -213,6 +232,31 @@ AnimatedPopup {
         text: "PIN/passkey"
         color: window.palette.mutedAlt
         font.family: window.palette.font; font.pixelSize: appConfig.scaled(9)
+      }
+    }
+
+    // --- Довіра пристрою (після успішного парингу сервіси підключаються
+    // без повторних запитів) ---
+    RowLayout {
+      visible: root.actionable
+      spacing: 8
+      Layout.fillWidth: true
+
+      Text {
+        text: "Trust this device"
+        color: window.palette.muted
+        font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
+        Layout.fillWidth: true
+      }
+
+      ToggleSwitch {
+        checked: root.trustDevice
+        palette: window.palette
+        appConfig: window.appConfig
+        checkedColor: window.palette.widgetFg
+        trackWidth: 28; trackHeight: 16; knobSize: 12
+        Layout.alignment: Qt.AlignVCenter
+        onToggled: value => { root.trustDevice = value }
       }
     }
 

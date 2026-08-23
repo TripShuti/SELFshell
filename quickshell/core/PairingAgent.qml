@@ -56,11 +56,15 @@ Item {
     root.request = data
   }
 
-  // Відповідає агенту на запит id. pin потрібен лише для method=pin/passkey.
-  function respond(id, accepted, pin) {
+  // Відповідає агенту на запит id. pin потрібен лише для method=pin/passkey,
+  // trust — бажання користувача довірити пристрій після успішного парингу
+  // (агент сам поставить Device1.Trusted, коли BlueZ завершить бонд)
+  function respond(id, accepted, pin, trust) {
     if (!root.available) return
-    _responseFile.setText(JSON.stringify({ id: id, accepted: accepted, pin: pin || "" }))
+    _responseFile.setText(JSON.stringify({
+      id: id, accepted: accepted, pin: pin || "", trust: trust === true
+    }))
   }
 
-  function reject(id) { respond(id, false, "") }
+  function reject(id) { respond(id, false, "", false) }
 }
