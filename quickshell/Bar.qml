@@ -529,6 +529,18 @@ PanelWindow {
     visible: false
   }
 
+  // Обидва центровані: попап парингу поверх менеджера Bluetooth виглядав
+  // би месивом, тому під час парингу менеджер ховається (той самий
+  // патерн, що controlPopup → settings/wallpaper вище). Стан тумблера
+  // Discoverable не страждає — він живе в BlueZ до свого таймауту,
+  // а не у видимості попапа
+  Connections {
+    target: pairingPopup
+    function onVisibleChanged() {
+      if (pairingPopup.visible && btPopup.visible) btPopup.visible = false
+    }
+  }
+
   // IpcHandler для глобального виклику лаунчера
   IpcHandler {
     target: "launcher"
