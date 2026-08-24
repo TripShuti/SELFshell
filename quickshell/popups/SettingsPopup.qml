@@ -38,6 +38,7 @@ AnimatedPopup {
     { title: "Wallpaper", page: "settings/WallpaperSection.qml" },
     { title: "Appearance", page: "settings/AppearanceSection.qml" },
     { title: "Behavior", page: "settings/BehaviorSection.qml" },
+    { title: "Binds", page: "settings/BindsSection.qml" },
     { title: "About", page: "settings/AboutSection.qml" }
   ]
   property int section: 0

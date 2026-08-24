@@ -40,8 +40,15 @@ os.getenv = function(k)
   return real_getenv(k)
 end
 
-local ok, err = pcall(require, "modules.binds")
-assert(ok, "binds.lua failed: " .. tostring(err))
+local function load_binds()
+  binds = {}
+  package.loaded["modules.binds"] = nil
+  local ok, err = pcall(require, "modules.binds")
+  assert(ok, "binds.lua failed: " .. tostring(err))
+end
+
+-- --- Прохід 1: без binds.json — дефолти ---
+load_binds()
 
 local function find(frag) -- шукає бінд за фрагментом клавіші
   for _, b in ipairs(binds) do
@@ -97,5 +104,31 @@ local cc = find("SUPER + Escape")
 assert(cc and cc.action == "qs ipc call control toggle",
   "SUPER+Escape -> control toggle, got: " .. (cc and cc.action or "nil"))
 
+-- --- Прохід 2: з binds.json — оверрайди перемагають, дефолти зникають ---
+local f = assert(io.open(HOME .. "/.config/hypr/binds.json", "w"))
+f:write([[{
+  "launcher": "SUPER + T",
+  "clipboard": "SUPER + ALT + H",
+  "suspend": "XF86Launch1",
+  "broken": 42,
+  "empty": ""
+}]])
+f:close()
+load_binds()
+
+assert(find("SUPER + T") and find("SUPER + T").action == "qs ipc call launcher toggle",
+  "override: SUPER+T -> launcher")
+assert(not find("SUPER + R"), "override: old SUPER+R gone")
+assert(find("SUPER + ALT + H") and find("SUPER + ALT + H").action == "qs ipc call clipboard toggle",
+  "override: clipboard rebound")
+assert(not find("SUPER + SHIFT + V"), "override: old clipboard combo gone")
+assert(find("XF86Launch1") and find("XF86Launch1").action == "systemctl suspend",
+  "override: suspend bound to XF86Launch1")
+-- некоректні значення (число/порожній рядок) ігноруються — діє дефолт
+assert(find("SUPER + L"), "invalid override values fall back to defaults")
+-- решта дефолтів не постраждала
+assert(find("SUPER + W") and find("SUPER + W").action == "chromium",
+  "non-overridden default intact (browser)")
+
 os.execute("rm -rf '" .. HOME .. "'")
-print("OK: screenshot marker binds, media keys, clipboard, control center")
+print("OK: screenshot marker binds, media keys, clipboard, control center, binds.json overrides")

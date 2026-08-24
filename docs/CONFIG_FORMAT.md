@@ -201,6 +201,30 @@ Standard Hyprland `.conf` format:
 
 ---
 
+## Hyprland: binds.json
+
+Optional keybinding overrides read by `modules/binds.lua`. Managed by
+**Settings → Binds** in the shell; the file is absent on a fresh install
+(all defaults live in Lua). Format: action id → full Hyprland bind
+string; `suspend` is a single bare key:
+
+```json
+{
+  "launcher": "SUPER + T",
+  "clipboard": "SUPER + ALT + H",
+  "suspend": "XF86Launch1"
+}
+```
+
+Action ids: `launcher`, `settings`, `control`, `lock`, `clipboard`,
+`browser`, `terminal`, `files`, `suspend`. Unknown ids and non-string
+or empty values are ignored (the Lua default applies). `SUPER` is always
+part of app/shell shortcuts — the Settings UI composes it automatically.
+Changes apply via `hyprctl reload` (done by the Settings UI on every
+change).
+
+---
+
 ## Quickshell: scripts/.env
 
 HoYoLAB credentials for the Genshin widget. Copied from `.env.example`:
