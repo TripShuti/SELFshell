@@ -475,8 +475,9 @@ Item {
   }
 
   function resetHypr() {
+    // варіант А: json-only ключі (rounding_power, тіньові деталі) — пресервляться,
+    // ресет торкається лише того, що видно в UI
     vis = Object.assign({}, hyprDefaults)
-    fileData = {}
     hyprSaveTimer.restart()
   }
 
@@ -520,16 +521,38 @@ Item {
     path: "file://" + Quickshell.env("HOME") + "/.config/hypr/visual.json"
     watchChanges: false
     onFileChanged: this.reload()
+    onDataChanged: root.applyFileData()
   }
 
   Component.onCompleted: {
+    // перший синхронний крок зазвичай дає порожній текст (FileView читає
+    // асинхронно) — onDataChanged нижче донесе дані, коли прийдуть
+    applyFileData()
+    _visualRead.reload()
+  }
+
+  // Loader налаштувань знищує секцію при перемиканні розділів; свіжий
+  // FileView у onCompleted ще не встиг прочитати файл, і без хендлера
+  // onDataChanged всі значення злітали у дефолти при кожному повторному
+  // вході в секцію
+  function applyFileData() {
+    // не затираємо vis, поки дебаунс ще не записав свіжі зміни юзера
+    if (hyprSaveTimer.running) return
+    var data
+    try { data = JSON.parse(_visualRead.text() || "{}") } catch (e) { data = {} }
+    if (!data || typeof data !== "object") data = {}
+    fileData = data
     var merged = Object.assign({}, hyprDefaults)
-    try {
-      var data = JSON.parse(_visualRead.text() || "{}")
-      fileData = data
-      for (var k in merged)
-        if (data[k] !== undefined) merged[k] = data[k]
-    } catch (e) {}
+    for (var k in merged)
+      if (data[k] !== undefined) merged[k] = data[k]
     vis = merged
+  }
+
+  Component.onDestruction: {
+    // секцію можуть знищити раніше за дебаунс — не втрачаємо останню зміну
+    if (hyprSaveTimer.running) {
+      hyprSaveTimer.stop()
+      writeHypr()
+    }
   }
 }

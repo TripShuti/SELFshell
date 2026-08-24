@@ -38,6 +38,9 @@ Item {
 
   // Оверрайди з binds.json (лише змінені користувачем значення)
   property var overrides: ({})
+  // ключі binds.json поза відомими діями (рукомісні/майбутні) —
+  // пресервляться при apply/reset, як json-only ключі у visual.json
+  property var extraKeys: ({})
   // suspendKey з env.json — дефолт дії suspend
   property string envSuspend: ""
   property string capturing: ""   // id дії в режимі запису
@@ -85,7 +88,9 @@ Item {
   }
 
   function apply() {
-    var out = {}
+    // пресерв ключів поза відомими діями (рукомісні/майбутні), як
+    // visual.json берег rounding_power — інакше apply їх стирав
+    var out = Object.assign({}, extraKeys)
     for (var i = 0; i < actions.length; i++) {
       var id = actions[i].id
       var v = overrides[id]
@@ -100,8 +105,9 @@ Item {
 
   function resetAll() {
     overrides = {}
+    // ресет торкається лише відомих дій; невідомі ключі лишаються у файлі
+    _bindsFile.setText(JSON.stringify(extraKeys, null, 2) + "\n")
     status = "Reloading Hyprland..."
-    _bindsFile.setText("{}\n")
   }
 
   Component.onCompleted: {
@@ -112,10 +118,16 @@ Item {
   function parseBinds(text) {
     var data = {}
     try { data = text ? JSON.parse(text) : {} } catch (e) { data = {} }
-    var clean = {}
-    for (var k in data)
-      if (typeof data[k] === "string" && data[k] !== "") clean[k] = data[k]
-    overrides = clean
+    if (!data || typeof data !== "object") data = {}
+    var known = {}
+    var unknown = {}
+    for (var k in data) {
+      if (typeof data[k] !== "string" || data[k] === "") continue
+      if (defaultFor(k) !== "" || k === "suspend") known[k] = data[k]
+      else unknown[k] = data[k]
+    }
+    overrides = known
+    extraKeys = unknown
   }
 
   FileView {
