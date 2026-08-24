@@ -489,9 +489,10 @@ Item {
       out[k] = vis[k] !== undefined ? vis[k] : hyprDefaults[k]
     for (var extra in fileData)
       if (out[extra] === undefined) out[extra] = fileData[extra]
-    _visualFile.setText(JSON.stringify(out, null, 2) + "\n")
     hyprStatus = "Reloading Hyprland..."
-    _hyprReloadProc.running = true
+    // reload — тільки в onSaved: setText пишеться асинхронно, і hyprctl
+    // встигав прочитати СТАРИЙ вміст (значення відставало на один крок)
+    _visualFile.setText(JSON.stringify(out, null, 2) + "\n")
   }
 
   Timer {
@@ -504,6 +505,7 @@ Item {
     id: _visualFile
     path: "file://" + Quickshell.env("HOME") + "/.config/hypr/visual.json"
     watchChanges: false
+    onSaved: _hyprReloadProc.running = true
   }
 
   Process {

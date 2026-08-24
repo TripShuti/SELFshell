@@ -92,16 +92,16 @@ Item {
       if (v !== undefined && norm(v) !== norm(defaultFor(id)))
         out[id] = v
     }
-    _bindsFile.setText(JSON.stringify(out, null, 2) + "\n")
     status = "Reloading Hyprland..."
-    _reloadProc.running = true
+    // reload — тільки в onSaved: setText асинхронний, hyprctl встигав
+    // прочитати старий файл (значення відставало на крок)
+    _bindsFile.setText(JSON.stringify(out, null, 2) + "\n")
   }
 
   function resetAll() {
     overrides = {}
-    _bindsFile.setText("{}\n")
     status = "Reloading Hyprland..."
-    _reloadProc.running = true
+    _bindsFile.setText("{}\n")
   }
 
   Component.onCompleted: {
@@ -124,6 +124,7 @@ Item {
     watchChanges: false
     onFileChanged: this.reload()
     onDataChanged: root.parseBinds(this.text())
+    onSaved: _reloadProc.running = true
   }
 
   FileView {
