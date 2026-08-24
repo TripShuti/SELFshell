@@ -1,13 +1,13 @@
 # SELFshell
 
-<p align="center">
-  <img src="https://github.com/user-attachments/assets/935367c4-ef2e-46c1-a6e2-c4cc74ecc440" alt="SELFshell demo" width="720">
-</p>
-
 A feature-complete Hyprland desktop shell built with **Quickshell and QML**.
 Includes a custom lock screen, a built-in idle manager, dynamic
 wallpaper-based theming, and a fully configurable top bar — no external bar,
 no separate lock/idle daemons.
+
+<p align="center">
+  <img src="docs/screenshots/overview.png" alt="SELFshell — settings, media player, launcher and control center" width="900">
+</p>
 
 ## Features
 
@@ -15,11 +15,22 @@ no separate lock/idle daemons.
 - 14 built-in widgets across three configurable pill sections (left / center / right)
 - Drag-and-drop widget reordering via a built-in Settings popup
 - System Tray, MPRIS player with cava visualizer, Battery, Bluetooth, Network
+- Settings popup: keybind rebinding and Hyprland window options (gaps,
+  opacity, rounding, borders, dwindle/master layout) — applied live, no
+  config file editing required
 
 **Lock Screen & Idle**
 - Native lock screen via `ext-session-lock-v1` with PAM authentication
+- Brute-force protection — lockout after repeated failed attempts
 - Built-in idle manager — lock → DPMS → suspend timeouts (replaces hypridle)
 - Media playback pauses idle timers automatically
+
+**Bluetooth**
+- Secure pairing: every attempt shows a confirmation popup with the
+  passkey (or PIN entry for legacy devices) — nothing pairs silently
+- Per-device trust with a lock toggle in the Bluetooth manager
+- Pairing mode: the adapter only accepts new pairings while Discoverable
+  is on, and both flags drop together on timeout
 
 **Dynamic Theming**
 - Wallpaper-based palette generation via `matugen`
@@ -177,11 +188,11 @@ quickshell/  - QML panels, core, popups, widgets, monitors, scripts, data, asset
              - core/ — shell infrastructure (AppConfig, IdleManager, LockScreen, etc.)
              - monitors/ — background data monitors (Cava, Genshin)
              - widgets/ — panel widgets (14 total)
-             - popups/ — popup windows (15 total)
+             - popups/ — popup windows (16 total, incl. settings sections)
              - scripts/ — helper scripts (palette, Genshin, etc.)
              - data/ — persisted state (config.json, calendar-tasks, etc.)
              - assets/ — icons, sounds
-             - services/ — system services (qs-bt-agent, cava-vis.conf)
+             - services/ — pairing agent, MPRIS tracklist bridge, cava config
              - pam/password.conf — PAM config for lock screen auth
 starship/    - prompt config
 yazi/        - file manager config, keybindings, themes
@@ -192,5 +203,6 @@ yazi/        - file manager config, keybindings, themes
 > **Disclaimer:** Bugs or breakage may occur on your machine. Feel free to use anything you like, but at your own risk.
 
 - `hypr/env.json` — user-level Hyprland settings: terminal/browser/cursor, autostart apps, input devices. If the file is missing, built-in defaults (identical values) are used.
+- `~/.config/hypr/binds.json` and `~/.config/hypr/visual.json` — keybinding and visual overrides written by the Settings popup (see [docs/CONFIG_FORMAT.md](docs/CONFIG_FORMAT.md)). Both files are optional; deleting them restores the built-in defaults.
 - Genshin Impact widgets require Hoyolab API credentials (see `quickshell/scripts/.env.example`).
-- Bluetooth pairing agent (`qs-bt-agent`) is installed as a systemd user service.
+- Bluetooth pairing agent (`qs-bt-agent`) runs as a systemd user service and implements secure pairing: every new device must be confirmed in a popup, and trusted devices are managed in the Bluetooth manager.
