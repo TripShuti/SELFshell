@@ -46,7 +46,6 @@ hl.config({
         center_master_fallback = "left", -- "left", "right", "top", "bottom"
         smart_resizing = true,
         drop_at_cursor = true,
-        always_keep_position = true,
         focus_master_on_close = true
     },
     dwindle = {

@@ -448,7 +448,8 @@ Item {
 
   // ---------- Hyprland visual.json ----------
   // Дефолти мають збігатися з хелперами num/bool/str у general.lua.
-  // У файл пишуться лише відрізнені від дефолтів ключі.
+  // Запис — повний знімок UI-ключів (навіть рівних дефолтах) + пресерв
+  // json-only ключів з файлу.
   readonly property var hyprDefaults: ({
     gaps_in: 3, gaps_out: 1, border_size: 1, resize_on_border: false,
     active_opacity: 1.0, inactive_opacity: 1.0,
@@ -483,13 +484,20 @@ Item {
 
   // Повний знімок усіх UI-ключів (навіть рівних дефолтах — інакше
   // always_keep_position: false тощо "зникали" з файлу) + збереження
-  // json-only ключів, яких UI не торкається
+  // json-only ключів, яких UI не торкається. Числа нормалізуються до
+  // 2 знаків: кроки слайдерів накопичують float-похибку
+  // (0.9500000000000001), і файл перетворювався на смітник
   function writeHypr() {
     var out = {}
-    for (var k in hyprDefaults)
-      out[k] = vis[k] !== undefined ? vis[k] : hyprDefaults[k]
-    for (var extra in fileData)
-      if (out[extra] === undefined) out[extra] = fileData[extra]
+    for (var k in hyprDefaults) {
+      var v = vis[k] !== undefined ? vis[k] : hyprDefaults[k]
+      out[k] = typeof v === "number" ? Math.round(v * 100) / 100 : v
+    }
+    for (var extra in fileData) {
+      if (out[extra] !== undefined) continue
+      var ev = fileData[extra]
+      out[extra] = typeof ev === "number" ? Math.round(ev * 100) / 100 : ev
+    }
     hyprStatus = "Reloading Hyprland..."
     // reload — тільки в onSaved: setText пишеться асинхронно, і hyprctl
     // встигав прочитати СТАРИЙ вміст (значення відставало на один крок)
