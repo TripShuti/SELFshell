@@ -251,7 +251,7 @@ Item {
         SetToggle {
           sys: root.sys
           label: "Keep master position"
-          sub: "Master tile stays in place even when smaller than slaves. Applies with a brief layout restart."
+          sub: "Master tile stays in place even when smaller than slaves."
           on: root.vis.always_keep_position
           onToggled: v => root.setVal("always_keep_position", v)
         }
@@ -466,44 +466,33 @@ Item {
   // рух слайдера їх стирав
   property var fileData: ({})
   property string hyprStatus: ""
-  property bool hyprKickNeeded: false
-  property string kickStage: "" // "" | "to-dwindle" | "back" — ланцюг реініціалізації master
 
   function setVal(key, value) {
     var next = Object.assign({}, vis)
     next[key] = value
     vis = next
-    // always_keep_position не ре-застосовується hyprctl reload — master-
-    // лейаут продовжує жити зі старим значенням до перестворення. Тому
-    // після reload робимо короткий kick (dwindle→master), див. onExited
-    hyprKickNeeded = key === "always_keep_position" && vis.layout === "master"
     hyprSaveTimer.restart()
   }
 
   function resetHypr() {
     vis = Object.assign({}, hyprDefaults)
     fileData = {}
-    hyprKickNeeded = vis.layout === "master"
     hyprSaveTimer.restart()
   }
 
   // Повний знімок усіх UI-ключів (навіть рівних дефолтах — інакше
   // always_keep_position: false тощо "зникали" з файлу) + збереження
   // json-only ключів, яких UI не торкається
-  function hyprSnapshot(source) {
+  function writeHypr() {
     var out = {}
     for (var k in hyprDefaults)
-      out[k] = source[k] !== undefined ? source[k] : hyprDefaults[k]
+      out[k] = vis[k] !== undefined ? vis[k] : hyprDefaults[k]
     for (var extra in fileData)
       if (out[extra] === undefined) out[extra] = fileData[extra]
-    return JSON.stringify(out, null, 2) + "\n"
-  }
-
-  function writeHypr() {
     hyprStatus = "Reloading Hyprland..."
     // reload — тільки в onSaved: setText пишеться асинхронно, і hyprctl
     // встигав прочитати СТАРИЙ вміст (значення відставало на один крок)
-    _visualFile.setText(hyprSnapshot(vis))
+    _visualFile.setText(JSON.stringify(out, null, 2) + "\n")
   }
 
   Timer {
@@ -522,32 +511,7 @@ Item {
   Process {
     id: _hyprReloadProc
     command: ["hyprctl", "reload"]
-    onExited: (code) => {
-      if (code !== 0) {
-        root.kickStage = ""
-        root.hyprKickNeeded = false
-        root.hyprStatus = "hyprctl reload failed"
-        return
-      }
-      // always_keep_position не ре-застосовується простим reload — Hyprland
-      // читає його лише при створенні лейаута (hyprctl keyword з Lua-конфігом
-      // теж не працює). Кік = перемикнути лейаут у файлі + reload туди й назад
-      if (root.kickStage === "") {
-        if (root.hyprKickNeeded) {
-          root.kickStage = "to-dwindle"
-          _visualFile.setText(hyprSnapshot(Object.assign({}, root.vis, { layout: "dwindle" })))
-        } else {
-          root.hyprStatus = "Applied"
-        }
-      } else if (root.kickStage === "to-dwindle") {
-        root.kickStage = "back"
-        _visualFile.setText(hyprSnapshot(root.vis))
-      } else {
-        root.kickStage = ""
-        root.hyprKickNeeded = false
-        root.hyprStatus = "Applied"
-      }
-    }
+    onExited: (code) => { root.hyprStatus = code === 0 ? "Applied" : "hyprctl reload failed" }
   }
 
   // Початкове завантаження: дефолти + те, що вже є у visual.json
