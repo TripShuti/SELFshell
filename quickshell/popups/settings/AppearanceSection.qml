@@ -1,9 +1,12 @@
 // ============================================================
 // settings/AppearanceSection.qml — розділ Appearance: дизайн поза
-// автопалітрою — прозорість, градієнти, радіуси, сяйво, масштаб шрифтів
+// автопалітрою — прозорість, градієнти, радіуси, сяйво, масштаб шрифтів,
+// плюс візуальні налаштування Hyprland (visual.json + hyprctl reload)
 // ============================================================
 import QtQuick
 import QtQuick.Layouts
+import Quickshell
+import Quickshell.Io
 import "../../core"
 
 Item {
@@ -12,6 +15,9 @@ Item {
 
   readonly property var cfg: sys.cfg
   readonly property var ac: sys.ac
+  // Без цього root.window = undefined: старий код брав `window` з
+  // контексту попапа, новий (Hyprland-картка) — через властивість
+  readonly property var window: sys.window
 
   implicitWidth: parent?.width ?? 0
   implicitHeight: col.implicitHeight
@@ -197,5 +203,323 @@ Item {
         onMoved: v => { root.cfg.animSpeed = v; root.ac.saveToFile() }
       }
     }
+
+    // --- Hyprland: візуал вікон (visual.json + hyprctl reload) ---
+    SetCard {
+      sys: root.sys
+      SetLabel { sys: root.sys; text: "Hyprland windows" }
+
+      SetSelect {
+        sys: root.sys
+        label: "Layout"
+        options: [{ id: "dwindle", text: "Dwindle" }, { id: "master", text: "Master" }]
+        value: root.vis.layout
+        onPicked: id => root.setVal("layout", id)
+      }
+      ColumnLayout {
+        visible: root.vis.layout === "master"
+        Layout.fillWidth: true
+        spacing: 6
+        SetSlider {
+          sys: root.sys
+          label: "Master ratio"; from: 0.3; to: 0.7; step: 0.05; decimals: 2
+          sub: "Width fraction of the master column."
+          value: root.vis.mfact
+          onMoved: v => root.setVal("mfact", v)
+        }
+        SetSelect {
+          sys: root.sys
+          label: "Master side"
+          options: [
+            { id: "left", text: "Left" }, { id: "right", text: "Right" },
+            { id: "top", text: "Top" }, { id: "bottom", text: "Bottom" },
+            { id: "center", text: "Center" }
+          ]
+          value: root.vis.orientation
+          onPicked: id => root.setVal("orientation", id)
+        }
+        SetSelect {
+          sys: root.sys
+          label: "New window goes"
+          options: [
+            { id: "master", text: "Master" }, { id: "slave", text: "Slave" },
+            { id: "inherit", text: "Inherit" }
+          ]
+          value: root.vis.new_status
+          onPicked: id => root.setVal("new_status", id)
+        }
+        SetToggle {
+          sys: root.sys
+          label: "Keep master position"
+          sub: "Master tile stays in place even when smaller than slaves."
+          on: root.vis.always_keep_position
+          onToggled: v => root.setVal("always_keep_position", v)
+        }
+      }
+      SetSlider {
+        sys: root.sys
+        label: "Gaps in"; from: 0; to: 20; step: 1; suffix: "px"
+        value: root.vis.gaps_in
+        onMoved: v => root.setVal("gaps_in", v)
+      }
+      SetSlider {
+        sys: root.sys
+        label: "Gaps out"; from: 0; to: 20; step: 1; suffix: "px"
+        sub: "Space between windows and the screen edge."
+        value: root.vis.gaps_out
+        onMoved: v => root.setVal("gaps_out", v)
+      }
+      SetSlider {
+        sys: root.sys
+        label: "Border width"; from: 0; to: 5; step: 1; suffix: "px"
+        value: root.vis.border_size
+        onMoved: v => root.setVal("border_size", v)
+      }
+      SetSlider {
+        sys: root.sys
+        label: "Corner rounding"; from: 0; to: 20; step: 1; suffix: "px"
+        value: root.vis.rounding
+        onMoved: v => root.setVal("rounding", v)
+      }
+      SetSlider {
+        sys: root.sys
+        label: "Active opacity"; from: 0.5; to: 1.0; step: 0.05; decimals: 2
+        value: root.vis.active_opacity
+        onMoved: v => root.setVal("active_opacity", v)
+      }
+      SetSlider {
+        sys: root.sys
+        label: "Inactive opacity"; from: 0.3; to: 1.0; step: 0.05; decimals: 2
+        value: root.vis.inactive_opacity
+        onMoved: v => root.setVal("inactive_opacity", v)
+      }
+      SetToggle {
+        sys: root.sys
+        label: "Dim inactive window"
+        on: root.vis.dim_inactive
+        onToggled: v => root.setVal("dim_inactive", v)
+      }
+      SetSlider {
+        visible: root.vis.dim_inactive
+        sys: root.sys
+        label: "Dim strength"; from: 0; to: 1.0; step: 0.05; decimals: 2
+        value: root.vis.dim_strength
+        onMoved: v => root.setVal("dim_strength", v)
+      }
+      SetToggle {
+        sys: root.sys
+        label: "Window shadows"
+        on: root.vis.shadows
+        onToggled: v => root.setVal("shadows", v)
+      }
+      SetToggle {
+        sys: root.sys
+        label: "Resize by border"
+        sub: "Drag the window edge to resize (needs border width > 0)."
+        on: root.vis.resize_on_border
+        onToggled: v => root.setVal("resize_on_border", v)
+      }
+      SetSlider {
+        sys: root.sys
+        label: "Cursor idle timeout"; from: 0; to: 60; step: 1; suffix: "s"
+        sub: "Hide the cursor after this many seconds idle. 0 = never."
+        value: root.vis.inactive_timeout
+        onMoved: v => root.setVal("inactive_timeout", v)
+      }
+
+      // Кольори бордерів: свотчі з палітри + hex
+      Repeater {
+        model: [
+          { key: "active_border", label: "Active border color" },
+          { key: "inactive_border", label: "Inactive border color" }
+        ]
+
+        delegate: ColumnLayout {
+          id: colorRow
+          required property var modelData
+          readonly property string val: root.vis[modelData.key] || ""
+          Layout.fillWidth: true
+          spacing: 4
+
+          Text {
+            text: modelData.label + (colorRow.val === "" ? " (default)" : "")
+            color: root.window.palette.fg
+            font.family: root.window.palette.font
+            font.pixelSize: root.window.appConfig.scaled(10)
+          }
+          RowLayout {
+            spacing: 4
+            Layout.fillWidth: true
+
+            Repeater {
+              // свотчі — кольори з палітри шелла
+              model: ["accent", "green", "blue", "purple", "orange", "aqua", "yellow", "red", "fg"]
+
+              delegate: Rectangle {
+                required property string modelData
+                readonly property color c: root.window.palette[modelData]
+                readonly property bool picked: root.vis[colorRow.modelData.key] === ("rgba(" + c.toString().replace("#", "").toLowerCase() + "ff)")
+
+                width: 16; height: 16; radius: 4
+                color: c
+                border.width: picked ? 2 : 0
+                border.color: root.window.palette.textLight
+
+                MouseArea {
+                  anchors.fill: parent
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: root.setVal(colorRow.modelData.key,
+                    "rgba(" + parent.c.toString().replace("#", "").toLowerCase() + "ff)")
+                }
+              }
+            }
+
+            Rectangle {
+              Layout.preferredWidth: 110
+              Layout.preferredHeight: 20
+              radius: 4
+              color: root.window.palette.bg0H
+              border.width: hexInput.activeFocus ? 1 : 0
+              border.color: root.window.palette.accent
+
+              TextInput {
+                id: hexInput
+                anchors.fill: parent
+                anchors.margins: 4
+                verticalAlignment: TextInput.AlignVCenter
+                clip: true
+                color: root.window.palette.textLight
+                font.family: root.window.palette.font
+                font.pixelSize: root.window.appConfig.scaled(9)
+                text: colorRow.val.startsWith("rgba(")
+                      ? "#" + colorRow.val.substring(5, 13)
+                      : colorRow.val
+                onEditingFinished: {
+                  var t = text.trim()
+                  if (t === "") { root.setVal(colorRow.modelData.key, ""); return }
+                  if (/^#[0-9a-fA-F]{6}$/.test(t))
+                    root.setVal(colorRow.modelData.key, "rgba(" + t.substring(1).toLowerCase() + "ff)")
+                }
+              }
+
+              MouseArea {
+                anchors.fill: parent
+                visible: !hexInput.activeFocus
+                onClicked: hexInput.forceActiveFocus()
+              }
+            }
+
+            Item { Layout.fillWidth: true }
+
+            // скинути колір до дефолту (градієнт/дефолтний сірий)
+            Text {
+              text: "\u2715"
+              color: clearMa.containsMouse ? root.window.palette.danger : root.window.palette.mutedAlt
+              font.pixelSize: root.window.appConfig.scaled(11)
+
+              MouseArea {
+                id: clearMa
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.setVal(colorRow.modelData.key, "")
+              }
+            }
+          }
+        }
+      }
+
+      Text {
+        visible: root.hyprStatus !== ""
+        text: root.hyprStatus
+        color: root.hyprStatus === "Applied" ? root.window.palette.green : root.window.palette.muted
+        font.family: root.window.palette.font
+        font.pixelSize: root.window.appConfig.scaled(10)
+        Layout.fillWidth: true
+      }
+
+      SetButton {
+        sys: root.sys
+        text: "Reset Hyprland visuals to defaults"
+        onClicked: root.resetHypr()
+      }
+    }
+  }
+
+  // ---------- Hyprland visual.json ----------
+  // Дефолти мають збігатися з хелперами num/bool/str у general.lua.
+  // У файл пишуться лише відрізнені від дефолтів ключі.
+  readonly property var hyprDefaults: ({
+    gaps_in: 3, gaps_out: 1, border_size: 1, resize_on_border: false,
+    active_opacity: 1.0, inactive_opacity: 1.0,
+    rounding: 0, rounding_power: 2.0,
+    dim_inactive: false, dim_strength: 0.3, shadows: true,
+    active_border: "", inactive_border: "",
+    layout: "dwindle", mfact: 0.55, orientation: "left",
+    new_status: "inherit", always_keep_position: false,
+    inactive_timeout: 3
+  })
+
+  property var vis: hyprDefaults
+  property string hyprStatus: ""
+
+  function setVal(key, value) {
+    var next = Object.assign({}, vis)
+    next[key] = value
+    vis = next
+    hyprSaveTimer.restart()
+  }
+
+  function resetHypr() {
+    vis = Object.assign({}, hyprDefaults)
+    hyprSaveTimer.restart()
+  }
+
+  function writeHypr() {
+    var out = {}
+    for (var k in hyprDefaults) {
+      var v = vis[k]
+      if (v === undefined) continue
+      if (v !== hyprDefaults[k]) out[k] = v
+    }
+    _visualFile.setText(JSON.stringify(out, null, 2) + "\n")
+    hyprStatus = "Reloading Hyprland..."
+    _hyprReloadProc.running = true
+  }
+
+  Timer {
+    id: hyprSaveTimer
+    interval: 400 // дебаунс: слайдер генерує десятки подій, reload на кожен тик уб'є інтерактивність
+    onTriggered: root.writeHypr()
+  }
+
+  FileView {
+    id: _visualFile
+    path: "file://" + Quickshell.env("HOME") + "/.config/hypr/visual.json"
+    watchChanges: false
+  }
+
+  Process {
+    id: _hyprReloadProc
+    command: ["hyprctl", "reload"]
+    onExited: (code) => { root.hyprStatus = code === 0 ? "Applied" : "hyprctl reload failed" }
+  }
+
+  // Початкове завантаження: дефолти + те, що вже є у visual.json
+  FileView {
+    id: _visualRead
+    path: "file://" + Quickshell.env("HOME") + "/.config/hypr/visual.json"
+    watchChanges: false
+    onFileChanged: this.reload()
+  }
+
+  Component.onCompleted: {
+    var merged = Object.assign({}, hyprDefaults)
+    try {
+      var data = JSON.parse(_visualRead.text() || "{}")
+      for (var k in merged)
+        if (data[k] !== undefined) merged[k] = data[k]
+    } catch (e) {}
+    vis = merged
   }
 }

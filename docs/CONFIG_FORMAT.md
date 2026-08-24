@@ -201,6 +201,38 @@ Standard Hyprland `.conf` format:
 
 ---
 
+## Hyprland: visual.json
+
+Optional visual overrides for windows/decorations, read by
+`modules/general.lua`. Managed by **Settings → Appearance → Hyprland
+windows** (every change is debounced 400 ms, written atomically and
+applied via `hyprctl reload`). The file is absent on a fresh install —
+all defaults live in Lua and must stay in sync with `hyprDefaults` in
+`AppearanceSection.qml`.
+
+```json
+{
+  "gaps_in": 5, "gaps_out": 3, "border_size": 1, "resize_on_border": false,
+  "active_opacity": 0.95, "inactive_opacity": 0.9,
+  "rounding": 12, "rounding_power": 5.0,
+  "dim_inactive": true, "dim_strength": 0.3, "shadows": true,
+  "active_border": "rgba(rrggbbff)", "inactive_border": "rgba(rrggbbff)",
+  "layout": "master", "mfact": 0.55, "orientation": "left",
+  "inactive_timeout": 3, "new_status": "slave"
+}
+```
+
+Notes:
+- every key is optional; wrong types fall back to the Lua default
+- an empty/absent `active_border` keeps the default two-color gradient
+  (45°); a color string switches it to a solid color
+- `rounding_power` and the fine shadow parameters (range, render_power,
+  sharp, color) are JSON-only — intentionally not in the Settings UI
+- `layout` accepts `dwindle` or `master`; `orientation` —
+  `left`/`right`/`top`/`bottom`/`center`
+
+---
+
 ## Hyprland: binds.json
 
 Optional keybinding overrides read by `modules/binds.lua`. Managed by
