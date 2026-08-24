@@ -208,7 +208,10 @@ Optional visual overrides for windows/decorations, read by
 windows** (every change is debounced 400 ms, written atomically and
 applied via `hyprctl reload`). The file is absent on a fresh install —
 all defaults live in Lua and must stay in sync with `hyprDefaults` in
-`AppearanceSection.qml`.
+`AppearanceSection.qml`. After the first change through the UI the file
+becomes a full snapshot of the UI-managed keys (explicit values, even
+when equal to defaults); JSON-only keys not present in the UI
+(e.g. `rounding_power`) are preserved across rewrites.
 
 ```json
 {

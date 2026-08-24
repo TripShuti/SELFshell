@@ -461,6 +461,10 @@ Item {
   })
 
   property var vis: hyprDefaults
+  // Сирі ключі з файлу, яких немає в hyprDefaults (json-only: rounding_power,
+  // тіньові деталі тощо) — зберігаються при кожному записі, інакше перший же
+  // рух слайдера їх стирав
+  property var fileData: ({})
   property string hyprStatus: ""
 
   function setVal(key, value) {
@@ -472,16 +476,19 @@ Item {
 
   function resetHypr() {
     vis = Object.assign({}, hyprDefaults)
+    fileData = {}
     hyprSaveTimer.restart()
   }
 
+  // Повний знімок усіх UI-ключів (навіть рівних дефолтах — інакше
+  // always_keep_position: false тощо "зникали" з файлу) + збереження
+  // json-only ключів, яких UI не торкається
   function writeHypr() {
     var out = {}
-    for (var k in hyprDefaults) {
-      var v = vis[k]
-      if (v === undefined) continue
-      if (v !== hyprDefaults[k]) out[k] = v
-    }
+    for (var k in hyprDefaults)
+      out[k] = vis[k] !== undefined ? vis[k] : hyprDefaults[k]
+    for (var extra in fileData)
+      if (out[extra] === undefined) out[extra] = fileData[extra]
     _visualFile.setText(JSON.stringify(out, null, 2) + "\n")
     hyprStatus = "Reloading Hyprland..."
     _hyprReloadProc.running = true
@@ -517,6 +524,7 @@ Item {
     var merged = Object.assign({}, hyprDefaults)
     try {
       var data = JSON.parse(_visualRead.text() || "{}")
+      fileData = data
       for (var k in merged)
         if (data[k] !== undefined) merged[k] = data[k]
     } catch (e) {}
