@@ -84,12 +84,6 @@ AnimatedPopup {
   // профіль з psk-flags=0 (пароль персистентний) і одразу активує з'єднання.
   Process {
     id: wifiConnectProcess
-    onStarted: {
-      // Пароль передається через stdin (nmcli --ask), а не аргументом:
-      // argv видно будь-якому локальному процесу через /proc/*/cmdline
-      wifiConnectProcess.write(root.passwordInput.text + "\n")
-      wifiConnectProcess.stdinEnabled = false
-    }
     onExited: (exitCode, exitStatus) => {
       // Ігноруємо застарілий результат: користувач міг скасувати/закрити попап
       // під час виконання nmcli
@@ -123,8 +117,11 @@ AnimatedPopup {
     statusMessage = "Connecting...";
     statusIsError = false;
     // Діалог лишається відкритим — результат з'явиться в onExited.
-    // Пароль йде через stdin у onStarted вище
-    wifiConnectProcess.command = ["nmcli", "--ask", "dev", "wifi", "connect", pendingNetwork.name];
+    // Пароль в argv: /proc/*/cmdline читається локальними процесами.
+    // nmcli --ask тут не підходить — секрети він читає з /dev/tty, якого
+    // в Process немає, і просто висне. Якщо колись захочемо сховати
+    // пароль — шлях через тимчасовий keyfile + `nmcli con load`
+    wifiConnectProcess.command = ["nmcli", "dev", "wifi", "connect", pendingNetwork.name, "password", passwordInput.text];
     wifiConnectProcess.running = true;
   }
 

@@ -8,9 +8,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Network popup: the Wi-Fi password is now passed to nmcli over stdin
-  (`--ask`) instead of command-line arguments, where it was readable by
-  any local process via `/proc/*/cmdline`.
 - Settings popup on multi-monitor setups: each monitor had its own
   section state — edits made in one monitor's popup were lost when
   opening the popup on the other. Sections now re-read their config
