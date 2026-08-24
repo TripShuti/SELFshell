@@ -17,8 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   list itself changed).
 - Launcher: corrected anchor coordinates — the popup was offset by the
   screen origin, which would misplace it on a secondary monitor.
-- MPRIS popup: a previously expanded playlist no longer stays expanded
-  when reopening the popup with a different player.
+- MPRIS popup: guard the destruction-time player re-detection against a
+  dead root (callLater could run after the popup was destroyed).
 - Calendar: the task-save callback is cleared when the popup is
   destroyed (a stale callback could crash task saving afterwards).
 - Timer widget: horizontal scroll no longer decrements the duration;

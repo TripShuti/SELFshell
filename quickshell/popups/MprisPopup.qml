@@ -111,7 +111,8 @@ AnimatedPopup {
 
   onVisibleChanged: {
     if (visible) root.positionUnderAnchor()
-    else root.playlistOpen = false // інакше при перевідкритті лишався розгорнутий плейліст попереднього плеєра
+    // playlistOpen навмисно НЕ скидається: розгорнутий плейліст має
+    // лишатися розгорнутим між відкриттями попапа
   }
 
   // Знаходить плеєр за назвою або перший доступний.
