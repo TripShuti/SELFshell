@@ -60,6 +60,10 @@ AnimatedPopup {
       anchor.edges = PopupAnchor.None
       anchor.gravity = PopupAnchor.None
       root.recenter()
+      // На кожному моніторі свій інстанс попапа зі своїм станом секцій —
+      // без resync редагування на одному моніторі губилося б при відкритті
+      // на іншому (стан секцій застарів)
+      sectionLoader.item?.resync?.()
     } else if (sectionLoader.item?.cancelDrag) {
       // Перетягування скасовується без коміту (раніше onVisibleChanged
       // викликав commitDrag, і "закривши" драг все одно переносив/вимикав віджет)

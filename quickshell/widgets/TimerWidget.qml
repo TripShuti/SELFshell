@@ -58,7 +58,7 @@ Item {
       "  [ -z \"$PLAYER\" ] && command -v ffplay >/dev/null 2>&1 && PLAYER='ffplay -nodisp -autoexit -loglevel quiet'; " +
       "  if [ -n \"$PLAYER\" ]; then " +
       "    echo \"[TimerWidget] Граю через '$PLAYER': $SOUND\" >&2; " +
-      "    for i in 1 2 3; do $PLAYER \"$SOUND\" 2>/dev/null; sleep 0.5; done; " +
+      "    for i in 1 2 3; do $PLAYER \"$SOUND\" 2>/dev/null; sleep 0.5; done; " + // потрійний сигнал — навмисний, щоб не пропустити
       "  else " +
       "    echo '[TimerWidget] Жоден плеєр (paplay/pw-play/ffplay) не знайдено в PATH' >&2; " +
       "  fi; " +
@@ -167,6 +167,7 @@ Item {
     onExited: root.hovered = false
     onClicked: root.toggle()
     onWheel: wheel => {
+      if (wheel.angleDelta.y === 0) return // горизонтальний скрол — ігноруємо
       if (wheel.angleDelta.y > 0)
         root.durUp()
       else

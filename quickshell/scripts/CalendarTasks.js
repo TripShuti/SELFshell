@@ -13,6 +13,12 @@ function setSaveCallback(cb) {
   _saveCallback = cb
 }
 
+// Знімає колбек: бібліотека живе довше за попап — без цього scheduleSave()
+// після знищення календаря стреляв би у мертвий об'єкт
+function clearSaveCallback() {
+  _saveCallback = null
+}
+
 // Завантажує всі задачі з JSON
 function setData(data) {
   _data = data || {}

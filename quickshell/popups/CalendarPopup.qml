@@ -140,6 +140,8 @@ AnimatedPopup {
     root.tasksVersion++
   }
 
+  Component.onDestruction: Tasks.clearSaveCallback()
+
   onVisibleChanged: {
     if (visible) {
       // "сьогодні" оновлюється при кожному відкритті: попап живе вічно,

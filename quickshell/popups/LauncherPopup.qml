@@ -105,9 +105,11 @@ AnimatedPopup {
     if (visible) {
       var scr = window.screen ?? Quickshell.screens[0]
       if (scr) {
+        // anchor.rect — координати відносно вікна-якоря (без scr.x/y:
+        // вони зміщували попап на другому моніторі)
         anchor.rect = Qt.rect(
-          scr.x + (scr.width - root.width) / 2,
-          scr.y + (scr.height - root.height) / 2,
+          (scr.width - root.width) / 2,
+          (scr.height - root.height) / 2,
           root.width, root.height
         )
       }

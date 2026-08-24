@@ -26,6 +26,16 @@ AnimatedPopup {
   property BluetoothAdapter adapter: Bluetooth.defaultAdapter
   readonly property bool scanning: adapter?.discovering ?? false
 
+  // Ревізія для пересортвання: біндинг ScriptModel.values залежить лише
+  // від складу списку — зміни connected/paired пристроїв його не чіпають
+  property int sortRev: 0
+  Timer {
+    running: root.visible
+    interval: 1000
+    repeat: true
+    onTriggered: root.sortRev++
+  }
+
   property int screenW: window ? window.screen.width : 1920
   property int screenH: window ? window.screen.height : 1080
 
@@ -186,16 +196,19 @@ AnimatedPopup {
     }
 
     // Список Bluetooth пристроїв
-    Repeater {
-      model: ScriptModel {
-        values: adapter ? [...adapter.devices.values].sort((a, b) => {
-          if (a.connected && !b.connected) return -1;
-          if (b.connected && !a.connected) return 1;
-          if (a.bonded && !b.bonded) return -1;
-          if (b.bonded && !a.bonded) return 1;
-          return (a.name || "").localeCompare(b.name || "");
-        }) : []
-      }
+      Repeater {
+        model: ScriptModel {
+          values: {
+            root.sortRev // залежність: пересортовувати при змінах стану пристроїв
+            return adapter ? [...adapter.devices.values].sort((a, b) => {
+              if (a.connected && !b.connected) return -1;
+              if (b.connected && !a.connected) return 1;
+              if (a.bonded && !b.bonded) return -1;
+              if (b.bonded && !a.bonded) return 1;
+              return (a.name || "").localeCompare(b.name || "");
+            }) : []
+          }
+        }
 
       delegate: Item {
         id: device

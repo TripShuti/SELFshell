@@ -111,6 +111,7 @@ AnimatedPopup {
 
   onVisibleChanged: {
     if (visible) root.positionUnderAnchor()
+    else root.playlistOpen = false // інакше при перевідкритті лишався розгорнутий плейліст попереднього плеєра
   }
 
   // Знаходить плеєр за назвою або перший доступний.
@@ -154,7 +155,9 @@ AnimatedPopup {
       readonly property string playerName: (modelData.identity ?? modelData.dbusName ?? "").toLowerCase()
 
       Component.onCompleted: root.findAndSetPlayer()
-      Component.onDestruction: Qt.callLater(root.findAndSetPlayer)
+      // guard як у _scrollPlaylistToCurrent: callLater може виконатись
+      // вже після знищення root
+      Component.onDestruction: Qt.callLater(function() { if (root) root.findAndSetPlayer() })
     }
   }
 

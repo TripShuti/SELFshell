@@ -6,6 +6,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Network popup: the Wi-Fi password is now passed to nmcli over stdin
+  (`--ask`) instead of command-line arguments, where it was readable by
+  any local process via `/proc/*/cmdline`.
+- Settings popup on multi-monitor setups: each monitor had its own
+  section state — edits made in one monitor's popup were lost when
+  opening the popup on the other. Sections now re-read their config
+  files on every open.
+- Bluetooth popup: the device list now re-sorts when devices
+  connect/disconnect (previously the order only updated when the device
+  list itself changed).
+- Launcher: corrected anchor coordinates — the popup was offset by the
+  screen origin, which would misplace it on a secondary monitor.
+- MPRIS popup: a previously expanded playlist no longer stays expanded
+  when reopening the popup with a different player.
+- Calendar: the task-save callback is cleared when the popup is
+  destroyed (a stale callback could crash task saving afterwards).
+- Timer widget: horizontal scroll no longer decrements the duration;
+  the triple completion sound is intentional and now documented as such.
+- Genshin widget: the resin icon no longer stays semi-transparent if the
+  critical state ends while the widget is hidden.
+
 ## [0.7.0] - 2026-08-24
 
 ### Added

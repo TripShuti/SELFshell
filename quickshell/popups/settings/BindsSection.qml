@@ -115,6 +115,12 @@ Item {
     try { _envFile.reload() } catch (e) {}
   }
 
+  // Перечитати binds.json (другий монітор = другий інстанс секції)
+  function resync() {
+    _bindsFile.reload()
+    _envFile.reload()
+  }
+
   function parseBinds(text) {
     var data = {}
     try { data = text ? JSON.parse(text) : {} } catch (e) { data = {} }

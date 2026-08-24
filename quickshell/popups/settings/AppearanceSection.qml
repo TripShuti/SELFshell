@@ -563,4 +563,11 @@ Item {
       writeHypr()
     }
   }
+
+  // Перечитати visual.json (другий монітор = другий інстанс секції
+  // зі своїм станом; без resync редагування губилися між моніторами)
+  function resync() {
+    applyFileData()
+    _visualRead.reload()
+  }
 }

@@ -44,6 +44,9 @@ Item {
       mipmap: true
       fillMode: Image.PreserveAspectFit
       Layout.alignment: Qt.AlignVCenter
+      // як у txt: без цього іконка застигала напівпрозорою, якщо critical
+      // скінчився поки віджет був прихований
+      onVisibleChanged: if (!visible) opacity = 1.0
 
       BlinkAnimation {
         running: root.resinClass === "critical"
