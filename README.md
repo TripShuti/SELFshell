@@ -1,6 +1,6 @@
 # SELFshell
 
-A feature-complete Hyprland desktop shell built with **Quickshell and QML**.
+A feature-complete Hyprland desktop shell built with **Quickshell**.
 Includes a custom lock screen, a built-in idle manager, dynamic
 wallpaper-based theming, and a fully configurable top bar — no external bar,
 no separate lock/idle daemons.
