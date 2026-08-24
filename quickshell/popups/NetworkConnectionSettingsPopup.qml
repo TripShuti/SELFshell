@@ -91,6 +91,16 @@ AnimatedPopup {
     autoconnectPending = false;
     resolvingBySsid = false;
     duplicateProfileCount = 0;
+    // Без очищення полів налаштувань попередня мережа показувала б свої
+    // IP/DNS до завершення fetch (або назавжди, якщо fetch впав) — і їх
+    // можна було б зберегти в чужий профіль
+    ipv4Manual = false;
+    ipv4Address = "";
+    ipv4Prefix = "24";
+    ipv4Gateway = "";
+    dnsManual = false;
+    dnsServers = "";
+    keyMgmt = "";
   }
 
   onVisibleChanged: {

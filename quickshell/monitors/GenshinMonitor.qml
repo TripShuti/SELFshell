@@ -27,7 +27,14 @@ Item {
 
   readonly property string _basePath: Qt.resolvedUrl("../scripts/genshin_stats.py").toString().replace("file://", "")
 
-  function _todayStr() { return new Date().toISOString().slice(0, 10) }
+  function _todayStr() {
+    // локальна дата (не UTC): UTC давав вчорашній день у перші години
+    // доби для східних поясів і ламав порівняння щоденного синку
+    var d = new Date()
+    return d.getFullYear() + "-" +
+      String(d.getMonth() + 1).padStart(2, "0") + "-" +
+      String(d.getDate()).padStart(2, "0")
+  }
 
   function _currentResin() {
     if (_lastSyncTime === 0) return 0
@@ -122,8 +129,16 @@ Item {
     syncProc.running = true
   }
 
-  // Старт: перший синк (тільки якщо монітор увімкнений)
-  Component.onCompleted: _doSync()
+  // Старт: перший синк — але ПІСЛЯ завантаження config.json (async):
+  // в onCompleted cfg ще дефолтний (genshinEnabled=true), і синк стріляв
+  // би навіть для вимкненого віджета. onMonitorEnabledChanged нижче
+  // покриває і пізніше ввімкнення
+  Timer {
+    interval: 1500
+    running: true
+    repeat: false
+    onTriggered: if (root.monitorEnabled && !root._firstSyncDone) _doSync()
+  }
 
   // Головний таймер: локальний обрахунок + тригери
   Timer {

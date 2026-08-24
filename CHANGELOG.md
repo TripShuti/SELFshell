@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Binds** settings section — rebindable shell/app shortcuts (launcher,
+  settings, control, lock, clipboard, browser, terminal, files, suspend):
+  click a row, press a key (SUPER implied), conflicts detected, applied
+  via `~/.config/hypr/binds.json` + `hyprctl reload`.
+- **Appearance** section: "Hyprland windows" card — gaps, border size,
+  corner rounding, active/inactive opacity, dim, shadows, border colors,
+  dwindle/master layout with master ratio/orientation (written to
+  `~/.config/hypr/visual.json`, applied via `hyprctl reload`).
 - **Secure Bluetooth pairing** — the pairing agent now uses the
   `KeyboardDisplay` capability instead of silent Just Works: every
   attempt shows a confirmation popup (passkey numeric comparison, PIN
@@ -38,14 +46,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Genshin widget: all HoYoLAB requests now use an HTTP timeout (5 s connect /
-  15 s read) — a hung connection no longer freezes sync with stale data.
-- Genshin widget: the state file is now written atomically (tmp + rename),
-  so an interrupted write can no longer corrupt it and silently reset
-  resin tracking and sign-in cache.
-- Bluetooth agent: corrected D-Bus signatures of `RequestConfirmation`,
-  `DisplayPasskey` and `DisplayPinCode` to match org.bluez.Agent (no
-  behavior change — under NoInputNoOutput BlueZ does not call them).
+- Clipboard popup: the auto-refresh timer was missing `repeat: true` — the
+  list refreshed exactly once per opening; deleting an entry now refreshes
+  only after the delete completes (the deleted row used to reappear), and
+  a second copy after reopening the popup no longer gets silently dropped.
+- Keyboard layout widget: the `hyprctl devices -j` buffer is now cleared
+  on every run — leftover chunks from a previous read corrupted the JSON
+  and permanently killed click-to-switch until a shell restart.
+- Wallpaper popup: applying is guarded while the previous apply is still
+  running (the "Setting wallpaper..." status used to stick forever), and
+  the wallpaper list is refreshed on every open — new files in `wp/` no
+  longer require a shell restart.
+- Network connection settings: IPv4/DNS/security fields are now cleared
+  when the popup opens — a failed fetch could show the previous network's
+  addresses, which could then be saved into the wrong profile.
+- Genshin widget: the initial sync no longer fires before `config.json`
+  loads (it ran even when the widget was disabled), and daily-sync dates
+  are built from local time instead of UTC.
+- Calendar popup: "today" is recomputed on every open — after midnight the
+  highlight used to stay on yesterday's cell.
+- Battery widget: the low-battery toast now re-arms only when charging or
+  above 20% — a charge hovering at 15% could re-toast on every crossing.
+- Cava monitor: crash restarts are capped at 5 attempts — a broken cava
+  no longer produces an endless crash-restart loop while audio plays.
+- Settings sections: re-entering Appearance showed factory defaults (the
+  section re-created before the async config read finished), and
+  hand-added keys in `binds.json` / json-only keys in `visual.json`
+  (e.g. `rounding_power`) were silently dropped on the next UI write —
+  all writes are now full snapshots that preserve unknown keys.
+- Bluetooth pairing popup: the passkey prompt is now centered on screen
+  instead of sticking to the top-left corner, and it no longer stacks on
+  top of the Bluetooth manager popup.
 
 ## [0.6.0] - 2026-08-18
 

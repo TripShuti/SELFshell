@@ -100,6 +100,11 @@ Item {
     id: devsProc
     command: ["hyprctl", "devices", "-j"]
 
+    // Скидання буфера на старті: без цього залишок попереднього виводу
+    // (напр. хвостовий чанк після успішного парсу) клеївся до нового
+    // JSON, і він вже не парсився ніколи — клік-перемикачок умирав
+    onStarted: root.devsBuf = ""
+
     stdout: SplitParser {
       splitMarker: "\n"
       onRead: data => {

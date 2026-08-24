@@ -44,11 +44,19 @@ Item {
       Qt.resolvedUrl("../services/cava-vis.conf").toString().replace("file://", "")]
     stdout: lineParser
 
+    onStarted: root._restarts = 0
     onExited: {
-      // cava впав (глюк аудіо тощо) — перезапускаємось, поки ще потрібен
-      if (root.monitorEnabled && root.active) cavaRestartTimer.restart()
+      // cava впав (глюк аудіо тощо) — перезапускаємось, поки ще потрібен.
+      // Кап у 5 спроб: якщо cava зламаний (немає пакета тощо), не крутимо
+      // цикл падіння-рестарту вічно
+      if (root.monitorEnabled && root.active && root._restarts < 5) {
+        root._restarts++
+        cavaRestartTimer.restart()
+      }
     }
   }
+
+  property int _restarts: 0
 
   Timer {
     id: cavaRestartTimer

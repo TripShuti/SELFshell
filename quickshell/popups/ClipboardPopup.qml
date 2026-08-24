@@ -80,7 +80,13 @@ AnimatedPopup {
   // Копіює запис у буфер обміну та закриває попап.
   // Пайп через sh: Process не вміє конвеєрів сам
   function copyEntry(id) {
-    copyProc.command = ["sh", "-c", "cliphist decode " + id + " | wl-copy"]
+    // wl-copy живе доки його витіснять з clipboard — якщо попап закрити
+    // і відкрити знову, copyProc ще "running" і друге копіювання було б
+    // проігнороване. Тому пайплайн фонует: sh одразу виходить, wl-copy
+    // працює самостійно, а попередній примірник гине новий (власність
+    // на clipboard переходить)
+    copyProc.command = ["sh", "-c",
+      "cliphist decode " + id + " | nohup wl-copy >/dev/null 2>&1 &"]
     copyProc.running = true
     root.close()
   }
@@ -92,7 +98,8 @@ AnimatedPopup {
   function deleteEntry(id) {
     deleteProc.command = ["sh", "-c", "printf '%s\\n' " + id + " | cliphist delete"]
     deleteProc.running = true
-    Qt.callLater(root.refresh)
+    // список оновлюється в deleteProc.onExited — callLater стреляв раніше
+    // за завершення delete, і запис "відроджувався" до наступного циклу
   }
 
   // Список записів. Парсинг — ЛИШЕ після завершення процесу: SplitParser
@@ -118,6 +125,7 @@ AnimatedPopup {
   Timer {
     interval: 2000
     running: root.visible
+    repeat: true // без цього список оновлювався один раз за відкриття
     onTriggered: root.refresh()
   }
 
@@ -125,7 +133,10 @@ AnimatedPopup {
   Process { id: copyProc }
 
   // Видалення запису з історії
-  Process { id: deleteProc }
+  Process {
+    id: deleteProc
+    onExited: root.refresh()
+  }
 
   ColumnLayout {
     anchors.fill: parent

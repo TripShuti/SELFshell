@@ -142,6 +142,12 @@ AnimatedPopup {
 
   onVisibleChanged: {
     if (visible) {
+      // "сьогодні" оновлюється при кожному відкритті: попап живе вічно,
+      // і після півночі підсвітка лишалась на вчорашній комірці
+      var now = new Date()
+      todayDay = now.getDate()
+      todayMonth = now.getMonth()
+      todayYear = now.getFullYear()
       var pos = anchorItem.mapToItem(window.contentItem, 0, 0)
       var popupX = pos.x + (anchorItem.width - implicitWidth) / 2
       anchor.rect = Qt.rect(popupX, pos.y + anchorItem.height + 10, implicitWidth, implicitHeight)

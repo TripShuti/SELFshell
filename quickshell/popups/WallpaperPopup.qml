@@ -28,6 +28,9 @@ AnimatedPopup {
 
   onVisibleChanged: {
     if (visible) {
+      // список шпалер перечитується при кожному відкритті — нові файли
+      // в wp/ з'являлись лише після рестарту шела
+      listProc.running = true
       var scr = window.screen ?? Quickshell.screens[0]
       if (scr) {
         anchor.rect = Qt.rect(
@@ -79,6 +82,9 @@ AnimatedPopup {
   }
 
   function setWallpaper(path) {
+    // повторний клік під час apply губиться б мовчки, а статус
+    // "Setting wallpaper..." застрягав назавжди (onExited не приходить)
+    if (applyProc.running) return
     statusText = "\uF002 Setting wallpaper..."
     applyProc.command = [root.paletteScriptPath, path]
     applyProc.running = true

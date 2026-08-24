@@ -34,8 +34,10 @@ Item {
   // DND поважається — тост не показується, коли dndEnabled.
   property bool lowNotified: false
   onLowChanged: {
-    if (!root.low) { root.lowNotified = false; return }
-    if (root.lowNotified) return
+    // Гістерезис: re-arm лише при зарядці або >= 20% — без нього заряд,
+    // що коливається біля 15%, спамив би тостом на кожному пересіченні
+    if (root.percent >= 20 || root.charging) { root.lowNotified = false; return }
+    if (!root.low || root.lowNotified) return
     root.lowNotified = true
     if (window.appConfig.cfg.dndEnabled) return
     window.toast.showNotif({
