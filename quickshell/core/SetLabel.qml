@@ -7,9 +7,13 @@ import QtQuick.Layouts
 Text {
   property QtObject sys
 
-  color: sys.palette.gray
+  // Uppercase-overline: заголовок структурує картку, не змагаючись
+  // з контентом рядків (ті — 10px fg/muted)
+  color: sys.palette.muted
   font.family: sys.palette.font
-  font.pixelSize: 11
+  font.pixelSize: 10
   font.bold: true
+  font.letterSpacing: 1.5
+  font.capitalization: Font.AllUppercase
   Layout.fillWidth: true
 }

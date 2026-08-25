@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Settings polish: section headers are now uppercase overlines with
+  letter spacing, cards have more breathing room between sections, the
+  generated `mutedAlt` color is brighter (blend 0.3 → 0.45), and the
+  launcher distinguishes hover from the selected row.
+
 ### Fixed
 
 - Settings popup on multi-monitor setups: each monitor had its own

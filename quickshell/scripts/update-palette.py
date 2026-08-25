@@ -204,7 +204,7 @@ def main():
     audioVolume = tone("tertiary", 80)
     accent     = col("primary")
     textLight  = tone("neutral", 95)
-    mutedAlt   = blend(col("outline"), col("on_background"), 0.3)
+    mutedAlt   = blend(col("outline"), col("on_background"), 0.45)
     danger     = col("error")
     bgLayer    = alpha(blend(col("background"), col("on_surface"), 0.15), 0.6)
     sepBg      = alpha(col("primary"), 0.6)

@@ -137,7 +137,7 @@ Item {
       anchors.left: parent.left
       anchors.right: parent.right
       anchors.top: parent.top
-      spacing: 12
+      spacing: 16
 
       Text {
         text: "Bar layout — drag widgets between pills, or down to the pool to disable"

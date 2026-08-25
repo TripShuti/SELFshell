@@ -219,13 +219,16 @@ AnimatedPopup {
 
           property bool isCurrent: listView.currentIndex === index
 
-          // Тло рядка
-          Rectangle {
-            anchors.fill: parent
-            radius: 8
-            antialiasing: true
-            color: isCurrent ? window.palette.bg2 : (ma.containsMouse ? window.palette.bg2 : window.palette.bg1)
-            opacity: 0.85
+            // Тло рядка: вибраний — bg2 + смуга, hover — легший bg1
+            // (різні стани мають різнитися візуально)
+            Rectangle {
+              anchors.fill: parent
+              radius: 8
+              antialiasing: true
+              color: isCurrent ? window.palette.bg2
+                   : ma.containsMouse ? Qt.lighter(window.palette.bg1, 1.18)
+                   : window.palette.bg1
+              opacity: 0.85
             Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
 
             // Акцентна смужка для вибраного (fade замість visible)
