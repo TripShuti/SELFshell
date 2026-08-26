@@ -513,7 +513,7 @@ Item {
   // навушників PipeWire може перелінкувати його на невірний sink
   // (iec958) або від'єднати — таймер кожні 3с лінкує на всі доступні
   // хардварні sinks, щоб колонки гарантовано отримали звук.
-  Timer {
+Timer {
     id: _linkCheckTimer
     interval: 3000
     running: root.enabled && !root.busy && root._eqNodeId >= 0
@@ -526,20 +526,28 @@ Item {
     command: ["bash", "-c",
       "SRC=$(pw-link -o 2>/dev/null | grep 'output.filter-chain' | head -1 | cut -d: -f1); " +
       "[ -z \"$SRC\" ] && exit 0; " +
-      // якщо BT підключено — тільки BT (ексклюзивно), інакше — всі хардварні sinks щоб колонки гарантовано отримали звук
+      "LINKS=$(pw-link -l 2>/dev/null); " +
       "if pactl list short sinks 2>/dev/null | grep -q \"bluez\"; then " +
       "  BEST=$(pactl list short sinks 2>/dev/null | grep \"bluez\" | head -1 | cut -f2); " +
       "  [ -z \"$BEST\" ] && exit 0; " +
       "  for T in $(pactl list short sinks 2>/dev/null | grep -v '" + root.sinkName + "' | cut -f2); do " +
-      "    pw-link -d \"$SRC:output_FL\" \"$T:playback_FL\" 2>/dev/null || true; " +
-      "    pw-link -d \"$SRC:output_FR\" \"$T:playback_FR\" 2>/dev/null || true; " +
+      "    if [ \"$T\" != \"$BEST\" ]; then " +
+      "      if echo \"$LINKS\" | grep -q \"$T:playback_FL\"; then " +
+      "        pw-link -d \"$SRC:output_FL\" \"$T:playback_FL\" 2>/dev/null || true; " +
+      "        pw-link -d \"$SRC:output_FR\" \"$T:playback_FR\" 2>/dev/null || true; " +
+      "      fi; " +
+      "    fi; " +
       "  done; " +
-      "  pw-link \"$SRC:output_FL\" \"$BEST:playback_FL\" 2>/dev/null || true; " +
-      "  pw-link \"$SRC:output_FR\" \"$BEST:playback_FR\" 2>/dev/null || true; " +
+      "  if ! echo \"$LINKS\" | grep -q \"$BEST:playback_FL\"; then " +
+      "    pw-link \"$SRC:output_FL\" \"$BEST:playback_FL\" 2>/dev/null || true; " +
+      "    pw-link \"$SRC:output_FR\" \"$BEST:playback_FR\" 2>/dev/null || true; " +
+      "  fi; " +
       "else " +
       "  for T in $(pactl list short sinks 2>/dev/null | grep -v '" + root.sinkName + "' | cut -f2); do " +
-      "    pw-link \"$SRC:output_FL\" \"$T:playback_FL\" 2>/dev/null || true; " +
-      "    pw-link \"$SRC:output_FR\" \"$T:playback_FR\" 2>/dev/null || true; " +
+      "    if ! echo \"$LINKS\" | grep -q \"$T:playback_FL\"; then " +
+      "      pw-link \"$SRC:output_FL\" \"$T:playback_FL\" 2>/dev/null || true; " +
+      "      pw-link \"$SRC:output_FR\" \"$T:playback_FR\" 2>/dev/null || true; " +
+      "    fi; " +
       "  done; " +
       "fi"
     ]
