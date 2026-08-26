@@ -14,7 +14,8 @@ Item {
   required property QtObject window
   signal clicked()
 
-  property string preferredPlayer: "selfsonic"
+  // Улюблений плеєр — спільний з попапом (config.json → preferredPlayer)
+  readonly property string preferredPlayer: window.appConfig.cfg.preferredPlayer
   property var player: null
   property var cavBars: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 

@@ -55,6 +55,11 @@ Item {
       // Кастомний шлях до звуку завершення таймера ("" = звук з assets/)
       property string timerSoundPath: ""
 
+      // Улюблений медіа-плеєр (identity у lower case; підстроковний
+      // збіг — "spotify", "selfsonic", "chromium" тощо). Спільний для
+      // бар-віджета і попапа плеєра
+      property string preferredPlayer: "selfsonic"
+
       // --- Поведінка системи ---
       // Idle-таймаути (секунди). Порядок має бути зростаючим:
       // lock < dpms < suspend, інакше рівні спрацьовуватимуть у несподіваному
@@ -249,6 +254,7 @@ Item {
     clipboardEnabled: true, btEnabled: false, netEnabled: false,
     trayEnabled: false, batteryEnabled: false, dndEnabled: false,
     timerSoundPath: "",
+    preferredPlayer: "selfsonic",
     idleLockTimeout: 300, idleDpmsTimeout: 360, idleSuspendTimeout: 900,
     audioStep: 0.05, brightnessStep: 5,
     barHeight: 32, barRadius: 5, barPos: "top", edgeMargin: 8,

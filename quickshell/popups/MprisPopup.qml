@@ -21,7 +21,14 @@ AnimatedPopup {
   implicitHeight: layout.implicitHeight + 4
   transformOrigin: Item.Top
 
-  property string preferredPlayer: "selfsonic"
+  // Улюблений плеєр — спільний з бар-віджетом, персистентний (config.json).
+  // Змінюється селектором вгорі попапа
+  readonly property string preferredPlayer: window.appConfig.cfg.preferredPlayer
+
+  // --- Вибір плеєра (розгортається список на самому верху) ---
+  property bool playerSelOpen: false
+  property real playerSelHeight
+  readonly property real playerSelTarget: Mpris.players.values.length * 26 + 4
   property var player: null
   property var cavBars: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 
@@ -47,7 +54,8 @@ AnimatedPopup {
   // --- Еквалайзер (секція поруч із плейлістом) ---
   property bool eqOpen: false
   property real eqHeight
-  readonly property real eqTarget: 176
+  // header + рядок пресетів (горизонтальний скрол) + слайдери з підписами
+  readonly property real eqTarget: 196
 
   AudioEq { id: audioEq }
 
@@ -247,6 +255,12 @@ AnimatedPopup {
   }
   onEqHeightChanged: root._updateAnchor()
 
+  playerSelHeight: root.playerSelOpen ? root.playerSelTarget : 0
+  Behavior on playerSelHeight {
+    NumberAnimation { duration: appConfig.anim(260); easing.type: Easing.OutCubic }
+  }
+  onPlayerSelHeightChanged: root._updateAnchor()
+
 
   ColumnLayout {
     id: layout
@@ -257,6 +271,126 @@ AnimatedPopup {
     anchors.bottomMargin: 13
     spacing: 6
 
+
+    // Вибір плеєра: поточний identity + список присутніх MPRIS-плеєрів.
+    // Вибір персистентний (config.json → preferredPlayer) і спільний
+    // з бар-віджетом
+    ColumnLayout {
+      Layout.fillWidth: true
+      spacing: 4
+      visible: Mpris.players.values.length > 0
+
+      RowLayout {
+        Layout.fillWidth: true
+        spacing: 6
+
+        Text {
+          text: "\uF001"
+          color: window.palette.accent
+          font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
+        }
+
+        Text {
+          text: root.player?.identity ?? "No player"
+          color: window.palette.fg
+          font.family: window.palette.font; font.pixelSize: appConfig.scaled(10); font.bold: true
+          elide: Text.ElideRight
+          Layout.fillWidth: true
+        }
+
+        Text {
+          text: root.playerSelOpen ? "\uF077" : "\uF078"
+          color: window.palette.gray
+          font.family: window.palette.font; font.pixelSize: appConfig.scaled(9)
+        }
+
+        MouseArea {
+          anchors.fill: parent
+          cursorShape: Qt.PointingHandCursor
+          onClicked: root.playerSelOpen = !root.playerSelOpen
+        }
+      }
+
+      Item {
+        Layout.fillWidth: true
+        Layout.preferredHeight: root.playerSelHeight
+        visible: root.playerSelHeight > 0
+        clip: true
+
+        ColumnLayout {
+          anchors.fill: parent
+          spacing: 2
+
+          Repeater {
+            // унікальні identity (кілька інстансів chromium = один запис)
+            model: {
+              var seen = {}
+              var out = []
+              var players = Mpris.players.values
+              for (var i = 0; i < players.length; i++) {
+                var id = players[i].identity ?? ""
+                var key = id.toLowerCase()
+                if (id === "" || seen[key]) continue
+                seen[key] = true
+                out.push({ identity: id, key: key })
+              }
+              return out
+            }
+
+            delegate: Rectangle {
+              required property var modelData
+              property bool hovered: false
+              readonly property bool active:
+                    root.player?.identity?.toLowerCase() === modelData.key
+
+              Layout.fillWidth: true
+              height: 24
+              radius: 5
+              color: active ? window.palette.bg2
+                   : (hovered ? window.palette.bg1 : "transparent")
+              Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
+
+              RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 8
+                anchors.rightMargin: 8
+                spacing: 6
+
+                Text {
+                  text: modelData.active ? "\uF00C" : ""
+                  color: window.palette.green
+                  font.family: window.palette.font; font.pixelSize: appConfig.scaled(9)
+                  Layout.preferredWidth: 12
+                }
+
+                Text {
+                  text: modelData.identity
+                  color: modelData.active ? window.palette.green : window.palette.fg
+                  font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
+                  font.bold: modelData.active
+                  elide: Text.ElideRight
+                  Layout.fillWidth: true
+                }
+              }
+
+              MouseArea {
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onEntered: parent.hovered = true
+                onExited: parent.hovered = false
+                onClicked: {
+                  window.appConfig.cfg.preferredPlayer = modelData.key
+                  window.appConfig.saveToFile()
+                  root.findAndSetPlayer()
+                  root.playerSelOpen = false
+                }
+              }
+            }
+          }
+        }
+      }
+    }
 
     // Роздільник
     GradientSeparator {
@@ -859,10 +993,14 @@ AnimatedPopup {
           Text {
             text: {
               if (!audioEq.pluginInstalled) return "swh-plugins not installed"
+              if (audioEq.error !== "") return audioEq.error
               if (audioEq.busy) return "..."
               return audioEq.enabled ? "on" : "off"
             }
-            color: !audioEq.pluginInstalled ? window.palette.danger : window.palette.gray
+            color: {
+              if (!audioEq.pluginInstalled || audioEq.error !== "") return window.palette.danger
+              return window.palette.gray
+            }
             font.family: window.palette.font; font.pixelSize: appConfig.scaled(9)
           }
 
@@ -880,54 +1018,173 @@ AnimatedPopup {
           }
         }
 
-        // Пресети (чипи; Custom з'являється після ручних змін)
-        Flow {
+        // Пресети: горизонтальний скрол (17 чипів у Flow займали б
+        // 4-5 рядків і виштовхували слайдери за межі секції).
+        // Right-click на чипі — видалити (вбудовані ховаються у
+        // deletedBuiltins, їх можна повернути "restore")
+        Flickable {
           Layout.fillWidth: true
-          spacing: 4
+          height: 20
+          contentWidth: chipRow.implicitWidth
+          contentHeight: 20
+          clip: true
+          boundsBehavior: Flickable.StopAtBounds
 
-          Repeater {
-            model: {
-              var names = Object.keys(EqPresets.all())
-              if (audioEq.preset === "Custom") names.push("Custom")
-              return names
+          Row {
+            id: chipRow
+            spacing: 4
+
+            Repeater {
+              model: {
+                var deleted = audioEq.deletedBuiltins
+                var names = []
+                var all = EqPresets.all()
+                for (var n in all)
+                  if (deleted.indexOf(n) === -1 && audioEq.userPresets[n] === undefined)
+                    names.push(n)
+                for (var u in audioEq.userPresets) names.push(u)
+                if (audioEq.preset === "Custom") names.push("Custom")
+                return names
+              }
+
+              delegate: Rectangle {
+                id: chip
+                required property var modelData
+                property bool hovered: false
+                readonly property bool active: audioEq.preset === modelData
+                readonly property bool isUser:
+                      audioEq.userPresets[modelData] !== undefined
+
+                width: chipText.implicitWidth + 14
+                height: 20
+                radius: 10
+                color: active ? window.palette.green
+                     : (hovered ? window.palette.bg2 : window.palette.bg1)
+                Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
+
+                Text {
+                  id: chipText
+                  anchors.centerIn: parent
+                  text: parent.modelData
+                  color: active ? window.palette.bg0H : window.palette.muted
+                  font.family: window.palette.font; font.pixelSize: appConfig.scaled(9)
+                }
+
+                // хрестик видалення — на hover, у правому краї чипа
+                Text {
+                  visible: chip.hovered && !chip.active
+                  text: "\u2715"
+                  color: window.palette.danger
+                  font.pixelSize: 8
+                  anchors.right: parent.right
+                  anchors.top: parent.top
+                  anchors.margins: 1
+
+                  MouseArea {
+                    anchors.fill: parent
+                    anchors.margins: -4
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: audioEq.deletePreset(chip.modelData)
+                  }
+                }
+
+                MouseArea {
+                  anchors.fill: parent
+                  hoverEnabled: true
+                  cursorShape: Qt.PointingHandCursor
+                  acceptedButtons: Qt.LeftButton | Qt.RightButton
+                  onEntered: parent.hovered = true
+                  onExited: parent.hovered = false
+                  onClicked: (mouse) => {
+                    if (mouse.button === Qt.RightButton)
+                      audioEq.deletePreset(chip.modelData)
+                    else
+                      audioEq.applyPreset(chip.modelData)
+                  }
+                }
+              }
             }
 
-            delegate: Rectangle {
-              required property var modelData
+            // Зберегти поточні смуги як пресет
+            Rectangle {
+              id: saveChip
               property bool hovered: false
-              readonly property bool active: audioEq.preset === modelData
+              readonly property bool naming: saveInput.visible
 
-              width: chipText.implicitWidth + 14
-              height: 18
-              radius: 9
-              color: active ? window.palette.green
-                   : (hovered ? window.palette.bg2 : window.palette.bg1)
-              Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
+              width: naming ? saveInput.width + 12 : saveLabel.implicitWidth + 14
+              height: 20
+              radius: 10
+              color: window.palette.bg1
+              border.width: naming ? 1 : 0
+              border.color: window.palette.accent
 
               Text {
-                id: chipText
+                id: saveLabel
                 anchors.centerIn: parent
-                text: parent.modelData
-                color: active ? window.palette.bg0H : window.palette.muted
+                visible: !saveChip.naming
+                text: "\uF0C7 Save"
+                color: saveChip.hovered ? window.palette.fg : window.palette.muted
                 font.family: window.palette.font; font.pixelSize: appConfig.scaled(9)
+              }
+
+              TextInput {
+                id: saveInput
+                visible: saveChip.naming
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.left: parent.left
+                anchors.leftMargin: 6
+                width: 90
+                color: window.palette.fg
+                font.family: window.palette.font; font.pixelSize: appConfig.scaled(9)
+                clip: true
+                focus: visible
+                onVisibleChanged: {
+                  if (visible) { text = ""; forceActiveFocus() }
+                }
+                onAccepted: {
+                  if (text.trim() !== "") audioEq.saveUserPreset(text.trim())
+                  saveChip.naming = false
+                }
+                onActiveFocusChanged: if (!activeFocus && visible) saveChip.naming = false
               }
 
               MouseArea {
                 anchors.fill: parent
-                hoverEnabled: true
+                hoverEnabled: !saveChip.naming
+                enabled: !saveChip.naming
                 cursorShape: Qt.PointingHandCursor
                 onEntered: parent.hovered = true
                 onExited: parent.hovered = false
-                onClicked: audioEq.applyPreset(parent.modelData)
+                onClicked: {
+                  saveChip.naming = true
+                  saveInput.forceActiveFocus()
+                }
+              }
+            }
+
+            // Повернути видалені вбудовані пресети
+            Text {
+              visible: audioEq.deletedBuiltins.length > 0
+              text: "restore"
+              color: window.palette.gray
+              font.family: window.palette.font; font.pixelSize: appConfig.scaled(9)
+              font.italic: true
+
+              MouseArea {
+                anchors.fill: parent
+                anchors.margins: -4
+                cursorShape: Qt.PointingHandCursor
+                onClicked: audioEq.restoreBuiltins()
               }
             }
           }
         }
 
-        // 15 вертикальних слайдерів смуг
+        // 15 вертикальних слайдерів смуг (20px + spacing 4 = влазить
+        // у ширину попапа без скролу)
         RowLayout {
           Layout.alignment: Qt.AlignHCenter
-          spacing: 10
+          spacing: 4
 
           Repeater {
             model: audioEq.bandCount
@@ -943,7 +1200,7 @@ AnimatedPopup {
               labelColor: window.palette.gray
               fontFamily: window.palette.font
               fontPx: appConfig.scaled(8)
-              implicitWidth: appConfig.scaled(26)
+              implicitWidth: 20
               implicitHeight: 130
               onMoved: v => audioEq.setBand(index, v)
 

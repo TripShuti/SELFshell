@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **EQ preset manager** — save the current bands as a named preset
+  (floppy chip in the equalizer section), delete presets with a
+  right-click or the hover × (built-in ones can be restored via a
+  "restore" chip), user presets persisted in `data/eq.json`.
+- **Player selector** — dropdown at the top of the media player popup
+  listing all present MPRIS players (Spotify, selfsonic, browser
+  players, ...). The choice is persisted in `config.json`
+  (`preferredPlayer`) and shared with the bar widget.
+
 - **Audio equalizer** — a real 15-band system EQ in the media player
   popup (toggle next to the playlist): PipeWire `module-ladspa-sink`
   with the mbeq LADSPA plugin creates a `SELFshell_EQ` sink, band

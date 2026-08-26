@@ -234,6 +234,12 @@ Notes:
 - `layout` accepts `dwindle` or `master`; `orientation` —
   `left`/`right`/`top`/`bottom`/`center`
 
+The same file also stores the **audio equalizer** state written by the
+media player popup: `enabled` (not restored across PipeWire restarts —
+the EQ sink is re-created on demand), `preset`, `bands` (15 gains),
+`userPresets` (`{name: [15 gains]}` — saved from the popup) and
+`deletedBuiltins` (built-in preset names hidden from the list).
+
 ---
 
 ## Hyprland: binds.json
@@ -257,6 +263,14 @@ or empty values are ignored (the Lua default applies). `SUPER` is always
 part of app/shell shortcuts — the Settings UI composes it automatically.
 Changes apply via `hyprctl reload` (done by the Settings UI on every
 change).
+
+---
+
+## Quickshell: data/config.json → preferredPlayer
+
+The favorite media player (identity substring, e.g. `spotify`,
+`selfsonic`, `chromium`) — set from the player popup dropdown, shared
+by the bar widget and the player popup. Default: `selfsonic`.
 
 ---
 
