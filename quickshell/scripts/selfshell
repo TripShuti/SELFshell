@@ -207,6 +207,12 @@ doctor() {
       problems=$((problems + 1))
     fi
   done
+  # swh-plugins — LADSPA mbeq для аудіо-еквалайзера (без нього EQ вимкнений)
+  if [ -f /usr/lib/ladspa/mbeq_1197.so ]; then
+    ok "swh-plugins (audio equalizer)"
+  else
+    warn "swh-plugins not found — audio equalizer disabled (pacman -S swh-plugins)"
+  fi
   # qt6-5compat — модуль Qt5Compat.GraphicalEffects, без нього шелл не стартує
   if [ -d /usr/lib/qt6/qml/Qt5Compat/GraphicalEffects ]; then
     ok "qt6-5compat (Qt5Compat.GraphicalEffects)"

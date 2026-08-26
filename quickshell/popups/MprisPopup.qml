@@ -4,6 +4,7 @@
 import Quickshell.Services.Mpris
 import "../core"
 import "../services"
+import "../scripts/EqPresets.js" as EqPresets
 import QtQuick
 import QtQuick.Layouts
 
@@ -42,6 +43,13 @@ AnimatedPopup {
   property bool playlistOpen: false
   property real playlistHeight
   property real playlistTarget: 0
+
+  // --- Еквалайзер (секція поруч із плейлістом) ---
+  property bool eqOpen: false
+  property real eqHeight
+  readonly property real eqTarget: 176
+
+  AudioEq { id: audioEq }
 
   // Ім'я плеєра для TrackListService (з identity, інакше dbusName)
   readonly property string _servicePlayer: {
@@ -231,6 +239,13 @@ AnimatedPopup {
     NumberAnimation { duration: appConfig.anim(260); easing.type: Easing.OutCubic }
   }
   onPlaylistHeightChanged: root._updateAnchor()
+
+  // Анімована висота секції еквалайзера
+  eqHeight: root.eqOpen ? root.eqTarget : 0
+  Behavior on eqHeight {
+    NumberAnimation { duration: appConfig.anim(260); easing.type: Easing.OutCubic }
+  }
+  onEqHeightChanged: root._updateAnchor()
 
 
   ColumnLayout {
@@ -580,6 +595,28 @@ AnimatedPopup {
           onClicked: root.playlistOpen = !root.playlistOpen
         }
       }
+
+      // Кнопка еквалайзера (виїзджаюча секція; EQ системний, працює
+      // незалежно від плеєра)
+      Rectangle {
+        property bool hovered: false
+        width: 20; height: 20; radius: 4
+        color: root.eqOpen ? window.palette.green : (hovered ? window.palette.bg2 : "transparent")
+        Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
+        Text {
+          anchors.centerIn: parent
+          text: "\uF1DE"
+          color: root.eqOpen ? window.palette.bg0H : window.palette.gray
+          font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
+        }
+        MouseArea {
+          anchors.fill: parent
+          hoverEnabled: true
+          onEntered: parent.hovered = true
+          onExited: parent.hovered = false
+          onClicked: root.eqOpen = !root.eqOpen
+        }
+      }
     }
 
     // Смужка прогресу
@@ -790,6 +827,136 @@ AnimatedPopup {
                 onExited: if (playlistList.hoveredIndex === index) playlistList.hoveredIndex = -1
                 onClicked: tracklistService.goTo(modelData.trackId)
               }
+            }
+          }
+        }
+      }
+    }
+
+    // Еквалайзер (виїзджаюча секція; системний, не прив'язаний до плеєра)
+    Item {
+      id: eqSection
+      Layout.fillWidth: true
+      Layout.preferredHeight: root.eqHeight
+      visible: root.eqHeight > 0
+      clip: true
+
+      ColumnLayout {
+        anchors.fill: parent
+        spacing: 6
+
+        // Заголовок: назва + стан + тумблер
+        RowLayout {
+          Layout.fillWidth: true
+          spacing: 6
+
+          Text {
+            text: "Equalizer"
+            color: window.palette.fg
+            font.family: window.palette.font; font.pixelSize: appConfig.scaled(11); font.bold: true
+          }
+
+          Text {
+            text: {
+              if (!audioEq.pluginInstalled) return "swh-plugins not installed"
+              if (audioEq.busy) return "..."
+              return audioEq.enabled ? "on" : "off"
+            }
+            color: !audioEq.pluginInstalled ? window.palette.danger : window.palette.gray
+            font.family: window.palette.font; font.pixelSize: appConfig.scaled(9)
+          }
+
+          Item { Layout.fillWidth: true }
+
+          ToggleSwitch {
+            checked: audioEq.enabled
+            enabled: audioEq.pluginInstalled && !audioEq.busy
+            palette: window.palette
+            appConfig: window.appConfig
+            checkedColor: window.palette.green
+            trackWidth: 28; trackHeight: 16; knobSize: 12
+            Layout.alignment: Qt.AlignVCenter
+            onToggled: v => v ? audioEq.enable() : audioEq.disable()
+          }
+        }
+
+        // Пресети (чипи; Custom з'являється після ручних змін)
+        Flow {
+          Layout.fillWidth: true
+          spacing: 4
+
+          Repeater {
+            model: {
+              var names = Object.keys(EqPresets.all())
+              if (audioEq.preset === "Custom") names.push("Custom")
+              return names
+            }
+
+            delegate: Rectangle {
+              required property var modelData
+              property bool hovered: false
+              readonly property bool active: audioEq.preset === modelData
+
+              width: chipText.implicitWidth + 14
+              height: 18
+              radius: 9
+              color: active ? window.palette.green
+                   : (hovered ? window.palette.bg2 : window.palette.bg1)
+              Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
+
+              Text {
+                id: chipText
+                anchors.centerIn: parent
+                text: parent.modelData
+                color: active ? window.palette.bg0H : window.palette.muted
+                font.family: window.palette.font; font.pixelSize: appConfig.scaled(9)
+              }
+
+              MouseArea {
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onEntered: parent.hovered = true
+                onExited: parent.hovered = false
+                onClicked: audioEq.applyPreset(parent.modelData)
+              }
+            }
+          }
+        }
+
+        // 15 вертикальних слайдерів смуг
+        RowLayout {
+          Layout.alignment: Qt.AlignHCenter
+          spacing: 10
+
+          Repeater {
+            model: audioEq.bandCount
+
+            VertSlider {
+              required property int index
+              value: audioEq.bands[index] ?? 0
+              from: -12; to: 12; step: 1
+              label: EqPresets.bandLabels[index] ?? ""
+              trackColor: window.palette.bg2
+              fillColor: window.palette.accent
+              knobColor: window.palette.textLight
+              labelColor: window.palette.gray
+              fontFamily: window.palette.font
+              fontPx: appConfig.scaled(8)
+              implicitWidth: appConfig.scaled(26)
+              implicitHeight: 130
+              onMoved: v => audioEq.setBand(index, v)
+
+              Connections {
+                target: audioEq
+                function onBandsChanged() {
+                  // біндинг value руйнується після першого drag —
+                  // оновлюємо імперативно, крім активного drag
+                  if (!vs.dragging) vs.value = audioEq.bands[index]
+                }
+              }
+
+              id: vs
             }
           }
         }

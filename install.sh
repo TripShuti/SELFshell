@@ -59,6 +59,7 @@ PACMAN_DEPS=(
   yazi
   playerctl
   cava
+  swh-plugins
   networkmanager
   bluez
   bluez-utils

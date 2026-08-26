@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Audio equalizer** — a real 15-band system EQ in the media player
+  popup (toggle next to the playlist): PipeWire `module-ladspa-sink`
+  with the mbeq LADSPA plugin creates a `SELFshell_EQ` sink, band
+  changes apply live via pw-cli, existing audio streams are moved
+  through the EQ on enable and back on disable. 17 Winamp-classic
+  presets (Rock, Pop, Jazz, Bass, ...) plus custom bands, persisted in
+  `data/eq.json`. Requires `swh-plugins` (added to the installer and
+  `selfshell doctor`).
+
 ### Changed
 
 - Settings polish: section headers are now uppercase overlines with
