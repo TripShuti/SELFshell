@@ -2,7 +2,6 @@
 // MprisWidget.qml — віджет медіаплеєра на панелі
 // ============================================================
 import Quickshell.Services.Mpris
-import "../core"
 import QtQuick
 import QtQuick.Layouts
 
@@ -50,12 +49,11 @@ Item {
 
     delegate: Item {
       required property var modelData
-      required property int index
 
       readonly property string playerName: (modelData.identity ?? modelData.dbusName ?? "").toLowerCase()
 
       Component.onCompleted: root.findAndSetPlayer()
-      Component.onDestruction: Qt.callLater(root.findAndSetPlayer)
+      Component.onDestruction: Qt.callLater(function() { if (root) root.findAndSetPlayer() })
     }
   }
 

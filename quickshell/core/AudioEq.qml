@@ -1,15 +1,15 @@
 // ============================================================
-// core/AudioEq.qml — справжній еквалайзер на PipeWire:
-// module-ladspa-sink з mbeq_1197 створює віртуальний sink
-// SELFshell_EQ, смуги змінюються live через pw-cli set-param.
-// Увімкнення = load модуля + перемикання default sink + перенос
-// активних потоків; вимкнення = все у зворотному порядку.
-// Стан — data/eq.json. Після рестарту шелла стан відновлюється:
-//   - sink ще живий (рестартувався тільки шелл) → адопція без
-//     повторного load (інакше — дубль sink в output devices)
-//   - sink мертвий (рестартувався PipeWire) + enabled:true у файлі
-//     → повний ланцюг увімкнення автоматично
+// core/AudioEq.qml — справжній еквалайзер на PipeWire.
+// EQ sink (SELFshell_EQ, стерео, mbeq 15-band) створюється статичним
+// конфігом ~/.config/pipewire/pipewire.conf.d/10-selfshell-eq.conf
+// (пише цей компонент, якщо файла нема) — тому він є завжди, а
+// увімкнення/вимкнення = ЧИСТИЙ РОУТИНГ:
+//   enable  = зберегти default → перенести потоки → default = EQ
+//   disable = перенести потоки назад → default = збережений
+// Смуги змінюються live через pw-cli set-param (Props.params,
+// порти "mbeqL:..."/"mbeqR:..."). Стан — data/eq.json.
 // ============================================================
+import Quickshell
 import Quickshell.Io
 import QtQuick
 import "../scripts/EqPresets.js" as EqPresets
@@ -19,8 +19,10 @@ Item {
   visible: false
 
   readonly property string sinkName: "SELFshell_EQ"
+  readonly property string confPath: Quickshell.env("HOME") +
+      "/.config/pipewire/pipewire.conf.d/10-selfshell-eq.conf"
   readonly property string pluginPath: "/usr/lib/ladspa/mbeq_1197.so"
-  // Порт-назви mbeq_1197 (порядок = control 0..14, див. analyseplugin)
+  // Базові назви контрольних портів mbeq_1197 (порядок 0..14)
   readonly property var portNames: [
     "50Hz gain (low shelving)", "100Hz gain", "156Hz gain", "220Hz gain",
     "311Hz gain", "440Hz gain", "622Hz gain", "880Hz gain", "1250Hz gain",
@@ -35,21 +37,21 @@ Item {
   property bool busy: false
   property var bands: []          // 15 значень dB (−12..+12 для UI)
   property string preset: "Flat"
-  property string error: ""       // текст останнього збою ланцюга (для UI)
-  // Користувацькі пресети {name: [15 gains]} та видалені вбудовані
+  property string error: ""       // текст останнього збою (для UI)
+  // Користувацькі пресети {name: [15 gains]}, видалені вбудовані
+  // та запінені (порядок масиву = порядок чипів, хронологія пінів)
   property var userPresets: ({})
   property var deletedBuiltins: ([])
+  property var pinned: ([])
 
   // внутрішнє
-  property string _moduleId: ""   // індекс завантаженого модуля
-  property string _savedSink: ""  // попередній default sink
-  property int _eqNodeId: -1      // pw-node id для set-param
+  property int _eqNodeId: -1      // pw-node id EQ-sink (для set-param)
+  property string _savedSink: ""  // default sink до увімкнення
   property bool _applyingAll: false
   property bool _restoreEnabled: false
-  // стан файлу прочитано? до цього saveState заблокований (інакше
-  // порожній стан перезаписував файл і стирав збережений пресет)
   property bool _stateLoaded: false
   property bool _dumpDone: false
+  property bool _confRestartPending: false
 
   Component.onCompleted: {
     _pluginCheck.reload()
@@ -57,13 +59,65 @@ Item {
     _stateFile.reload()
   }
 
-  // Ланцюг ініціалізації: читаємо eq.json (async) → і лише потім dump
-  // (адопція/відновлення мають знати preset/bands/enabled з файлу)
+  onEnabledChanged: {
+    if (enabled && _eqNodeId >= 0) _relinkProc.running = true
+  }
+
+  // Ініціалізація: читаємо eq.json (async) → забезпечуємо конфіг → dump
   function _stateReady() {
     _loadState()
     if (root._dumpDone) return
     root._dumpDone = true
+    _ensureConf()
     _dumpProc.running = true
+  }
+
+  function _ensureConf() {
+    var content = '# SELFshell audio equalizer (managed by the shell)\n' +
+      'context.modules = [\n' +
+      '  {   name = libpipewire-module-filter-chain\n' +
+      '      args = {\n' +
+      '          node.description = "SELFshell EQ"\n' +
+      '          media.name = "SELFshell EQ"\n' +
+      '          filter.graph = {\n' +
+      '              nodes = [\n' +
+      '                  {\n' +
+      '                      type = ladspa\n' +
+      '                      name = mbeqL\n' +
+      '                      plugin = "' + root.pluginPath + '"\n' +
+      '                      label = mbeq\n' +
+      '                      control = { ' + _zeroControls() + ' }\n' +
+      '                  }\n' +
+      '                  {\n' +
+      '                      type = ladspa\n' +
+      '                      name = mbeqR\n' +
+      '                      plugin = "' + root.pluginPath + '"\n' +
+      '                      label = mbeq\n' +
+      '                      control = { ' + _zeroControls() + ' }\n' +
+      '                  }\n' +
+      '              ]\n' +
+      '              inputs = [ "mbeqL:Input" "mbeqR:Input" ]\n' +
+      '              outputs = [ "mbeqL:Output" "mbeqR:Output" ]\n' +
+      '          }\n' +
+      '          capture.props = {\n' +
+      '              media.class = Audio/Sink\n' +
+      '              node.name = "SELFshell_EQ"\n' +
+      '              audio.position = [ FL, FR ]\n' +
+      '          }\n' +
+      '          playback.props = {\n' +
+      '              audio.position = [ FL, FR ]\n' +
+      '          }\n' +
+      '      }\n' +
+      '  }\n' +
+      ']\n'
+    _confFile.setText(content)
+  }
+
+  function _zeroControls() {
+    var parts = []
+    for (var i = 0; i < bandCount; i++)
+      parts.push('"' + i + '" = 0.0')
+    return parts.join(" ")
   }
 
   function _flatBands() {
@@ -82,35 +136,67 @@ Item {
     } else {
       bands = _flatBands()
     }
-    preset = d.preset || "Flat"
-    userPresets = (d.userPresets && typeof d.userPresets === "object") ? d.userPresets : {}
-    deletedBuiltins = (d.deletedBuiltins && d.deletedBuiltins.length !== undefined) ? d.deletedBuiltins : []
+    // міграція Custom → Flat+bands (Custom повністю видалено)
+    if (d.preset === "Custom") {
+      preset = "Flat"
+    } else {
+      preset = d.preset || "Flat"
+    }
+    // прибрати Custom з pinned/deletedBuiltins якщо затесався
+    var _pinned = (d.pinned && d.pinned.length !== undefined) ? d.pinned : []
+    pinned = _pinned.filter(n => n !== "Custom")
+    var _deleted = (d.deletedBuiltins && d.deletedBuiltins.length !== undefined) ? d.deletedBuiltins : []
+    deletedBuiltins = _deleted.filter(n => n !== "Custom")
+    if (d.userPresets && typeof d.userPresets === "object") {
+      var _up = {}
+      for (var k in d.userPresets) if (k !== "Custom") _up[k] = d.userPresets[k]
+      userPresets = _up
+    } else {
+      userPresets = {}
+    }
     _restoreEnabled = d.enabled === true
     _stateLoaded = true
     // файл міг дочитатись пізніше за адопцію — перезастосовуємо смуги
-    if (enabled && _eqNodeId > 0) _applyAllNow()
+    if (enabled && _eqNodeId > 0) {
+      _applyAllNow()
+      _relinkProc.running = true
+    }
   }
 
   function saveState() {
     if (!root._stateLoaded) return
     _stateFile.setText(JSON.stringify({
       enabled: enabled, preset: preset, bands: bands,
-      userPresets: userPresets, deletedBuiltins: deletedBuiltins
+      userPresets: userPresets, deletedBuiltins: deletedBuiltins,
+      pinned: pinned
     }))
+  }
+
+  // ---------- застосування смуг (live, pw-cli) ----------
+  function _applyAllNow() {
+    if (_eqNodeId < 0) return
+    var entries = []
+    for (var px = 0; px < 2; px++)
+      for (var i = 0; i < bandCount; i++)
+        entries.push((px === 0 ? "mbeqL:" : "mbeqR:") + portNames[i], bands[i])
+    _setParamProc.command = ["pw-cli", "s", String(_eqNodeId), "2",
+      JSON.stringify({ params: entries })]
+    _setParamProc.running = true
   }
 
   function setBand(i, value) {
     var b = bands.slice()
     b[i] = Math.max(-12, Math.min(12, value))
     bands = b
-    preset = "Custom"
+    // preset лишається як був (Techno/Flat) — Custom видалено, зміни live до рестарту
     if (enabled && _eqNodeId > 0) {
-      var entries = [portNames[i], bands[i]]
       _setParamProc.command = ["pw-cli", "s", String(_eqNodeId), "2",
-        JSON.stringify({ params: entries })]
+        JSON.stringify({ params: [
+          "mbeqL:" + portNames[i], b[i],
+          "mbeqR:" + portNames[i], b[i]
+        ] })]
       _setParamProc.running = true
     }
-    saveState()
   }
 
   function applyPreset(name) {
@@ -128,29 +214,27 @@ Item {
     bands = []
     for (var j = 0; j < gains.length && j < bandCount; j++)
       bands.push(Math.max(-12, Math.min(12, gains[j])))
-    if (enabled && _eqNodeId > 0) {
-      var entries = []
-      for (var i = 0; i < bandCount; i++)
-        entries.push(portNames[i], bands[i])
-      _setParamProc.command = ["pw-cli", "s", String(_eqNodeId), "2",
-        JSON.stringify({ params: entries })]
-      _setParamProc.running = true
-    }
+    if (enabled && _eqNodeId > 0) _applyAllNow()
     saveState()
   }
 
-  function saveUserPreset(name) {
-    name = (name || "").trim()
-    if (name === "") return
-    var u = Object.assign({}, userPresets)
-    u[name] = bands.slice()
-    userPresets = u
+  // ---------- менеджмент пресетів ----------
+  // Новий пресет з поточних смуг: ім'я "new", "new2", "new3"… — перше
+  // вільне (не збігається з user-пресетами та вбудованими)
+  function createPreset() {
+    var base = "new"
+    var name = base
+    var n = 2
+    while (userPresets[name] !== undefined || EqPresets.all()[name] !== undefined) {
+      name = base + n
+      n++
+    }
+    userPresets = Object.assign({}, userPresets, { [name]: bands.slice() })
     preset = name
     saveState()
   }
 
   function deletePreset(name) {
-    if (name === "Custom") return
     if (userPresets[name] !== undefined) {
       var u = Object.assign({}, userPresets)
       delete u[name]
@@ -161,13 +245,75 @@ Item {
     } else {
       return
     }
-    if (preset === name) preset = "Custom"
+    if (isPinned(name)) {
+      var _p = pinned.slice()
+      _p.splice(_p.indexOf(name), 1)
+      pinned = _p
+    }
+    if (preset === name) preset = "Flat"
     saveState()
   }
 
-  function restoreBuiltins() {
-    deletedBuiltins = []
+  // Перейменування зберігає ВЛАСНІ смуги пресета (не поточний стан EQ).
+  // Built-in → user-shadow під новим ім'ям, старе ховається.
+  function renamePreset(oldName, newName) {
+    newName = (newName || "").trim()
+    if (newName === "" || newName === oldName) return
+    if (userPresets[newName] !== undefined || EqPresets.all()[newName] !== undefined) return
+
+    var oldBands
+    if (userPresets[oldName] !== undefined) {
+      oldBands = userPresets[oldName]
+      var u = Object.assign({}, userPresets)
+      delete u[oldName]
+      u[newName] = oldBands
+      userPresets = u
+    } else if (EqPresets.all()[oldName] !== undefined) {
+      oldBands = EqPresets.all()[oldName]
+      if (deletedBuiltins.indexOf(oldName) === -1)
+        deletedBuiltins = deletedBuiltins.concat([oldName])
+      userPresets = Object.assign({}, userPresets, { [newName]: oldBands })
+    } else {
+      return
+    }
+
+    var pi = pinned.indexOf(oldName)
+    if (pi !== -1) {
+      var p = pinned.slice()
+      p[pi] = newName
+      pinned = p
+    }
+    if (preset === oldName) preset = newName
     saveState()
+  }
+
+  function togglePin(name) {
+    var pi = pinned.indexOf(name)
+    if (pi !== -1) {
+      var p = pinned.slice()
+      p.splice(pi, 1)
+      pinned = p
+    } else {
+      pinned = pinned.concat([name]) // кожен новий пін — за попереднім
+    }
+    saveState()
+  }
+
+  function isPinned(name) { return pinned.indexOf(name) !== -1 }
+
+  // ---------- увімкнення / вимкнення (тільки роутинг) ----------
+  // Перезаписати пресет поточними смугами (контекстне меню → Save
+  // changes). Built-in → створюється user-shadow з тим самим ім'ям,
+  // який перекриває вбудований
+  function saveChangesTo(name) {
+    userPresets = Object.assign({}, userPresets, { [name]: bands.slice() })
+    saveState()
+  }
+
+  // чи існує чип для цього імені (не видалений, не перекритий)
+  function chipExists(name) {
+    if (userPresets[name] !== undefined) return true
+    return EqPresets.all()[name] !== undefined && deletedBuiltins.indexOf(name) === -1
   }
 
   function enable() {
@@ -182,185 +328,113 @@ Item {
     error = ""
     busy = true
     // Резолв fallback-у: 1) збережений sink з моменту увімкнення (якщо
-    // досі існує), 2) перший RUNNING не-EQ, 3) перший не-EQ. Без цього
-    // fallback'ом ставав перший зі списку — мертвий S/PDIF-вихід.
-    _disableProc.command = ["bash", "-c",
-      "SAVED='" + _savedSink + "'; " +
+    // досі існує), 2) поточний default якщо не EQ, 3) перший RUNNING не-EQ,
+    // 4) перший не-EQ. Без збереженого — fallback ставав мертвим S/PDIF
+    _moveInputsProc.command = ["bash", "-c",
+      "SAVED='" + root._savedSink + "'; " +
       "T=''; " +
       "if [ -n \"$SAVED\" ] && pactl list short sinks | grep -q \"$SAVED\"; then " +
       "T=$(pactl list short sinks | grep \"$SAVED\" | head -1 | cut -f1); fi; " +
-      "if [ -z \"$T\" ]; then T=$(pactl list short sinks | grep -v " + sinkName + " | grep RUNNING | head -1 | cut -f1); fi; " +
-      "if [ -z \"$T\" ]; then T=$(pactl list short sinks | grep -v " + sinkName + " | head -1 | cut -f1); fi; " +
+      "if [ -z \"$T\" ]; then T=$(pactl get-default-sink); [ \"$T\" = \"" + root.sinkName + "\" ] && T=''; fi; " +
+      "if [ -z \"$T\" ]; then T=$(pactl list short sinks | grep -v " + root.sinkName + " | grep RUNNING | head -1 | cut -f1); fi; " +
+      "if [ -z \"$T\" ]; then T=$(pactl list short sinks | grep -v " + root.sinkName + " | head -1 | cut -f1); fi; " +
       "[ -z \"$T\" ] && exit 0; " +
-      "pactl list short sink-inputs | cut -f1 | xargs -r -n1 -I{} pactl move-sink-input {} \"$T\"; " +
+      "pactl list short sink-inputs | cut -f1 | " +
+      "xargs -r -n1 -I{} pactl move-sink-input {} \"$T\"; " +
       "pactl set-default-sink \"$T\""]
-    _disableProc.running = true
+    _moveInputsProc.running = true
   }
 
   // ---------- ланцюг увімкнення ----------
   Process {
     id: _getDefaultSinkProc
-    command: ["pactl", "get-default-sink"]
+    // резолвимо sink-for-restore: поточний default, але якщо це вже EQ
+    // (отруєний стан попередніх кривих спроб) — перший не-EQ RUNNING
+    command: ["bash", "-c",
+      "d=$(pactl get-default-sink); " +
+      "if [ \"$d\" = \"" + root.sinkName + "\" ]; then " +
+      "d=$(pactl list short sinks | grep -v " + root.sinkName + " | grep RUNNING | head -1 | cut -f1); fi; " +
+      "if [ -z \"$d\" ]; then d=$(pactl list short sinks | grep -v " + root.sinkName + " | head -1 | cut -f1); fi; " +
+      "echo \"$d\""]
     stdout: StdioCollector {
       onStreamFinished: {
         root._savedSink = text.trim()
-        _loadProc.command = ["pactl", "load-module", "module-ladspa-sink",
-          "sink_name=" + root.sinkName,
-          "plugin=" + root.pluginPath,
-          "label=mbeq",
-          "control=" + Array(root.bandCount).fill(0).join(",")]
-        _loadProc.running = true
+        // переносимо граючі потоки в EQ ще ДО перемикання default
+        _moveInputsOnProc.command = ["bash", "-c",
+          "pactl list short sink-inputs | cut -f1 | " +
+          "xargs -r -n1 -I{} pactl move-sink-input {} " + root.sinkName]
+        _moveInputsOnProc.running = true
       }
-    }
-  }
-
-  Process {
-    id: _loadProc
-    stdout: StdioCollector {
-      id: _loadCollector
-      onStreamFinished: {
-        root._moduleId = text.trim()
-        _setSinkProc.running = true
-      }
-    }
-    onExited: (code) => {
-      if (code !== 0) {
-        root.error = "failed to load EQ sink"
-        root.busy = false
-      }
-    }
-  }
-
-  Process {
-    id: _setSinkProc
-    command: ["pactl", "set-default-sink", root.sinkName]
-    onExited: (code) => {
-      if (code !== 0) {
-        root.error = "failed to switch default sink"
-        root.busy = false
-        return
-      }
-      // активні потоки лишились на старому sink — переносимо в EQ
-      _moveInputsOnProc.command = ["bash", "-c",
-        "pactl list short sink-inputs | awk '{print $1}' | " +
-        "xargs -r -n1 -I{} pactl move-sink-input {} " + root.sinkName]
-      _moveInputsOnProc.running = true
     }
   }
 
   Process {
     id: _moveInputsOnProc
-    onExited: { root._applyingAll = true; _findNodeProc.running = true }
-  }
-
-  // ---------- пошук pw-node id + адопція/відновлення ----------
-  Process {
-    id: _dumpProc
-    command: ["pw-dump"]
-    stdout: StdioCollector {
-      onStreamFinished: root._onDump(text)
+    onExited: {
+      // прапор: після set-param смуг enabled = true (див. _setParamProc)
+      root._applyingAll = true
+      _setDefaultProc.running = true
     }
   }
 
+  Process {
+    id: _setDefaultProc
+    command: ["pactl", "set-default-sink", root.sinkName]
+    onExited: (code) => {
+      if (code !== 0) { root.error = "failed to switch default sink"; root.busy = false; return }
+      _findNodeProc.running = true
+    }
+  }
+
+  // ---------- пошук pw-node id EQ-sink ----------
   Process {
     id: _findNodeProc
     command: ["pw-dump"]
     stdout: StdioCollector {
-      onStreamFinished: root._onDump(text)
-    }
-  }
-
-  function _onDump(text) {
-    var sinkExists = false
-    try {
-      var objs = JSON.parse(text)
-      for (var i = 0; i < objs.length; i++) {
-        var o = objs[i]
-        if ((o.type || "").endsWith("Node") &&
-            ((o.info || {}).props || {})["node.name"] === root.sinkName) {
-          sinkExists = true
-          root._eqNodeId = o.id
-          break
-        }
-      }
-    } catch (e) {}
-
-    if (sinkExists) {
-      // адопція: модуль уже в PipeWire — лише приймаємо стан
-      root.enabled = true
-      root.busy = false
-      _modulesProc.stage = "adopt"
-      _modulesProc.running = true
-      root._applyAllNow()
-      root.saveState()
-      return
-    }
-
-    if (root._restoreEnabled && !root.busy) {
-      // sink мертвий (рестарт PipeWire), але стан був увімкнений
-      root._restoreEnabled = false
-      root.enable()
-      return
-    }
-    // звичайний вхід із _moveInputsOnProc (свіже увімкнення)
-    if (root._eqNodeId > 0) root._applyAllNow()
-  }
-
-  function _applyAllNow() {
-    var entries = []
-    for (var i = 0; i < bandCount; i++)
-      entries.push(portNames[i], bands[i])
-    _setParamProc.command = ["pw-cli", "s", String(_eqNodeId), "2",
-      JSON.stringify({ params: entries })]
-    _setParamProc.running = true
-  }
-
-  // ---------- індекс модуля + вимкнення ----------
-  Process {
-    id: _modulesProc
-    property string stage: "" // "adopt" | "disable"
-    command: ["pactl", "list", "short", "modules"]
-    stdout: StdioCollector {
       onStreamFinished: {
-        var lines = text.trim().split("\n")
-        for (var i = 0; i < lines.length; i++) {
-          if (lines[i].indexOf("module-ladspa-sink") !== -1 &&
-              lines[i].indexOf("sink_name=" + root.sinkName) !== -1) {
-            root._moduleId = lines[i].split("\t")[0]
-            break
+        try {
+          var objs = JSON.parse(text)
+          for (var i = 0; i < objs.length; i++) {
+            var o = objs[i]
+            if ((o.type || "").endsWith("Node") &&
+                ((o.info || {}).props || {})["node.name"] === root.sinkName) {
+              root._eqNodeId = o.id
+              break
+            }
           }
+        } catch (e) {}
+        if (root._eqNodeId < 0) {
+          root.error = "EQ sink node not found"
+          root.busy = false
+          return
         }
-        if (_modulesProc.stage === "disable") {
-          _modulesProc.stage = ""
-          if (root._moduleId !== "") {
-            _unloadProc.command = ["pactl", "unload-module", root._moduleId]
-            _unloadProc.running = true
-          } else {
-            // модуль і так зник (рестарт PipeWire) — просто скидаємо стан
-            root._eqNodeId = -1
-            root.enabled = false
-            root.busy = false
-            root.saveState()
-          }
-        }
+        root._applyAllNow()
+        // одразу перелінковуємо вихід filter-chain на актуальний хардвар
+        _relinkProc.running = true
       }
     }
   }
 
   // ---------- вимкнення ----------
   Process {
-    id: _disableProc
-    onExited: {
-      _modulesProc.stage = "disable"
-      _modulesProc.running = true
+    id: _moveInputsProc
+    onExited: (code) => {
+      // default повертаємо навіть якщо move впав (може, потоків не було)
+      _restoreDefaultProc.command = ["bash", "-c",
+        "T=$(pactl get-default-sink); " +
+        "[ \"$T\" = \"" + root.sinkName + "\" ] && " +
+        "T=$(pactl list short sinks | grep -v " + root.sinkName + " | grep RUNNING | head -1 | cut -f1); " +
+        "[ \"$T\" = \"" + root.sinkName + "\" ] && " +
+        "T=$(pactl list short sinks | grep -v " + root.sinkName + " | head -1 | cut -f1); " +
+        "[ -z \"$T\" ] && exit 0; " +
+        "pactl set-default-sink \"$T\""]
+      _restoreDefaultProc.running = true
     }
   }
 
   Process {
-    id: _unloadProc
+    id: _restoreDefaultProc
     onExited: {
-      root._moduleId = ""
-      root._eqNodeId = -1
       root.enabled = false
       root.busy = false
       root.saveState()
@@ -381,6 +455,96 @@ Item {
     }
   }
 
+  // ---------- конфіг і перевірка наявності sink ----------
+  // Якщо sink зник (конфігу не було / PipeWire без нього) — пишемо конфіг
+  // і рестартимо PipeWire (одноразово, короткий дроп звуку)
+  Process {
+    id: _dumpProc
+    command: ["pw-dump"]
+    stdout: StdioCollector {
+      onStreamFinished: {
+        var sinkFound = false
+        try {
+          var objs = JSON.parse(text)
+          for (var i = 0; i < objs.length; i++) {
+            var o = objs[i]
+            if ((o.type || "").endsWith("Node") &&
+                ((o.info || {}).props || {})["node.name"] === root.sinkName) {
+              sinkFound = true
+              root._eqNodeId = o.id
+              break
+            }
+          }
+        } catch (e) {}
+
+        if (sinkFound) {
+          if (root._restoreEnabled && !root.busy) {
+            root._restoreEnabled = false
+            root.enable()
+          }
+          return
+        }
+
+        // sink нема → забезпечуємо конфіг; рестарт — після фактичного
+        // збереження файлу (onSaved), інакше рестарт обігне запис
+        if (root.pluginInstalled) {
+          root._confRestartPending = true
+          _ensureConf()
+        }
+      }
+    }
+  }
+
+  Process {
+    id: _pwRestartProc
+    command: ["systemctl", "--user", "restart", "pipewire"]
+    onExited: _reDumpTimer.start()
+  }
+
+  Timer {
+    id: _reDumpTimer
+    interval: 2000
+    onTriggered: _dumpProc.running = true
+  }
+
+  // ---------- авто-перелінк після зміни заліза (навушники ↔ колонки) ----------
+  // Коли EQ увімкнений, його вихід (output.filter-chain) має бути
+  // залинкований на актуальний хардварний sink. При відключенні
+  // навушників PipeWire може перелінкувати його на невірний sink
+  // (iec958) або від'єднати — таймер кожні 3с лінкує на всі доступні
+  // хардварні sinks, щоб колонки гарантовано отримали звук.
+  Timer {
+    id: _linkCheckTimer
+    interval: 3000
+    running: root.enabled && !root.busy && root._eqNodeId >= 0
+    repeat: true
+    onTriggered: _relinkProc.running = true
+  }
+
+  Process {
+    id: _relinkProc
+    command: ["bash", "-c",
+      "SRC=$(pw-link -o 2>/dev/null | grep 'output.filter-chain' | head -1 | cut -d: -f1); " +
+      "[ -z \"$SRC\" ] && exit 0; " +
+      // якщо BT підключено — тільки BT (ексклюзивно), інакше — всі хардварні sinks щоб колонки гарантовано отримали звук
+      "if pactl list short sinks 2>/dev/null | grep -q \"bluez\"; then " +
+      "  BEST=$(pactl list short sinks 2>/dev/null | grep \"bluez\" | head -1 | cut -f2); " +
+      "  [ -z \"$BEST\" ] && exit 0; " +
+      "  for T in $(pactl list short sinks 2>/dev/null | grep -v '" + root.sinkName + "' | cut -f2); do " +
+      "    pw-link -d \"$SRC:output_FL\" \"$T:playback_FL\" 2>/dev/null || true; " +
+      "    pw-link -d \"$SRC:output_FR\" \"$T:playback_FR\" 2>/dev/null || true; " +
+      "  done; " +
+      "  pw-link \"$SRC:output_FL\" \"$BEST:playback_FL\" 2>/dev/null || true; " +
+      "  pw-link \"$SRC:output_FR\" \"$BEST:playback_FR\" 2>/dev/null || true; " +
+      "else " +
+      "  for T in $(pactl list short sinks 2>/dev/null | grep -v '" + root.sinkName + "' | cut -f2); do " +
+      "    pw-link \"$SRC:output_FL\" \"$T:playback_FL\" 2>/dev/null || true; " +
+      "    pw-link \"$SRC:output_FR\" \"$T:playback_FR\" 2>/dev/null || true; " +
+      "  done; " +
+      "fi"
+    ]
+  }
+
   // ---------- файли ----------
   FileView {
     id: _pluginCheck
@@ -397,5 +561,17 @@ Item {
     onFileChanged: this.reload()
     onDataChanged: root._stateReady()
     onLoadFailed: root._stateReady()
+  }
+
+  FileView {
+    id: _confFile
+    path: "file://" + root.confPath
+    watchChanges: false
+    onSaved: {
+      if (root._confRestartPending) {
+        root._confRestartPending = false
+        _pwRestartProc.running = true
+      }
+    }
   }
 }

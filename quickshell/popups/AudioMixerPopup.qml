@@ -2,6 +2,7 @@
 // AudioMixerPopup.qml — мікшер аудіо: пристрої та потоки
 // ============================================================
 import Quickshell
+import Quickshell.Io
 import Quickshell.Services.Pipewire
 import "../core"
 import QtQuick
@@ -28,6 +29,13 @@ AnimatedPopup {
 
   onVisibleChanged: {
     if (visible) root.positionUnderAnchor()
+  }
+
+  // Перенесення граючих потоків на новий default sink.
+  // Pipewire.preferredDefaultAudioSink міняє дефолт тільки для нових
+  // sink-inputs — існуючі лишаються на старому sink.
+  Process {
+    id: _moveStreamsProc
   }
 
   // Список пристроїв міняє висоту — пере-позиціонуємо, інакше попап
@@ -58,7 +66,9 @@ AnimatedPopup {
       delegate: Item {
         required property PwNode modelData
 
-        visible: modelData.isSink && modelData.audio != null
+        // !isStream: внутрішній playback-стрім ladspa/filiter-модулів
+        // (напр. EQ sink) має той самий description і дублювався у списку
+        visible: modelData.isSink && !modelData.isStream && modelData.audio != null
         height: visible ? 40 : 0
         Layout.fillWidth: true
         clip: true
@@ -149,7 +159,30 @@ AnimatedPopup {
               onEntered: parent.hovered = true
               onExited: parent.hovered = false
               onClicked: {
-                if (modelData.audio) Pipewire.preferredDefaultAudioSink = modelData
+                if (!modelData.audio) return
+                if (Pipewire.defaultAudioSink === modelData) return
+                Pipewire.preferredDefaultAudioSink = modelData
+                // Pipewire.preferredDefaultAudioSink міняє дефолт тільки для нових
+                // потоків. Якщо EQ увімкнений (default == SELFshell_EQ),
+                // треба перелінкувати вихід filter-chain на вибраний хардвар,
+                // інакше — перенести існуючі sink-inputs
+                if (Pipewire.defaultAudioSink && Pipewire.defaultAudioSink.name === "SELFshell_EQ") {
+                  _moveStreamsProc.command = ["bash", "-c",
+                    "SRC=$(pw-link -o 2>/dev/null | grep 'output.filter-chain' | head -1 | cut -d: -f1); " +
+                    "[ -z \"$SRC\" ] && exit 0; " +
+                    "T=\"" + modelData.name + "\"; " +
+                    "for O in $(pactl list short sinks 2>/dev/null | grep -v 'SELFshell_EQ' | cut -f2); do " +
+                    "  pw-link -d \"$SRC:output_FL\" \"$O:playback_FL\" 2>/dev/null || true; " +
+                    "  pw-link -d \"$SRC:output_FR\" \"$O:playback_FR\" 2>/dev/null || true; " +
+                    "done; " +
+                    "pw-link \"$SRC:output_FL\" \"$T:playback_FL\" 2>/dev/null || true; " +
+                    "pw-link \"$SRC:output_FR\" \"$T:playback_FR\" 2>/dev/null || true"
+                  ]
+                } else {
+                  _moveStreamsProc.command = ["bash", "-c",
+                    "T=\"" + modelData.name + "\"; pactl list short sink-inputs 2>/dev/null | cut -f1 | xargs -r -n1 -I{} pactl move-sink-input {} \"$T\""]
+                }
+                _moveStreamsProc.running = true
               }
             }
           }

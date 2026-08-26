@@ -15,6 +15,7 @@
   "batteryEnabled": true,
   "dndEnabled": false,
   "timerSoundPath": "",
+  "preferredPlayer": "selfsonic",
   "idleLockTimeout": 300,
   "idleDpmsTimeout": 360,
   "idleSuspendTimeout": 900,

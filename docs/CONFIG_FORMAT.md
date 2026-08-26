@@ -63,6 +63,7 @@ Edited through SettingsPopup (UI) or manually.
 | `uiScale` | `number` | `1.0` | Global multiplier for all text/icon-glyph sizes in bar, popups and settings (0.8–1.5) |
 | `animationsEnabled` | `boolean` | `true` | Master switch for all shell animations (hover, popups, sliders, lock screen) |
 | `animSpeed` | `number` | `1.0` | Multiplier for every animation duration; e.g. `1.5` = 50% slower, `0.5` = 2× faster (0.5–2.0) |
+| `preferredPlayer` | `string` | `"selfsonic"` | Favorite media player identity substring (`spotify`, `chromium` …), shared by bar widget and popup |
 
 Separators look like `sep-N`, where N is a unique numeric ID.
 Generated automatically by `addSep()` in AppConfig.
@@ -234,11 +235,32 @@ Notes:
 - `layout` accepts `dwindle` or `master`; `orientation` —
   `left`/`right`/`top`/`bottom`/`center`
 
-The same file also stores the **audio equalizer** state written by the
-media player popup: `enabled` (not restored across PipeWire restarts —
-the EQ sink is re-created on demand), `preset`, `bands` (15 gains),
-`userPresets` (`{name: [15 gains]}` — saved from the popup) and
-`deletedBuiltins` (built-in preset names hidden from the list).
+---
+
+## Quickshell: data/eq.json
+
+`quickshell/data/eq.json` — audio equalizer state, written by `core/AudioEq.qml`
+(`FileView` at `../data/eq.json`). Created on first `saveState()`.
+
+```json
+{
+  "enabled": true,
+  "preset": "Flat",
+  "bands": [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  "userPresets": { "My Preset": [0,1,2, ...] },
+  "deletedBuiltins": ["Rock"],
+  "pinned": ["Rock"]
+}
+```
+
+| Field | Type | Purpose |
+|-------|------|---------|
+| `enabled` | `boolean` | EQ is routed (default sink = `SELFshell_EQ`). Not auto-restored if PipeWire restarted without config, otherwise restored via `pw-dump` adoption |
+| `preset` | `string` | Active preset name (`Flat` …) |
+| `bands` | `number[15]` | Current 15 gains dB (-12..12, clamped) |
+| `userPresets` | `object` | `{name: [15 gains]}` — presets created via `+` or `Save changes` (shadow built-ins on name collision) |
+| `deletedBuiltins` | `string[]` | Built-in names hidden via `Delete` |
+| `pinned` | `string[]` | Pinned preset names, order = chip row order (chronological) |
 
 ---
 

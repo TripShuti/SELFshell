@@ -53,9 +53,12 @@ AnimatedPopup {
 
   // --- Еквалайзер (секція поруч із плейлістом) ---
   property bool eqOpen: false
+  // ім'я пресета в режимі перейменування (запускається з контекстного
+  // меню; чип малює TextInput замість назви)
+  property string renameTarget: ""
   property real eqHeight
-  // header + рядок пресетів (горизонтальний скрол) + слайдери з підписами
-  readonly property real eqTarget: 196
+  // header + чипи + рядок save/rename + слайдери з підписами
+  readonly property real eqTarget: 216
 
   AudioEq { id: audioEq }
 
@@ -167,7 +170,6 @@ AnimatedPopup {
 
     delegate: Item {
       required property var modelData
-      required property int index
 
       readonly property string playerName: (modelData.identity ?? modelData.dbusName ?? "").toLowerCase()
 
@@ -272,126 +274,6 @@ AnimatedPopup {
     spacing: 6
 
 
-    // Вибір плеєра: поточний identity + список присутніх MPRIS-плеєрів.
-    // Вибір персистентний (config.json → preferredPlayer) і спільний
-    // з бар-віджетом
-    ColumnLayout {
-      Layout.fillWidth: true
-      spacing: 4
-      visible: Mpris.players.values.length > 0
-
-      RowLayout {
-        Layout.fillWidth: true
-        spacing: 6
-
-        Text {
-          text: "\uF001"
-          color: window.palette.accent
-          font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
-        }
-
-        Text {
-          text: root.player?.identity ?? "No player"
-          color: window.palette.fg
-          font.family: window.palette.font; font.pixelSize: appConfig.scaled(10); font.bold: true
-          elide: Text.ElideRight
-          Layout.fillWidth: true
-        }
-
-        Text {
-          text: root.playerSelOpen ? "\uF077" : "\uF078"
-          color: window.palette.gray
-          font.family: window.palette.font; font.pixelSize: appConfig.scaled(9)
-        }
-
-        MouseArea {
-          anchors.fill: parent
-          cursorShape: Qt.PointingHandCursor
-          onClicked: root.playerSelOpen = !root.playerSelOpen
-        }
-      }
-
-      Item {
-        Layout.fillWidth: true
-        Layout.preferredHeight: root.playerSelHeight
-        visible: root.playerSelHeight > 0
-        clip: true
-
-        ColumnLayout {
-          anchors.fill: parent
-          spacing: 2
-
-          Repeater {
-            // унікальні identity (кілька інстансів chromium = один запис)
-            model: {
-              var seen = {}
-              var out = []
-              var players = Mpris.players.values
-              for (var i = 0; i < players.length; i++) {
-                var id = players[i].identity ?? ""
-                var key = id.toLowerCase()
-                if (id === "" || seen[key]) continue
-                seen[key] = true
-                out.push({ identity: id, key: key })
-              }
-              return out
-            }
-
-            delegate: Rectangle {
-              required property var modelData
-              property bool hovered: false
-              readonly property bool active:
-                    root.player?.identity?.toLowerCase() === modelData.key
-
-              Layout.fillWidth: true
-              height: 24
-              radius: 5
-              color: active ? window.palette.bg2
-                   : (hovered ? window.palette.bg1 : "transparent")
-              Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
-
-              RowLayout {
-                anchors.fill: parent
-                anchors.leftMargin: 8
-                anchors.rightMargin: 8
-                spacing: 6
-
-                Text {
-                  text: modelData.active ? "\uF00C" : ""
-                  color: window.palette.green
-                  font.family: window.palette.font; font.pixelSize: appConfig.scaled(9)
-                  Layout.preferredWidth: 12
-                }
-
-                Text {
-                  text: modelData.identity
-                  color: modelData.active ? window.palette.green : window.palette.fg
-                  font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
-                  font.bold: modelData.active
-                  elide: Text.ElideRight
-                  Layout.fillWidth: true
-                }
-              }
-
-              MouseArea {
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onEntered: parent.hovered = true
-                onExited: parent.hovered = false
-                onClicked: {
-                  window.appConfig.cfg.preferredPlayer = modelData.key
-                  window.appConfig.saveToFile()
-                  root.findAndSetPlayer()
-                  root.playerSelOpen = false
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-
     // Роздільник
     GradientSeparator {
       midColor: window.palette.bg2
@@ -440,13 +322,19 @@ AnimatedPopup {
       spacing: 8
       visible: root.player != null
 
-      // Обкладинка альбому
-      Rectangle {
-        width: 80; height: 80; radius: 1
-        color: window.palette.bg1
-        border.width: 1
-        border.color: root.player?.isPlaying ? window.palette.green : window.palette.bg2
-        Behavior on border.color { ColorAnimation { duration: appConfig.anim(200) } }
+      // Ліва колонка: обкладинка + пігулка вибору плеєра під нею
+      ColumnLayout {
+        spacing: 4
+        Layout.alignment: Qt.AlignTop
+
+        // Обкладинка альбому (не клікабельна)
+        Rectangle {
+          id: artCover
+          width: 80; height: 80; radius: 1
+          color: window.palette.bg1
+          border.width: 1
+          border.color: root.player?.isPlaying ? window.palette.green : window.palette.bg2
+          Behavior on border.color { ColorAnimation { duration: appConfig.anim(200) } }
 
         Image {
           id: artImg
@@ -487,6 +375,50 @@ AnimatedPopup {
             loops: Animation.Infinite
             NumberAnimation { to: 0.4; duration: appConfig.anim(700) }
             NumberAnimation { to: 1.0; duration: appConfig.anim(700) }
+          }
+        }
+      }
+
+        // Пігулка вибору плеєра — під обкладинкою, показує поточний preferredPlayer
+        Rectangle {
+          id: playerPill
+          Layout.preferredWidth: 80
+          Layout.preferredHeight: 18
+          Layout.alignment: Qt.AlignHCenter
+          radius: 9
+          color: root.playerSelOpen ? window.palette.green : window.palette.bg1
+          border.width: 1
+          border.color: root.playerSelOpen ? window.palette.green : window.palette.bg2
+          visible: Mpris.players.values.length > 0
+          Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
+
+          RowLayout {
+            anchors.fill: parent
+            anchors.leftMargin: 6
+            anchors.rightMargin: 6
+            spacing: 3
+
+            Text {
+              text: root.preferredPlayer !== "" ? root.preferredPlayer : (root.player?.identity ?? "No player")
+              color: root.playerSelOpen ? window.palette.bg0H : window.palette.fg
+              font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
+              font.bold: root.playerSelOpen
+              elide: Text.ElideRight
+              Layout.fillWidth: true
+            }
+
+            Text {
+              text: root.playerSelOpen ? "\uF077" : "\uF078"
+              color: root.playerSelOpen ? window.palette.bg0H : window.palette.gray
+              font.family: window.palette.font; font.pixelSize: 7
+            }
+          }
+
+          MouseArea {
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: root.playerSelOpen = !root.playerSelOpen
           }
         }
       }
@@ -599,10 +531,10 @@ AnimatedPopup {
     }
 
     // Вторинні елементи: гучність зліва, shuffle/loop/playlist справа
+    // EQ кнопка — системна, лишається видимою навіть без плеєра
     RowLayout {
       Layout.fillWidth: true
       spacing: 4
-      visible: root.player != null
 
       // Гучність — компактний блок зліва
       RowLayout {
@@ -1006,6 +938,28 @@ AnimatedPopup {
 
           Item { Layout.fillWidth: true }
 
+          // новий пресет з поточних смуг: "new", "new2", "new3"…
+          Rectangle {
+            property bool hovered: false
+            width: 18; height: 18; radius: 4
+            color: hovered ? window.palette.bg2 : "transparent"
+            Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
+
+            Text {
+              anchors.centerIn: parent
+              text: "+"
+              color: parent.hovered ? window.palette.fg : window.palette.gray
+              font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
+            }
+
+            MouseArea {
+              anchors.fill: parent
+              hoverEnabled: true
+              cursorShape: Qt.PointingHandCursor
+              onClicked: audioEq.createPreset()
+            }
+          }
+
           ToggleSwitch {
             checked: audioEq.enabled
             enabled: audioEq.pluginInstalled && !audioEq.busy
@@ -1018,10 +972,9 @@ AnimatedPopup {
           }
         }
 
-        // Пресети: горизонтальний скрол (17 чипів у Flow займали б
-        // 4-5 рядків і виштовхували слайдери за межі секції).
-        // Right-click на чипі — видалити (вбудовані ховаються у
-        // deletedBuiltins, їх можна повернути "restore")
+        // Пресети: горизонтальний скрол. Порядок: запінені (хронологія
+        // пінів) → вбудовані → користувацькі.
+        // Right-click на чипі — контекстне меню (pin/rename/save/delete).
         Flickable {
           Layout.fillWidth: true
           height: 20
@@ -1036,15 +989,20 @@ AnimatedPopup {
 
             Repeater {
               model: {
-                var deleted = audioEq.deletedBuiltins
-                var names = []
+                // pinned спочатку — у хронології пінів
+                var out = []
+                for (var p = 0; p < audioEq.pinned.length; p++)
+                  if (audioEq.chipExists(audioEq.pinned[p]))
+                    out.push(audioEq.pinned[p])
                 var all = EqPresets.all()
                 for (var n in all)
-                  if (deleted.indexOf(n) === -1 && audioEq.userPresets[n] === undefined)
-                    names.push(n)
-                for (var u in audioEq.userPresets) names.push(u)
-                if (audioEq.preset === "Custom") names.push("Custom")
-                return names
+                  if (audioEq.deletedBuiltins.indexOf(n) === -1 &&
+                      audioEq.pinned.indexOf(n) === -1 &&
+                      audioEq.userPresets[n] === undefined)
+                    out.push(n)
+                for (var u in audioEq.userPresets)
+                  if (audioEq.pinned.indexOf(u) === -1) out.push(u)
+                return out
               }
 
               delegate: Rectangle {
@@ -1052,40 +1010,61 @@ AnimatedPopup {
                 required property var modelData
                 property bool hovered: false
                 readonly property bool active: audioEq.preset === modelData
-                readonly property bool isUser:
-                      audioEq.userPresets[modelData] !== undefined
+                readonly property bool pinnedChip: audioEq.isPinned(modelData)
+                // цей чип перейменовується (Rename у контекстному меню):
+                // Text ховається, TextInput замість нього
+                readonly property bool renaming:
+                      root.renameTarget === modelData
 
-                width: chipText.implicitWidth + 14
+                width: chipText.implicitWidth + 14 + (pinMark.visible ? 12 : 0)
                 height: 20
                 radius: 10
                 color: active ? window.palette.green
                      : (hovered ? window.palette.bg2 : window.palette.bg1)
                 Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
 
-                Text {
-                  id: chipText
+                Row {
                   anchors.centerIn: parent
-                  text: parent.modelData
-                  color: active ? window.palette.bg0H : window.palette.muted
-                  font.family: window.palette.font; font.pixelSize: appConfig.scaled(9)
+                  spacing: 4
+                  visible: !chip.renaming
+
+                  // мітка запіненого пресета
+                  Text {
+                    id: pinMark
+                    visible: chip.pinnedChip
+                    text: "\uF08D"
+                    color: chip.active ? window.palette.bg0H : window.palette.accent
+                    font.family: window.palette.font; font.pixelSize: appConfig.scaled(8)
+                  }
+
+                  Text {
+                    id: chipText
+                    text: chip.modelData
+                    color: chip.active ? window.palette.bg0H : window.palette.muted
+                    font.family: window.palette.font; font.pixelSize: appConfig.scaled(9)
+                  }
                 }
 
-                // хрестик видалення — на hover, у правому краї чипа
-                Text {
-                  visible: chip.hovered && !chip.active
-                  text: "\u2715"
-                  color: window.palette.danger
-                  font.pixelSize: 8
-                  anchors.right: parent.right
-                  anchors.top: parent.top
-                  anchors.margins: 1
-
-                  MouseArea {
-                    anchors.fill: parent
-                    anchors.margins: -4
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: audioEq.deletePreset(chip.modelData)
+                // поле rename — пряма дитина чіпа (в Row воно ставало
+                // третім елементом і виїжджало за межі чіпа)
+                TextInput {
+                  id: renameInput
+                  anchors.centerIn: parent
+                  visible: chip.renaming
+                  width: Math.min(90, chip.width - 12)
+                  color: window.palette.fg
+                  font.family: window.palette.font; font.pixelSize: appConfig.scaled(9)
+                  clip: true
+                  onVisibleChanged: {
+                    if (visible) { text = chip.modelData; forceActiveFocus(); selectAll() }
                   }
+                  onAccepted: {
+                    var t = text.trim()
+                    if (t !== "" && t !== chip.modelData)
+                      audioEq.renamePreset(chip.modelData, t)
+                    root.renameTarget = ""
+                  }
+                  Keys.onEscapePressed: root.renameTarget = ""
                 }
 
                 MouseArea {
@@ -1093,88 +1072,16 @@ AnimatedPopup {
                   hoverEnabled: true
                   cursorShape: Qt.PointingHandCursor
                   acceptedButtons: Qt.LeftButton | Qt.RightButton
-                  onEntered: parent.hovered = true
-                  onExited: parent.hovered = false
+                  onEntered: chip.hovered = true
+                  onExited: chip.hovered = false
                   onClicked: (mouse) => {
                     if (mouse.button === Qt.RightButton)
-                      audioEq.deletePreset(chip.modelData)
+                      eqCtxMenu.openFor(chip.modelData,
+                                        chip.mapToItem(eqSection, 0, 0))
                     else
                       audioEq.applyPreset(chip.modelData)
                   }
                 }
-              }
-            }
-
-            // Зберегти поточні смуги як пресет
-            Rectangle {
-              id: saveChip
-              property bool hovered: false
-              readonly property bool naming: saveInput.visible
-
-              width: naming ? saveInput.width + 12 : saveLabel.implicitWidth + 14
-              height: 20
-              radius: 10
-              color: window.palette.bg1
-              border.width: naming ? 1 : 0
-              border.color: window.palette.accent
-
-              Text {
-                id: saveLabel
-                anchors.centerIn: parent
-                visible: !saveChip.naming
-                text: "\uF0C7 Save"
-                color: saveChip.hovered ? window.palette.fg : window.palette.muted
-                font.family: window.palette.font; font.pixelSize: appConfig.scaled(9)
-              }
-
-              TextInput {
-                id: saveInput
-                visible: saveChip.naming
-                anchors.verticalCenter: parent.verticalCenter
-                anchors.left: parent.left
-                anchors.leftMargin: 6
-                width: 90
-                color: window.palette.fg
-                font.family: window.palette.font; font.pixelSize: appConfig.scaled(9)
-                clip: true
-                focus: visible
-                onVisibleChanged: {
-                  if (visible) { text = ""; forceActiveFocus() }
-                }
-                onAccepted: {
-                  if (text.trim() !== "") audioEq.saveUserPreset(text.trim())
-                  saveChip.naming = false
-                }
-                onActiveFocusChanged: if (!activeFocus && visible) saveChip.naming = false
-              }
-
-              MouseArea {
-                anchors.fill: parent
-                hoverEnabled: !saveChip.naming
-                enabled: !saveChip.naming
-                cursorShape: Qt.PointingHandCursor
-                onEntered: parent.hovered = true
-                onExited: parent.hovered = false
-                onClicked: {
-                  saveChip.naming = true
-                  saveInput.forceActiveFocus()
-                }
-              }
-            }
-
-            // Повернути видалені вбудовані пресети
-            Text {
-              visible: audioEq.deletedBuiltins.length > 0
-              text: "restore"
-              color: window.palette.gray
-              font.family: window.palette.font; font.pixelSize: appConfig.scaled(9)
-              font.italic: true
-
-              MouseArea {
-                anchors.fill: parent
-                anchors.margins: -4
-                cursorShape: Qt.PointingHandCursor
-                onClicked: audioEq.restoreBuiltins()
               }
             }
           }
@@ -1218,6 +1125,114 @@ AnimatedPopup {
           }
         }
       }
+
+        // Контекстне меню пресета (right-click)
+        Rectangle {
+          id: eqCtxMenu
+          visible: ctxName !== ""
+          z: 50
+          width: 150
+          height: ctxCol.implicitHeight + 8
+          radius: 6
+          color: window.palette.bg1
+          border.width: 1
+          border.color: window.palette.bg2
+
+          property string ctxName: ""
+          readonly property bool ctxIsUser: audioEq.userPresets[ctxName] !== undefined
+
+          function openFor(name, pos) {
+            ctxName = name
+            width = 150
+            // кламп від eqTarget: eqSection.height — анімована поточна
+            // висота (після відкриття секції вона ще їде від 0), і меню
+            // затискалось у верхню частину поверх чипів
+            x = Math.max(2, Math.min(pos.x, eqSection.width - width - 4))
+            y = Math.max(2, Math.min(pos.y + 16, root.eqTarget - height - 4))
+          }
+
+          function close() {
+            ctxCloseTimer.stop()
+            ctxName = ""
+          }
+
+          Timer {
+            id: ctxCloseTimer
+            interval: 2000
+            running: eqCtxMenu.visible
+            repeat: false
+            onTriggered: eqCtxMenu.close()
+          }
+
+          // курсор над меню — скидання автозакриття (пасивний хендлер,
+          // кліки по пунктах не блокує)
+          HoverHandler {
+            onHoveredChanged: if (hovered) ctxCloseTimer.restart()
+          }
+
+          ColumnLayout {
+            id: ctxCol
+            anchors.fill: parent
+            anchors.margins: 4
+            spacing: 0
+
+            Repeater {
+              model: [
+                { id: "pin",   label: audioEq.isPinned(eqCtxMenu.ctxName) ? "Unpin" : "Pin" },
+                { id: "rename", label: "Rename" },
+                { id: "save",  label: "Save changes" },
+                { id: "delete", label: "Delete", danger: true }
+              ]
+
+              delegate: Rectangle {
+                required property var modelData
+                property bool hovered: false
+
+                Layout.fillWidth: true
+                implicitHeight: 20
+                radius: 4
+                color: hovered ? window.palette.bg2 : "transparent"
+                Behavior on color { ColorAnimation { duration: appConfig.anim(100) } }
+
+                Text {
+                  anchors.verticalCenter: parent.verticalCenter
+                  anchors.left: parent.left
+                  anchors.leftMargin: 8
+                  text: parent.modelData.label
+                  color: parent.modelData.danger && parent.hovered
+                         ? window.palette.danger : window.palette.fg
+                  font.family: window.palette.font; font.pixelSize: appConfig.scaled(9)
+                }
+
+                MouseArea {
+                  anchors.fill: parent
+                  hoverEnabled: true
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: {
+                    var act = parent.modelData.id
+                    if (act === "pin") audioEq.togglePin(eqCtxMenu.ctxName)
+                    else if (act === "rename") {
+                      root.renameTarget = eqCtxMenu.ctxName
+                    }
+                    else if (act === "save") audioEq.saveChangesTo(eqCtxMenu.ctxName)
+                    else if (act === "delete") audioEq.deletePreset(eqCtxMenu.ctxName)
+                    eqCtxMenu.close()
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        // Оверлей закриття контекстного меню (тільки поки меню відкрите)
+        MouseArea {
+          anchors.fill: parent
+          z: 49
+          visible: eqCtxMenu.visible
+          onClicked: eqCtxMenu.close()
+          onWheel: (wheel) => { eqCtxMenu.close(); wheel.accepted = false }
+        }
+
     }
 
     // Порожній стан — немає плеєра
@@ -1242,5 +1257,105 @@ AnimatedPopup {
         font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
       }
     }
+  }
+
+  // Вибір плеєра — випадає прямо з пігулки під обкладинкою, не розтягує попап (overlay)
+  Rectangle {
+    id: playerDropdown
+    visible: root.playerSelHeight > 0
+    z: 60
+    width: 160
+    height: root.playerSelHeight
+    radius: 6
+    color: window.palette.bg1
+    border.width: 1
+    border.color: window.palette.bg2
+    clip: true
+    // пігулка всередині layout (x:8,y:8), мапимо відносно layout і додаємо зсув layout
+    x: layout.x + playerPill.mapToItem(layout, 0, 0).x
+    y: layout.y + playerPill.mapToItem(layout, 0, playerPill.height + 4).y
+
+    ColumnLayout {
+      anchors.fill: parent
+      anchors.margins: 4
+      spacing: 2
+
+      Repeater {
+        // унікальні identity (кілька інстансів chromium = один запис)
+        model: {
+          var seen = {}
+          var out = []
+          var players = Mpris.players.values
+          for (var i = 0; i < players.length; i++) {
+            var id = players[i].identity ?? ""
+            var key = id.toLowerCase()
+            if (id === "" || seen[key]) continue
+            seen[key] = true
+            out.push({ identity: id, key: key })
+          }
+          return out
+        }
+
+        delegate: Rectangle {
+          required property var modelData
+          property bool hovered: false
+          readonly property bool active:
+                root.player?.identity?.toLowerCase() === modelData.key
+
+          Layout.fillWidth: true
+          height: 24
+          radius: 5
+          color: active ? window.palette.bg2
+               : (hovered ? window.palette.bg1 : "transparent")
+          Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
+
+          RowLayout {
+            anchors.fill: parent
+            anchors.leftMargin: 8
+            anchors.rightMargin: 8
+            spacing: 6
+
+            Text {
+              text: active ? "\uF00C" : ""
+              color: window.palette.green
+              font.family: window.palette.font; font.pixelSize: appConfig.scaled(9)
+              Layout.preferredWidth: 12
+            }
+
+            Text {
+              text: modelData.identity
+              color: active ? window.palette.green : window.palette.fg
+              font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
+              font.bold: active
+              elide: Text.ElideRight
+              Layout.fillWidth: true
+            }
+          }
+
+          MouseArea {
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onEntered: parent.hovered = true
+            onExited: parent.hovered = false
+            onClicked: {
+              window.appConfig.cfg.preferredPlayer = modelData.key
+              window.appConfig.saveToFile()
+              root.findAndSetPlayer()
+              root.playerSelOpen = false
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Оверлей закриття дропдауна (клік поза пігулкою/дропдауном)
+  MouseArea {
+    anchors.fill: parent
+    z: 59
+    visible: root.playerSelOpen
+    onClicked: root.playerSelOpen = false
+    onWheel: (wheel) => { root.playerSelOpen = false; wheel.accepted = false }
   }
 }

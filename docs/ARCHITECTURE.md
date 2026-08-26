@@ -10,14 +10,15 @@ selfshell/                       # git repo root (cloned into ~/.config)
   │   ├── VERSION                # project version (read by selfshell)
   │   ├── core/                  # infrastructure (AppConfig, PaletteService,
   │   │                          #   IdleManager, LockContext/Surface, AnimatedPopup,
-  │   │                          #   PillBar, HoverItem/Text, ToggleSwitch, ...)
-  │   ├── widgets/               # 14 bar widgets
-  │   ├── popups/                # 15 popup windows
+  │   │                          #   PillBar, HoverItem/Text, ToggleSwitch,
+  │   │                          #   AudioEq, VertSlider, ...)
+  │   ├── widgets/               # bar widgets
+  │   ├── popups/                # popup windows
   │   ├── monitors/              # 2 background monitors (Cava, Genshin)
   │   ├── services/              # systemd units and QML services (qs-bt-agent,
   │   │                          #   TrackListService, cava-vis.conf)
-  │   ├── scripts/               # selfshell CLI, python/js scripts, .env
-  │   ├── data/                  # persisted JSON (config, palette, tasks...)
+  │   ├── scripts/               # selfshell CLI, python/js scripts, .env + EqPresets.js
+  │   ├── data/                  # persisted JSON (config, eq, palette, tasks...)
   │   ├── assets/                # resources (sounds, icons)
   │   └── pam/                   # lock screen PAM config
   ├── hypr/                      # ~/.config/hypr/ — Hyprland configs
@@ -532,6 +533,19 @@ without an authorization popup. It is managed in two places:
 
 Untrusted devices keep prompting on every service connection; if the
 prompt is missed, the connect fails after the 55 s timeout.
+
+---
+
+### 9.9. AudioEq — 15-band system equalizer
+
+`core/AudioEq.qml` — real EQ via PipeWire `filter-chain` (`SELFshell_EQ`, 15× `mbeq_1197` LADSPA, `mbeqL`/`mbeqR`).
+
+* **Sink:** static config `~/.config/pipewire/pipewire.conf.d/10-selfshell-eq.conf` (`_ensureConf` + `_confFile` + `systemctl --user restart pipewire` once). Always exists, `enable`/`disable` = pure routing (`pactl set-default-sink` + `move-sink-input`), no `load-module`/`unload`.
+* **Bands:** live `pw-cli s <node> 2 {params: ["mbeqL:50Hz...", v, "mbeqR:...", v]}` (`_applyAllNow` 30 entries, `setBand` 2 entries). `EqPresets.js` interpolates Winamp 10→15 bands (log-frequency, `all()` cached per call) + `bandLabels`.
+* **Presets:** `Flat` + 17 Winamp classics, `userPresets: {name:[15]}` shadow built-ins, `deletedBuiltins`, `pinned` (chronological chip order), `chipExists`/`isPinned`/`togglePin`/`renamePreset`/`saveChangesTo`/`deletePreset`/`createPreset` (`new`/`new2`…).
+* **State:** `data/eq.json` (`enabled`, `preset`, `bands[15]`, `userPresets`, `deletedBuiltins`, `pinned`) via `FileView` (`_stateFile` + `_loadState`/`saveState` + `Flat+bands` migration for removed `Custom`). `enabled` restored via `pw-dump` adoption (`_dumpProc` → `enable` if `enabled` and sink found) + relink (`_findNodeProc` → `_relinkProc`).
+* **Auto-relink:** `Timer _linkCheckTimer` (3s, `enabled && !busy && _eqNodeId>=0`) + `Process _relinkProc` (`pw-link -o | grep output.filter-chain` → `pactl list sinks` highest `priority.session` or `bluez` exclusive vs all) keeps `filter-chain` output on correct hardware after headphone/BT hotplug. Triggered also on `onEnabledChanged` / `_findNodeProc` / `_loadState` re-apply.
+* **UI:** `popups/MprisPopup.qml` — collapsible EQ section (`eqOpen`/`eqHeight`/`eqTarget:216`, `VertSlider` 15× `20x130`, `Flickable` chip row `pinned→builtins→user`, `+` `createPreset`, `ToggleSwitch` `enable`/`disable`, context menu `pin/rename/save/delete` + `Rename` `TextInput`).
 
 ---
 

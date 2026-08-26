@@ -26,26 +26,26 @@ Item {
   implicitWidth: 26
   implicitHeight: 120
 
-  onValueChanged: fill.height = Qt.binding(function() {
-    return track.height * (root.value - root.from) / (root.to - root.from)
-  })
-
   Rectangle {
     id: track
     anchors.horizontalCenter: parent.horizontalCenter
-    anchors.top: parent.top
+    anchors.top: bandLabel.bottom
+    anchors.topMargin: 4
     anchors.bottom: valueLabel.top
     anchors.bottomMargin: 4
     width: 6
     radius: 3
     color: root.trackColor
+    // без clip заливка/ручка на крайніх значеннях міліметрово
+    // виходили за трек (radius-кути) і напливали на сусідні елементи
+    clip: true
 
     Rectangle {
       id: fill
       anchors.left: parent.left
       anchors.right: parent.right
       anchors.bottom: parent.bottom
-      height: 0
+      height: track.height * (root.value - root.from) / (root.to - root.from)
       radius: 3
       color: root.fillColor
     }
@@ -57,7 +57,10 @@ Item {
       radius: 3
       color: root.knobColor
       anchors.horizontalCenter: parent.horizontalCenter
-      y: track.height - fill.height - height / 2
+      // кламп у межах треку: на краях діапазону ручка виступала
+      // на height/2 за межі і напливала на сусідні елементи
+      y: Math.max(0, Math.min(track.height - height,
+        track.height - fill.height - height / 2))
     }
   }
 

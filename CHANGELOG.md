@@ -9,25 +9,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **EQ preset manager** — save the current bands as a named preset
-  (floppy chip in the equalizer section), delete presets with a
-  right-click or the hover × (built-in ones can be restored via a
-  "restore" chip), user presets persisted in `data/eq.json`.
-- **Player selector** — dropdown at the top of the media player popup
-  listing all present MPRIS players (Spotify, selfsonic, browser
-  players, ...). The choice is persisted in `config.json`
-  (`preferredPlayer`) and shared with the bar widget.
+  (`+` chip), delete/rename/pin presets via right-click (built-ins are
+  hidden via `deletedBuiltins` and pinned via `pinned` chronological
+  order), user presets persisted in `data/eq.json`.
+- **Player selector** — pill under the album art showing the current
+  `preferredPlayer`, dropdown directly from the pill listing all present
+  MPRIS players (Spotify, selfsonic, browser …). The choice is
+  persisted in `config.json` (`preferredPlayer`) and shared with the bar
+  widget.
 
 - **Audio equalizer** — a real 15-band system EQ in the media player
-  popup (toggle next to the playlist): PipeWire `module-ladspa-sink`
-  with the mbeq LADSPA plugin creates a `SELFshell_EQ` sink, band
-  changes apply live via pw-cli, existing audio streams are moved
-  through the EQ on enable and back on disable. 17 Winamp-classic
-  presets (Rock, Pop, Jazz, Bass, ...) plus custom bands, persisted in
-  `data/eq.json`. Requires `swh-plugins` (added to the installer and
-  `selfshell doctor`).
+  popup (toggle next to the playlist): PipeWire `filter-chain`
+  (`SELFshell_EQ`, 15× `mbeq_1197` LADSPA `mbeqL`/`mbeqR`) via static
+  `10-selfshell-eq.conf`, band changes apply live via `pw-cli`, existing
+  audio streams are moved through the EQ on enable and back on disable
+  (with `_savedSink` fallback), 17 Winamp-classic presets plus user
+  presets, persisted in `data/eq.json`. Auto-relinks `filter-chain`
+  output on headphone/BT hotplug (exclusive BT vs all hardware). Requires
+  `swh-plugins` (added to the installer and `selfshell doctor`).
 
 ### Changed
 
+- **Player selector UX** — moved from clickable album cover + huge
+  expanding list below the controls to a dedicated pill under the cover
+  (`80×18`, `preferredPlayer` + chevron) with an overlay dropdown
+  (`160×` `playerSelTarget`, `mapToItem(layout)`, `z:60`) that doesn't
+  push the popup height.
+- **EQ preset editing** — moving sliders no longer creates a `Custom`
+  preset; the active preset (e.g. `Techno`) stays green, changes are live
+  until shell reload. Use context menu `Save changes` to overwrite the
+  preset (built-in → user-shadow) or `+` to create `new`/`new2`…. `Custom`
+  removed completely (`Flat`+`bands` migration for old `eq.json`).
+- **Audio output switching** — `AudioMixerPopup` now moves existing
+  `sink-inputs` (`pactl move-sink-input`) and, when EQ is on
+  (`default == SELFshell_EQ`), relinks `filter-chain` output
+  (`pw-link -d`/`pw-link`) to the selected hardware sink.
 - Settings polish: section headers are now uppercase overlines with
   letter spacing, cards have more breathing room between sections, the
   generated `mutedAlt` color is brighter (blend 0.3 → 0.45), and the
@@ -35,6 +51,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Audio output hotplug** — `filter-chain` (`SELFshell_EQ`) output now
+  auto-relinks on headphone/BT hotplug (`_linkCheckTimer` 3s, `bluez`
+  exclusive vs all hardware) and `AudioMixerPopup` output switching now
+  moves existing `sink-inputs` (`pactl move-sink-input`) and relinks
+  `filter-chain` when EQ is on; previously switching default only affected
+  new streams and hotplug left EQ linked to a dead/wrong sink (no sound
+  on speakers after unplugging headphones/BT, or duplicate BT+speakers).
+- **EQ `Custom` preset** — removed completely (`Flat`+`bands` migration for
+  old `eq.json`); moving sliders no longer creates `Custom`, the active
+  preset stays green and changes are live until reload, `Save changes`
+  overwrites the preset. Fixed `deletePreset` crash (`unpin` undefined →
+  `Flat`), removed 8× `EQ-DBG` `console.warn` spam and dead
+  `saveUserPreset`.
+- **MPRIS player selector** — pill now shows `preferredPlayer` under the
+  cover, dropdown is an overlay (`160×` `playerSelTarget`, `mapToItem`,
+  `z:60`) instead of a huge expanding list below the controls; album
+  cover is no longer clickable; fixed `modelData.active` vs `active` check
+  and `visible:true` dead prop.
+- **Dead code** — `MprisWidget` dead `import "../core"` and `required int
+  index`, `MprisPopup` dead `index`, `VertSlider` `onValueChanged:
+  Qt.binding` leak → declarative `height: track.height*(value-from)/(to-from)`,
+  `TrackListService`/`CavaMonitor`/`EqPresets` duplication, docs
+  (`CONFIG_FORMAT` EQ path `visual.json`→`data/eq.json`, missing `pinned`,
+  `preferredPlayer`, `COMPONENTS` missing `AudioEq`/`VertSlider`/`EqPresets`/`eq.json`,
+  `ARCHITECTURE` missing §9.9, `data/config.json` missing `preferredPlayer`).
 - Settings popup on multi-monitor setups: each monitor had its own
   section state — edits made in one monitor's popup were lost when
   opening the popup on the other. Sections now re-read their config
