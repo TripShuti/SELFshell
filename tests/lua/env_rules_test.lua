@@ -1,6 +1,6 @@
 -- ============================================================
 -- tests/lua/env_rules_test.lua — smoke-тест env.json → env.lua
--- дефолти + data-driven rules.lua (windowRules/appLayout).
+-- дефолти + data-driven rules.lua (windowRules).
 -- Запуск: luajit env_rules_test.lua <repo-root> [env.json]
 -- Мокує глобальний hl; дома користувача — тимчасова тека.
 -- ============================================================
@@ -11,6 +11,7 @@ package.path = root .. "/hypr/?.lua;" .. package.path
 local calls = {}
 hl = {
   window_rule = function(r) calls[#calls + 1] = { kind = "rule", r = r } end,
+  layer_rule = function(r) calls[#calls + 1] = { kind = "layer_rule", r = r } end,
   config = function() calls[#calls + 1] = { kind = "config" } end,
   on = function(e, fn) calls[#calls + 1] = { kind = "on", e = e, fn = fn } end,
   exec_cmd = function(c) calls[#calls + 1] = { kind = "exec", c = c } end,
@@ -67,7 +68,6 @@ assert(e.kbLayout == "us", "kbLayout default")
 assert(e.kbOptions == "", "kbOptions default")
 assert(e.suspendKey == "", "suspendKey default")
 assert(#e.windowRules == 0, "windowRules default empty")
-assert(e.appLayoutActive == false, "appLayout off by default")
 assert(e.mainMod == "SUPER" and e.cursorSize == 24, "other defaults")
 
 -- 2) Еталонний env.json (у репо) → нейтральні значення, без особистого мусору
@@ -76,38 +76,16 @@ local shipped = fresh_env(HOME)
 assert(shipped.kbLayout == "us", "shipped kbLayout = '" .. tostring(shipped.kbLayout) .. "'")
 assert(#shipped.devices == 0, "shipped devices must be empty")
 assert(#shipped.windowRules == 0, "shipped windowRules must be empty")
-assert(#shipped.appLayout == 0, "shipped appLayout must be empty")
 assert(shipped.suspendKey == "", "shipped suspendKey must be empty")
 assert(#shipped.autostart == 2, "shipped autostart (awww-daemon, hyprsunset)")
 
--- 3) rules.lua зі shipped env → тільки універсальні правила, без layout-handler
+-- 3) rules.lua зі shipped env → тільки універсальні правила
 load_rules(HOME)
-local has_active_handler = false
-for _, c in ipairs(calls) do
-  if c.kind == "on" and c.e == "window.active" then has_active_handler = true end
-end
-assert(not has_active_handler, "no window.active handler when appLayout is empty")
-assert(#calls >= 2, "universal rules registered (2 window_rule)")
+assert(#calls >= 4, "universal rules registered (2 window_rule + 2 layer_rule)")
 
--- 4) appLayout активний → handler перемикає розкладку за класом вікна
+-- 4) windowRules з env → hl.window_rule отримує їх без змін
 local custom = HOME .. "/.config/hypr/env.json"
 local f = io.open(custom, "w")
-f:write('{"kbLayout": "us, ua", "appLayout": [{"class": "kitty", "layout": 1}]}')
-f:close()
-load_rules(HOME)
-local handler
-for _, c in ipairs(calls) do
-  if c.kind == "on" and c.e == "window.active" then handler = c.fn end
-end
-assert(handler, "window.active handler registered when appLayout configured")
-handler({ class = "kitty" })
-assert(calls[#calls].kind == "exec" and calls[#calls].c == "hyprctl switchxkblayout all 1",
-  "kitty -> layout 1, got: " .. tostring(calls[#calls].c))
-handler({ class = "firefox" })
-assert(calls[#calls].c == "hyprctl switchxkblayout all 0", "other class -> layout 0")
-
--- 5) windowRules з env → hl.window_rule отримує їх без змін
-f = io.open(custom, "w")
 f:write('{"windowRules": [{"name": "t", "match": {"class": "foo"}, "float": true}]}')
 f:close()
 load_rules(HOME)
@@ -120,17 +98,16 @@ for _, c in ipairs(calls) do
 end
 assert(found, "data-driven window rule applied")
 
--- 6) Неправильні типи в env.json → дефолти (конфіг не падає)
+-- 5) Неправильні типи в env.json → дефолти (конфіг не падає)
 f = io.open(custom, "w")
-f:write('{"mod": 42, "kbLayout": 7, "cursorSize": "big", "autostart": "kitty", "devices": {}, "windowRules": true, "appLayout": "x"}')
+f:write('{"mod": 42, "kbLayout": 7, "cursorSize": "big", "autostart": "kitty", "devices": {}, "windowRules": true}')
 f:close()
 e = fresh_env(HOME)
 assert(e.mainMod == "SUPER", "wrong-typed mod -> default")
 assert(e.kbLayout == "us", "wrong-typed kbLayout -> default")
 assert(e.cursorSize == 24, "wrong-typed cursorSize -> default")
 assert(#e.autostart == 0 and #e.devices == 0, "non-list arrays -> empty")
-assert(#e.windowRules == 0 and #e.appLayout == 0, "non-list arrays -> empty")
-assert(e.appLayoutActive == false, "appLayout off on bad type")
+assert(#e.windowRules == 0, "non-list arrays -> empty")
 
 os.execute("rm -rf '" .. HOME .. "'")
-print("OK: env.lua defaults, shipped env.json, rules.lua data-driven, appLayout")
+print("OK: env.lua defaults, shipped env.json, rules.lua data-driven")

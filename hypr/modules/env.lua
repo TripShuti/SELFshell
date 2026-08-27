@@ -28,7 +28,5 @@ M.suspendKey   = str(env.suspendKey, "")
 M.autostart    = list(env.autostart)
 M.devices      = list(env.devices)
 M.windowRules  = list(env.windowRules)
-M.appLayout    = list(env.appLayout)
-M.appLayoutActive = #M.appLayout > 0
 
 return M

@@ -380,37 +380,36 @@ AnimatedPopup {
       }
 
         // Пігулка вибору плеєра — під обкладинкою, показує поточний preferredPlayer
+        // мінімалістично: без фону/обводки, лише текст + іконка дропдауна
         Rectangle {
           id: playerPill
           Layout.preferredWidth: 80
           Layout.preferredHeight: 18
           Layout.alignment: Qt.AlignHCenter
-          radius: 9
-          color: root.playerSelOpen ? window.palette.green : window.palette.bg1
-          border.width: 1
-          border.color: root.playerSelOpen ? window.palette.green : window.palette.bg2
+          color: "transparent"
           visible: Mpris.players.values.length > 0
-          Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
 
           RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: 6
-            anchors.rightMargin: 6
-            spacing: 3
+            anchors.leftMargin: 4
+            anchors.rightMargin: 4
+            spacing: 4
 
             Text {
               text: root.preferredPlayer !== "" ? root.preferredPlayer : (root.player?.identity ?? "No player")
-              color: root.playerSelOpen ? window.palette.bg0H : window.palette.fg
-              font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
+              color: root.playerSelOpen ? window.palette.green : window.palette.fg
+              font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
               font.bold: root.playerSelOpen
               elide: Text.ElideRight
               Layout.fillWidth: true
+              Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
             }
 
             Text {
               text: root.playerSelOpen ? "\uF077" : "\uF078"
-              color: root.playerSelOpen ? window.palette.bg0H : window.palette.gray
-              font.family: window.palette.font; font.pixelSize: 7
+              color: root.playerSelOpen ? window.palette.green : window.palette.mutedAlt
+              font.family: window.palette.font; font.pixelSize: 8
+              Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
             }
           }
 

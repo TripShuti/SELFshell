@@ -1,9 +1,9 @@
 -- ============================================================
 -- general.lua — налаштування вікон, декору, введення.
 -- Візуальні параметри зчитуються з ~/.config/hypr/visual.json
--- (пише Settings → Appearance → Hyprland); ключа немає — діє
+-- (пише Settings → Hyprland → Windows/Blur); ключа немає — діє
 -- дефолт нижче. Дефолти мають збігатися з hyprDefaults у
--- AppearanceSection.qml.
+-- HyprlandSection.qml.
 -- ============================================================
 local s = require("modules.env")
 local json = require("modules.json")
@@ -22,8 +22,8 @@ local function str(v, def)  return type(v) == "string" and v ~= "" and v or def 
 hl.config({
     general = {
         gaps_in  = num(V.gaps_in, 3),
-        gaps_out = num(V.gaps_out, 1),
-        border_size = num(V.border_size, 1),
+        gaps_out = num(V.gaps_out, 6),
+        border_size = num(V.border_size, 0),
         col = {
             -- Колір користувача замінює дефолтний градієнт суцільним
             active_border   = str(V.active_border, { colors = {"rgba(3a452aaa)", "rgba(4b543eaa)"}, angle = 45 }),
@@ -31,12 +31,12 @@ hl.config({
         },
         resize_on_border = bool(V.resize_on_border, false),
         allow_tearing    = false,
-        layout           = str(V.layout, "dwindle"),
+        layout           = str(V.layout, "master"),
     },
     master = {
-        mfact       = num(V.mfact, 0.55),
+        mfact       = num(V.mfact, 0.7),
         orientation = str(V.orientation, "left"),
-        new_status  = str(V.new_status, "inherit"), -- "master" "inherit" "slave"
+        new_status  = str(V.new_status, "slave"), -- "master" "inherit" "slave"
         always_keep_position = bool(V.always_keep_position, false),
         allow_small_split = false,
         special_scale_factor = 1,
@@ -72,27 +72,30 @@ hl.config({
     },
 
     decoration = {
-        rounding        = num(V.rounding, 0),
+        rounding        = num(V.rounding, 10),
         rounding_power  = num(V.rounding_power, 2.0),
-        dim_inactive    = bool(V.dim_inactive, false),
+        dim_inactive    = bool(V.dim_inactive, true),
         dim_strength    = num(V.dim_strength, 0.3),
-        active_opacity   = num(V.active_opacity, 1.0),
-        inactive_opacity = num(V.inactive_opacity, 1.0),
+        active_opacity   = num(V.active_opacity, 0.95),
+        inactive_opacity = num(V.inactive_opacity, 0.9),
         blur = {
-            enabled = true,
-            popups = true,
-            popups_ignorealpha = 0.6,
+            enabled = bool(V.blur_enabled, true),
+            popups = bool(V.blur_popups, true),
+            popups_ignorealpha = num(V.blur_popups_ignorealpha, 0.1),
+            ignore_opacity = bool(V.blur_ignore_opacity, false),
+            xray = bool(V.blur_xray, false),
+            new_optimizations = bool(V.blur_new_optimizations, true),
 
-            vibrancy = 0.35,
-            vibrancy_darkness = 0.2,
-            passes = 3,
-            size = 6,
-            noise = 0.02,
-            contrast = 1.05,
-            brightness = 1.0,
+            vibrancy = num(V.blur_vibrancy, 0.4),
+            vibrancy_darkness = num(V.blur_vibrancy_darkness, 0.3),
+            passes = num(V.blur_passes, 2),
+            size = num(V.blur_size, 4),
+            noise = num(V.blur_noise, 0.02),
+            contrast = num(V.blur_contrast, 1.05),
+            brightness = num(V.blur_brightness, 1.0),
         },
          shadow = {
-        enabled = bool(V.shadows, true),
+        enabled = bool(V.shadows, false),
         range = 2,
         render_power = 3,
         sharp = true,

@@ -33,21 +33,21 @@ local function load_general()
   return captured
 end
 
--- --- Прохід 1: без visual.json — дефолти репо ---
+-- --- Прохід 1: без visual.json — дефолти репо (синхронізовано з HyprlandSection.qml:hyprDefaults) ---
 local c = load_general()
-assert(c.general.gaps_in == 3 and c.general.gaps_out == 1, "default gaps")
-assert(c.general.border_size == 1, "default border size")
-assert(c.general.layout == "dwindle", "default layout")
+assert(c.general.gaps_in == 3 and c.general.gaps_out == 6, "default gaps")
+assert(c.general.border_size == 0, "default border size")
+assert(c.general.layout == "master", "default layout")
 assert(c.general.resize_on_border == false, "default resize_on_border")
 assert(type(c.general.col.active_border) == "table", "default active border = gradient")
 assert(c.general.col.inactive_border == "rgba(111a1294)", "default inactive border")
-assert(c.decoration.rounding == 0, "default rounding")
-assert(c.decoration.dim_inactive == false, "default dim off")
-assert(c.decoration.active_opacity == 1.0 and c.decoration.inactive_opacity == 1.0,
+assert(c.decoration.rounding == 10, "default rounding")
+assert(c.decoration.dim_inactive == true, "default dim on")
+assert(c.decoration.active_opacity == 0.95 and c.decoration.inactive_opacity == 0.9,
   "default opacities")
-assert(c.decoration.shadow.enabled == true, "default shadows on (hyprland-like)")
+assert(c.decoration.shadow.enabled == false, "default shadows off")
 assert(c.cursor.inactive_timeout == 3, "default cursor inactive_timeout")
-assert(c.master.mfact == 0.55 and c.master.orientation == "left", "default master params")
+assert(c.master.mfact == 0.7 and c.master.orientation == "left", "default master params")
 
 -- --- Прохід 2: оверрайди перемагають ---
 local f = assert(io.open(HOME .. "/.config/hypr/visual.json", "w"))
@@ -76,7 +76,7 @@ f:close()
 
 c = load_general()
 assert(c.general.gaps_in == 7, "override gaps_in")
-assert(c.general.gaps_out == 1, "bad type (string) falls back to default")
+assert(c.general.gaps_out == 6, "bad type (string) falls back to default")
 assert(c.general.border_size == 0, "override border_size 0 is valid")
 assert(c.general.layout == "master", "override layout")
 assert(c.general.resize_on_border == true, "override resize_on_border")
@@ -98,7 +98,7 @@ local f2 = assert(io.open(HOME .. "/.config/hypr/visual.json", "w"))
 f2:write("{ not json")
 f2:close()
 c = load_general()
-assert(c.general.gaps_in == 3 and c.general.layout == "dwindle", "broken json -> defaults")
+assert(c.general.gaps_in == 3 and c.general.layout == "master", "broken json -> defaults")
 
 os.execute("rm -rf '" .. HOME .. "'")
 print("OK: visual.json defaults, overrides, bad types, broken json, border color switch")

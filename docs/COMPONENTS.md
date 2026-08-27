@@ -8,7 +8,7 @@
 
 | File | What it does |
 |------|--------------|
-| `env.lua` | Reads `env.json`, provides modules: mainMod, terminal, browser, cursor, kb layout, suspendKey, autostarts, devices, windowRules, appLayout |
+| `env.lua` | Reads `env.json`, provides modules: mainMod, terminal, browser, cursor, kb layout, suspendKey, autostarts, devices, windowRules |
 | `json.lua` | Minimal JSON parser (no dependencies) |
 | `exec.lua` | Autostart on Hyprland start (quickshell always + polkit agent + cliphist clipboard watchers + `autostart[]` from `env.json`) |
 | `general.lua` | Window settings, gaps, decorations, input (`kbLayout`/`kbOptions`); `devices[]` from `env.json` |
@@ -132,11 +132,13 @@
 | `ControlPopup.qml` | Notifications + quick actions | NotificationServer |
 | `OsdPopup.qml` | Volume/brightness overlay for media keys | PipeWire, ddcutil |
 | `SettingsPopup.qml` | Bar settings (6 sections, drag-and-drop) | AppConfig |
-| `settings/BarSection.qml` | Settings: bar geometry, auto-hide | AppConfig |
-| `settings/LayoutSection.qml` | Settings: drag-and-drop widget order | AppConfig |
+| `settings/BarSection.qml` | Settings: bar geometry, auto-hide, layout drag-and-drop, pills appearance, separators | AppConfig |
+| `settings/PopupsSection.qml` | Settings: popups + toast & OSD design | AppConfig |
+| `settings/HyprlandSection.qml` | Settings: Hyprland windows + blur (visual.json) | Quickshell.Io |
+| `settings/AppearanceSection.qml` | Settings: scale (`uiScale`) + animations | AppConfig |
 | `settings/WallpaperSection.qml` | Settings: wallpaper picker | PaletteService |
-| `settings/AppearanceSection.qml` | Settings: design keys, `uiScale`, animation master switch + speed | AppConfig |
 | `settings/BehaviorSection.qml` | Settings: DND, idle timeouts, wheel steps | AppConfig |
+| `settings/BindsSection.qml` | Settings: rebindable shortcuts | Quickshell.Io |
 | `settings/AboutSection.qml` | Settings: versions, machine info, project link | Quickshell.Io |
 | `KeyboardLayoutPopup.qml` | Keyboard layout list | — |
 | `WorkspacesPopup.qml` | Window list per workspace | Hyprland |

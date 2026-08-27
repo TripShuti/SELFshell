@@ -47,7 +47,7 @@ NUM_FIELDS = {
     "popupRadius": (0, 24), "popupBorderWidth": (0, 4), "popupGlowOpacity": (0.0, 1.0),
     "toastRadius": (0, 24), "toastLighten": (1.0, 2.0), "toastGlowOpacity": (0.0, 1.0),
     "osdRadius": (0, 24), "osdLighten": (1.0, 2.0),
-    "barLighten": (1.0, 2.0), "barGlowSize": (0, 100), "barGlowOpacity": (0.0, 1.0),
+    "barLighten": (1.0, 2.0),
     "barBgOpacity": (0.0, 1.0), "barBorderWidth": (0, 4),
     "separatorOpacity": (0.0, 1.0), "separatorGlowOpacity": (0.0, 1.0),
     "uiScale": (0.5, 2.0),
@@ -130,12 +130,6 @@ if env is not None:
             check(isinstance(item, dict) and isinstance(item.get("name"), str)
                   and isinstance(item.get("match"), dict),
                   f"env windowRules[{i}]: expected {{name: string, match: object}}")
-    if "appLayout" in env:
-        check(isinstance(env["appLayout"], list), "env appLayout: expected array")
-        for i, item in enumerate(env["appLayout"]):
-            check(isinstance(item, dict) and isinstance(item.get("class"), str)
-                  and isinstance(item.get("layout"), int) and not isinstance(item.get("layout"), bool),
-                  f"env appLayout[{i}]: expected {{class: string, layout: number}}")
 
 if failures:
     print("\n".join("SCHEMA: " + f for f in failures))

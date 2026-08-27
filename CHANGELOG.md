@@ -6,8 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-08-28
+
 ### Added
 
+- **Blur for bar and popups (Hyprland `layerrule` + `xray`)** — `hypr/modules/rules.lua` now creates two `hl.layer_rule` (`blur` for `PanelWindow` + `blur_popups` for `PopupWindow`) with `xray=true`, `ignore_alpha` from `~/.config/hypr/visual.json` (`layer_ignore_alpha 0.01`, `layer_popups_ignore_alpha 0.05`). `hypr/modules/general.lua` `decoration.blur` now reads `blur_enabled/size/passes/vibrancy/xray/ignore_opacity/popups` from `visual.json`; `quickshell/popups/settings/AppearanceSection` (now `HyprlandSection`) exposes all of them in **Settings → Hyprland → Blur** + **Settings → Appearance → Blur** with live `hyprctl reload` (400 ms debounce) and `layer_xray` toggle.
+- **Settings restructure** — `Bar` now consolidates `Size/Position/Pills` + `Layout` (drag-and-drop `left/center/right/pool`) + `Pills Appearance` (`Pill background opacity, gradient, border`) + `Separators`; new top-level sections `Popups` (`Popups` + `Toast & OSD`) and `Hyprland` (`Windows` + `Blur`), `Appearance` trimmed to `Scale` + `Animations`. `SettingsPopup` sections updated to `Bar, Popups, Hyprland, Appearance, Wallpaper, Behavior, Binds, About`; `Layout` as standalone tab removed.
 - **EQ preset manager** — save the current bands as a named preset
   (`+` chip), delete/rename/pin presets via right-click (built-ins are
   hidden via `deletedBuiltins` and pinned via `pinned` chronological
@@ -30,6 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Bar/Pill visuals** — `PillBar` now uses `ClippingRectangle` + outer `outline` (`width: bg + 2*borderWidth` centered) so `barBorderWidth` is a true outer stroke that doesn't eat content or move the pill (`implicitWidth` without `+2*border`), gradient alpha encoded in color (`Qt.rgba(..., bgOpacity)`) instead of `Item.opacity` so `layerrule:ignore_alpha` is predictable, `antialiasing`/`smooth` + `layer.smooth` for xray blur; `barHeight` vs `pillHeight` free-space clamping kept.
+- **Settings layout** — `Bar` now contains `Layout` drag-and-drop, `Pills Appearance` and `Separators` (moved from `Appearance`); new sections `Popups` and `Hyprland` created, `Appearance` left with `Scale`/`Animations` only.
 - **Player selector UX** — moved from clickable album cover + huge
   expanding list below the controls to a dedicated pill under the cover
   (`80×18`, `preferredPlayer` + chevron) with an overlay dropdown
@@ -48,9 +54,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   letter spacing, cards have more breathing room between sections, the
   generated `mutedAlt` color is brighter (blend 0.3 → 0.45), and the
   launcher distinguishes hover from the selected row.
+- **Mpris pill minimal** — `MprisPopup` player pill under the cover is now transparent (no `bg1`/`green` background or border), text `10→11` (`fg`/`green` when open), chevron `7→8` (`mutedAlt`/`green`), pill `80×18` kept but no pill visuals — less visual noise.
+- **Defaults synced to current user** — `quickshell/data/config.json` and `core/AppConfig.qml` defaults updated to live user values (`barHeight 32→36`, `barRadius 5→6`, `barBgOpacity 1.0→0.7`, `barBorderWidth 0→1`, `popupBgOpacity 0.9→0.6`, `popupBgLighten 1.5→1.15`, `popupRadius 10→14`, `toast 6/1.16→9/1.15`, `clipboard true→false`, `tray false→true`), `hypr/modules/general.lua` and `HyprlandSection.qml:hyprDefaults` synced to `visual.json` live values (`gaps_out 1→6`, `border 1→0`, `rounding 0→10`, `dim true`, `opacity 0.95/0.9`, `shadows true→false`, `layout dwindle→master`, `mfact 0.55→0.7`, `blur 6/3/0.35→4/2/0.4`, `blur_xray true→false`, `layer_ignore_alpha 0.01→0`), `data/palette.json` and `wp/wp1.jpg` (1.7M, `wp4.jpg` current) refreshed; docs `ARCHITECTURE.md`/`COMPONENTS.md`/`CONFIG_FORMAT.md` synced.
+- **ImageMagick for lock screen** — `install.sh: PACMAN_DEPS` now includes `imagemagick` (`magick` for `current-lock.jpg` generation in `update-palette.sh`).
 
 ### Fixed
 
+- **Blur behind bar/pill vs popups** — `AnimatedPopup` and `PillBar` now encode alpha in `Gradient` color (`Qt.rgba(..., bgOpacity)`) instead of `opacity`, `hypr/modules/rules.lua` and `general.lua` read all blur/layer values from `visual.json` (`blur_*`, `layer_*`, `xray`, `new_optimizations:true`), `layerrule` split into `blur` + `blur_popups` with `xray=true`; `update-palette.sh` now `sleep 0.35; hyprctl reload` after `awww img` so `xray` blur no longer shows stale wallpaper; `env_rules_test.lua` updated for `hl.layer_rule` mock.
+- **Pill pill corners / border** — `PillBar` double `anchors.margins` (2× inset) removed, `outline` made outer (`width: bg+2*border`) so slider no longer moves the pill, `border.color` no longer multiplied by `bgOpacity` twice, `ClippingRectangle` AA fixed, `glowSize` clamped to `(barHeight-pillHeight)/2` to avoid Hyprland layer clipping.
 - **Audio output hotplug** — `filter-chain` (`SELFshell_EQ`) output now
   auto-relinks on headphone/BT hotplug (`_linkCheckTimer` 3s, `bluez`
   exclusive vs all hardware) and `AudioMixerPopup` output switching now
@@ -93,6 +104,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the triple completion sound is intentional and now documented as such.
 - Genshin widget: the resin icon no longer stays semi-transparent if the
   critical state ends while the widget is hidden.
+
+### Removed
+
+- **Pill glow** (`barGlowSize`/`barGlowOpacity` + `PillBar` `glowRect`) — was only a `1px` border at distance `glowSize` (clamped to `4px` by `barHeight 36`), `24px` gave same visual as `4px`, glow `opacity` barely toned the pill. Removed from `PillBar.qml`, `AppConfig.qml` (`JsonAdapter` + `defaultCfg`), `Bar.qml` (3× `PillBar` props), `AppearanceSection.qml` (`Bar` card), `quickshell/data/config.json` and docs; `separator` glow kept.
+- **Per-app keyboard layout (`appLayout`)** — niche `hypr/modules/rules.lua` `hl.on("window.active")` switching + `hypr/modules/env.lua` `appLayout`/`appLayoutActive` + `hypr/env.json` `appLayout: []` + `docs/CONFIG_FORMAT.md`/`ARCHITECTURE.md`/`COMPONENTS.md` + `tests/check_config_schema.py` + `tests/lua/env_rules_test.lua` (handler). Kept locally in `~/.config` if needed, removed from defaults.
 
 ## [0.7.0] - 2026-08-24
 

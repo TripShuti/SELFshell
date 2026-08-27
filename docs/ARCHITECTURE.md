@@ -56,13 +56,13 @@ file.
 
 | Module | Purpose |
 |--------|---------|
-| `env.lua` | Reads `env.json`, provides modules: mainMod, terminal, browser, cursor, kb layout, suspendKey, autostarts, devices, windowRules, appLayout |
+| `env.lua` | Reads `env.json`, provides modules: mainMod, terminal, browser, cursor, kb layout, suspendKey, autostarts, devices, windowRules |
 | `json.lua` | Minimal JSON parser (no dependencies). Any error → `nil` |
 | `exec.lua` | `XCURSOR_*` env + autostart: `quickshell` (always), polkit agent, `wl-paste --watch cliphist store` watchers, and the list from `env.json` |
-| `general.lua` | Window settings: gaps, border, colors, dwindle, decorations, input (`kbLayout`/`kbOptions` from `env.json`); `devices[]` from `env.json` |
+| `general.lua` | Window settings: gaps, border, colors, master/dwindle, decorations, input (`kbLayout`/`kbOptions` from `env.json`); `devices[]` from `env.json` |
 | `binds.lua` | Keybindings: screenshots, clipboard history (`SUPER+SHIFT+V`), launcher, workspaces, focus, window movement |
 | `animation.lua` | Animation curves (`wind`, `winIn`, `winOut`, `liner`) and styles |
-| `rules.lua` | Universal window rules + data-driven per-app rules from `env.json` (`windowRules`, optional `appLayout`) |
+| `rules.lua` | Universal window rules + data-driven per-app rules from `env.json` (`windowRules`) |
 
 ### `env.json` — user settings
 
@@ -71,7 +71,7 @@ broken → defaults from `env.lua` (behavior unchanged).
 Schema: `mod`, `terminal`, `fileManager`, `browser`, `cursorTheme`,
 `cursorSize`, `kbLayout`, `kbOptions`, `suspendKey`, `autostart[]`
 (`command`, `workspace`?), `devices[]` (`name`, `sensitivity`,
-`accel_profile`, `scroll_factor`), `windowRules[]`, `appLayout[]`.
+`accel_profile`, `scroll_factor`), `windowRules[]`.
 Details in [CONFIG_FORMAT.md](CONFIG_FORMAT.md).
 
 ### `.conf` files
@@ -321,17 +321,22 @@ SettingsPopup is a fixed-size popup (760x560) with a sidebar of sections,
 each loaded as a separate file via `Loader` (`settings/*.qml`, each gets
 `sys` = the popup root):
 - **Bar** — height, pill radius, edge margin, padding, spacing, bar
-  position (top/bottom), auto-hide, pill visibility (left/center/right)
-- **Layout** — drag-and-drop widget order: dragging between pills,
-  dragging into the pool disables the widget, separators are added with
-  a "+" button
+  position (top/bottom), auto-hide, pill visibility (left/center/right),
+  **Layout** drag-and-drop (widget order between pills, pool disables,
+  separators via "+" button), **Pills Appearance** (bg opacity, gradient,
+  border) and **Separators**
+- **Popups** — `Popups` (bg opacity, gradient, radius, border, glow) and
+  `Toast & OSD` (radius, gradient, glow)
+- **Hyprland** — `Windows` (gaps, border, rounding, opacity, dim, shadows,
+  border colors, dwindle/master layout) and `Blur` (size, passes, vibrancy,
+  xray, layer blur)
+- **Appearance** — `Scale` (`uiScale`) and `Animations` (`animationsEnabled`
+  master switch, `animSpeed` multiplier)
 - **Wallpaper** — picker and palette regeneration
-- **Appearance** — popup/toast/OSD/bar/separator design keys, global
-  `uiScale` (beyond the auto palette) and animation controls
-  (`animationsEnabled` master switch, `animSpeed` duration multiplier)
 - **Behavior** — Do not disturb, idle timeouts (lock/dpms/suspend with
   ordering constraints), wheel steps (volume/brightness), resetting all
   settings to factory defaults
+- **Binds** — rebindable shell/app shortcuts
 - **About** — shell and component versions, machine info, project link
 
 Layout (drag-and-drop) implementation:

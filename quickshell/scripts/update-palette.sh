@@ -15,6 +15,11 @@ LOCK_FRAME="$HOME/.config/quickshell/wp/current-lock.jpg"
 # awww кешує декодовані кадри ЗА ШЛЯХОМ файлу: показуємо оригінал,
 # бо current.* має щоразу той самий шлях і awww віддав би застарілий кеш
 awww img "$WALLPAPER"
+# awww оновлює шар асинхронно — даємо 300мс щоб Hyprland отримав новий кадр,
+# інакше hyprctl reload застає стару текстуру і блюр під пігулкою лишається старим
+sleep 0.35
+# Після зміни шпалери Hyprland з xray-блюром може кешувати старий розмитий фон
+hyprctl reload >/dev/null 2>&1 || true
 
 cp "$WALLPAPER" "$CURRENT"
 

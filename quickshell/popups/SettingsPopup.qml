@@ -1,8 +1,6 @@
 // ============================================================
-// SettingsPopup.qml — налаштування бару: розділи Bar / Layout /
-// Wallpaper / Appearance / Behavior / About. Кожен розділ — окремий
-// файл у settings/, завантажується через Loader (патерн SettingsView
-// з Panacea).
+// SettingsPopup.qml — налаштування: Bar (з Layout всередині), Popups,
+// Hyprland, Appearance, Wallpaper, Behavior, Binds, About.
 // ============================================================
 import QtQuick
 import QtQuick.Layouts
@@ -31,12 +29,13 @@ AnimatedPopup {
   readonly property var cfg: window.appConfig.cfg
   readonly property var ac: window.appConfig
 
-  // Розділи налаштувань — кожен окремим файлом, сторінка отримує sys = root
+  // Розділи: Bar (з Layout всередині), Popups, Hyprland, Appearance (Scale/Animations), решта — без змін
   readonly property var sections: [
     { title: "Bar", page: "settings/BarSection.qml" },
-    { title: "Layout", page: "settings/LayoutSection.qml" },
-    { title: "Wallpaper", page: "settings/WallpaperSection.qml" },
+    { title: "Popups", page: "settings/PopupsSection.qml" },
+    { title: "Hyprland", page: "settings/HyprlandSection.qml" },
     { title: "Appearance", page: "settings/AppearanceSection.qml" },
+    { title: "Wallpaper", page: "settings/WallpaperSection.qml" },
     { title: "Behavior", page: "settings/BehaviorSection.qml" },
     { title: "Binds", page: "settings/BindsSection.qml" },
     { title: "About", page: "settings/AboutSection.qml" }

@@ -18,11 +18,11 @@ Edited through SettingsPopup (UI) or manually.
 | `keyboardEnabled` | `boolean` | `true` | Keyboard layout |
 | `audioEnabled` | `boolean` | `true` | Audio |
 | `controlEnabled` | `boolean` | `true` | Control center |
-| `clipboardEnabled` | `boolean` | `true` | Clipboard history |
+| `clipboardEnabled` | `boolean` | `false` | Clipboard history |
 | `btEnabled` | `boolean` | `false` | Bluetooth |
 | `netEnabled` | `boolean` | `false` | Network |
 | `trayEnabled` | `boolean` | `true` | System tray |
-| `batteryEnabled` | `boolean` | `true` | Battery (the widget hides itself when no battery exists) |
+| `batteryEnabled` | `boolean` | `false` | Battery (the widget hides itself when no battery exists) |
 | `dndEnabled` | `boolean` | `false` | Do-not-disturb — hides all notifications |
 | `timerSoundPath` | `string` | `""` | Custom timer sound (`""` = from assets/) |
 | `idleLockTimeout` | `number` | `300` | Idle time before the screen locks, seconds (`0` = never) |
@@ -30,8 +30,8 @@ Edited through SettingsPopup (UI) or manually.
 | `idleSuspendTimeout` | `number` | `900` | Idle time before suspend, seconds (`0` = never) |
 | `audioStep` | `number` | `0.05` | Mouse-wheel volume step (0–1) |
 | `brightnessStep` | `number` | `5` | Mouse-wheel brightness step (0–100) |
-| `barHeight` | `number` | `32` | Bar height in pixels |
-| `barRadius` | `number` | `5` | Bar pill corner radius |
+| `barHeight` | `number` | `36` | Bar height in pixels |
+| `barRadius` | `number` | `6` | Bar pill corner radius |
 | `barPos` | `string` | `"top"` | Bar edge: `top` or `bottom` |
 | `edgeMargin` | `number` | `8` | Gap from the screen edge to the side pills, px |
 | `pillPadding` | `number` | `8` | Inner padding of a pill, px |
@@ -43,21 +43,19 @@ Edited through SettingsPopup (UI) or manually.
 | `leftOrder` | `string[]` | — | Widget names in the left pill (including `sep-N`) |
 | `centerOrder` | `string[]` | — | Widget names in the center pill |
 | `rightOrder` | `string[]` | — | Widget names in the right pill |
-| `popupBgOpacity` | `number` | `0.9` | Popup background opacity (0.5–1.0) |
-| `popupBgLighten` | `number` | `1.5` | Popup background gradient lighten; 1.0 = flat color (1.0–2.0) |
-| `popupRadius` | `number` | `10` | Popup corner radius, px (0–24) |
+| `popupBgOpacity` | `number` | `0.6` | Popup background opacity (0.5–1.0) |
+| `popupBgLighten` | `number` | `1.15` | Popup background gradient lighten; 1.0 = flat color (1.0–2.0) |
+| `popupRadius` | `number` | `14` | Popup corner radius, px (0–24) |
 | `popupBorderWidth` | `number` | `1` | Popup border width, px (0–4) |
 | `popupGlowOpacity` | `number` | `0.1` | Popup outer glow opacity; 0 = no glow (0–0.4) |
-| `toastRadius` | `number` | `6` | Notification toast corner radius, px (0–24) |
-| `toastLighten` | `number` | `1.16` | Toast background gradient lighten (1.0–2.0) |
+| `toastRadius` | `number` | `9` | Notification toast corner radius, px (0–24) |
+| `toastLighten` | `number` | `1.15` | Toast background gradient lighten (1.0–2.0) |
 | `toastGlowOpacity` | `number` | `0.2` | Toast outer glow opacity (0–0.5) |
 | `osdRadius` | `number` | `10` | OSD corner radius, px (0–24) |
 | `osdLighten` | `number` | `1.5` | OSD background gradient lighten (1.0–2.0) |
 | `barLighten` | `number` | `1.3` | Bar pill gradient lighten; 1.0 = flat color (1.0–2.0) |
-| `barGlowSize` | `number` | `0` | Colored halo around pills, px; 0 = no glow (0–24) |
-| `barGlowOpacity` | `number` | `0.1` | Pill glow opacity (0–0.5) |
-| `barBgOpacity` | `number` | `1.0` | Pill background opacity multiplier; 1.0 = palette color as-is (0.2–1.0) |
-| `barBorderWidth` | `number` | `0` | Pill outline width, px; 0 = no border (0–4) |
+| `barBgOpacity` | `number` | `0.7` | Pill background opacity multiplier; 1.0 = palette color as-is (0.2–1.0) |
+| `barBorderWidth` | `number` | `1` | Pill outline width, px; 0 = no border (0–4) |
 | `separatorOpacity` | `number` | `0.65` | Separator line opacity between widget groups (0–1.0) |
 | `separatorGlowOpacity` | `number` | `0.1` | Separator glow opacity (0–0.5) |
 | `uiScale` | `number` | `1.0` | Global multiplier for all text/icon-glyph sizes in bar, popups and settings (0.8–1.5) |
@@ -112,8 +110,7 @@ hardcoded values).
     { "command": "hyprsunset" }
   ],
   "devices": [],
-  "windowRules": [],
-  "appLayout": []
+  "windowRules": []
 }
 ```
 
@@ -142,20 +139,10 @@ hardcoded values).
 | `windowRules[].name` | `string` | — | Rule name (shown in logs) |
 | `windowRules[].match` | `object` | — | Matchers: `class`, `title`, `xwayland`, `float`, … (see `hl.window_rule`) |
 | `windowRules[].*` | `*` | — | Rule body: `float`, `center`, `size`, `opacity`, `no_focus`, `suppress_event`, `workspace` … |
-| `appLayout` | `array` | `[]` | Per-app keyboard layout switching (`switchxkblayout` index) |
-| `appLayout[].class` | `string` | — | Window class (from `hyprctl clients`) |
-| `appLayout[].layout` | `number` | — | Layout index in `kbLayout` (0 = first) |
 
 Notes:
 - `quickshell` always starts, regardless of `autostart`
   (shell infrastructure, not a user choice).
-- `appLayout` only works with 2+ layouts in `kbLayout` (the feature is
-  based on `hyprctl switchxkblayout all N`). It is disabled by default.
-  Example — Russian/Ukrainian typing in the terminal only:
-  ```json
-  "kbLayout": "us, ua",
-  "appLayout": [ { "class": "kitty", "layout": 1 } ]
-  ```
 
 ### `windowRules` examples
 
@@ -204,25 +191,34 @@ Standard Hyprland `.conf` format:
 
 ## Hyprland: visual.json
 
-Optional visual overrides for windows/decorations, read by
-`modules/general.lua`. Managed by **Settings → Appearance → Hyprland
-windows** (every change is debounced 400 ms, written atomically and
-applied via `hyprctl reload`). The file is absent on a fresh install —
-all defaults live in Lua and must stay in sync with `hyprDefaults` in
-`AppearanceSection.qml`. After the first change through the UI the file
+Optional visual overrides for windows/decorations and blur/layer blur,
+read by `modules/general.lua` (decoration/blur/shadows) and
+`modules/rules.lua` (layerrule blur). Managed by
+**Settings → Hyprland → Windows** and **Settings → Hyprland → Blur**
+(every change is debounced 400 ms, written atomically and applied via
+`hyprctl reload`). The file is absent on a fresh install — all defaults
+live in Lua and must stay in sync with `hyprDefaults` in
+`HyprlandSection.qml`. After the first change through the UI the file
 becomes a full snapshot of the UI-managed keys (explicit values, even
 when equal to defaults); JSON-only keys not present in the UI
 (e.g. `rounding_power`) are preserved across rewrites.
 
 ```json
 {
-  "gaps_in": 5, "gaps_out": 3, "border_size": 1, "resize_on_border": false,
+  "gaps_in": 5, "gaps_out": 6, "border_size": 0, "resize_on_border": false,
   "active_opacity": 0.95, "inactive_opacity": 0.9,
-  "rounding": 12, "rounding_power": 5.0,
-  "dim_inactive": true, "dim_strength": 0.3, "shadows": true,
+  "rounding": 10, "rounding_power": 2.0,
+  "dim_inactive": true, "dim_strength": 0.3, "shadows": false,
   "active_border": "rgba(rrggbbff)", "inactive_border": "rgba(rrggbbff)",
-  "layout": "master", "mfact": 0.55, "orientation": "left",
-  "inactive_timeout": 3, "new_status": "slave"
+  "layout": "master", "mfact": 0.7, "orientation": "left",
+  "inactive_timeout": 3, "new_status": "slave", "always_keep_position": false,
+  "blur_enabled": true, "blur_size": 4, "blur_passes": 2,
+  "blur_vibrancy": 0.4, "blur_vibrancy_darkness": 0.3,
+  "blur_noise": 0.02, "blur_contrast": 1.05, "blur_brightness": 1.0,
+  "blur_xray": false, "blur_ignore_opacity": false,
+  "blur_popups": true, "blur_popups_ignorealpha": 0.1,
+  "blur_new_optimizations": true,
+  "layer_ignore_alpha": 0, "layer_popups_ignore_alpha": 0.05, "layer_xray": true
 }
 ```
 
@@ -232,6 +228,9 @@ Notes:
   (45°); a color string switches it to a solid color
 - `rounding_power` and the fine shadow parameters (range, render_power,
   sharp, color) are JSON-only — intentionally not in the Settings UI
+- `blur_*` map to `decoration:blur:*` in `general.lua` (`popups_ignorealpha`
+  is the decoration one; the layer thresholds are `layer_*`), `layer_*` map
+  to `layerrule` in `rules.lua` (`blur`/`blur_popups` + `ignore_alpha` + `xray`)
 - `layout` accepts `dwindle` or `master`; `orientation` —
   `left`/`right`/`top`/`bottom`/`center`
 

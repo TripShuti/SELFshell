@@ -66,6 +66,7 @@ PACMAN_DEPS=(
   python-dbus
   python-gobject
   matugen
+  imagemagick
   ttf-jetbrains-mono-nerd
 
   # додаткові пакунки, необхідні для конфігів

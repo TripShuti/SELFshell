@@ -95,15 +95,21 @@ PopupWindow {
     // Реальний фон попапу — єдина спільна точка керування для ВСІХ
     // попапів. Змінюєш bgColor/bgOpacity/bgLighten тут в AnimatedPopup —
     // застосовується одразу до кожного попапу, без дублікатів по файлах.
+    // Альфа кодується в кольорі градієнта, а не в `opacity` — Hyprland
+    // `layerrule:ignore_alpha` і `xray` працюють саме по альфі кольору
+    // буфера, а `Item.opacity` додатково множиться під час анімації
+    // і робить поріг непередбачуваним (0.5×0.5=0.25).
     Rectangle {
       id: bgRect
       anchors.fill: parent
       radius: parent.radius
-      opacity: root.bgOpacity
+      // opacity лишаємо 1 — альфа в кольорах нижче
+      property color _base: root.bgColor
+      property color _top: Qt.lighter(root.bgColor, root.bgLighten)
       gradient: Gradient {
         orientation: Gradient.Vertical
-        GradientStop { position: 0.0; color: Qt.lighter(root.bgColor, root.bgLighten) }
-        GradientStop { position: 1.0; color: root.bgColor }
+        GradientStop { position: 0.0; color: Qt.rgba(bgRect._top.r, bgRect._top.g, bgRect._top.b, root.bgOpacity) }
+        GradientStop { position: 1.0; color: Qt.rgba(bgRect._base.r, bgRect._base.g, bgRect._base.b, root.bgOpacity) }
       }
     }
 

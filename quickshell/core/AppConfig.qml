@@ -41,12 +41,12 @@ Item {
       property bool keyboardEnabled: true
       property bool audioEnabled: true
       property bool controlEnabled: true
-      property bool clipboardEnabled: true
-      // Дефолти вимкнених сервісів співпадають з config.json (bt/net/tray
-      // за замовчуванням вимкнені, вмикаються через Settings)
+      property bool clipboardEnabled: false
+      // Дефолти співпадають з data/config.json (синхронізовано з поточним
+      // користувацьким конфігом; bt/net вимкнені, tray увімкнений)
       property bool btEnabled: false
       property bool netEnabled: false
-      property bool trayEnabled: false
+      property bool trayEnabled: true
       property bool batteryEnabled: false
 
       // DND — повністю ховає сповіщення (тост, список, звук)
@@ -73,8 +73,8 @@ Item {
       property int brightnessStep: 5
 
       // --- Зовнішній вигляд і поведінка бару ---
-      property int barHeight: 32
-      property int barRadius: 5
+      property int barHeight: 36
+      property int barRadius: 6
       // на якій кромці стоїть панель: "top" | "bottom"
       property string barPos: "top"
       // відступ крайніх пігулок від кромки екрана
@@ -95,27 +95,25 @@ Item {
       // вигляд не змінюється, доки користувач не посуне повзунки.
 
       // Попапи (база AnimatedPopup — всі 15 вікон)
-      property real popupBgOpacity: 0.90
-      property real popupBgLighten: 1.5
-      property int popupRadius: 10
+      property real popupBgOpacity: 0.60
+      property real popupBgLighten: 1.15
+      property int popupRadius: 14
       property int popupBorderWidth: 1
       property real popupGlowOpacity: 0.10
 
       // Тост і OSD (автономні поверхні)
-      property int toastRadius: 6
-      property real toastLighten: 1.16
+      property int toastRadius: 9
+      property real toastLighten: 1.15
       property real toastGlowOpacity: 0.2
       property int osdRadius: 10
       property real osdLighten: 1.5
 
       // Бар (пігулки)
       property real barLighten: 1.30
-      property int barGlowSize: 0
-      property real barGlowOpacity: 0.10
       // множник прозорості фону пігулки (1.0 = колір з палітри як є)
-      property real barBgOpacity: 1.0
+      property real barBgOpacity: 0.70
       // товщина рамки пігулки (0 = без рамки)
-      property int barBorderWidth: 0
+      property int barBorderWidth: 1
       // роздільники між віджетами
       property real separatorOpacity: 0.65
       property real separatorGlowOpacity: 0.10
@@ -251,21 +249,21 @@ Item {
     launcherEnabled: true, workspacesEnabled: true, mprisEnabled: true,
     clockEnabled: true, timerEnabled: true, genshinEnabled: true,
     keyboardEnabled: true, audioEnabled: true, controlEnabled: true,
-    clipboardEnabled: true, btEnabled: false, netEnabled: false,
-    trayEnabled: false, batteryEnabled: false, dndEnabled: false,
+    clipboardEnabled: false, btEnabled: false, netEnabled: false,
+    trayEnabled: true, batteryEnabled: false, dndEnabled: false,
     timerSoundPath: "",
     preferredPlayer: "selfsonic",
     idleLockTimeout: 300, idleDpmsTimeout: 360, idleSuspendTimeout: 900,
     audioStep: 0.05, brightnessStep: 5,
-    barHeight: 32, barRadius: 5, barPos: "top", edgeMargin: 8,
+    barHeight: 36, barRadius: 6, barPos: "top", edgeMargin: 8,
     pillPadding: 8, contentSpacing: 4, barAutoHide: false,
     leftPillEnabled: true, centerPillEnabled: true, rightPillEnabled: true,
-    popupBgOpacity: 0.90, popupBgLighten: 1.5, popupRadius: 10,
+    popupBgOpacity: 0.60, popupBgLighten: 1.15, popupRadius: 14,
     popupBorderWidth: 1, popupGlowOpacity: 0.10,
-    toastRadius: 6, toastLighten: 1.16, toastGlowOpacity: 0.2,
+    toastRadius: 9, toastLighten: 1.15, toastGlowOpacity: 0.2,
     osdRadius: 10, osdLighten: 1.5,
-    barLighten: 1.30, barGlowSize: 0, barGlowOpacity: 0.10,
-    barBgOpacity: 1.0, barBorderWidth: 0,
+    barLighten: 1.30,
+    barBgOpacity: 0.70, barBorderWidth: 1,
     separatorOpacity: 0.65, separatorGlowOpacity: 0.10,
     uiScale: 1.0,
     animationsEnabled: true, animSpeed: 1.0,

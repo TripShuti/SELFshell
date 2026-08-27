@@ -1,5 +1,5 @@
 // ============================================================
-// core/PillBar.qml — пігулка з градієнтом, сяйвом і Repeater-ом віджетів
+// core/PillBar.qml — пігулка з градієнтом і Repeater-ом віджетів
 // ============================================================
 import QtQuick
 import QtQuick.Layouts
@@ -17,48 +17,36 @@ Item {
   property real radius: 4
   property real padding: 8
   property real contentSpacing: 4
-  property real glowSize: 0
-  property real glowOpacity: 0.1
-  // наскільки верх градієнта світліший за низ (1.0 = суцільний колір)
   property real lighten: 1.30
-  // множник прозорості фону (1.0 = колір з палітри як є)
   property real bgOpacity: 1.0
-  // товщина рамки пігулки (0 = без рамки)
   property real borderWidth: 0
+  property color _pillBase: palette ? palette.bgAlpha : "#9934302a"
+  property color _pillTop: palette ? Qt.lighter(palette.baseOverlay, lighten) : "#9934302a"
 
-  // Зміни візуальних параметрів з Appearance застосовуються плавно
-  Behavior on glowSize { NumberAnimation { duration: appConfig.anim(150); easing.type: Easing.OutCubic } }
-  Behavior on glowOpacity { NumberAnimation { duration: appConfig.anim(150); easing.type: Easing.OutCubic } }
   Behavior on lighten { NumberAnimation { duration: appConfig.anim(150); easing.type: Easing.OutCubic } }
   Behavior on bgOpacity { NumberAnimation { duration: appConfig.anim(150); easing.type: Easing.OutCubic } }
   Behavior on borderWidth { NumberAnimation { duration: appConfig.anim(150); easing.type: Easing.OutCubic } }
   Behavior on radius { NumberAnimation { duration: appConfig.anim(150); easing.type: Easing.OutCubic } }
 
   implicitWidth: row.implicitWidth + 2 * root.padding
-
-  Rectangle {
-    anchors.fill: bg
-    anchors.margins: -root.glowSize
-    radius: bg.radius + root.glowSize
-    color: "transparent"
-    border.width: 1
-    border.color: root.palette.hoverBg
-    opacity: root.glowOpacity
-  }
+  implicitHeight: root.height
 
   Rectangle {
     id: bg
-    anchors.fill: parent
+    anchors.centerIn: parent
+    width: row.implicitWidth + 2 * root.padding
+    height: parent.height
     radius: root.radius
-    color: root.palette.bgAlpha
+    color: "transparent"
     border.width: root.borderWidth
+    // Робимо бордер більш контрастним — без множення на bgOpacity, інакше при bgOpacity 0.85 бордер 0.34 альфи майже непомітний на темному фоні
     border.color: root.palette.outlineVariant
-    opacity: root.bgOpacity
-
+    antialiasing: true
+    smooth: true
     gradient: Gradient {
       orientation: Gradient.Vertical
-      GradientStop { position: 0.0; color: Qt.lighter(root.palette.baseOverlay, root.lighten) }
-      GradientStop { position: 1.0; color: root.palette.bgAlpha }
+      GradientStop { position: 0.0; color: Qt.rgba(root._pillTop.r, root._pillTop.g, root._pillTop.b, root._pillTop.a * root.bgOpacity) }
+      GradientStop { position: 1.0; color: Qt.rgba(root._pillBase.r, root._pillBase.g, root._pillBase.b, root._pillBase.a * root.bgOpacity) }
     }
   }
 
