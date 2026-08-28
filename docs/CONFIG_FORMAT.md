@@ -49,8 +49,10 @@ Edited through SettingsPopup (UI) or manually.
 | `popupBorderWidth` | `number` | `1` | Popup border width, px (0–4) |
 | `toastRadius` | `number` | `9` | Notification toast corner radius, px (0–24) |
 | `toastLighten` | `number` | `1.15` | Toast background gradient lighten (1.0–2.0) |
+| `toastBgOpacity` | `number` | `0.9` | Toast background opacity (0.5–1.0) |
 | `osdRadius` | `number` | `10` | OSD corner radius, px (0–24) |
 | `osdLighten` | `number` | `1.5` | OSD background gradient lighten (1.0–2.0) |
+| `osdBgOpacity` | `number` | `0.9` | OSD background opacity (0.5–1.0) |
 | `barLighten` | `number` | `1.3` | Bar pill gradient lighten; 1.0 = flat color (1.0–2.0) |
 | `barBgOpacity` | `number` | `0.7` | Pill background opacity multiplier; 1.0 = palette color as-is (0.2–1.0) |
 | `barBorderWidth` | `number` | `1` | Pill outline width, px; 0 = no border (0–4) |

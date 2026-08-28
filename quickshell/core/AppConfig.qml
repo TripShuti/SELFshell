@@ -103,8 +103,10 @@ Item {
       // Тост і OSD (автономні поверхні) — стиль як у попапів, без glow
       property int toastRadius: 9
       property real toastLighten: 1.15
+      property real toastBgOpacity: 0.90
       property int osdRadius: 10
       property real osdLighten: 1.5
+      property real osdBgOpacity: 0.90
 
       // Бар (пігулки)
       property real barLighten: 1.30
@@ -258,8 +260,8 @@ Item {
     leftPillEnabled: true, centerPillEnabled: true, rightPillEnabled: true,
     popupBgOpacity: 0.60, popupBgLighten: 1.15, popupRadius: 14,
     popupBorderWidth: 1,
-    toastRadius: 9, toastLighten: 1.15,
-    osdRadius: 10, osdLighten: 1.5,
+    toastRadius: 9, toastLighten: 1.15, toastBgOpacity: 0.90,
+    osdRadius: 10, osdLighten: 1.5, osdBgOpacity: 0.90,
     barLighten: 1.30,
     barBgOpacity: 0.70, barBorderWidth: 1,
     separatorOpacity: 0.65, separatorGlowOpacity: 0.10,

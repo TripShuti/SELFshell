@@ -29,6 +29,7 @@ PanelWindow {
   property var activeWidgets: ({})
   // Тостер для віджетів (battery): явна властивість замість id-хаків між файлами
   readonly property QtObject toast: notifToast
+  readonly property QtObject osd: osdPopup
   function registerActive(name, item) {
     var copy = Object.assign({}, activeWidgets)
     copy[name] = item

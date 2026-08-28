@@ -56,29 +56,49 @@ Item {
     SetCard {
       sys: root.sys
       SetLabel { sys: root.sys; text: "Toast & OSD" }
+      function _previewToast() {
+        var w = sys.window
+        if (w && w.toast) w.toast.showNotif({ appName: "Preview", summary: "Toast preview", body: "Drag the sliders to see changes", appIcon: "dialog-information", actions: [] })
+      }
+      function _previewOsd() {
+        var w = sys.window
+        if (w && w.osd) w.osd.showVolume()
+      }
       SetSlider {
         sys: root.sys
         label: "Toast radius"; from: 0; to: 24; step: 1; suffix: "px"
         value: root.cfg.toastRadius
-        onMoved: function(v) { root.cfg.toastRadius = v; root.ac.saveToFile() }
+        onMoved: function(v) { root.cfg.toastRadius = v; root.ac.saveToFile(); _previewToast() }
       }
       SetSlider {
         sys: root.sys
         label: "Toast gradient"; from: 1.0; to: 2.0; step: 0.05; decimals: 2
         value: root.cfg.toastLighten
-        onMoved: function(v) { root.cfg.toastLighten = v; root.ac.saveToFile() }
+        onMoved: function(v) { root.cfg.toastLighten = v; root.ac.saveToFile(); _previewToast() }
+      }
+      SetSlider {
+        sys: root.sys
+        label: "Toast opacity"; from: 0.5; to: 1.0; step: 0.05; decimals: 2
+        value: root.cfg.toastBgOpacity
+        onMoved: function(v) { root.cfg.toastBgOpacity = v; root.ac.saveToFile(); _previewToast() }
       }
       SetSlider {
         sys: root.sys
         label: "OSD radius"; from: 0; to: 24; step: 1; suffix: "px"
         value: root.cfg.osdRadius
-        onMoved: function(v) { root.cfg.osdRadius = v; root.ac.saveToFile() }
+        onMoved: function(v) { root.cfg.osdRadius = v; root.ac.saveToFile(); _previewOsd() }
       }
       SetSlider {
         sys: root.sys
         label: "OSD gradient"; from: 1.0; to: 2.0; step: 0.05; decimals: 2
         value: root.cfg.osdLighten
-        onMoved: function(v) { root.cfg.osdLighten = v; root.ac.saveToFile() }
+        onMoved: function(v) { root.cfg.osdLighten = v; root.ac.saveToFile(); _previewOsd() }
+      }
+      SetSlider {
+        sys: root.sys
+        label: "OSD opacity"; from: 0.5; to: 1.0; step: 0.05; decimals: 2
+        value: root.cfg.osdBgOpacity
+        onMoved: function(v) { root.cfg.osdBgOpacity = v; root.ac.saveToFile(); _previewOsd() }
       }
     }
   }

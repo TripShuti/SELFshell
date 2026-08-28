@@ -149,16 +149,19 @@ PopupWindow {
     id: container
     width: parent.width
     implicitHeight: osdLayout.implicitHeight + 14
-    // Стиль як у AnimatedPopup: bg0H градієнт, рамка bg2, без glow
+    // Стиль як у AnimatedPopup: bg0H градієнт + opacity, рамка bg2
     radius: appConfig ? appConfig.cfg.osdRadius : 10
     border.width: 1
     border.color: root.palette ? root.palette.bg2 : "#57514b"
     opacity: 0
     scale: 0.88
+    property color _base: root.palette ? root.palette.bg0H : "#34302a"
+    property color _top: Qt.lighter(_base, appConfig ? appConfig.cfg.osdLighten : 1.5)
+    property real bgOpacity: appConfig ? appConfig.cfg.osdBgOpacity : 0.90
     gradient: Gradient {
       orientation: Gradient.Vertical
-      GradientStop { position: 0.0; color: Qt.lighter(root.palette ? root.palette.bg0H : "#34302a", appConfig ? appConfig.cfg.osdLighten : 1.5) }
-      GradientStop { position: 1.0; color: root.palette ? root.palette.bg0H : "#34302a" }
+      GradientStop { position: 0.0; color: Qt.rgba(_top.r, _top.g, _top.b, bgOpacity) }
+      GradientStop { position: 1.0; color: Qt.rgba(_base.r, _base.g, _base.b, bgOpacity) }
     }
 
     ColumnLayout {
