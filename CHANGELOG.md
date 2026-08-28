@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Settings PopupsSection** — `PopupsSection.qml:18` preview helpers moved to `root` (`_previewToast/_previewOsd` at root, `root._previewToast()` calls) + `Process` `notify-send`/`qs ipc` so slider moves show toast/OSD live (previously `_previewToast is not defined` and `PopupWindow` conflict when `Settings` open).
 - **Network popup** — `NetworkPopup.qml:324` `onToggled: value=>` → `function`.
 - **Toast action buttons** — `NotifToast.qml:243` `MouseArea` for default action was outside `container` (sibling of `PopupWindow`), `toastLayout:146` `z:1` didn’t escape parent → `actionArea:225` never received clicks, `Mark as read` triggered default dismiss. Moved `MouseArea` inside `container` before `toastLayout`, added `HoverHandler` for autoClose pause.
+- **Toast border/top highlight** — `NotifToast.qml:126` `border.color: green` → `bg2` (`#525256`) to match `AnimatedPopup.qml:88`/`OsdPopup.qml:156` (was distinct), `NotifToast.qml:139` top 1px `color: hoverOverlay` → `gradient: transparent→hoverOverlay→transparent` like `AnimatedPopup.qml:116` so it doesn’t cut `radius:9` corners.
 
 ### Removed
 

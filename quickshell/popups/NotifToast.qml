@@ -123,7 +123,7 @@ PopupWindow {
     implicitHeight: toastLayout.implicitHeight + 16
     radius: appConfig ? appConfig.cfg.toastRadius : 9
     border.width: 1
-    border.color: root.palette ? root.palette.green : "#8aa9fc"
+    border.color: root.palette ? root.palette.bg2 : "#525256"
     opacity: 0
     scale: 0.85
     clip: true
@@ -172,11 +172,16 @@ PopupWindow {
       }
     }
 
-    // Підсвітка верхнього краю — як у AnimatedPopup
+    // Підсвітка верхнього краю — як у AnimatedPopup (градієнт щоб не різала кути)
     Rectangle {
       anchors { top: parent.top; left: parent.left; right: parent.right }
       height: 1
-      color: root.palette ? root.palette.hoverOverlay : "#14ffffff"
+      gradient: Gradient {
+        orientation: Gradient.Horizontal
+        GradientStop { position: 0.0; color: "transparent" }
+        GradientStop { position: 0.5; color: root.palette ? root.palette.hoverOverlay : "#14ffffff" }
+        GradientStop { position: 1.0; color: "transparent" }
+      }
     }
 
   ColumnLayout {
