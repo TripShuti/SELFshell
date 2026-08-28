@@ -6,6 +6,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Toast/OSD opacity** — `AppConfig.qml` `toastBgOpacity`/`osdBgOpacity` (0.90), `data/config.json`, `CONFIG_FORMAT.md` and `PopupsSection` sliders (0.5–1.0) with live preview (`notify-send` / `qs ipc call osd volume` via `Bar.toast`/`Bar.osd` aliases). `NotifToast`/`OsdPopup` now use `Qt.rgba(..., bgOpacity)` like `AnimatedPopup`.
+
+### Changed
+
+- **Toast/OSD visuals** — `NotifToast`/`OsdPopup` unified with `AnimatedPopup`: `bg2` + `lighter(..., lighten)` gradient, `bg2`/`green` borders, no glow. `NotifToast` border `green` for visibility, `OsdPopup` `bg2`.
+- **Bar auto-hide** — `Bar.qml:100` `hideTimer` polling (400ms) → event-driven `hideDelay` (400ms) + `anyPopupOpenState` (`calendar/audio/bt/net/mpris/.../notifToast/osd`) + `containsMouse` watchers. No wake-ups when idle.
+- **PillBar loader** — `PillBar.qml:65` `Loader` now `asynchronous:true`, `active: !isSep`, `visible: status===Ready`, `sourceComponent: widgetComponents[modelData] ?? null` with `needsFillHeight` guard and `Component.onDestruction: unregisterActive`.
+
+### Fixed
+
+- **Bar top position** — `Bar.qml:130` `root.barPos` undefined (always `bottom`) → `root.appConfig.cfg.barPos` (6 places). Top-bar reveal strip, `hiddenMask` and `barContent` slide direction now correct.
+- **Active widgets leak** — `Bar.qml:32` `activeWidgets` never deleted on `Loader` destroy → `unregisterActive` + `PillBar` `Component.onDestruction`, stale `Connections`/`anchorItem` fixed. Added `enabled: target!==null` guards for 10 widget `Connections`.
+- **Control badge** — `Bar.qml:169` `controlComp unread: controlPopup.unread` binding broken by imperative `onNewNotifsChanged` → `unread: root.newNotifs` declarative, removed `Connections onNewNotifsChanged`.
+- **Popup glow** — `AnimatedPopup.qml:63` `outerGlow` (always occluded behind opaque `bgRect`) removed; `AppConfig` `popupGlowOpacity`/`toastGlowOpacity` and `PopupsSection` glow sliders removed, `CONFIG_FORMAT.md`/`COMPONENTS.md`/`ARCHITECTURE.md`/`TROUBLESHOOTING.md` updated. `Separator` glow kept.
+- **LockSurface** — `LockSurface.qml:114` timers `clockText.text = ...` / `parent.text = ...` broke `SystemClock` binding → removed, `hiddenInput` now two-way synced via `Connections onCurrentTextChanged`, `actions Suspend` no longer re-locks (`qs ipc call lockscreen lock && systemctl suspend` → `systemctl suspend`), `wallpaperImg` `asynchronous:true cache:false`.
+- **AudioMixer injection** — `AudioMixerPopup.qml:170` `T="modelData.name"` double-quote injection → `T='...'.replace(/'/g,"'\\''")` single-quote escaped.
+- **Clipboard injection** — `ClipboardPopup.qml:88` `cliphist decode/delete` `id` concatenated → `String(id).replace(/'/g,"'\\''")` + single quotes.
+- **TimerWidget** — `TimerWidget.qml:58` `PLAYER='ffplay -nodisp ...'` single string with args never executed → `PLAYER='ffplay' PLAYER_ARGS='-nodisp ...'` + `$PLAYER $PLAYER_ARGS "$SOUND"`, `notifyProc.command` now built per run (was stale binding), `onRead/onWheel =>` → `function`.
+- **Settings components** — `SetToggle/SetSlider/SetSelect/SetButton/SetCard/SetLabel.qml:12` `property QtObject sys` → `required`, `SetToggle onToggled: v=>` / `SetSlider onPressed/PositionChanged: mouse=>` → `function`.
+- **Toast/OSD black** — `NotifToast.qml:130` / `OsdPopup.qml:152` `_top/_base is not defined` in `GradientStop` (scope) → `container._top/_base`, `bg1→bg2 #525256` + solid `color: _top/_base` → `Qt.rgba(..., bgOpacity)` correctly scoped, no longer pure black.
+- **Settings PopupsSection** — `PopupsSection.qml:18` preview helpers moved to `root` (`_previewToast/_previewOsd` at root, `root._previewToast()` calls) + `Process` `notify-send`/`qs ipc` so slider moves show toast/OSD live (previously `_previewToast is not defined` and `PopupWindow` conflict when `Settings` open).
+- **Network popup** — `NetworkPopup.qml:324` `onToggled: value=>` → `function`.
+
+### Removed
+
+- **LayoutSection** — `quickshell/popups/settings/LayoutSection.qml` (17k, orphan, merged into `BarSection`) deleted via `git rm`. `SettingsPopup` sections now `Bar,Popups,Hyprland,Appearance,Wallpaper,Behavior,Binds,About`.
+
 ## [0.8.0] - 2026-08-28
 
 ### Added
