@@ -158,12 +158,11 @@ by design (fail-closed).
 ## Sharp corners on popups (clipped glow)
 **Symptom:** sharp "wedges" in the popup corners instead of a smooth rounding.
 
-**Cause:** `outerGlow` used to overflow the `container` by `-3px` via
+**Cause:** former `outerGlow` used to overflow the `container` by `-3px` via
 `anchors.margins: -3`, but the Wayland surface (`PopupWindow`) is exactly
-the size of the `container` — the extra pixels were clipped at right angles.
+the size of the `container`.
 
-**Fix:** fixed in `AnimatedPopup.qml` — `outerGlow` now uses
-`anchors.fill: container`, no overflow.
+**Fix:** glow removed in `AnimatedPopup.qml`/`NotifToast.qml`/`OsdPopup.qml` — popups, toasts and OSD now use only `bg2` border and `bg0H` gradient.
 
 ## Settings layout broken (content does not fit)
 **Symptom:** Settings content overflows the popup, some elements are unreachable.

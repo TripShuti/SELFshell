@@ -103,23 +103,31 @@ PanelWindow {
   //   barContent разом з autoHideWatch виїжджає за кромку, тож hover на
   //   смужці ловить саме revealWatch. Він заввишки 6px — hover-крадіжка
   //   у видимому стані обмежена краєм пігулок і непомітна.
+  // Автоскривання — event-driven, без опитування. Ховаємо через 400ms
+  // після того як курсор пішов і немає відкритих попапів.
   Timer {
-    id: hideTimer
+    id: hideDelay
     interval: 400
-    repeat: true
-    running: root.autoHideOn
+    repeat: false
     onTriggered: {
-      // Відкритий будь-який попап — не ховаємось і повертаємо бар:
-      // без цього після відкриття попапа гарячою клавішею (Settings,
-      // Control, Launcher...) прихований бар не показувався б взагалі
-      if (root.anyPopupOpen()) { root.barHidden = false; return }
-      // revealWatch не входить у hover-ланцюг autoHideWatch (сиблінг),
-      // тож курсор на смужці треба враховувати окремо, інакше бар
-      // сховається прямо під нерухомим курсором
-      if (autoHideWatch.containsMouse || revealWatch.containsMouse) return
+      if (root.anyPopupOpenState || autoHideWatch.containsMouse || revealWatch.containsMouse) return
       root.barHidden = true
     }
   }
+  readonly property bool anyPopupOpenState: calendarPopup.visible || audioPopup.visible || btPopup.visible || netPopup.visible || mprisPopup.visible || workspacesPopup.visible || keyboardPopup.visible || genshinPopup.visible || controlPopup.visible || clipboardPopup.visible || wallpaperPopup.visible || settingsPopup.visible || launcherPopup.visible || trayPopup.visible || pairingPopup.visible || notifToast.visible || osdPopup.visible
+  function _updateAutoHide() {
+    if (!root.autoHideOn) { hideDelay.stop(); root.barHidden = false; return }
+    if (root.anyPopupOpenState || autoHideWatch.containsMouse || revealWatch.containsMouse) {
+      hideDelay.stop()
+      if (root.barHidden) root.barHidden = false
+    } else {
+      if (!root.barHidden && !hideDelay.running) hideDelay.restart()
+    }
+  }
+  Connections { target: autoHideWatch; function onContainsMouseChanged() { root._updateAutoHide() } }
+  Connections { target: revealWatch; function onContainsMouseChanged() { root._updateAutoHide() } }
+  onAnyPopupOpenStateChanged: _updateAutoHide()
+  onAutoHideOnChanged: _updateAutoHide()
 
   // Смужка-тригер біля кромки: hover над нею (у прихованому стані це
   // єдина точка вводу — mask) ловить revealWatch. Вона ж малює ручку-
@@ -150,10 +158,6 @@ PanelWindow {
       anchors.margins: 2
     }
   }
-
-  // При вимкненому autoHideOn прихований стан неприпустимий. Таймер
-  // керується через running: root.autoHideOn — окремий старт не потрібен.
-  onAutoHideOnChanged: { if (!root.autoHideOn) root.barHidden = false }
 
   required property QtObject palette
   required property QtObject appConfig

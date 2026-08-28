@@ -316,7 +316,7 @@ Item {
         label: "Glow"; from: 0; to: 0.5; step: 0.01; decimals: 2
         sub: "Soft glow around the separator line. 0 = no glow."
         value: root.cfg.separatorGlowOpacity
-        onMoved: v => { root.cfg.separatorGlowOpacity = v; root.ac.saveToFile() }
+        onMoved: function(v) { root.cfg.separatorGlowOpacity = v; root.ac.saveToFile() }
       }
     }
   }
@@ -436,11 +436,11 @@ Item {
           anchors.fill: parent
           cursorShape: Qt.PointingHandCursor
           preventStealing: true
-          onPressed: (mouse) => {
+          onPressed: function(mouse) {
             var globalPos = chip.mapToItem(coordSpace, mouse.x, mouse.y)
             root.startDrag(chip.modelData, globalPos, Qt.point(mouse.x, mouse.y))
           }
-          onPositionChanged: (mouse) => {
+          onPositionChanged: function(mouse) {
             if (!root.dragActive) return
             var globalPos = chip.mapToItem(coordSpace, mouse.x, mouse.y)
             root.updateDrag(globalPos)

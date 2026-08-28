@@ -85,8 +85,9 @@ AnimatedPopup {
     // проігнороване. Тому пайплайн фонует: sh одразу виходить, wl-copy
     // працює самостійно, а попередній примірник гине новий (власність
     // на clipboard переходить)
+    var safeId = String(id).replace(/'/g, "'\\''")
     copyProc.command = ["sh", "-c",
-      "cliphist decode " + id + " | nohup wl-copy >/dev/null 2>&1 &"]
+      "cliphist decode '" + safeId + "' | nohup wl-copy >/dev/null 2>&1 &"]
     copyProc.running = true
     root.close()
   }
@@ -96,7 +97,8 @@ AnimatedPopup {
   // він закриває stdin після printf → cliphist отримує EOF; нативний
   // stdinEnabled/QML не закриває пайп, і cliphist висів би на читанні
   function deleteEntry(id) {
-    deleteProc.command = ["sh", "-c", "printf '%s\\n' " + id + " | cliphist delete"]
+    var safeId = String(id).replace(/'/g, "'\\''")
+    deleteProc.command = ["sh", "-c", "printf '%s\\n' '" + safeId + "' | cliphist delete"]
     deleteProc.running = true
     // список оновлюється в deleteProc.onExited — callLater стреляв раніше
     // за завершення delete, і запис "відроджувався" до наступного циклу

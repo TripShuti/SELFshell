@@ -321,7 +321,7 @@ AnimatedPopup {
         palette: window.palette
         appConfig: window.appConfig
         Layout.alignment: Qt.AlignVCenter
-        onToggled: value => Networking.wifiEnabled = value
+        onToggled: function(value) { Networking.wifiEnabled = value }
       }
     }
 

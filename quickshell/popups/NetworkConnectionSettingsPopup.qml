@@ -720,7 +720,7 @@ AnimatedPopup {
     }
   }
 
-  // Компонент: поле з підписом
+  // Компонент: поле з підписом — без binding-break: текст синхронізується через Connections
   component LabeledField: ColumnLayout {
     property string label: ""
     property string text: ""
@@ -741,12 +741,20 @@ AnimatedPopup {
       border.width: 1; border.color: window.palette.accent
 
       TextInput {
+        id: fieldInput
         anchors.fill: parent
         anchors.margins: 8
         color: window.palette.textLight
         font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
-        text: parent.parent.text
-        onTextEdited: parent.parent.textEdited(text)
+        Component.onCompleted: text = parent.parent.text
+        onTextChanged: if (activeFocus) parent.parent.textEdited(text)
+        Connections {
+          target: parent.parent
+          function onTextChanged() {
+            if (fieldInput.text !== parent.parent.text)
+              fieldInput.text = parent.parent.text
+          }
+        }
       }
     }
   }

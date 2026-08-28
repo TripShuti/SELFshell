@@ -290,15 +290,13 @@ smooths them exponentially, exposes `bars`.
 All popups inherit from `AnimatedPopup.qml` — the base component with:
 - opening animation (scale + fade + slide)
 - closing animation (reverse)
-- shared background (gradient + border + glow)
+- shared background (gradient + border)
 - Escape handling
 
-Key architectural detail — **outerGlow** (AnimatedPopup.qml:47–55):
-the glow used to overflow the container via `anchors.margins: -3`, but the
-PopupWindow (a Wayland surface) is exactly the size of the container. The
-outer glow pixels were clipped at right angles, leaving sharp wedges at the
-rounded corners of the popup. Fixed: the glow now lives inside the
-container, `anchors.fill: container`.
+Popups, toasts and OSD share the same visual language: `bg0H` gradient
+(`popupBgLighten`/`toastLighten`/`osdLighten`), `bg2` border,
+`popupRadius`/`toastRadius`/`osdRadius`. Glow was removed — it was either
+clipped by the Wayland surface or invisible behind the opaque background.
 
 Each popup is attached to a widget via `anchorItem` — e.g.
 `calendarPopup.anchorItem = root.clockWidget`. The popup appears below/above
@@ -325,8 +323,8 @@ each loaded as a separate file via `Loader` (`settings/*.qml`, each gets
   **Layout** drag-and-drop (widget order between pills, pool disables,
   separators via "+" button), **Pills Appearance** (bg opacity, gradient,
   border) and **Separators**
-- **Popups** — `Popups` (bg opacity, gradient, radius, border, glow) and
-  `Toast & OSD` (radius, gradient, glow)
+- **Popups** — `Popups` (bg opacity, gradient, radius, border) and
+  `Toast & OSD` (radius, gradient)
 - **Hyprland** — `Windows` (gaps, border, rounding, opacity, dim, shadows,
   border colors, dwindle/master layout) and `Blur` (size, passes, vibrancy,
   xray, layer blur)

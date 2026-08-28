@@ -116,43 +116,28 @@ PopupWindow {
     onTriggered: root.dismiss()
   }
 
-  // Зовнішнє сяйво навколо тоста. Вписано ВСЕРЕДИНІ поверхні
-  // (margins: 1, а не -3): Wayland-поверхня має розмір рівно контейнера,
-  // і будь-який виступ за межі обрізається під прямим кутом (той самий
-  // баг, що був у AnimatedPopup).
-  Rectangle {
-    anchors.fill: container
-    anchors.margins: 1
-    radius: container.radius - 1
-    color: "transparent"
-    border.width: 1
-    border.color: anchorWindow.palette.green
-    opacity: container.opacity * (appConfig ? appConfig.cfg.toastGlowOpacity : 0.2)
-    scale: container.scale
-  }
-
-  // Контейнер сповіщення
+  // Контейнер сповіщення — як у AnimatedPopup (градієнт bg0H, рамка bg2)
   Rectangle {
     id: container
     width: parent.width
     implicitHeight: toastLayout.implicitHeight + 16
-    radius: appConfig ? appConfig.cfg.toastRadius : 6
+    radius: appConfig ? appConfig.cfg.toastRadius : 9
     border.width: 1
-    border.color: anchorWindow.palette.green
+    border.color: anchorWindow ? anchorWindow.palette.bg2 : "#57514b"
     opacity: 0
     scale: 0.85
     clip: true
     gradient: Gradient {
       orientation: Gradient.Vertical
-      GradientStop { position: 0.0; color: Qt.lighter(anchorWindow.palette.bg0H, appConfig ? appConfig.cfg.toastLighten : 1.16) }
-      GradientStop { position: 1.0; color: anchorWindow.palette.bg0H }
+      GradientStop { position: 0.0; color: Qt.lighter(anchorWindow ? anchorWindow.palette.bg0H : "#34302a", appConfig ? appConfig.cfg.toastLighten : 1.15) }
+      GradientStop { position: 1.0; color: anchorWindow ? anchorWindow.palette.bg0H : "#34302a" }
     }
 
-    // Підсвітка верхнього краю
+    // Підсвітка верхнього краю — як у AnimatedPopup
     Rectangle {
       anchors { top: parent.top; left: parent.left; right: parent.right }
       height: 1
-      color: anchorWindow.palette.hoverOverlay
+      color: root.palette ? root.palette.hoverOverlay : "#14ffffff"
     }
 
   ColumnLayout {
@@ -178,16 +163,16 @@ PopupWindow {
 
       Text {
         text: root.toastAppName
-        color: anchorWindow.palette.green
-        font.family: anchorWindow.palette.font; font.pixelSize: appConfig.scaled(13); font.bold: true
+        color: root.palette ? root.palette.green : "#8aa9fc"
+        font.family: root.palette ? root.palette.font : "sans-serif"; font.pixelSize: root.appConfig ? root.appConfig.scaled(13) : 13; font.bold: true
       }
     }
 
     // Заголовок сповіщення
     Text {
       text: root.toastSummary
-      color: anchorWindow.palette.fg
-      font.family: anchorWindow.palette.font; font.pixelSize: appConfig.scaled(13); font.bold: true
+      color: root.palette ? root.palette.fg : "#ede0d4"
+      font.family: root.palette ? root.palette.font : "sans-serif"; font.pixelSize: root.appConfig ? root.appConfig.scaled(13) : 13; font.bold: true
       wrapMode: Text.WordWrap
       Layout.fillWidth: true
       maximumLineCount: 2
@@ -197,8 +182,8 @@ PopupWindow {
     // Тіло сповіщення
     Text {
       text: root.toastBody
-      color: anchorWindow.palette.gray
-      font.family: anchorWindow.palette.font; font.pixelSize: appConfig.scaled(12)
+      color: root.palette ? root.palette.gray : "#888888"
+      font.family: root.palette ? root.palette.font : "sans-serif"; font.pixelSize: root.appConfig ? root.appConfig.scaled(12) : 12
       wrapMode: Text.WordWrap
       Layout.fillWidth: true
       maximumLineCount: 3
@@ -223,15 +208,15 @@ PopupWindow {
           implicitWidth: actionText.implicitWidth + 12
           height: 20
           radius: 4
-          color: actionArea.containsMouse ? anchorWindow.palette.bgAlpha : anchorWindow.palette.bg2
-          Behavior on color { ColorAnimation { duration: appConfig ? appConfig.anim(120) : 120 } }
+          color: actionArea.containsMouse ? (root.palette ? root.palette.bgAlpha : "#3a3733") : (root.palette ? root.palette.bg2 : "#4a4640")
+          Behavior on color { ColorAnimation { duration: root.appConfig ? root.appConfig.anim(120) : 120 } }
 
           Text {
             id: actionText
             anchors.centerIn: parent
             text: modelData.text
-            color: anchorWindow.palette.light
-            font.family: anchorWindow.palette.font; font.pixelSize: appConfig.scaled(9)
+            color: root.palette ? root.palette.light : "#ede0d4"
+            font.family: root.palette ? root.palette.font : "sans-serif"; font.pixelSize: root.appConfig ? root.appConfig.scaled(9) : 9
           }
 
           MouseArea {
@@ -248,6 +233,7 @@ PopupWindow {
       }
     }
   }
+  } // container
 
   // Лівий клік — переходить до дії/програми, що викликала сповіщення.
   // Правий клік — просто закриває тост, без виклику дії.
@@ -257,7 +243,7 @@ PopupWindow {
     acceptedButtons: Qt.LeftButton | Qt.RightButton
     onEntered: { if (autoCloseTimer.running) autoCloseTimer.stop() }
     onExited: autoCloseTimer.restart()
-    onClicked: (mouse) => {
+    onClicked: function(mouse) {
       if (mouse.button === Qt.RightButton) {
         root.dismiss()
         return
@@ -280,6 +266,5 @@ PopupWindow {
       }
       root.dismiss()
     }
-  }
   }
 }

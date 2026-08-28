@@ -52,13 +52,13 @@ Item {
       "  [ -n \"$f\" ] && [ -f \"$f\" ] && SOUND=\"$f\" && break; " +
       "done; " +
       "if [ -n \"$SOUND\" ]; then " +
-      "  PLAYER=''; " +
+      "  PLAYER=''; PLAYER_ARGS=''; " +
       "  command -v paplay >/dev/null 2>&1 && PLAYER='paplay'; " +
       "  [ -z \"$PLAYER\" ] && command -v pw-play >/dev/null 2>&1 && PLAYER='pw-play'; " +
-      "  [ -z \"$PLAYER\" ] && command -v ffplay >/dev/null 2>&1 && PLAYER='ffplay -nodisp -autoexit -loglevel quiet'; " +
+      "  [ -z \"$PLAYER\" ] && command -v ffplay >/dev/null 2>&1 && { PLAYER='ffplay'; PLAYER_ARGS='-nodisp -autoexit -loglevel quiet'; }; " +
       "  if [ -n \"$PLAYER\" ]; then " +
       "    echo \"[TimerWidget] Граю через '$PLAYER': $SOUND\" >&2; " +
-      "    for i in 1 2 3; do $PLAYER \"$SOUND\" 2>/dev/null; sleep 0.5; done; " + // потрійний сигнал — навмисний, щоб не пропустити
+      "    for i in 1 2 3; do $PLAYER $PLAYER_ARGS \"$SOUND\" 2>/dev/null; sleep 0.5; done; " + // потрійний сигнал — навмисний, щоб не пропустити
       "  else " +
       "    echo '[TimerWidget] Жоден плеєр (paplay/pw-play/ffplay) не знайдено в PATH' >&2; " +
       "  fi; " +
@@ -80,18 +80,18 @@ Item {
         root.timerRunning = false
         root.timerRemaining = 0
         root.timerClass = "done"
+        notifyProc.command = ["sh", "-c", root._buildNotifyCommand()]
         notifyProc.running = true
       }
     }
   }
 
-  // Сповіщення та звук при завершенні
+  // Сповіщення та звук при завершенні (команда будується перед кожним запуском, щоб підхопити зміну timerSoundPath)
   Process {
     id: notifyProc
-    command: ["sh", "-c", root._buildNotifyCommand()]
     stderr: SplitParser {
       splitMarker: "\n"
-      onRead: data => { if (data) console.warn(data) }
+      onRead: function(data) { if (data) console.warn(data) }
     }
   }
 
@@ -166,7 +166,7 @@ Item {
     onEntered: root.hovered = true
     onExited: root.hovered = false
     onClicked: root.toggle()
-    onWheel: wheel => {
+    onWheel: function(wheel) {
       if (wheel.angleDelta.y === 0) return // горизонтальний скрол — ігноруємо
       if (wheel.angleDelta.y > 0)
         root.durUp()

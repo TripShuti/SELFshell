@@ -125,6 +125,7 @@ PopupWindow {
   }
 
   readonly property color iconColor: {
+    if (!root.palette) return "#8aa9fc"
     if (root.mode === "brightness") return root.palette.yellow
     if (root.muted) return root.palette.red
     return root.palette.audioVolume
@@ -148,17 +149,16 @@ PopupWindow {
     id: container
     width: parent.width
     implicitHeight: osdLayout.implicitHeight + 14
-    // Стиль рамки — як у решти попапів (AnimatedPopup): тонка обводка
-    // bg2, radius, градієнт lighten (без зеленої рамки)
+    // Стиль як у AnimatedPopup: bg0H градієнт, рамка bg2, без glow
     radius: appConfig ? appConfig.cfg.osdRadius : 10
     border.width: 1
-    border.color: root.palette.bg2
+    border.color: root.palette ? root.palette.bg2 : "#57514b"
     opacity: 0
     scale: 0.88
     gradient: Gradient {
       orientation: Gradient.Vertical
-      GradientStop { position: 0.0; color: Qt.lighter(root.palette.bg0H, appConfig ? appConfig.cfg.osdLighten : 1.5) }
-      GradientStop { position: 1.0; color: root.palette.bg0H }
+      GradientStop { position: 0.0; color: Qt.lighter(root.palette ? root.palette.bg0H : "#34302a", appConfig ? appConfig.cfg.osdLighten : 1.5) }
+      GradientStop { position: 1.0; color: root.palette ? root.palette.bg0H : "#34302a" }
     }
 
     ColumnLayout {
@@ -185,13 +185,13 @@ PopupWindow {
           Layout.fillWidth: true
           implicitHeight: 6
           radius: 3
-          color: root.palette.bgAlpha
+          color: root.palette ? root.palette.bgAlpha : "#3a3733"
 
           Rectangle {
             width: parent.width * root.fill
             height: parent.height
             radius: parent.radius
-            color: root.muted ? root.palette.red : root.iconColor
+            color: root.muted ? (root.palette ? root.palette.red : "#ff5555") : root.iconColor
             Behavior on width { NumberAnimation { duration: appConfig ? appConfig.anim(140) : 140; easing.type: Easing.OutCubic } }
           }
         }

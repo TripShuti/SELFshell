@@ -47,10 +47,8 @@ Edited through SettingsPopup (UI) or manually.
 | `popupBgLighten` | `number` | `1.15` | Popup background gradient lighten; 1.0 = flat color (1.0–2.0) |
 | `popupRadius` | `number` | `14` | Popup corner radius, px (0–24) |
 | `popupBorderWidth` | `number` | `1` | Popup border width, px (0–4) |
-| `popupGlowOpacity` | `number` | `0.1` | Popup outer glow opacity; 0 = no glow (0–0.4) |
 | `toastRadius` | `number` | `9` | Notification toast corner radius, px (0–24) |
 | `toastLighten` | `number` | `1.15` | Toast background gradient lighten (1.0–2.0) |
-| `toastGlowOpacity` | `number` | `0.2` | Toast outer glow opacity (0–0.5) |
 | `osdRadius` | `number` | `10` | OSD corner radius, px (0–24) |
 | `osdLighten` | `number` | `1.5` | OSD background gradient lighten (1.0–2.0) |
 | `barLighten` | `number` | `1.3` | Bar pill gradient lighten; 1.0 = flat color (1.0–2.0) |

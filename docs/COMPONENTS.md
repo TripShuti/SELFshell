@@ -84,7 +84,7 @@
 |------|------|--------------|--------------|
 | `AppConfig.qml` | state | Shared bar state: visibility, pill order; FileView persistence into `data/config.json`; global animation controls + `anim(ms)` duration helper | Quickshell.Io |
 | `PaletteService.qml` | service | Reactive palette (FileView + IPC updates) | `data/palette.json` |
-| `AnimatedPopup.qml` | util | Base animated popup window (scale+fade+slide, outerGlow) | PaletteService |
+| `AnimatedPopup.qml` | util | Base animated popup window (scale+fade+slide) | PaletteService |
 | `PillBar.qml` | util | Bar pill: Repeater + Loader with `widgetComponents` | AppConfig |
 | `HoverItem.qml` | util | Item with a built-in MouseArea for hover/click (exposes `hovered`/`pressed`) | — |
 | `HoverText.qml` | util | Text with animated hover color/scale and press squash | — |
