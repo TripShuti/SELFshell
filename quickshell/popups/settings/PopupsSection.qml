@@ -56,13 +56,29 @@ Item {
     SetCard {
       sys: root.sys
       SetLabel { sys: root.sys; text: "Toast & OSD" }
-      function _previewToast() {
+      function _getBar() {
+        // sys.window is Bar (PanelWindow) — toast/osd are exposed as Bar.toast / Bar.osd
         var w = sys.window
-        if (w && w.toast) w.toast.showNotif({ appName: "Preview", summary: "Toast preview", body: "Drag the sliders to see changes", appIcon: "dialog-information", actions: [] })
+        if (!w) { console.warn("PopupsSection: sys.window is null"); return null }
+        return w
+      }
+      function _previewToast() {
+        var w = _getBar()
+        var t = w ? (w.toast ?? w.notifToast ?? null) : null
+        if (t && t.showNotif) {
+          t.showNotif({ appName: "Preview", summary: "Toast preview", body: "Drag the sliders to see changes", appIcon: "dialog-information", actions: [] })
+        } else {
+          console.warn("PopupsSection: toast not found", w, t)
+        }
       }
       function _previewOsd() {
-        var w = sys.window
-        if (w && w.osd) w.osd.showVolume()
+        var w = _getBar()
+        var o = w ? (w.osd ?? w.osdPopup ?? null) : null
+        if (o && o.showVolume) {
+          o.showVolume()
+        } else {
+          console.warn("PopupsSection: osd not found", w, o)
+        }
       }
       SetSlider {
         sys: root.sys
