@@ -177,7 +177,7 @@ PanelWindow {
   Component { id: keyboardComp;   KeyboardLayoutWidget { window: root; anchors.fill: parent } }
   Component { id: audioComp;      AudioWidget { window: root; anchors.fill: parent } }
   Component { id: batteryComp;    BatteryWidget { window: root; anchors.fill: parent } }
-  Component { id: controlComp;    ControlWidget { window: root; anchors.fill: parent; unread: root.newNotifs } }
+  Component { id: controlComp;    ControlWidget { window: root; anchors.fill: parent; unread: controlPopup.visible ? 0 : controlPopup.unread } }
   Component { id: clipboardComp;  ClipboardWidget { window: root; anchors.fill: parent } }
   Component { id: btComp;         BluetoothWidget { window: root; anchors.fill: parent } }
   Component { id: netComp;        NetWidget { window: root; anchors.fill: parent } }
