@@ -9,7 +9,7 @@ import QtQuick.Layouts
 RowLayout {
   id: sel
 
-  property QtObject sys
+  required property QtObject sys
   property string label: ""
   // [{ id, text }] — id їде в налаштування, text показується
   property var options: []

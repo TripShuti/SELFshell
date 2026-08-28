@@ -5,7 +5,7 @@ import QtQuick
 import QtQuick.Layouts
 
 Text {
-  property QtObject sys
+  required property QtObject sys
 
   // Uppercase-overline: заголовок структурує картку, не змагаючись
   // з контентом рядків (ті — 10px fg/muted)

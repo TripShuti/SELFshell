@@ -9,7 +9,7 @@ import QtQuick.Layouts
 RowLayout {
   id: row
 
-  property QtObject sys
+  required property QtObject sys
   property string label: ""
   property string sub: ""
   property bool on: false
@@ -46,6 +46,6 @@ RowLayout {
     palette: row.sys.palette
     appConfig: row.sys.ac
     checked: row.on
-    onToggled: v => row.toggled(v)
+    onToggled: function(v) { row.toggled(v) }
   }
 }

@@ -191,6 +191,7 @@ AnimatedPopup {
     Loader {
       id: backLoader
       active: menu.isSubMenu
+      asynchronous: true
       visible: active
       width: parent.width
       height: 30

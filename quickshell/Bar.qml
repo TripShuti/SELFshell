@@ -34,6 +34,12 @@ PanelWindow {
     copy[name] = item
     activeWidgets = copy
   }
+  function unregisterActive(name) {
+    if (!(name in activeWidgets)) return
+    var copy = Object.assign({}, activeWidgets)
+    delete copy[name]
+    activeWidgets = copy
+  }
 
   readonly property Item launcherWidget: activeWidgets["launcher"] ?? null
   readonly property Item workspacesWidget: activeWidgets["workspaces"] ?? null
@@ -127,8 +133,8 @@ PanelWindow {
     z: 1000
     hoverEnabled: true
     acceptedButtons: Qt.NoButton
-    anchors.top: root.barPos === "top" ? parent.top : undefined
-    anchors.bottom: root.barPos === "bottom" ? parent.bottom : undefined
+    anchors.top: root.appConfig.cfg.barPos === "top" ? parent.top : undefined
+    anchors.bottom: root.appConfig.cfg.barPos === "bottom" ? parent.bottom : undefined
     onEntered: { if (root.barHidden) root.barHidden = false }
 
     Rectangle {
@@ -139,8 +145,8 @@ PanelWindow {
       color: root.palette.fg
       opacity: 0.3
       anchors.horizontalCenter: parent.horizontalCenter
-      anchors.top: root.barPos === "top" ? parent.top : undefined
-      anchors.bottom: root.barPos === "bottom" ? parent.bottom : undefined
+      anchors.top: root.appConfig.cfg.barPos === "top" ? parent.top : undefined
+      anchors.bottom: root.appConfig.cfg.barPos === "bottom" ? parent.bottom : undefined
       anchors.margins: 2
     }
   }
@@ -166,7 +172,7 @@ PanelWindow {
   Component { id: keyboardComp;   KeyboardLayoutWidget { window: root; anchors.fill: parent } }
   Component { id: audioComp;      AudioWidget { window: root; anchors.fill: parent } }
   Component { id: batteryComp;    BatteryWidget { window: root; anchors.fill: parent } }
-  Component { id: controlComp;    ControlWidget { window: root; anchors.fill: parent; unread: controlPopup.unread } }
+  Component { id: controlComp;    ControlWidget { window: root; anchors.fill: parent; unread: root.newNotifs } }
   Component { id: clipboardComp;  ClipboardWidget { window: root; anchors.fill: parent } }
   Component { id: btComp;         BluetoothWidget { window: root; anchors.fill: parent } }
   Component { id: netComp;        NetWidget { window: root; anchors.fill: parent } }
@@ -200,7 +206,7 @@ PanelWindow {
   Region {
     id: hiddenMask
     x: 0
-    y: root.barPos === "top" ? 0 : root.height - 6
+    y: root.appConfig.cfg.barPos === "top" ? 0 : root.height - 6
     width: root.width
     height: 6
   }
@@ -220,7 +226,7 @@ PanelWindow {
         name: "hidden"
         PropertyChanges {
           target: barContent
-          y: root.barPos === "top" ? -root.height : root.height
+          y: root.appConfig.cfg.barPos === "top" ? -root.height : root.height
           opacity: 0
           scale: 0.85
         }
@@ -560,10 +566,11 @@ PanelWindow {
   }
 
   // Зв'язки: клік на віджеті → відкриває відповідний попап
-  Connections { target: launcherWidget; function onClicked() { launcherPopup.toggle() } }
-  Connections { target: clipboardWidget; function onClicked() { clipboardPopup.toggle() } }
+  Connections { target: launcherWidget; enabled: target !== null; function onClicked() { launcherPopup.toggle() } }
+  Connections { target: clipboardWidget; enabled: target !== null; function onClicked() { clipboardPopup.toggle() } }
   Connections {
     target: workspacesWidget
+    enabled: target !== null
     // ПКМ на тій же столі — закрити; на іншій — перевідкрити під нею
     function onOpenPopup(ws, anchor) {
       if (workspacesPopup.visible && workspacesPopup.workspace === ws) {
@@ -576,30 +583,25 @@ PanelWindow {
       workspacesPopup.positionUnderAnchor()
     }
   }
-  Connections { target: clockWidget;    function onClicked() { calendarPopup.toggle() } }
+  Connections { target: clockWidget; enabled: target !== null; function onClicked() { calendarPopup.toggle() } }
   Connections {
     target: keyboardWidget
+    enabled: target !== null
     function onOpenPopup(anchor) {
       keyboardPopup.anchorItem = anchor
       keyboardPopup.toggle()
     }
   }
-  Connections { target: audioWidget;    function onClicked() { audioPopup.toggle() } }
-  Connections { target: mprisWidget;    function onClicked() { mprisPopup.toggle() } }
-  Connections { target: genshinWidget;  function onClicked() { genshinPopup.toggle() } }
-  Connections { target: controlWidget;  function onClicked() { controlPopup.toggle() } }
-  Connections { target: btWidget;       function onClicked() { btPopup.toggle() } }
-  Connections { target: netWidget;      function onClicked() { netPopup.toggle() } }
+  Connections { target: audioWidget; enabled: target !== null; function onClicked() { audioPopup.toggle() } }
+  Connections { target: mprisWidget; enabled: target !== null; function onClicked() { mprisPopup.toggle() } }
+  Connections { target: genshinWidget; enabled: target !== null; function onClicked() { genshinPopup.toggle() } }
+  Connections { target: controlWidget; enabled: target !== null; function onClicked() { controlPopup.toggle() } }
+  Connections { target: btWidget; enabled: target !== null; function onClicked() { btPopup.toggle() } }
+  Connections { target: netWidget; enabled: target !== null; function onClicked() { netPopup.toggle() } }
   Connections { target: controlPopup;   function onOpenWallpaperPopup() { controlPopup.visible = false; wallpaperPopup.toggle() } }
   Connections { target: controlPopup;   function onOpenBtManager() { controlPopup.visible = false; btPopup.toggle() } }
   Connections { target: controlPopup;   function onOpenNetManager() { controlPopup.visible = false; netPopup.toggle() } }
   Connections { target: controlPopup;   function onOpenSettingsPopup() { controlPopup.visible = false; settingsPopup.toggle() } }
-  Connections {
-    target: root
-    function onNewNotifsChanged() {
-      if (root.controlWidget) root.controlWidget.unread = root.newNotifs
-    }
-  }
   Connections {
     target: controlPopup
     function onVisibleChanged() {
@@ -610,6 +612,7 @@ PanelWindow {
   Connections { target: genshinPopup;   function onRefreshRequested() { genshinMonitor.refreshNow() } }
   Connections {
     target: trayWidget
+    enabled: target !== null
     // Клік на тій же іконці — закрити; на іншій — перевідкрити під нею
     function onMenuRequested(menu, anchor) {
       if (trayPopup.visible && trayPopup.menu === menu) {

@@ -16,7 +16,7 @@ Item {
 
   // Розміри та колір увімкненого стану — різні копії в попапах
   // використовували трохи різні значення (36x22/32x18, accent/widgetFg)
-  property color checkedColor: root.palette.accent
+  property color checkedColor: root.palette ? root.palette.accent : "#8aa9fc"
   property int trackWidth: 36
   property int trackHeight: 22
   property int knobSize: 18
@@ -28,17 +28,17 @@ Item {
     id: bg
     anchors.fill: parent
     radius: root.trackHeight / 2
-    color: root.checked ? root.checkedColor : root.palette.bg2
+    color: root.checked ? root.checkedColor : (root.palette ? root.palette.bg2 : "#4a4640")
     Behavior on color { ColorAnimation { duration: root.appConfig ? root.appConfig.anim(150) : 150 } }
     border.width: bgArea.containsMouse ? 1 : 0
-    border.color: root.palette.hoverOverlay
+    border.color: root.palette ? root.palette.hoverOverlay : "#1affffff"
     Behavior on border.width { NumberAnimation { duration: root.appConfig ? root.appConfig.anim(120) : 120 } }
   }
 
   Rectangle {
     x: root.checked ? parent.width - width - 2 : 2
     width: root.knobSize; height: root.knobSize; radius: root.knobSize / 2
-    color: root.checked ? root.palette.bg1 : root.palette.gray
+    color: root.checked ? (root.palette ? root.palette.bg1 : "#1a1a1a") : (root.palette ? root.palette.gray : "#888888")
     anchors.verticalCenter: parent.verticalCenter
     Behavior on x { NumberAnimation { duration: root.appConfig ? root.appConfig.anim(150) : 150 } }
     Behavior on color { ColorAnimation { duration: root.appConfig ? root.appConfig.anim(150) : 150 } }

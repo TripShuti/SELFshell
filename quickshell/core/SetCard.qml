@@ -9,7 +9,7 @@ import QtQuick.Layouts
 Rectangle {
   id: card
 
-  property QtObject sys
+  required property QtObject sys
   default property alias content: inner.data
   property alias spacing: inner.spacing
   property int pad: 12

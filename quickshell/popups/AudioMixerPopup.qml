@@ -110,7 +110,7 @@ AnimatedPopup {
             // Зміна гучності кліком
             MouseArea {
               anchors.fill: parent
-              onPressed: mouse => {
+              onPressed: function(mouse) {
                 if (modelData.audio) {
                   modelData.audio.volume = Math.max(0, Math.min(mouse.x / width, 1))
                 }
@@ -170,7 +170,7 @@ AnimatedPopup {
                   _moveStreamsProc.command = ["bash", "-c",
                     "SRC=$(pw-link -o 2>/dev/null | grep 'output.filter-chain' | head -1 | cut -d: -f1); " +
                     "[ -z \"$SRC\" ] && exit 0; " +
-                    "T=\"" + modelData.name + "\"; " +
+                    "T='" + modelData.name.replace(/'/g, "'\\''") + "'; " +
                     "for O in $(pactl list short sinks 2>/dev/null | grep -v 'SELFshell_EQ' | cut -f2); do " +
                     "  pw-link -d \"$SRC:output_FL\" \"$O:playback_FL\" 2>/dev/null || true; " +
                     "  pw-link -d \"$SRC:output_FR\" \"$O:playback_FR\" 2>/dev/null || true; " +
@@ -180,7 +180,7 @@ AnimatedPopup {
                   ]
                 } else {
                   _moveStreamsProc.command = ["bash", "-c",
-                    "T=\"" + modelData.name + "\"; pactl list short sink-inputs 2>/dev/null | cut -f1 | xargs -r -n1 -I{} pactl move-sink-input {} \"$T\""]
+                    "T='" + modelData.name.replace(/'/g, "'\\''") + "'; pactl list short sink-inputs 2>/dev/null | cut -f1 | xargs -r -n1 -I{} pactl move-sink-input {} \"$T\""]
                 }
                 _moveStreamsProc.running = true
               }
@@ -259,7 +259,7 @@ AnimatedPopup {
 
             MouseArea {
               anchors.fill: parent
-              onPressed: mouse => {
+              onPressed: function(mouse) {
                 if (modelData.audio) {
                   modelData.audio.volume = Math.max(0, Math.min(mouse.x / width, 1))
                 }

@@ -91,6 +91,8 @@ Rectangle {
     anchors.fill: parent
     source: root.wallpaperSource
     fillMode: Image.PreserveAspectCrop
+    asynchronous: true
+    cache: false
     onStatusChanged: {
       if (status === Image.Error && source !== root.wallpaperFallback)
         source = root.wallpaperFallback
@@ -125,13 +127,6 @@ Rectangle {
     font.weight: Font.Normal
     style: Text.Outline
     styleColor: "#40000000"
-
-    Timer {
-      running: true
-      repeat: true
-      interval: 1000
-      onTriggered: clockText.text = Qt.formatDateTime(clock.date, "HH:mm")
-    }
   }
 
   Text {
@@ -147,13 +142,6 @@ Rectangle {
     font.pixelSize: 24
     style: Text.Outline
     styleColor: "#30000000"
-
-    Timer {
-      running: true
-      repeat: true
-      interval: 60000
-      onTriggered: parent.text = Qt.formatDateTime(clock.date, "dddd, d MMMM")
-    }
   }
 
   Text {
@@ -202,6 +190,15 @@ Rectangle {
 
         onTextChanged: root.context.currentText = text
         onAccepted: root.context.tryUnlock()
+      }
+      // Синхронізація назад: коли LockContext очищає currentText
+      // (при lock/fail/success), скидаємо текст поля
+      Connections {
+        target: root.context
+        function onCurrentTextChanged() {
+          if (hiddenInput.text !== root.context.currentText)
+            hiddenInput.text = root.context.currentText
+        }
       }
 
       // Анімовані точки замість символів
@@ -267,7 +264,7 @@ Rectangle {
     spacing: 24
 
     property var actions: [
-      { icon: "\uF186", tooltip: "Suspend", cmd: ["sh", "-c", "qs ipc call lockscreen lock && systemctl suspend"] },
+      { icon: "\uF186", tooltip: "Suspend", cmd: ["systemctl", "suspend"] },
       { icon: "\uF021", tooltip: "Reboot", cmd: ["reboot"] },
       { icon: "\uF011", tooltip: "Shutdown", cmd: ["shutdown", "now"] }
     ]

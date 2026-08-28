@@ -9,7 +9,7 @@ import QtQuick.Layouts
 ColumnLayout {
   id: sl
 
-  property QtObject sys
+  required property QtObject sys
   property string label: ""
   property string sub: ""
   property real from: 0
@@ -107,8 +107,8 @@ ColumnLayout {
       // прокрутка сторінки відбирала жест на першому ж вертикальному
       // тремтінні руки, і повзунок завмирав на місці.
       preventStealing: true
-      onPressed: mouse => bar.pick(mouse.x + grab.x)
-      onPositionChanged: mouse => { if (pressed) bar.pick(mouse.x + grab.x) }
+      onPressed: function(mouse) { bar.pick(mouse.x + grab.x) }
+      onPositionChanged: function(mouse) { if (pressed) bar.pick(mouse.x + grab.x) }
     }
   }
 

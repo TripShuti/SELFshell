@@ -60,21 +60,6 @@ PopupWindow {
     root.anchor.rect = Qt.rect(r.x, r.y + r.height + 10, root.implicitWidth, root.implicitHeight)
   }
 
-  // Зовнішнє м'яке сяйво навколо контейнера.
-  // Раніше виходило на -3px за межі container через anchors.margins,
-  // але сама Wayland-поверхня (PopupWindow) має розмір рівно container-а —
-  // ці зайві пікселі обрізались поверхнею під прямим кутом, лишаючи
-  // гострі "недорізані" клинки заокругленого сяйва по кутах попапу.
-  Rectangle {
-    id: outerGlow
-    anchors.fill: container
-    radius: container.radius
-    color: root.borderColor
-    opacity: appConfig ? appConfig.cfg.popupGlowOpacity : 0.10
-    scale: container.scale
-    transformOrigin: root.transformOrigin
-  }
-
   // Контейнер — тільки трансформація (масштаб/зсув/fade) і рамка.
   // Сам по собі прозорий: реальний фон живе в окремому bgRect нижче,
   // щоб анімація входу/виходу не конфліктувала зі стабільною

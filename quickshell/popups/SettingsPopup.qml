@@ -169,6 +169,7 @@ AnimatedPopup {
         Loader {
           id: sectionLoader
           width: pageFlick.width
+          asynchronous: true
 
           function reload() {
             setSource(root.sections[root.section].page, { sys: root })

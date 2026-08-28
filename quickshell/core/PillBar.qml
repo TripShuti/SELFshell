@@ -64,10 +64,13 @@ Item {
 
         Loader {
           Layout.alignment: Qt.AlignVCenter
-          Layout.fillHeight: root.needsFillHeight(modelData)
-          sourceComponent: root.widgetComponents[modelData]
+          Layout.fillHeight: typeof root.needsFillHeight === "function" ? root.needsFillHeight(modelData) : false
+          sourceComponent: root.widgetComponents[modelData] ?? null
+          active: !root.appConfig.isSep(modelData)
+          asynchronous: true
+          visible: !root.appConfig.isSep(modelData) && status === Loader.Ready
           onLoaded: root.registerActive(modelData, item)
-          visible: !root.appConfig.isSep(modelData)
+          Component.onDestruction: root.unregisterActive(modelData)
         }
 
         Separator {

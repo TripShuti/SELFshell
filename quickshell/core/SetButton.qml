@@ -7,7 +7,7 @@ import QtQuick.Layouts
 Rectangle {
   id: btn
 
-  property QtObject sys
+  required property QtObject sys
   property string text: ""
   signal clicked()
 
