@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Toast/OSD black** — `NotifToast.qml:130` / `OsdPopup.qml:152` `_top/_base is not defined` in `GradientStop` (scope) → `container._top/_base`, `bg1→bg2 #525256` + solid `color: _top/_base` → `Qt.rgba(..., bgOpacity)` correctly scoped, no longer pure black.
 - **Settings PopupsSection** — `PopupsSection.qml:18` preview helpers moved to `root` (`_previewToast/_previewOsd` at root, `root._previewToast()` calls) + `Process` `notify-send`/`qs ipc` so slider moves show toast/OSD live (previously `_previewToast is not defined` and `PopupWindow` conflict when `Settings` open).
 - **Network popup** — `NetworkPopup.qml:324` `onToggled: value=>` → `function`.
+- **Toast action buttons** — `NotifToast.qml:243` `MouseArea` for default action was outside `container` (sibling of `PopupWindow`), `toastLayout:146` `z:1` didn’t escape parent → `actionArea:225` never received clicks, `Mark as read` triggered default dismiss. Moved `MouseArea` inside `container` before `toastLayout`, added `HoverHandler` for autoClose pause.
 
 ### Removed
 
