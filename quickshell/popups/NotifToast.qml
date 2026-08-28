@@ -136,6 +136,42 @@ PopupWindow {
       GradientStop { position: 1.0; color: Qt.rgba(container._base.r, container._base.g, container._base.b, container.bgOpacity) }
     }
 
+    // Hover для паузи автозакриття — працює навіть над кнопками
+    HoverHandler {
+      id: hoverHandler
+      onHoveredChanged: {
+        if (hovered) autoCloseTimer.stop()
+        else autoCloseTimer.restart()
+      }
+    }
+    // Клік по фону тоста — default-дія (під контентом, щоб кнопки були вище)
+    MouseArea {
+      anchors.fill: parent
+      acceptedButtons: Qt.LeftButton | Qt.RightButton
+      onClicked: function(mouse) {
+        if (mouse.button === Qt.RightButton) {
+          root.dismiss()
+          return
+        }
+        if (root.toastNotification) {
+          var actions = root.toastNotification.actions
+          var defaultAction = null
+          for (var i = 0; i < actions.length; ++i) {
+            if (actions[i].identifier === "default") {
+              defaultAction = actions[i]
+              break
+            }
+          }
+          if (defaultAction) {
+            defaultAction.invoke()
+          } else {
+            root.toastNotification.dismiss()
+          }
+        }
+        root.dismiss()
+      }
+    }
+
     // Підсвітка верхнього краю — як у AnimatedPopup
     Rectangle {
       anchors { top: parent.top; left: parent.left; right: parent.right }
@@ -145,8 +181,7 @@ PopupWindow {
 
   ColumnLayout {
     id: toastLayout
-    // z вище за загальний MouseArea (клік по тосту = default дія) —
-    // інакше той перехоплює кліки по кнопках дій і запускає default
+    // Поверх default-MouseArea, щоб кнопки дій приймали кліки
     z: 1
     x: 10; y: 8
     width: parent.width - 20
@@ -227,6 +262,8 @@ PopupWindow {
             anchors.fill: parent
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
+            onEntered: autoCloseTimer.stop()
+            onExited: autoCloseTimer.restart()
             onClicked: {
               modelData.invoke()
               root.dismiss()
@@ -237,37 +274,4 @@ PopupWindow {
     }
   }
   } // container
-
-  // Лівий клік — переходить до дії/програми, що викликала сповіщення.
-  // Правий клік — просто закриває тост, без виклику дії.
-  MouseArea {
-    anchors.fill: parent
-    hoverEnabled: true
-    acceptedButtons: Qt.LeftButton | Qt.RightButton
-    onEntered: { if (autoCloseTimer.running) autoCloseTimer.stop() }
-    onExited: autoCloseTimer.restart()
-    onClicked: function(mouse) {
-      if (mouse.button === Qt.RightButton) {
-        root.dismiss()
-        return
-      }
-
-      if (root.toastNotification) {
-        var actions = root.toastNotification.actions
-        var defaultAction = null
-        for (var i = 0; i < actions.length; ++i) {
-          if (actions[i].identifier === "default") {
-            defaultAction = actions[i]
-            break
-          }
-        }
-        if (defaultAction) {
-          defaultAction.invoke()
-        } else {
-          root.toastNotification.dismiss()
-        }
-      }
-      root.dismiss()
-    }
-  }
 }
