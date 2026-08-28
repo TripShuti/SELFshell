@@ -2,6 +2,7 @@
 // settings/PopupsSection.qml — налаштування попапів: фон, градієнт,
 // радіуси, бордери, тости/OSD
 // ============================================================
+import Quickshell.Io
 import QtQuick
 import QtQuick.Layouts
 import "../../core"
@@ -12,6 +13,12 @@ Item {
 
   readonly property var cfg: sys.cfg
   readonly property var ac: sys.ac
+
+  // Preview helpers — at root so SetSlider onMoved can see them
+  Process { id: toastPreviewProc; command: ["notify-send", "Preview", "Toast preview — drag sliders"] }
+  Process { id: osdPreviewProc; command: ["sh", "-c", "qs ipc call osd volume 2>&1 | head"] }
+  function _previewToast() { toastPreviewProc.running = true }
+  function _previewOsd() { osdPreviewProc.running = true }
 
   implicitWidth: parent?.width ?? 0
   implicitHeight: col.implicitHeight
@@ -56,66 +63,44 @@ Item {
     SetCard {
       sys: root.sys
       SetLabel { sys: root.sys; text: "Toast & OSD" }
-      function _getBar() {
-        // sys.window is Bar (PanelWindow) — toast/osd are exposed as Bar.toast / Bar.osd
-        var w = sys.window
-        if (!w) { console.warn("PopupsSection: sys.window is null"); return null }
-        return w
-      }
-      function _previewToast() {
-        var w = _getBar()
-        var t = w ? (w.toast ?? w.notifToast ?? null) : null
-        if (t && t.showNotif) {
-          t.showNotif({ appName: "Preview", summary: "Toast preview", body: "Drag the sliders to see changes", appIcon: "dialog-information", actions: [] })
-        } else {
-          console.warn("PopupsSection: toast not found", w, t)
-        }
-      }
-      function _previewOsd() {
-        var w = _getBar()
-        var o = w ? (w.osd ?? w.osdPopup ?? null) : null
-        if (o && o.showVolume) {
-          o.showVolume()
-        } else {
-          console.warn("PopupsSection: osd not found", w, o)
-        }
-      }
       SetSlider {
         sys: root.sys
         label: "Toast radius"; from: 0; to: 24; step: 1; suffix: "px"
         value: root.cfg.toastRadius
-        onMoved: function(v) { root.cfg.toastRadius = v; root.ac.saveToFile(); _previewToast() }
+        onMoved: function(v) { root.cfg.toastRadius = v; root.ac.saveToFile(); root._previewToast() }
       }
       SetSlider {
         sys: root.sys
         label: "Toast gradient"; from: 1.0; to: 2.0; step: 0.05; decimals: 2
         value: root.cfg.toastLighten
-        onMoved: function(v) { root.cfg.toastLighten = v; root.ac.saveToFile(); _previewToast() }
+        onMoved: function(v) { root.cfg.toastLighten = v; root.ac.saveToFile(); root._previewToast() }
       }
       SetSlider {
         sys: root.sys
         label: "Toast opacity"; from: 0.5; to: 1.0; step: 0.05; decimals: 2
         value: root.cfg.toastBgOpacity
-        onMoved: function(v) { root.cfg.toastBgOpacity = v; root.ac.saveToFile(); _previewToast() }
+        onMoved: function(v) { root.cfg.toastBgOpacity = v; root.ac.saveToFile(); root._previewToast() }
       }
       SetSlider {
         sys: root.sys
         label: "OSD radius"; from: 0; to: 24; step: 1; suffix: "px"
         value: root.cfg.osdRadius
-        onMoved: function(v) { root.cfg.osdRadius = v; root.ac.saveToFile(); _previewOsd() }
+        onMoved: function(v) { root.cfg.osdRadius = v; root.ac.saveToFile(); root._previewOsd() }
       }
       SetSlider {
         sys: root.sys
         label: "OSD gradient"; from: 1.0; to: 2.0; step: 0.05; decimals: 2
         value: root.cfg.osdLighten
-        onMoved: function(v) { root.cfg.osdLighten = v; root.ac.saveToFile(); _previewOsd() }
+        onMoved: function(v) { root.cfg.osdLighten = v; root.ac.saveToFile(); root._previewOsd() }
       }
       SetSlider {
         sys: root.sys
         label: "OSD opacity"; from: 0.5; to: 1.0; step: 0.05; decimals: 2
         value: root.cfg.osdBgOpacity
-        onMoved: function(v) { root.cfg.osdBgOpacity = v; root.ac.saveToFile(); _previewOsd() }
+        onMoved: function(v) { root.cfg.osdBgOpacity = v; root.ac.saveToFile(); root._previewOsd() }
       }
     }
+
+
   }
 }

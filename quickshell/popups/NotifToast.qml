@@ -116,7 +116,7 @@ PopupWindow {
     onTriggered: root.dismiss()
   }
 
-  // Контейнер сповіщення — як у AnimatedPopup, але світліший та з акцентною рамкою щоб не губився
+  // Контейнер — bg2 + opacity як у попапів, щоб не був чорним
   Rectangle {
     id: container
     width: parent.width
@@ -127,13 +127,13 @@ PopupWindow {
     opacity: 0
     scale: 0.85
     clip: true
-    property color _base: root.palette ? root.palette.bg1 : "#3b3b3f"
+    property color _base: root.palette ? root.palette.bg2 : "#525256"
     property color _top: Qt.lighter(_base, appConfig ? appConfig.cfg.toastLighten : 1.15)
     property real bgOpacity: appConfig ? appConfig.cfg.toastBgOpacity : 0.90
     gradient: Gradient {
       orientation: Gradient.Vertical
-      GradientStop { position: 0.0; color: Qt.rgba(_top.r, _top.g, _top.b, bgOpacity) }
-      GradientStop { position: 1.0; color: Qt.rgba(_base.r, _base.g, _base.b, bgOpacity) }
+      GradientStop { position: 0.0; color: Qt.rgba(container._top.r, container._top.g, container._top.b, container.bgOpacity) }
+      GradientStop { position: 1.0; color: Qt.rgba(container._base.r, container._base.g, container._base.b, container.bgOpacity) }
     }
 
     // Підсвітка верхнього краю — як у AnimatedPopup
