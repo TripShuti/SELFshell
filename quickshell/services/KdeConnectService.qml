@@ -37,6 +37,7 @@ Item {
 
   // Чи ввімкнено віджет взагалі (читається з AppConfig в shell.qml)
   property bool enabled: true
+  property bool muted: false
 
   // --- Внутрішнє ---
   property int _watchRestarts: 0
@@ -227,6 +228,7 @@ Item {
       return
     }
     if (t === "notification" || t === "notification.received") {
+      if (root.muted) return
       // payload.icon може бути шляхом до кешованого файлу (kcd fetch_icons) або іменем
       var iconSrc = String(payload.icon ?? payload.appIcon ?? payload.iconPath ?? "")
       var nid = String(payload.id ?? payload.key ?? "")
@@ -271,11 +273,12 @@ Item {
     }
     // Clipboard — телефон прислав буфер (або підтвердження push)
     if (t.indexOf("clipboard") !== -1) {
+      if (root.muted) return
       var clipTxt = String(payload.content ?? payload.text ?? payload.clipboard ?? payload.data ?? "")
       if (clipTxt) {
         root.lastClipboard = clipTxt.slice(0, 500)
         // показуємо тост, щоб було видно що прийшло
-        root.notificationReceived({ appName: "Clipboard", title: "From phone", text: clipTxt.slice(0, 80), appIcon: "edit-paste", actions: [] })
+        root.notificationReceived({ appName: "Clipboard", title: "From phone", text: clipTxt.slice(0, 80), appIcon: "edit-paste", isPhone: true, actions: [] })
       }
       return
     }
