@@ -104,7 +104,7 @@ PanelWindow {
       root.barHidden = true
     }
   }
-  readonly property bool anyPopupOpenState: calendarPopup.visible || audioPopup.visible || btPopup.visible || netPopup.visible || mprisPopup.visible || workspacesPopup.visible || keyboardPopup.visible || genshinPopup.visible || controlPopup.visible || clipboardPopup.visible || wallpaperPopup.visible || settingsPopup.visible || launcherPopup.visible || trayPopup.visible || pairingPopup.visible || kcdPopup.visible || notifToast.visible || osdPopup.visible
+  readonly property bool anyPopupOpenState: calendarPopup.visible || audioPopup.visible || btPopup.visible || netPopup.visible || mprisPopup.visible || workspacesPopup.visible || keyboardPopup.visible || genshinPopup.visible || controlPopup.visible || clipboardPopup.visible || wallpaperPopup.visible || settingsPopup.visible || launcherPopup.visible || trayPopup.visible || pairingPopup.visible || kcdPopup.visible || kcdPairingPopup.visible || notifToast.visible || osdPopup.visible
   function _updateAutoHide() {
     if (!root.autoHideOn) { hideDelay.stop(); root.barHidden = false; return }
     if (root.anyPopupOpenState || autoHideWatch.containsMouse || revealWatch.containsMouse) {
@@ -555,6 +555,21 @@ PanelWindow {
     id: kcdPopup
     window: root
     visible: false
+  }
+
+  // Попап підтвердження парування з телефону (phone-initiated)
+  KdeConnectPairingPopup {
+    id: kcdPairingPopup
+    window: root
+    visible: false
+  }
+
+  // Під час парування ховаємо основний попап телефону щоб не було месива
+  Connections {
+    target: kcdPairingPopup
+    function onVisibleChanged() {
+      if (kcdPairingPopup.visible && kcdPopup.visible) kcdPopup.visible = false
+    }
   }
 
   // Міст: сповіщення з телефону → системний тост (поважає DND + kcdMuted)

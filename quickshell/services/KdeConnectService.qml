@@ -33,6 +33,9 @@ Item {
   property string sftpInfo: ""
   property var lastPhoneNotif: null // для дедупу з NotificationServer (kcd notify-send)
   property double lastPhoneNotifTime: 0
+  property var pendingPairRequest: null // {deviceId, deviceName, timestamp} — запит з телефону
+  signal pairRequested(var req)
+  signal pairFinished(var result)
 
   // Обмеження історії сповіщень (не роздувати пам'ять)
   readonly property int maxNotifications: 10
@@ -234,9 +237,36 @@ Item {
     var t = String(ev.type)
     var payload = ev.payload ?? ev.data ?? {}
     var devId = String(ev.deviceId ?? ev.deviceID ?? payload.deviceId ?? payload.id ?? "")
+    // Запит на парування з телефону — показуємо попап (phone-initiated pairing)
+    if (t === "pair.requested" && devId) {
+      var reqName = String(payload.name ?? payload.deviceName ?? payload.appName ?? devId)
+      root.pendingPairRequest = { deviceId: devId, deviceName: reqName, timestamp: ev.timestamp ?? new Date().toISOString() }
+      root.pairRequested(root.pendingPairRequest)
+      if (!devicesProc.running) {
+        devicesProc.command = ["kcd", "devices", "--json"]
+        devicesProc.running = true
+      }
+      return
+    }
+    if ((t === "pair.accepted" || t === "pair.rejected") && devId) {
+      if (root.pendingPairRequest && root.pendingPairRequest.deviceId === devId) {
+        root.pendingPairRequest = null
+        root.pairFinished({ deviceId: devId, accepted: t === "pair.accepted" })
+      }
+      if (!devicesProc.running) {
+        devicesProc.command = ["kcd", "devices", "--json"]
+        devicesProc.running = true
+      }
+      return
+    }
     // оновлюємо devices через опитування при зміні підключення
-    if (t === "device.connected" || t === "device.disconnected" || t === "device.paired" || t === "device.unpaired" || t === "pair.requested" || t === "pair.accepted") {
-      if ((t === "device.paired" || t === "pair.accepted") && devId) {
+    if (t === "device.connected" || t === "device.disconnected" || t === "device.paired" || t === "device.unpaired") {
+      if (t === "device.paired" && devId) {
+        // при успішному паруванні чистимо pending
+        if (root.pendingPairRequest && root.pendingPairRequest.deviceId === devId) {
+          root.pendingPairRequest = null
+          root.pairFinished({ deviceId: devId, accepted: true })
+        }
         if (!root.primaryDeviceId) {
           root.primaryDeviceId = devId
           root.primaryDeviceName = String(payload.name ?? payload.deviceName ?? devId)
