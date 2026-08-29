@@ -2,6 +2,7 @@
 // KdeConnectPopup.qml — попап телефону (kcd): батарея, ping/ring,
 // share, сповіщення
 // ============================================================
+import Quickshell
 import Quickshell.Io
 import "../core"
 import QtQuick
@@ -30,34 +31,33 @@ AnimatedPopup {
   readonly property string devName: svc ? svc.primaryDeviceName : ""
   readonly property string devId: svc ? svc.primaryDeviceId : ""
 
-  property int screenW: window ? window.screen.width : 1920
-  property int screenH: window ? window.screen.height : 1080
+  // центрування як у SettingsPopup/PairingPopup/WallpaperPopup — без костиля callLater
+  function recenter() {
+    var scr = window?.screen ?? Quickshell.screens[0]
+    var w = scr ? scr.width : 1920
+    var h = scr ? scr.height : 1080
+    var pw = implicitWidth
+    var ph = implicitHeight
+    if (pw <= 0) pw = 380
+    if (ph <= 0) ph = layout ? layout.implicitHeight + 16 : 200
+    anchor.window = window
+    anchor.edges = PopupAnchor.None
+    anchor.gravity = PopupAnchor.None
+    anchor.rect = Qt.rect((w - pw) / 2, (h - ph) / 2, pw, ph)
+  }
+
   property bool devicesExpanded: false
 
   Component.onCompleted: anchor.window = window
 
   onVisibleChanged: {
     if (visible) {
-      anchor.window = window
-      anchor.edges = PopupAnchor.None
-      anchor.gravity = PopupAnchor.None
-      // центруємо по екрану вікна, фолбек 1920×1080 якщо screen ще null
-      var w = window?.screen?.width ?? screenW
-      var h = window?.screen?.height ?? screenH
-      var pw = 380
-      var ph = layout ? layout.implicitHeight + 16 : implicitHeight
-      // якщо ph ще 0 (layout не виміряний) — відкладаємо на наступний фрейм
-      if (ph <= 0) ph = 200
-      anchor.rect = Qt.rect((w - pw) / 2, (h - ph) / 2, pw, ph)
+      recenter()
       if (svc) svc.refresh()
-      // повторний замір після того як layout порахував висоту
-      Qt.callLater(function() {
-        if (!visible) return
-        var ph2 = layout ? layout.implicitHeight + 16 : implicitHeight
-        if (ph2 !== ph) anchor.rect = Qt.rect((w - pw) / 2, (h - ph2) / 2, pw, ph2)
-      })
     }
   }
+  onImplicitWidthChanged: if (visible) recenter()
+  onImplicitHeightChanged: if (visible) recenter()
 
   // --- Дії: ping / ring / share / clipboard / sftp / devices ---
   Process { id: pingProc; onExited: running = false }
