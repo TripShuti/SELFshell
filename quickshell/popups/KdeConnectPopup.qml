@@ -7,7 +7,6 @@ import Quickshell.Io
 import "../core"
 import QtQuick
 import QtQuick.Layouts
-import QtQuick.Controls
 
 // Попап телефону — батарея, ping/ring, share, список сповіщень
 AnimatedPopup {
@@ -47,8 +46,6 @@ AnimatedPopup {
     anchor.rect = Qt.rect((w - pw) / 2, (h - ph) / 2, pw, ph)
   }
 
-  property bool devicesExpanded: false
-
   Component.onCompleted: anchor.window = window
 
   onVisibleChanged: {
@@ -60,22 +57,9 @@ AnimatedPopup {
   onImplicitWidthChanged: if (visible) recenter()
   onImplicitHeightChanged: if (visible) recenter()
 
-  // --- Дії: ping / ring / share / clipboard / sftp / devices ---
+  // --- Дії: ping / ring / share / clipboard / sftp ---
   Process { id: pingProc; onExited: running = false }
   Process { id: ringProc; onExited: running = false }
-  Process {
-    id: pairProc
-    stdout: StdioCollector { id: pairOut; waitForEnd: true; onStreamFinished: { var txt = String(pairOut.text ?? "").trim(); if (txt) { pairStatus = txt.slice(0,300); pairClearTimer.restart() } } }
-    stderr: StdioCollector { id: pairErr; waitForEnd: true; onStreamFinished: { var txt = String(pairErr.text ?? "").trim(); if (txt && pairStatus === "Waiting for phone to accept...") { pairStatus = txt.slice(0,300); pairClearTimer.restart() } } }
-    onExited: (code) => { running = false; if (code !== 0 && pairStatus === "Waiting for phone to accept...") pairStatus = "Pair failed (code " + code + ")"; if (svc) svc.refresh() }
-  }
-  Process { id: unpairProc; onExited: (code) => { running = false; if (svc) svc.refresh() } }
-  Process {
-    id: connectProc
-    stdout: StdioCollector { id: connectOut; waitForEnd: true; onStreamFinished: { var txt = String(connectOut.text ?? "").trim(); if (txt) { pairStatus = txt.slice(0,300); pairClearTimer.restart() } } }
-    stderr: StdioCollector { id: connectErr; waitForEnd: true; onStreamFinished: { var txt = String(connectErr.text ?? "").trim(); if (txt && pairStatus.startsWith("Connecting")) { pairStatus = txt.slice(0,300); pairClearTimer.restart() } } }
-    onExited: (code) => { running = false; if (code !== 0 && pairStatus.startsWith("Connecting")) pairStatus = "Connect failed (code " + code + ")"; if (svc) svc.refresh() }
-  }
   Process {
     id: shareProc
     onExited: (code) => { running = false; if (code !== 0) console.warn("[kcd] share failed", code) }
@@ -142,55 +126,6 @@ AnimatedPopup {
     sftpMountProc.command = ["kcd", "sftp", "browse", root.devId]
     sftpMountProc.running = true
   }
-  property string pairStatus: ""
-  property string connectIp: ""
-  Timer { id: pairClearTimer; interval: 8000; repeat: false; onTriggered: root.pairStatus = "" }
-  function doPair() {
-    // Як у терміналі `kcd pair` — якщо є пристрій в PAIR_REQUESTED, одразу приймаємо його
-    // (надійніше ніж listen, бо телефон вже надіслав запит). Інакше — listen mode.
-    if (svc && svc.devices) {
-      for (var i = 0; i < svc.devices.length; i++) {
-        var d = svc.devices[i]
-        var st = String(d.state ?? d.State ?? d.pairRequested ?? "")
-        if (st.toUpperCase().indexOf("PAIR_REQUESTED") !== -1 || st === "pair_requested") {
-          var pid = String(d.id ?? d.ID ?? d.deviceId ?? "")
-          if (pid) { doPairDevice(pid); return }
-        }
-        // також перевіряємо connected && !paired (деякі kcd версії не дають state)
-        var isPaired = d.paired ?? d.Paired ?? (String(d.state ?? "").toUpperCase() === "PAIRED")
-        var isConnected = d.connected ?? d.Connected ?? false
-        if (!isPaired && isConnected) {
-          var id2 = String(d.id ?? d.ID ?? "")
-          if (id2) { doPairDevice(id2); return }
-        }
-      }
-    }
-    pairStatus = "Waiting for phone to accept..."
-    pairClearTimer.restart()
-    pairProc.command = ["kcd", "pair"]
-    pairProc.running = true
-  }
-  function doPairDevice(id) {
-    if (!id) return
-    pairStatus = "Pairing " + id.slice(0,8) + "..."
-    pairClearTimer.restart()
-    pairProc.command = ["kcd", "pair", id]
-    pairProc.running = true
-  }
-  function doUnpair(id) {
-    if (!id) return
-    unpairProc.command = ["kcd", "unpair", id]
-    unpairProc.running = true
-  }
-  function doConnectIp() {
-    var ip = connectIp.trim()
-    if (!ip) return
-    pairStatus = "Connecting to " + ip + "..."
-    pairClearTimer.restart()
-    connectProc.command = ["kcd", "connect", ip]
-    connectProc.running = true
-  }
-  onPairStatusChanged: if (pairStatus !== "") pairClearTimer.restart()
 
   ColumnLayout {
     id: layout
@@ -311,205 +246,6 @@ AnimatedPopup {
           wrapMode: Text.WordWrap
           Layout.fillWidth: true
           horizontalAlignment: Text.AlignHCenter
-        }
-      }
-    }
-
-    // --- Devices (kcd devices) — collapsible ---
-    ColumnLayout {
-      visible: root.installed
-      Layout.fillWidth: true
-      spacing: 4
-      // Header — завжди видно, клік розгортає pairing/connect
-      Rectangle {
-        Layout.fillWidth: true
-        height: 28
-        radius: 6
-        color: headerArea.containsMouse ? window.palette.hoverOverlay : "transparent"
-        border.width: headerArea.containsMouse ? 1 : 0
-        border.color: window.palette.bg2
-        Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
-        Behavior on border.width { NumberAnimation { duration: appConfig.anim(120) } }
-        RowLayout {
-          anchors.fill: parent
-          anchors.margins: 6
-          spacing: 6
-          Text {
-            text: "Devices (" + (svc ? svc.devices.length : 0) + ")"
-            color: headerArea.containsMouse ? window.palette.green : window.palette.accent
-            font.family: window.palette.font; font.pixelSize: appConfig.scaled(11); font.bold: true
-            Layout.fillWidth: true
-            Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
-          }
-          Text {
-            text: root.devicesExpanded ? "▾" : "▸"
-            color: headerArea.containsMouse ? window.palette.green : window.palette.mutedAlt
-            font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
-            Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
-            scale: headerArea.containsMouse ? 1.1 : 1.0
-            Behavior on scale { NumberAnimation { duration: appConfig.anim(120); easing.type: Easing.OutBack } }
-          }
-        }
-        MouseArea {
-          id: headerArea
-          anchors.fill: parent
-          hoverEnabled: true
-          cursorShape: Qt.PointingHandCursor
-          onClicked: root.devicesExpanded = !root.devicesExpanded
-        }
-      }
-      // Вміст — pairing/connect, список
-      ColumnLayout {
-        visible: root.devicesExpanded
-        Layout.fillWidth: true
-        spacing: 4
-        // Mute row — дублює header іконку, але з явним ToggleSwitch
-        RowLayout {
-          Layout.fillWidth: true
-          spacing: 8
-          Text {
-            text: "Mute phone"
-            color: window.palette.textLight
-            font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
-            Layout.fillWidth: true
-          }
-          ToggleSwitch {
-            checked: window.appConfig.cfg.kcdMuted
-            palette: window.palette
-            appConfig: window.appConfig
-            checkedColor: window.palette.danger
-            onToggled: v => { window.appConfig.cfg.kcdMuted = v; window.appConfig.saveToFile() }
-          }
-        }
-        RowLayout {
-          Layout.fillWidth: true
-          spacing: 6
-          Rectangle {
-            property bool hovered: false
-            Layout.fillWidth: true; height: 24; radius: 6
-            color: hovered ? window.palette.accent : window.palette.bg1
-            border.width: 1; border.color: window.palette.bg2
-            Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
-            Text { anchors.centerIn: parent; text: "Refresh"; color: parent.hovered ? window.palette.bg0H : window.palette.textLight; font.family: window.palette.font; font.pixelSize: appConfig.scaled(10) }
-            MouseArea { anchors.fill: parent; hoverEnabled: true; onEntered: parent.hovered = true; onExited: parent.hovered = false; onClicked: if (svc) svc.refresh() }
-          }
-          Rectangle {
-            property bool hovered: false
-            Layout.fillWidth: true; height: 24; radius: 6
-            color: hovered ? window.palette.accent : window.palette.bg1
-            border.width: 1; border.color: window.palette.bg2
-            Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
-            Text { anchors.centerIn: parent; text: "Pair"; color: parent.hovered ? window.palette.bg0H : window.palette.textLight; font.family: window.palette.font; font.pixelSize: appConfig.scaled(10) }
-            MouseArea { anchors.fill: parent; hoverEnabled: true; onEntered: parent.hovered = true; onExited: parent.hovered = false; onClicked: root.doPair() }
-          }
-        }
-        // Список відомих пристроїв
-        Repeater {
-          model: svc ? svc.devices : []
-          delegate: Rectangle {
-            required property var modelData
-            Layout.fillWidth: true
-            height: devRow.implicitHeight + 8
-            radius: 6
-            color: window.palette.bg1
-            border.width: 1; border.color: (modelData.id === root.devId && root.reachable) ? window.palette.green : window.palette.bg2
-            RowLayout {
-              id: devRow
-              anchors.centerIn: parent
-              width: parent.width - 12
-              spacing: 6
-              ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 1
-                Text {
-                  text: String(modelData.name ?? modelData.id ?? "").slice(0, 24)
-                  color: window.palette.textLight
-                  font.family: window.palette.font; font.pixelSize: appConfig.scaled(11); font.bold: true
-                  elide: Text.ElideRight
-                  Layout.fillWidth: true
-                }
-                Text {
-                  text: {
-                    var st = String(modelData.state ?? modelData.State ?? "").toUpperCase()
-                    var conn = !!modelData.connected
-                    var base = ""
-                    if (st === "PAIRED" && conn) base = "Connected"
-                    else if (st === "PAIRED" && !conn) base = "Paired"
-                    else if (st === "UNPAIRED" && conn) base = "Available"
-                    else if (st === "UNPAIRED" && !conn) base = "Unpaired"
-                    else if (st === "PAIR_REQUESTED") base = "Pair requested"
-                    else if (st === "UNKNOWN") base = conn ? "Available" : "Unknown"
-                    else if (st) base = st.charAt(0) + st.slice(1).toLowerCase()
-                    else base = conn ? "Connected" : "Offline"
-                    return base + " • " + String(modelData.id ?? "").slice(0,8)
-                  }
-                  color: {
-                    var st2 = String(modelData.state ?? modelData.State ?? "").toUpperCase()
-                    var conn2 = !!modelData.connected
-                    var paired2 = st2 === "PAIRED"
-                    return (paired2 && conn2) ? window.palette.accent : window.palette.mutedAlt
-                  }
-                  font.family: window.palette.font; font.pixelSize: appConfig.scaled(9)
-                  elide: Text.ElideRight
-                  Layout.fillWidth: true
-                }
-              }
-              // Pair (якщо не paired) / Unpair
-              Rectangle {
-                property bool hovered: false
-                visible: !(modelData.state === "PAIRED" || modelData.paired)
-                width: 48; height: 20; radius: 4
-                color: hovered ? window.palette.accent : window.palette.bg2
-                Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
-                Text { anchors.centerIn: parent; text: "Pair"; color: parent.hovered ? window.palette.bg0H : window.palette.textLight; font.family: window.palette.font; font.pixelSize: appConfig.scaled(9) }
-                MouseArea { anchors.fill: parent; hoverEnabled: true; onEntered: parent.hovered = true; onExited: parent.hovered = false; onClicked: root.doPairDevice(String(modelData.id ?? "")) }
-              }
-              Rectangle {
-                property bool hovered: false
-                width: 56; height: 20; radius: 4
-                color: hovered ? window.palette.danger : window.palette.bg2
-                Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
-                Text { anchors.centerIn: parent; text: "Unpair"; color: window.palette.textLight; font.family: window.palette.font; font.pixelSize: appConfig.scaled(9) }
-                MouseArea { anchors.fill: parent; hoverEnabled: true; onEntered: parent.hovered = true; onExited: parent.hovered = false; onClicked: root.doUnpair(String(modelData.id ?? "")) }
-              }
-            }
-          }
-        }
-        // Connect by IP
-        RowLayout {
-          Layout.fillWidth: true
-          spacing: 6
-          TextField {
-            id: ipField
-            Layout.fillWidth: true
-            placeholderText: "192.168.1.101"
-            text: root.connectIp
-            onTextChanged: root.connectIp = text
-            font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
-            color: window.palette.textLight
-            placeholderTextColor: window.palette.mutedAlt
-            background: Rectangle { color: window.palette.bg1; border.width: 1; border.color: window.palette.bg2; radius: 4 }
-            padding: 6
-          }
-          Rectangle {
-            property bool hovered: false
-            width: 72; height: 24; radius: 6
-            color: hovered ? window.palette.accent : window.palette.bg1
-            border.width: 1; border.color: window.palette.bg2
-            Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
-            Text { anchors.centerIn: parent; text: "Connect"; color: parent.hovered ? window.palette.bg0H : window.palette.textLight; font.family: window.palette.font; font.pixelSize: appConfig.scaled(10) }
-            MouseArea { anchors.fill: parent; hoverEnabled: true; onEntered: parent.hovered = true; onExited: parent.hovered = false; onClicked: root.doConnectIp() }
-          }
-        }
-        Text {
-          visible: pairStatus !== ""
-          text: pairStatus
-          color: window.palette.mutedAlt
-          font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
-          wrapMode: Text.WordWrap
-          Layout.fillWidth: true
-          maximumLineCount: 3
-          elide: Text.ElideRight
         }
       }
     }
