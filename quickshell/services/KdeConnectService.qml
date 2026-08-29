@@ -49,17 +49,14 @@ Item {
       }
     }
     onExited: (code) => {
-      console.log("[kcd] installCheck exit", code)
       root.installed = (code === 0)
       if (root.installed && root.enabled) {
-        console.log("[kcd] install ok, start devices + watch")
         devicesProc.command = ["kcd", "devices", "--json"]
         devicesProc.running = true
         watchRestartTimer.stop()
         if (!watchProc.running) watchProc.running = true
         pollTimer.running = true
       } else {
-        console.log("[kcd] not installed or disabled")
         watchProc.running = false
         pollTimer.running = false
       }
@@ -71,14 +68,11 @@ Item {
   Process {
     id: devicesProc
     command: ["kcd", "devices", "--json"]
-    onStarted: console.log("[kcd] devicesProc started")
-    onExited: (code, status) => console.log("[kcd] devicesProc exited", code, status, "text", String(devicesOut.text ?? "").slice(0,100))
     stdout: StdioCollector {
       id: devicesOut
       waitForEnd: true
       onStreamFinished: {
         var txt = String(devicesOut.text ?? "").trim()
-        console.log("[kcd] devicesOut", txt.slice(0,200))
         if (!txt) return
         try {
           var arr = JSON.parse(txt)
@@ -175,7 +169,6 @@ Item {
       var isConn = !!(primary.Connected ?? primary.connected ?? false)
       if (!isConn && st.toUpperCase() === "CONNECTED") isConn = true
       root.isReachable = isConn
-      console.log("[kcd] _updatePrimary devId", root.primaryDeviceId, "name", root.primaryDeviceName, "isReachable", root.isReachable, "state", st, "connected", isConn, "raw", JSON.stringify(primary).slice(0,120))
       // батарея може бути в самому device об'єкті
       var ch = primary.Battery ?? primary.battery
       if (ch !== undefined && ch !== null) {
@@ -200,13 +193,11 @@ Item {
     var devId = String(ev.deviceId ?? ev.deviceID ?? payload.deviceId ?? payload.id ?? "")
     // оновлюємо devices через опитування при зміні підключення
     if (t === "device.connected" || t === "device.disconnected" || t === "device.paired" || t === "device.unpaired" || t === "pair.requested" || t === "pair.accepted") {
-      console.log("[kcd] device event", t, devId, "primary", root.primaryDeviceId)
       // якщо прийшов конект і primary ще порожній — заповнюємо з payload
       if ((t === "device.connected" || t === "device.paired" || t === "pair.accepted") && devId) {
         if (!root.primaryDeviceId) {
           root.primaryDeviceId = devId
           root.primaryDeviceName = String(payload.name ?? payload.deviceName ?? devId)
-          console.log("[kcd] set primary from event", root.primaryDeviceId, root.primaryDeviceName)
         }
         root.isReachable = true
       } else if (t === "device.disconnected") {
@@ -228,9 +219,7 @@ Item {
       if (devId && !root.primaryDeviceId) {
         root.primaryDeviceId = devId
         root.primaryDeviceName = String(payload.name ?? devId)
-        console.log("[kcd] set primary from battery", devId)
       }
-      console.log("[kcd] battery", charge, charging, "isReachable", root.isReachable, "devId", devId, "primary", root.primaryDeviceId)
       return
     }
     if (t === "notification" || t === "notification.received") {
@@ -271,7 +260,6 @@ Item {
   // Process-и живуть в попапі, щоб не множити логіку помилок тут.
   // Лишаємо для сумісності, якщо хтось викличе напряму.
   function refresh() {
-    console.log("[kcd] refresh called, devices running", devicesProc.running)
     if (!devicesProc.running) {
       devicesProc.command = ["kcd", "devices", "--json"]
       devicesProc.running = true

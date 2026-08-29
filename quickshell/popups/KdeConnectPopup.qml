@@ -125,15 +125,7 @@ AnimatedPopup {
         font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
       }
     }
-    // Debug — тимчасово, показує реальний стан сервісу
-    Text {
-      visible: true
-      text: "[debug] installed=" + root.installed + " reachable=" + root.reachable + " devId=" + (root.devId ? root.devId.slice(0,8) : "none") + " charge=" + root.charge
-      color: window.palette.mutedAlt
-      font.family: window.palette.font; font.pixelSize: appConfig.scaled(9)
-      Layout.fillWidth: true
-      elide: Text.ElideRight
-    }
+
 
     // Статус kcd не встановлено
     Rectangle {
@@ -261,7 +253,7 @@ AnimatedPopup {
       Rectangle {
         property bool hovered: false
         Layout.fillWidth: true; height: 28; radius: 6
-        color: hovered ? window.palette.hoverOverlay : window.palette.bg1
+        color: hovered ? window.palette.accent : window.palette.bg1
         border.width: 1; border.color: window.palette.bg2
         Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
         enabled: root.reachable
@@ -269,7 +261,7 @@ AnimatedPopup {
         Text {
           anchors.centerIn: parent
           text: "\uF1EB Ping"
-          color: window.palette.textLight
+          color: parent.hovered ? window.palette.bg0H : window.palette.textLight
           font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
         }
         MouseArea {
@@ -284,7 +276,7 @@ AnimatedPopup {
       Rectangle {
         property bool hovered: false
         Layout.fillWidth: true; height: 28; radius: 6
-        color: hovered ? window.palette.hoverOverlay : window.palette.bg1
+        color: hovered ? window.palette.accent : window.palette.bg1
         border.width: 1; border.color: window.palette.bg2
         Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
         enabled: root.reachable
@@ -292,7 +284,7 @@ AnimatedPopup {
         Text {
           anchors.centerIn: parent
           text: "\uF028 Ring"
-          color: window.palette.textLight
+          color: parent.hovered ? window.palette.bg0H : window.palette.textLight
           font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
         }
         MouseArea {
