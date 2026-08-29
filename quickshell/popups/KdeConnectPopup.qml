@@ -62,9 +62,19 @@ AnimatedPopup {
   // --- Дії: ping / ring / share / clipboard / sftp / devices ---
   Process { id: pingProc; onExited: running = false }
   Process { id: ringProc; onExited: running = false }
-  Process { id: pairProc; stdout: StdioCollector { id: pairOut; waitForEnd: true; onStreamFinished: { var txt = String(pairOut.text ?? "").trim(); if (txt) pairStatus = txt.slice(0,300) } } onExited: (code) => { running = false; if (code !== 0 && pairStatus === "") pairStatus = "Pair failed (code " + code + ")" } }
+  Process {
+    id: pairProc
+    stdout: StdioCollector { id: pairOut; waitForEnd: true; onStreamFinished: { var txt = String(pairOut.text ?? "").trim(); if (txt) { pairStatus = txt.slice(0,300); pairClearTimer.restart() } } }
+    stderr: StdioCollector { id: pairErr; waitForEnd: true; onStreamFinished: { var txt = String(pairErr.text ?? "").trim(); if (txt && pairStatus === "Waiting for phone to accept...") { pairStatus = txt.slice(0,300); pairClearTimer.restart() } } }
+    onExited: (code) => { running = false; if (code !== 0 && pairStatus === "Waiting for phone to accept...") pairStatus = "Pair failed (code " + code + ")"; if (svc) svc.refresh() }
+  }
   Process { id: unpairProc; onExited: (code) => { running = false; if (svc) svc.refresh() } }
-  Process { id: connectProc; stdout: StdioCollector { id: connectOut; waitForEnd: true; onStreamFinished: { var txt = String(connectOut.text ?? "").trim(); if (txt) pairStatus = txt.slice(0,300) } } onExited: (code) => { running = false; if (svc) svc.refresh() } }
+  Process {
+    id: connectProc
+    stdout: StdioCollector { id: connectOut; waitForEnd: true; onStreamFinished: { var txt = String(connectOut.text ?? "").trim(); if (txt) { pairStatus = txt.slice(0,300); pairClearTimer.restart() } } }
+    stderr: StdioCollector { id: connectErr; waitForEnd: true; onStreamFinished: { var txt = String(connectErr.text ?? "").trim(); if (txt && pairStatus.startsWith("Connecting")) { pairStatus = txt.slice(0,300); pairClearTimer.restart() } } }
+    onExited: (code) => { running = false; if (code !== 0 && pairStatus.startsWith("Connecting")) pairStatus = "Connect failed (code " + code + ")"; if (svc) svc.refresh() }
+  }
   Process {
     id: shareProc
     onExited: (code) => { running = false; if (code !== 0) console.warn("[kcd] share failed", code) }
@@ -135,6 +145,25 @@ AnimatedPopup {
   property string connectIp: ""
   Timer { id: pairClearTimer; interval: 8000; repeat: false; onTriggered: root.pairStatus = "" }
   function doPair() {
+    // Як у терміналі `kcd pair` — якщо є пристрій в PAIR_REQUESTED, одразу приймаємо його
+    // (надійніше ніж listen, бо телефон вже надіслав запит). Інакше — listen mode.
+    if (svc && svc.devices) {
+      for (var i = 0; i < svc.devices.length; i++) {
+        var d = svc.devices[i]
+        var st = String(d.state ?? d.State ?? d.pairRequested ?? "")
+        if (st.toUpperCase().indexOf("PAIR_REQUESTED") !== -1 || st === "pair_requested") {
+          var pid = String(d.id ?? d.ID ?? d.deviceId ?? "")
+          if (pid) { doPairDevice(pid); return }
+        }
+        // також перевіряємо connected && !paired (деякі kcd версії не дають state)
+        var isPaired = d.paired ?? d.Paired ?? (String(d.state ?? "").toUpperCase() === "PAIRED")
+        var isConnected = d.connected ?? d.Connected ?? false
+        if (!isPaired && isConnected) {
+          var id2 = String(d.id ?? d.ID ?? "")
+          if (id2) { doPairDevice(id2); return }
+        }
+      }
+    }
     pairStatus = "Waiting for phone to accept..."
     pairClearTimer.restart()
     pairProc.command = ["kcd", "pair"]
