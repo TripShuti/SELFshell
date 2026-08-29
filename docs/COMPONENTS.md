@@ -116,6 +116,7 @@
 | `NetWidget.qml` | Network | NetworkPopup |
 | `TrayWidget.qml` | System tray | — |
 | `BatteryWidget.qml` | Battery charge (hides itself on desktops) | upower |
+| `KdeConnectWidget.qml` | Phone (kcd) battery + reachable | KdeConnectService, KdeConnectPopup |
 
 ### Popups (`popups/`)
 
@@ -146,6 +147,7 @@
 | `WallpaperPopup.qml` | Wallpaper picker | `scripts/update-palette.sh` |
 | `TrayMenuPopup.qml` | System tray menu (QML rendering via QsMenuOpener) | TrayWidget |
 | `NotifToast.qml` | Popup notification (toast) | NotificationServer |
+| `KdeConnectPopup.qml` | Phone (kcd) — battery, ping/ring, share, clipboard, SFTP | KdeConnectService |
 
 ### Monitors (`monitors/`)
 
@@ -177,6 +179,7 @@
 | `qs-bt-agent.service` | systemd | Unit for qs-bt-agent |
 | `cava-vis.conf` | config | cava config |
 | `TrackListService.qml` | QML | MPRIS TrackList service (dbus-monitor + live queue) |
+| `KdeConnectService.qml` | QML | Phone service (kcd watch + devices poll, battery/clipboard/sftp) |
 
 ### `data/` — persisted state
 

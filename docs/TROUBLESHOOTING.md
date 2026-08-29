@@ -116,6 +116,39 @@ Verify: `systemctl --user status qs-bt-agent` (active) and
 `selfshell doctor` (line `qs-bt-agent (user service) is active`).
 (install.sh does this automatically on the next run.)
 
+## Phone (kcd) not pairing / offline
+
+**Symptom:** `KdeConnectPopup` shows `Offline` or `No paired device`, widget dot grey, `kcd devices --json` empty or `connected:false`.
+
+**Cause:** `kcd` daemon not running, firewall blocks `1716/udp+tcp` `1739:1764/tcp`, or phone/PC not on same Wi-Fi.
+
+**Fix:**
+```sh
+systemctl --user enable --now kcd
+kcd devices --json   # should list phone with connected:true
+ss -tulpn | grep 1716   # should show kcd listening
+# firewall (ufw)
+sudo ufw allow 1716/udp && sudo ufw allow 1716/tcp && sudo ufw allow 1739:1764/tcp
+# or firewalld
+sudo firewall-cmd --permanent --add-service=kdeconnect && sudo firewall-cmd --reload
+# pair
+kcd pair   # accept on phone, same Wi-Fi
+# if phone on different subnet/VPN
+kcd connect <pc-ip>   # phone: KDE Connect → Add device by IP
+```
+
+**SFTP mount shows `/storage/emulated/0` but folder in `~/Downloads/kcd/mnt`**
+
+**Cause:** `Mount: /storage/emulated/0` is the phone's storage path. Local mount is `sftp.mount_dir` from `~/.config/kcd/kcd.toml` (`~/Downloads/kcd/mnt` default) via `sshfs`. Popup now shows `Local: ~/Downloads/kcd/mnt → Phone: /storage/emulated/0`.
+
+**Fix:** `kcd sftp browse <id>` opens local mount via `xdg-open`. Check `mount | grep kcd` and `kcd sftp info <id>`. Needs `sshfs` (`sudo pacman -S sshfs`).
+
+**Clipboard push does nothing**
+
+**Cause:** `kcd` needs `wl-clipboard` (Wayland) or `xclip` (X11). Phone's KDE Connect must have Clipboard plugin enabled.
+
+**Fix:** `sudo pacman -S wl-clipboard`, enable Clipboard in phone's KDE Connect plugin list, `kcd clipboard <id>` should push `wl-paste` content.
+
 ## Bluetooth pairing fails after restarting bluetooth
 **Symptom:** `systemctl restart bluetooth` was run (manually or by a bluez
 package update), and new devices can no longer pair. Already-bonded ones

@@ -539,7 +539,16 @@ prompt is missed, the connect fails after the 55 s timeout.
 
 ---
 
-### 9.9. AudioEq — 15-band system equalizer
+### 9.9. Phone — kcd / KDE Connect
+
+`services/KdeConnectService.qml` — single instance in `shell.qml` (`enabled: appConfig.cfg.kcdEnabled`), `KdeConnectWidget.qml` in `Bar.qml` (`kcd` in `allWidgetNames`, `rightOrder`, `widgetNeedsFillHeight`), `popups/KdeConnectPopup.qml` centered `AnimatedPopup`.
+
+* **Daemon:** optional `kcd` (`AUR kcd-bin`, `systemctl --user enable --now kcd`, LAN-only `1716/udp+tcp` `1739:1764/tcp`, no KDE stack, 0% idle when all devices connected). Config `~/.config/kcd/kcd.toml` (`download_dir ~/Downloads/kcd`, `sftp.mount_dir ~/Downloads/kcd/mnt`, `tcp_port 1716`). `kcd --version` check → `installed`, `kcd devices --json` 30s poll + `kcd watch --json` live (battery, device.connected, notification, clipboard, sftp, share.progress). `primaryDeviceId/name` from watch `device.connected`/`battery` + poll `connected`/`state`, `isReachable` from `connected` or battery, `lastClipboard`/`sftpVolumes`/`sftpMountPoint` from watch.
+* **Widget:** `KdeConnectWidget.qml` phone/battery icon + `charge%` + reachable dot (`green`/`mutedAlt`), `HoverText` scale, `MouseArea` → `kcdPopup.toggle()`, `IpcHandler kcd toggle` (`qs ipc call kcd toggle`).
+* **Popup:** `KdeConnectPopup.qml` battery bar, `Ping` (`kcd ping`), `Ring` (`kcd findmyphone`), `Share` (`zenity/kdialog/yad` → `kcd share`), `Clipboard Push` (`kcd clipboard`), `Files Browse/Mount/Unmount` (`kcd sftp browse/mount/unmount` → local `~/Downloads/kcd/mnt` vs phone `/storage/emulated/0`), share progress, `lastClipboard`/`sftpMountPoint`, recent notifications + Clear, firewall hint. `Bar.qml` bridges `onNotificationReceived` → `NotifToast` (DND, `tracked=true`).
+* **Install/doctor:** `install.sh` AUR `kcd-bin` prompt + `systemctl --user enable --now kcd`, `scripts/selfshell doctor` `Phone (optional, kcd)` checks `kcd --version`, daemon `systemctl --user is-active kcd`/`pgrep`, `ss :1716`.
+
+### 9.10. AudioEq — 15-band system equalizer
 
 `core/AudioEq.qml` — real EQ via PipeWire `filter-chain` (`SELFshell_EQ`, 15× `mbeq_1197` LADSPA, `mbeqL`/`mbeqR`).
 
