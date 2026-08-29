@@ -560,19 +560,29 @@ PanelWindow {
   }
 
   // Міст: сповіщення з телефону → системний тост (поважає DND)
-  // Маркування: "Phone • WhatsApp" + phone icon, щоб відрізнити від локальних
+  // Маркування: "Phone • WhatsApp" + іконка додатку (або phone fallback) + phone badge
   Connections {
     target: kdeConnect
     function onNotificationReceived(notif) {
       if (root.appConfig.cfg.dndEnabled) return
       notif.tracked = true
-      // Маркуємо як з телефону: префікс Phone • і phone icon
       var phoneApp = notif.appName ? "Phone • " + notif.appName : "Phone"
+      // іконка додатку: payload.icon (файл з kcd fetch_icons) або appName lowercased, fallback phone
+      var iconSrc = notif.icon ?? ""
+      if (!iconSrc) {
+        var cand = String(notif.appName ?? "").toLowerCase().replace(/\s+/g, "-")
+        // спробуємо знайти іконку за ім'ям додатку, інакше phone
+        var p = Quickshell.iconPath(cand, true)
+        if (p === "") p = Quickshell.iconPath(cand, false)
+        iconSrc = p !== "" ? cand : "phone"
+      }
+      notif.isPhone = true
       notifToast.showNotif({
         appName: phoneApp,
         summary: notif.title,
         body: notif.text,
-        appIcon: "phone",
+        appIcon: iconSrc,
+        isPhone: true,
         actions: []
       })
       if (!controlPopup.visible) root.newNotifs++

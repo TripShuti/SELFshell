@@ -227,11 +227,14 @@ Item {
       return
     }
     if (t === "notification" || t === "notification.received") {
+      // payload.icon може бути шляхом до кешованого файлу (kcd fetch_icons) або іменем
+      var iconSrc = String(payload.icon ?? payload.appIcon ?? payload.iconPath ?? "")
       var n = {
         appName: String(payload.appName ?? payload.app ?? "Phone"),
         title: String(payload.title ?? payload.summary ?? ""),
         text: String(payload.text ?? payload.body ?? ""),
         id: String(payload.id ?? payload.key ?? Date.now()),
+        icon: iconSrc,
         deviceId: devId,
         timestamp: ev.timestamp ?? new Date().toISOString()
       }
