@@ -304,38 +304,36 @@ AnimatedPopup {
         Layout.fillWidth: true
         height: 28
         radius: 6
-        color: headerArea.containsMouse ? window.palette.bg1 : "transparent"
-        Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
+        color: headerArea.containsMouse ? window.palette.hoverOverlay : "transparent"
+        border.width: headerArea.containsMouse ? 1 : 0
+        border.color: window.palette.bg2
+        Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
+        Behavior on border.width { NumberAnimation { duration: appConfig.anim(120) } }
         RowLayout {
           anchors.fill: parent
           anchors.margins: 6
           spacing: 6
           Text {
             text: "Devices (" + (svc ? svc.devices.length : 0) + ")"
-            color: window.palette.accent
+            color: headerArea.containsMouse ? window.palette.green : window.palette.accent
             font.family: window.palette.font; font.pixelSize: appConfig.scaled(11); font.bold: true
             Layout.fillWidth: true
+            Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
           }
           Text {
             text: root.devicesExpanded ? "▾" : "▸"
-            color: window.palette.mutedAlt
+            color: headerArea.containsMouse ? window.palette.green : window.palette.mutedAlt
             font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
-          }
-          Rectangle {
-            property bool hovered: false
-            width: 60; height: 20; radius: 4
-            color: hovered ? window.palette.accent : window.palette.bg1
-            border.width: 1; border.color: window.palette.bg2
-            Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
-            visible: !root.devicesExpanded
-            Text { anchors.centerIn: parent; text: "Refresh"; color: parent.hovered ? window.palette.bg0H : window.palette.mutedAlt; font.family: window.palette.font; font.pixelSize: appConfig.scaled(9) }
-            MouseArea { anchors.fill: parent; hoverEnabled: true; onEntered: parent.hovered = true; onExited: parent.hovered = false; onClicked: { if (svc) svc.refresh(); mouse.accepted = true } }
+            Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
+            scale: headerArea.containsMouse ? 1.1 : 1.0
+            Behavior on scale { NumberAnimation { duration: appConfig.anim(120); easing.type: Easing.OutBack } }
           }
         }
         MouseArea {
           id: headerArea
           anchors.fill: parent
           hoverEnabled: true
+          cursorShape: Qt.PointingHandCursor
           onClicked: root.devicesExpanded = !root.devicesExpanded
         }
       }
