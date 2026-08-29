@@ -205,7 +205,7 @@ PanelWindow {
         || name === "genshin" || name === "timer"
     || name === "bt" || name === "net" || name === "tray"
     || name === "keyboard" || name === "battery"
-    || name === "clipboard"
+    || name === "clipboard" || name === "kcd"
   }
 
   // Прихований бар не їсть кліки: input region вікна обмежується лише

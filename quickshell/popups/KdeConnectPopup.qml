@@ -7,7 +7,6 @@ import Quickshell.Io
 import "../core"
 import QtQuick
 import QtQuick.Layouts
-import QtQuick.Dialogs
 
 // Попап телефону — батарея, ping/ring, share, список сповіщень
 AnimatedPopup {
@@ -61,6 +60,24 @@ AnimatedPopup {
     id: openShareProc
     onExited: running = false
   }
+  // Вибір файлу для share — через zenity/kdialog (FileDialog крашить quickshell)
+  Process {
+    id: sharePickerProc
+    stdout: StdioCollector {
+      id: pickerOut
+      waitForEnd: true
+      onStreamFinished: {
+        var path = String(pickerOut.text ?? "").trim()
+        if (!path) return
+        // zenity може повернути | розділені шляхи — беремо перший
+        if (path.includes("|")) path = path.split("|")[0]
+        if (!path || !root.devId) return
+        shareProc.command = ["kcd", "share", root.devId, path]
+        shareProc.running = true
+      }
+    }
+    onExited: (code) => { running = false }
+  }
 
   function doPing() {
     if (!root.devId) return
@@ -72,17 +89,11 @@ AnimatedPopup {
     ringProc.command = ["kcd", "findmyphone", root.devId]
     ringProc.running = true
   }
-
-  FileDialog {
-    id: shareDialog
-    title: "Share file to phone"
-    fileMode: FileDialog.OpenFile
-    onAccepted: {
-      var path = String(selectedFile).replace("file://", "")
-      if (!path || !root.devId) return
-      shareProc.command = ["kcd", "share", root.devId, path]
-      shareProc.running = true
-    }
+  function doSharePick() {
+    if (!root.devId) return
+    // пробуємо zenity → kdialog → yad, тихо якщо нічого нема
+    sharePickerProc.command = ["sh", "-c", "zenity --file-selection 2>/dev/null || kdialog --getopenfilename \"$HOME\" 2>/dev/null || yad --file-selection 2>/dev/null || true"]
+    sharePickerProc.running = true
   }
 
   ColumnLayout {
@@ -303,7 +314,7 @@ AnimatedPopup {
           cursorShape: Qt.PointingHandCursor
           onEntered: parent.hovered = true
           onExited: parent.hovered = false
-          onClicked: shareDialog.open()
+          onClicked: root.doSharePick()
         }
       }
     }
