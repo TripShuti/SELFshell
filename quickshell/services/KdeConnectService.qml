@@ -21,6 +21,7 @@ Item {
   property string primaryDeviceId: ""
   property string primaryDeviceName: ""
   property bool isReachable: false
+  property bool isPaired: false
   property int batteryCharge: -1
   property bool batteryCharging: false
   property var recentNotifications: [] // [{appName,title,text,deviceId,timestamp}]
@@ -169,20 +170,32 @@ Item {
   function _updatePrimary() {
     var devs = root.devices
     var primary = null
-    // шукаємо перший Connected, інакше перший Paired
+    // 1. Paired + Connected — ідеальний primary
     for (var i = 0; i < devs.length; i++) {
       var d = devs[i]
       if (!d) continue
-      // kcd поля можуть бути Connected/connected/ID/id — нормалізуємо
-      var connected = d.Connected ?? d.connected ?? d.isConnected ?? false
-      if (connected) { primary = d; break }
+      var st1 = String(d.state ?? d.State ?? "").toUpperCase()
+      var paired1 = st1 === "PAIRED" || !!(d.Paired ?? d.paired ?? d.isPaired)
+      var connected1 = !!(d.Connected ?? d.connected ?? d.isConnected ?? false) || st1 === "CONNECTED"
+      if (paired1 && connected1) { primary = d; break }
     }
+    // 2. Paired (навіть якщо offline) — краще ніж UNPAIRED+Connected
     if (!primary) {
       for (var j = 0; j < devs.length; j++) {
         var dj = devs[j]
         if (!dj) continue
-        var paired = dj.Paired ?? dj.paired ?? dj.isPaired ?? false
-        if (paired) { primary = dj; break }
+        var st2 = String(dj.state ?? dj.State ?? "").toUpperCase()
+        var paired2 = st2 === "PAIRED" || !!(dj.Paired ?? dj.paired ?? dj.isPaired)
+        if (paired2) { primary = dj; break }
+      }
+    }
+    // 3. Будь-який Connected (навіть UNPAIRED) — покажемо як "Unpaired, needs pair"
+    if (!primary) {
+      for (var k = 0; k < devs.length; k++) {
+        var dk = devs[k]
+        if (!dk) continue
+        var connected3 = !!(dk.Connected ?? dk.connected ?? dk.isConnected ?? false) || String(dk.state ?? "").toUpperCase() === "CONNECTED"
+        if (connected3) { primary = dk; break }
       }
     }
     if (!primary && devs.length > 0) primary = devs[0]
@@ -190,11 +203,14 @@ Item {
     if (primary) {
       root.primaryDeviceId = String(primary.ID ?? primary.Id ?? primary.id ?? primary.deviceId ?? "")
       root.primaryDeviceName = String(primary.Name ?? primary.name ?? primary.deviceName ?? primary.DeviceName ?? root.primaryDeviceId)
-      // kcd інколи повертає state PAIRED але connected true — вважаємо reachable якщо connected true або state CONNECTED
       var st = String(primary.state ?? primary.State ?? "")
       var isConn = !!(primary.Connected ?? primary.connected ?? false)
       if (!isConn && st.toUpperCase() === "CONNECTED") isConn = true
-      root.isReachable = isConn
+      var isPa = st.toUpperCase() === "PAIRED" || !!(primary.Paired ?? primary.paired ?? primary.isPaired)
+      // якщо state порожній, fallback на paired flag
+      if (st === "" && !isPa) isPa = !!(primary.Paired ?? primary.paired)
+      root.isPaired = isPa
+      root.isReachable = isPa && isConn
       // батарея може бути в самому device об'єкті
       var ch = primary.Battery ?? primary.battery
       if (ch !== undefined && ch !== null) {
@@ -208,6 +224,7 @@ Item {
     } else {
       root.primaryDeviceId = ""
       root.primaryDeviceName = ""
+      root.isPaired = false
       root.isReachable = false
     }
   }
@@ -219,16 +236,29 @@ Item {
     var devId = String(ev.deviceId ?? ev.deviceID ?? payload.deviceId ?? payload.id ?? "")
     // оновлюємо devices через опитування при зміні підключення
     if (t === "device.connected" || t === "device.disconnected" || t === "device.paired" || t === "device.unpaired" || t === "pair.requested" || t === "pair.accepted") {
-      // якщо прийшов конект і primary ще порожній — заповнюємо з payload
-      if ((t === "device.connected" || t === "device.paired" || t === "pair.accepted") && devId) {
+      if ((t === "device.paired" || t === "pair.accepted") && devId) {
         if (!root.primaryDeviceId) {
           root.primaryDeviceId = devId
           root.primaryDeviceName = String(payload.name ?? payload.deviceName ?? devId)
-          root.isReachable = true
-        } else if (devId === root.primaryDeviceId) {
+        }
+        if (devId === root.primaryDeviceId || !root.primaryDeviceId) {
+          root.isPaired = true
           root.isReachable = true
         }
-        // для іншого device не чіпаємо isReachable — дочекаємося poll, щоб не підняти офлайн primary
+      } else if (t === "device.unpaired" && devId) {
+        if (devId === root.primaryDeviceId) {
+          root.isPaired = false
+          root.isReachable = false
+        }
+      } else if (t === "device.connected" && devId) {
+        // Не ставимо isReachable напряму — дочекаємося poll, щоб перевірити paired
+        // UNPAIRED+Connected не має бути reachable
+        if (!root.primaryDeviceId) {
+          root.primaryDeviceId = devId
+          root.primaryDeviceName = String(payload.name ?? payload.deviceName ?? devId)
+          // тимчасово isReachable лишаємо як isPaired (false для UNPAIRED), poll виправить
+          root.isReachable = root.isPaired
+        }
       } else if (t === "device.disconnected") {
         if (!devId || devId === root.primaryDeviceId || root.primaryDeviceId === "") root.isReachable = false
       }
@@ -244,9 +274,9 @@ Item {
       if (charge !== undefined && charge !== null) root.batteryCharge = Math.round(Number(charge))
       root.batteryCharging = !!charging
       // якщо прийшла батарея — девайс точно reachable, але тільки якщо це primary або primary ще не вибраний
-      // (інакше батарея від другого телефону помилково підніме offline primary)
+      // і тільки якщо paired (UNPAIRED+Connected не має бути reachable)
       if (root.batteryCharge >= 0) {
-        if (!devId || devId === root.primaryDeviceId || !root.primaryDeviceId) root.isReachable = true
+        if ((!devId || devId === root.primaryDeviceId || !root.primaryDeviceId) && root.isPaired) root.isReachable = true
       }
       if (devId && !root.primaryDeviceId) {
         root.primaryDeviceId = devId

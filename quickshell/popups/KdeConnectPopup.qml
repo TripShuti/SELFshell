@@ -26,6 +26,7 @@ AnimatedPopup {
   readonly property var svc: window ? window.kdeConnect : null
   readonly property bool installed: svc ? svc.installed : false
   readonly property bool reachable: svc ? svc.isReachable : false
+  readonly property bool isPaired: svc ? svc.isPaired : false
   readonly property int charge: svc ? svc.batteryCharge : -1
   readonly property bool charging: svc ? svc.batteryCharging : false
   readonly property string devName: svc ? svc.primaryDeviceName : ""
@@ -210,13 +211,13 @@ AnimatedPopup {
       Rectangle {
         visible: root.installed
         width: 8; height: 8; radius: 4
-        color: root.reachable ? window.palette.green : window.palette.mutedAlt
-        opacity: root.reachable ? 1 : 0.5
+        color: (root.isPaired && root.reachable) ? window.palette.green : window.palette.mutedAlt
+        opacity: (root.isPaired && root.reachable) ? 1 : 0.5
       }
       Text {
         visible: root.installed
-        text: root.reachable ? "Connected" : "Offline"
-        color: root.reachable ? window.palette.accent : window.palette.mutedAlt
+        text: !root.isPaired ? "Not paired" : (root.reachable ? "Connected" : "Offline")
+        color: (root.isPaired && root.reachable) ? window.palette.accent : window.palette.mutedAlt
         font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
       }
       // Mute toggle — іконка дзвінка з перекресленням
@@ -497,7 +498,7 @@ AnimatedPopup {
 
     // Інфо про пристрій + батарея
     Rectangle {
-      visible: root.installed && root.devId !== ""
+      visible: root.installed && root.isPaired && root.devId !== ""
       Layout.fillWidth: true
       height: battRow.implicitHeight + 16
       radius: 6
@@ -548,7 +549,7 @@ AnimatedPopup {
 
     // Кнопки дій
     RowLayout {
-      visible: root.installed && root.devId !== ""
+      visible: root.installed && root.isPaired && root.devId !== ""
       Layout.fillWidth: true
       spacing: 6
       // Ping
@@ -676,7 +677,7 @@ AnimatedPopup {
 
     // --- Clipboard ---
     RowLayout {
-      visible: root.installed && root.devId !== ""
+      visible: root.installed && root.isPaired && root.devId !== ""
       Layout.fillWidth: true
       spacing: 6
       Text {
@@ -721,7 +722,7 @@ AnimatedPopup {
 
     // --- SFTP (файли телефону) ---
     RowLayout {
-      visible: root.installed && root.devId !== ""
+      visible: root.installed && root.isPaired && root.devId !== ""
       Layout.fillWidth: true
       spacing: 6
       Text {
@@ -765,7 +766,7 @@ AnimatedPopup {
       }
     }
     Text {
-      visible: root.installed && root.devId !== "" && svc && (svc.sftpMountPoint !== "" || svc.sftpInfo !== "")
+      visible: root.installed && root.isPaired && root.devId !== "" && svc && (svc.sftpMountPoint !== "" || svc.sftpInfo !== "")
       text: {
         // sftpMountPoint з watch — це шлях на телефоні (/storage/...), локально монтується в ~/Downloads/kcd/mnt
         // Не хардкодимо /home/trip — показуємо ~/ для портативності (kcd mount_dir = ~/Downloads/kcd/mnt за замовч.)
@@ -885,7 +886,7 @@ AnimatedPopup {
 
     // Підказка firewall
     Text {
-      visible: root.installed && !root.reachable && root.devId !== ""
+      visible: root.installed && root.isPaired && !root.reachable && root.devId !== ""
       text: "Phone offline — check same Wi-Fi / firewall 1716, 1739:1764"
       color: window.palette.mutedAlt
       font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
