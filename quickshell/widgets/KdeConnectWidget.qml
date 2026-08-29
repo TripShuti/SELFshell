@@ -25,6 +25,7 @@ Item {
   implicitHeight: parent?.height ?? 36
 
   readonly property bool hasBattery: charge >= 0
+  readonly property bool isMuted: window.appConfig.cfg.kcdMuted ?? false
 
   function batteryIcon(lvl) {
     var pct = lvl
@@ -73,12 +74,21 @@ Item {
 
     // Крапка досяжності
     Rectangle {
-      visible: root.installed
+      visible: root.installed && !root.isMuted
       width: 6; height: 6; radius: 3
       color: root.reachable ? window.palette.green : window.palette.mutedAlt
       opacity: root.reachable ? 1 : 0.5
       Behavior on color { ColorAnimation { duration: window.appConfig.anim(220) } }
       Behavior on opacity { NumberAnimation { duration: window.appConfig.anim(220) } }
+    }
+    // Mute badge — маленький перекреслений дзвінок
+    Text {
+      visible: root.installed && root.isMuted
+      text: "\uF1F6"
+      color: root.hovered ? window.palette.green : window.palette.danger
+      font.family: window.palette.font
+      font.pixelSize: window.appConfig.scaled(10)
+      Behavior on color { ColorAnimation { duration: window.appConfig.anim(220) } }
     }
   }
 

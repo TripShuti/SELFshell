@@ -24,6 +24,7 @@ Edited through SettingsPopup (UI) or manually.
 | `trayEnabled` | `boolean` | `true` | System tray |
 | `batteryEnabled` | `boolean` | `false` | Battery (the widget hides itself when no battery exists) |
 | `kcdEnabled` | `boolean` | `false` | Phone (kcd/KDE Connect) — battery, ping/ring, share, clipboard, SFTP, notifications |
+| `kcdMuted` | `boolean` | `false` | Mute phone notifications (keeps connection, hides toasts) |
 | `dndEnabled` | `boolean` | `false` | Do-not-disturb — hides all notifications |
 | `timerSoundPath` | `string` | `""` | Custom timer sound (`""` = from assets/) |
 | `idleLockTimeout` | `number` | `300` | Idle time before the screen locks, seconds (`0` = never) |

@@ -225,6 +225,32 @@ AnimatedPopup {
         color: root.reachable ? window.palette.accent : window.palette.mutedAlt
         font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
       }
+      // Mute toggle — іконка дзвінка з перекресленням
+      Rectangle {
+        visible: root.installed
+        width: 24; height: 24; radius: 4
+        color: muteArea.containsMouse ? window.palette.hoverOverlay : (window.appConfig.cfg.kcdMuted ? window.palette.bg2 : "transparent")
+        border.width: window.appConfig.cfg.kcdMuted ? 1 : 0
+        border.color: window.appConfig.cfg.kcdMuted ? window.palette.danger : "transparent"
+        Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
+        Text {
+          anchors.centerIn: parent
+          text: window.appConfig.cfg.kcdMuted ? "\uF1F6" : "\uF0F3"
+          color: window.appConfig.cfg.kcdMuted ? window.palette.danger : (muteArea.containsMouse ? window.palette.green : window.palette.mutedAlt)
+          font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
+          Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
+        }
+        MouseArea {
+          id: muteArea
+          anchors.fill: parent
+          hoverEnabled: true
+          cursorShape: Qt.PointingHandCursor
+          onClicked: {
+            window.appConfig.cfg.kcdMuted = !window.appConfig.cfg.kcdMuted
+            window.appConfig.saveToFile()
+          }
+        }
+      }
     }
 
 
@@ -342,6 +368,24 @@ AnimatedPopup {
         visible: root.devicesExpanded
         Layout.fillWidth: true
         spacing: 4
+        // Mute row — дублює header іконку, але з явним ToggleSwitch
+        RowLayout {
+          Layout.fillWidth: true
+          spacing: 8
+          Text {
+            text: "Mute phone"
+            color: window.palette.textLight
+            font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
+            Layout.fillWidth: true
+          }
+          ToggleSwitch {
+            checked: window.appConfig.cfg.kcdMuted
+            palette: window.palette
+            appConfig: window.appConfig
+            checkedColor: window.palette.danger
+            onToggled: v => { window.appConfig.cfg.kcdMuted = v; window.appConfig.saveToFile() }
+          }
+        }
         RowLayout {
           Layout.fillWidth: true
           spacing: 6

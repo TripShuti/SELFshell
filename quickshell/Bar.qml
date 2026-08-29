@@ -559,22 +559,31 @@ PanelWindow {
     visible: false
   }
 
-  // Міст: сповіщення з телефону → системний тост (поважає DND)
-  // Маркування: "Phone • WhatsApp" + іконка додатку (або phone fallback) + phone badge
+  // Міст: сповіщення з телефону → системний тост (поважає DND + kcdMuted)
+  // Маркування: "Phone • WhatsApp" + іконка додатку (файл з kcd або тема) + phone badge
   Connections {
     target: kdeConnect
     function onNotificationReceived(notif) {
       if (root.appConfig.cfg.dndEnabled) return
+      if (root.appConfig.cfg.kcdMuted) return
       notif.tracked = true
       var phoneApp = notif.appName ? "Phone • " + notif.appName : "Phone"
-      // іконка додатку: payload.icon (файл з kcd fetch_icons) або appName lowercased, fallback phone
+      // іконка додатку: payload.icon (файл з kcd fetch_icons) або підбір за ім'ям
       var iconSrc = notif.icon ?? ""
       if (!iconSrc) {
-        var cand = String(notif.appName ?? "").toLowerCase().replace(/\s+/g, "-")
-        // спробуємо знайти іконку за ім'ям додатку, інакше phone
-        var p = Quickshell.iconPath(cand, true)
-        if (p === "") p = Quickshell.iconPath(cand, false)
-        iconSrc = p !== "" ? cand : "phone"
+        var base = String(notif.appName ?? "").toLowerCase().replace(/\s+/g, "-")
+        var cands = [base, "org." + base + ".desktop", base + "-desktop", base.replace(/^org\./, "")]
+        // Telegram → org.telegram.desktop, WhatsApp → whatsapp, etc.
+        if (base === "telegram") cands.unshift("org.telegram.desktop", "telegram-desktop")
+        if (base === "whatsapp") cands.unshift("whatsapp", "whatsapp-desktop")
+        iconSrc = "phone"
+        for (var i = 0; i < cands.length; i++) {
+          var c = cands[i]
+          if (!c) continue
+          var p = Quickshell.iconPath(c, true)
+          if (p === "") p = Quickshell.iconPath(c, false)
+          if (p !== "") { iconSrc = c; break }
+        }
       }
       notif.isPhone = true
       notifToast.showNotif({
