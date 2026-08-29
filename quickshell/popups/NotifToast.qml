@@ -222,40 +222,20 @@ PopupWindow {
       Item {
         Layout.preferredWidth: 16
         Layout.preferredHeight: 16
-        // Основна іконка додатку (appIcon або fallback)
-        IconImage {
-          id: appIconImage
-          anchors.fill: parent
-          visible: root.resolvedIcon !== ""
-          source: root.resolvedIcon
-        }
-        // Fallback гліф коли іконки нема
+        // Для стабільності поки тільки Text-гліф (IconImage з Gruvbox крашить на camera-photo/phone)
         Text {
           id: fallbackGlyph
           anchors.fill: parent
-          visible: !appIconImage.visible
-          text: root.isPhone ? "\uF10B" : "•"
+          text: {
+            if (root.isPhone) return "\uF10B"
+            if (root.toastAppIcon === "camera-photo") return "\uF030"
+            if (root.toastAppIcon === "dialog-information") return "\uF05A"
+            return "•"
+          }
           color: root.palette ? root.palette.green : "#8aa9fc"
           font.family: root.palette ? root.palette.font : "sans-serif"; font.pixelSize: root.appConfig ? root.appConfig.scaled(12) : 12
           horizontalAlignment: Text.AlignHCenter
           verticalAlignment: Text.AlignVCenter
-        }
-        // Phone badge — маленький телефон в кутку іконки додатку, тільки для phone
-        Rectangle {
-          visible: root.isPhone && appIconImage.visible
-          width: 8; height: 8; radius: 4
-          color: root.palette ? root.palette.bg1 : "#1a1a1a"
-          border.width: 1; border.color: root.palette ? root.palette.green : "#8aa9fc"
-          anchors.right: parent.right
-          anchors.bottom: parent.bottom
-          anchors.rightMargin: -2
-          anchors.bottomMargin: -2
-          Text {
-            anchors.centerIn: parent
-            text: "\uF10B"
-            color: root.palette ? root.palette.green : "#8aa9fc"
-            font.family: root.palette ? root.palette.font : "sans-serif"; font.pixelSize: 6
-          }
         }
       }
 
