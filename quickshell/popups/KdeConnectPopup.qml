@@ -429,8 +429,26 @@ AnimatedPopup {
                   Layout.fillWidth: true
                 }
                 Text {
-                  text: (modelData.connected ? "Connected" : (modelData.state ?? "PAIRED")) + " • " + String(modelData.id ?? "").slice(0,8)
-                  color: modelData.connected ? window.palette.accent : window.palette.mutedAlt
+                  text: {
+                    var st = String(modelData.state ?? modelData.State ?? "").toUpperCase()
+                    var conn = !!modelData.connected
+                    var base = ""
+                    if (st === "PAIRED" && conn) base = "Connected"
+                    else if (st === "PAIRED" && !conn) base = "Paired"
+                    else if (st === "UNPAIRED" && conn) base = "Available"
+                    else if (st === "UNPAIRED" && !conn) base = "Unpaired"
+                    else if (st === "PAIR_REQUESTED") base = "Pair requested"
+                    else if (st === "UNKNOWN") base = conn ? "Available" : "Unknown"
+                    else if (st) base = st.charAt(0) + st.slice(1).toLowerCase()
+                    else base = conn ? "Connected" : "Offline"
+                    return base + " • " + String(modelData.id ?? "").slice(0,8)
+                  }
+                  color: {
+                    var st2 = String(modelData.state ?? modelData.State ?? "").toUpperCase()
+                    var conn2 = !!modelData.connected
+                    var paired2 = st2 === "PAIRED"
+                    return (paired2 && conn2) ? window.palette.accent : window.palette.mutedAlt
+                  }
                   font.family: window.palette.font; font.pixelSize: appConfig.scaled(9)
                   elide: Text.ElideRight
                   Layout.fillWidth: true
