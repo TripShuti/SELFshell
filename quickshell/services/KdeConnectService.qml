@@ -2,6 +2,7 @@
 // KdeConnectService.qml — обгортка над kcd (Go KDE Connect)
 // для battery + ping/ring + share + notification (v1)
 // ============================================================
+import Quickshell
 import Quickshell.Io
 import QtQuick
 
@@ -36,6 +37,46 @@ Item {
   property var pendingPairRequest: null // {deviceId, deviceName, timestamp} — запит з телефону
   signal pairRequested(var req)
   signal pairFinished(var result)
+
+  // SFTP mount dir — читаємо з kcd.toml, без хардкоду ~/Downloads/kcd/mnt
+  property string sftpMountDir: ""
+  property string sftpMountDirDisplay: {
+    if (sftpMountDir === "") return "~/Downloads/kcd/mnt"
+    var home = String(Quickshell.env("HOME") ?? "")
+    if (home && sftpMountDir.startsWith(home)) return "~" + sftpMountDir.substring(home.length)
+    return sftpMountDir
+  }
+  FileView {
+    id: kcdConfigFile
+    path: (String(Quickshell.env("HOME") ?? "") !== "" ? String(Quickshell.env("HOME")) : "/home/trip") + "/.config/kcd/kcd.toml"
+    blockLoading: true
+    onLoaded: root._parseSftpMountDir()
+    onLoadFailed: function(err) {
+      if (String(err) !== "1") console.warn("[kcd] kcd.toml load failed", err)
+      root._parseSftpMountDir()
+    }
+  }
+  function _parseSftpMountDir() {
+    var txt = String(kcdConfigFile.text() ?? "")
+    var m = txt.match(/\[sftp\][\s\S]*?mount_dir\s*=\s*["']([^"']+)["']/)
+    var home = String(Quickshell.env("HOME") ?? "/home/trip")
+    if (m && m[1]) {
+      var dir = String(m[1]).trim()
+      if (dir.startsWith("~/")) dir = home + dir.substring(1)
+      else if (dir.startsWith("$HOME")) dir = dir.replace("$HOME", home)
+      else if (!dir.startsWith("/")) dir = home + "/" + dir
+      root.sftpMountDir = dir
+      return
+    }
+    var dm = txt.match(/download_dir\s*=\s*["']([^"']+)["']/)
+    if (dm && dm[1]) {
+      var d = String(dm[1]).trim()
+      if (d.startsWith("~/")) d = home + d.substring(1)
+      root.sftpMountDir = d.replace(/\/$/, "") + "/mnt"
+      return
+    }
+    root.sftpMountDir = home + "/Downloads/kcd/mnt"
+  }
 
   // Обмеження історії сповіщень (не роздувати пам'ять)
   readonly property int maxNotifications: 10
@@ -453,6 +494,8 @@ Item {
   Component.onCompleted: {
     // перевірка наявності kcd при старті
     installCheck.running = true
+    // підвантажуємо mount_dir з kcd.toml
+    if (kcdConfigFile) kcdConfigFile.reload()
   }
   onEnabledChanged: {
     if (root.enabled) {

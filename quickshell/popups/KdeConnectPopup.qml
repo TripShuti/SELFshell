@@ -522,10 +522,8 @@ AnimatedPopup {
     Text {
       visible: root.installed && root.isPaired && root.devId !== "" && svc && (svc.sftpMountPoint !== "" || svc.sftpInfo !== "")
       text: {
-        // sftpMountPoint з watch — це шлях на телефоні (/storage/...), локально монтується в ~/Downloads/kcd/mnt
-        // Не хардкодимо /home/trip — показуємо ~/ для портативності (kcd mount_dir = ~/Downloads/kcd/mnt за замовч.)
-        var localDisplay = "~/Downloads/kcd/mnt"
-        // якщо svc.sftpMountPoint вже локальний (/tmp,/home,/run) — показуємо його, інакше показуємо локаль + телефон
+        // sftpMountPoint з watch — це шлях на телефоні (/storage/...), sftpMountDir — локальний з kcd.toml
+        var localDisplay = svc ? (svc.sftpMountDirDisplay || "~/Downloads/kcd/mnt") : "~/Downloads/kcd/mnt"
         var remote = svc.sftpMountPoint
         if (remote.startsWith("/tmp") || remote.startsWith("/home") || remote.startsWith("/run")) return "Local: " + remote
         if (remote !== "" && svc.sftpInfo !== "") return "Local: " + localDisplay + " → Phone: " + remote
@@ -539,7 +537,12 @@ AnimatedPopup {
       MouseArea {
         anchors.fill: parent
         cursorShape: Qt.PointingHandCursor
-        onClicked: { openShareProc.command = ["sh", "-c", "xdg-open \"$HOME/Downloads/kcd/mnt\""]; openShareProc.running = true }
+        onClicked: {
+          var dir = svc ? (svc.sftpMountDir || "") : ""
+          if (dir !== "") openShareProc.command = ["xdg-open", dir]
+          else openShareProc.command = ["sh", "-c", "xdg-open \"$HOME/Downloads/kcd/mnt\""]
+          openShareProc.running = true
+        }
       }
     }
 
