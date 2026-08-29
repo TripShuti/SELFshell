@@ -38,15 +38,24 @@ AnimatedPopup {
 
   onVisibleChanged: {
     if (visible) {
+      anchor.window = window
       anchor.edges = PopupAnchor.None
       anchor.gravity = PopupAnchor.None
-      anchor.rect = Qt.rect(
-        (screenW - implicitWidth) / 2,
-        (screenH - implicitHeight) / 2,
-        implicitWidth,
-        implicitHeight
-      )
+      // центруємо по екрану вікна, фолбек 1920×1080 якщо screen ще null
+      var w = window?.screen?.width ?? screenW
+      var h = window?.screen?.height ?? screenH
+      var pw = 380
+      var ph = layout ? layout.implicitHeight + 16 : implicitHeight
+      // якщо ph ще 0 (layout не виміряний) — відкладаємо на наступний фрейм
+      if (ph <= 0) ph = 200
+      anchor.rect = Qt.rect((w - pw) / 2, (h - ph) / 2, pw, ph)
       if (svc) svc.refresh()
+      // повторний замір після того як layout порахував висоту
+      Qt.callLater(function() {
+        if (!visible) return
+        var ph2 = layout ? layout.implicitHeight + 16 : implicitHeight
+        if (ph2 !== ph) anchor.rect = Qt.rect((w - pw) / 2, (h - ph2) / 2, pw, ph2)
+      })
     }
   }
 

@@ -273,14 +273,23 @@ Item {
       root.lastPhoneNotif = _n
       root.lastPhoneNotifTime = Date.now()
       // Зберігаємо в історію навіть при muted (глушимо тільки тост), інакше попап порожній при muted
-      // Дедуп тільки по id (requestReplyId) — однаковий текст "On" має показуватись кілька разів,
-      // а не глушитись як раніше (контент-дедуп блокував повтори з тим самим текстом).
+      // Дедуп: по id (requestReplyId) + по контенту в межах 3с (щоб не спамити 16 однакових підряд,
+      // але дозволити "On" → 5с → "On" знову).
       var arr = root.recentNotifications.slice()
       var isDup = false
-      // Генерований id містить "_" (Date.now_random) — його не дедупликуємо, бо кожне повідомлення унікальне
+      var now = Date.now()
       if (_n.id.indexOf("_") === -1) {
         for (var i = 0; i < arr.length; i++) {
           if (arr[i].id === _n.id) { isDup = true; break }
+        }
+      }
+      if (!isDup) {
+        for (var i = 0; i < arr.length; i++) {
+          var ex = arr[i]
+          if (ex.appName === _n.appName && ex.title === _n.title && ex.text === _n.text && ex.deviceId === _n.deviceId) {
+            var exTime = new Date(ex.timestamp).getTime()
+            if (Math.abs(now - exTime) < 3000) { isDup = true; break }
+          }
         }
       }
       if (!isDup) {
