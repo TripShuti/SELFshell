@@ -198,10 +198,23 @@ PopupWindow {
       visible: root.toastAppName !== ""
       height: 20
 
+      // Іконка додатка: IconImage для звичайних сповіщень, Text-гліф для phone (бо Gruvbox-Plus-Dark не має phone.svg)
       IconImage {
+        id: appIconImage
         Layout.preferredWidth: 16
         Layout.preferredHeight: 16
+        visible: root.toastAppIcon !== "phone" && source !== ""
         source: Quickshell.iconPath(root.toastAppIcon, true)
+      }
+      Text {
+        visible: root.toastAppIcon === "phone" || appIconImage.source === ""
+        text: root.toastAppIcon === "phone" ? "\uF10B" : "•"
+        color: root.palette ? root.palette.green : "#8aa9fc"
+        font.family: root.palette ? root.palette.font : "sans-serif"; font.pixelSize: root.appConfig ? root.appConfig.scaled(12) : 12
+        Layout.preferredWidth: 16
+        Layout.preferredHeight: 16
+        horizontalAlignment: Text.AlignHCenter
+        verticalAlignment: Text.AlignVCenter
       }
 
       Text {
