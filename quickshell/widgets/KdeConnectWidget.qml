@@ -25,7 +25,6 @@ Item {
   implicitHeight: parent?.height ?? 36
 
   readonly property bool hasBattery: charge >= 0
-  readonly property bool isMuted: window.appConfig.cfg.kcdMuted ?? false
 
   function batteryIcon(lvl) {
     var pct = lvl
@@ -72,23 +71,14 @@ Item {
       Behavior on scale { NumberAnimation { duration: window.appConfig.anim(120); easing.type: Easing.OutBack; easing.overshoot: 2.5 } }
     }
 
-    // Крапка досяжності
+    // Крапка досяжності — тільки конект, без індикації mute/dnd
     Rectangle {
-      visible: root.installed && !root.isMuted
+      visible: root.installed
       width: 6; height: 6; radius: 3
       color: root.reachable ? window.palette.green : window.palette.mutedAlt
       opacity: root.reachable ? 1 : 0.5
       Behavior on color { ColorAnimation { duration: window.appConfig.anim(220) } }
       Behavior on opacity { NumberAnimation { duration: window.appConfig.anim(220) } }
-    }
-    // Mute badge — маленький перекреслений дзвінок
-    Text {
-      visible: root.installed && root.isMuted
-      text: "\uF1F6"
-      color: root.hovered ? window.palette.green : window.palette.danger
-      font.family: window.palette.font
-      font.pixelSize: window.appConfig.scaled(10)
-      Behavior on color { ColorAnimation { duration: window.appConfig.anim(220) } }
     }
   }
 
