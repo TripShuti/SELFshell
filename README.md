@@ -32,6 +32,12 @@ no separate lock/idle daemons.
 - Pairing mode: the adapter only accepts new pairings while Discoverable
   is on, and both flags drop together on timeout
 
+**Phone — KDE Connect via [kcd](https://github.com/bethropolis/kcd)**
+- Optional headless Go daemon [kcd](https://github.com/bethropolis/kcd) (`AUR kcd-bin`, `systemctl --user enable --now kcd`), LAN-only `1716/udp+tcp` `1739:1764/tcp`, no KDE stack, no telemetry
+- Battery + reachable dot, Ping / Ring (FindMyPhone), Share file (`zenity`/`kdialog` → `kcd share`), Clipboard push (`kcd clipboard`), SFTP browse/mount/unmount (`kcd sftp` → `~/Downloads/kcd/mnt` ↔ `/storage/emulated/0`), notifications (`Phone • App` in toast + Control Center, deduplicated, `kcdMuted` mute without disconnect)
+- Devices popup: battery bar, per-device Pair/Unpair, Pair new device (`kcd pair`), Connect by IP (`kcd connect`), `kcdMuted` toggle (header bell `F0F3`/`F1F6` + widget badge)
+- MPRIS/media, volume and lock work via `kcd` plugins automatically (no extra UI)
+
 **Dynamic Theming**
 - Wallpaper-based palette generation via `matugen`
 - Live reload — terminal (Kitty), prompt (Starship), file manager (Yazi) all update
@@ -68,6 +74,7 @@ no separate lock/idle daemons.
 | [Starship](https://starship.rs) | Prompt 
 | [Yazi](https://yazi-rs.github.io) | File manager 
 | [Fastfetch](https://github.com/fastfetch-cli/fastfetch) | System info
+| [kcd](https://github.com/bethropolis/kcd) | Headless KDE Connect daemon (phone, optional, AUR `kcd-bin`) |
 
 ## Quick start for fresh installed Arch
 I haven't tested it on an existing setup, but I assume everything works fine there too.
@@ -174,6 +181,7 @@ array in the script for the complete list. Key packages:
 | `greetd greetd-tuigreet` | TUI login screen (starts Hyprland via uwsm) |
 | `uwsm` | User session manager (session start from greetd / fallback autostart) |
 | `python-requests python-dotenv` | Genshin Impact widget (Hoyolab API) |
+| `kcd` ([kcd](https://github.com/bethropolis/kcd), AUR `kcd-bin`) | Phone — KDE Connect without KDE stack (optional, `systemctl --user enable --now kcd`, `sshfs` for SFTP, `zenity`/`kdialog` for Share) |
 
 ## Structure
 
@@ -187,12 +195,12 @@ kitty/       - terminal config
 quickshell/  - QML panels, core, popups, widgets, monitors, scripts, data, assets, services
              - core/ — shell infrastructure (AppConfig, IdleManager, LockScreen, etc.)
              - monitors/ — background data monitors (Cava, Genshin)
-             - widgets/ — panel widgets (14 total)
-             - popups/ — popup windows (16 total, incl. settings sections)
+             - widgets/ — panel widgets (15 total, incl. KdeConnectWidget)
+             - popups/ — popup windows (17 total, incl. KdeConnectPopup + settings sections)
              - scripts/ — helper scripts (palette, Genshin, etc.)
-             - data/ — persisted state (config.json, calendar-tasks, etc.)
+             - data/ — persisted state (config.json, calendar-tasks, eq.json, etc.)
              - assets/ — icons, sounds
-             - services/ — pairing agent, MPRIS tracklist bridge, cava config
+             - services/ — pairing agent, MPRIS tracklist bridge, cava config, KdeConnectService
              - pam/password.conf — PAM config for lock screen auth
 starship/    - prompt config
 yazi/        - file manager config, keybindings, themes
