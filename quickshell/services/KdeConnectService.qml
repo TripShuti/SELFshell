@@ -229,20 +229,30 @@ Item {
     if (t === "notification" || t === "notification.received") {
       // payload.icon може бути шляхом до кешованого файлу (kcd fetch_icons) або іменем
       var iconSrc = String(payload.icon ?? payload.appIcon ?? payload.iconPath ?? "")
+      var nid = String(payload.id ?? payload.key ?? "")
+      // kcd інколи шле одне й те саме сповіщення повторно (при реконекті, при watch рестарті) — дедуплікуємо
       var n = {
         appName: String(payload.appName ?? payload.app ?? "Phone"),
         title: String(payload.title ?? payload.summary ?? ""),
         text: String(payload.text ?? payload.body ?? ""),
-        id: String(payload.id ?? payload.key ?? Date.now()),
+        id: nid !== "" ? nid : String(Date.now()) + "_" + Math.random().toString(36).slice(2,6),
         icon: iconSrc,
         deviceId: devId,
         timestamp: ev.timestamp ?? new Date().toISOString()
       }
       var arr = root.recentNotifications.slice()
+      var isDup = false
+      for (var i = 0; i < arr.length; i++) {
+        var ex = arr[i]
+        if (ex.id === n.id && n.id.indexOf("_") === -1) { isDup = true; break }
+        // якщо id згенерований (з Date.now), порівнюємо контент
+        if (ex.appName === n.appName && ex.title === n.title && ex.text === n.text && ex.deviceId === n.deviceId) { isDup = true; break }
+      }
+      if (isDup) return
       arr.unshift(n)
       if (arr.length > root.maxNotifications) arr = arr.slice(0, root.maxNotifications)
       root.recentNotifications = arr
-      // показати тост через Bar (сигнал)
+      // показати тост через Bar (сигнал) — тільки для нових
       root.notificationReceived(n)
       return
     }
