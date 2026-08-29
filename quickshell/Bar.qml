@@ -560,13 +560,16 @@ PanelWindow {
   }
 
   // Міст: сповіщення з телефону → системний тост (поважає DND)
+  // Маркування: "Phone • WhatsApp" + phone icon, щоб відрізнити від локальних
   Connections {
     target: kdeConnect
     function onNotificationReceived(notif) {
       if (root.appConfig.cfg.dndEnabled) return
       notif.tracked = true
+      // Маркуємо як з телефону: префікс Phone • і phone icon
+      var phoneApp = notif.appName ? "Phone • " + notif.appName : "Phone"
       notifToast.showNotif({
-        appName: notif.appName,
+        appName: phoneApp,
         summary: notif.title,
         body: notif.text,
         appIcon: "phone",
