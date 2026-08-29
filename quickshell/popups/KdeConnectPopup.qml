@@ -513,29 +513,38 @@ AnimatedPopup {
       Rectangle {
         property bool hovered: false
         width: 56; height: 22; radius: 6
-        color: hovered ? window.palette.hoverOverlay : window.palette.bg1
+        color: hovered ? window.palette.accent : window.palette.bg1
         border.width: 1; border.color: window.palette.bg2
         Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
         enabled: root.reachable
         opacity: root.reachable ? 1 : 0.5
-        Text { anchors.centerIn: parent; text: "Mount"; color: window.palette.textLight; font.family: window.palette.font; font.pixelSize: appConfig.scaled(10) }
+        Text { anchors.centerIn: parent; text: "Mount"; color: parent.hovered ? window.palette.bg0H : window.palette.textLight; font.family: window.palette.font; font.pixelSize: appConfig.scaled(10) }
         MouseArea { anchors.fill: parent; hoverEnabled: true; onEntered: parent.hovered = true; onExited: parent.hovered = false; onClicked: root.doSftpMount() }
       }
       Rectangle {
         property bool hovered: false
         width: 64; height: 22; radius: 6
-        color: hovered ? window.palette.hoverOverlay : window.palette.bg1
+        color: hovered ? window.palette.accent : window.palette.bg1
         border.width: 1; border.color: window.palette.bg2
         Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
         enabled: root.reachable
         opacity: root.reachable ? 1 : 0.5
-        Text { anchors.centerIn: parent; text: "Unmount"; color: window.palette.textLight; font.family: window.palette.font; font.pixelSize: appConfig.scaled(10) }
+        Text { anchors.centerIn: parent; text: "Unmount"; color: parent.hovered ? window.palette.bg0H : window.palette.textLight; font.family: window.palette.font; font.pixelSize: appConfig.scaled(10) }
         MouseArea { anchors.fill: parent; hoverEnabled: true; onEntered: parent.hovered = true; onExited: parent.hovered = false; onClicked: root.doSftpUnmount() }
       }
     }
     Text {
-      visible: root.installed && root.devId !== "" && svc && svc.sftpMountPoint !== ""
-      text: "Mount: " + svc.sftpMountPoint
+      visible: root.installed && root.devId !== "" && svc && (svc.sftpMountPoint !== "" || svc.sftpInfo !== "")
+      text: {
+        // sftpMountPoint з watch — це шлях на телефоні (/storage/...), локально монтується в ~/Downloads/kcd/mnt
+        var local = "/home/trip/Downloads/kcd/mnt"
+        // якщо svc.sftpMountPoint вже локальний (/tmp,/home,/run) — показуємо його, інакше показуємо локаль + телефон
+        var remote = svc.sftpMountPoint
+        if (remote.startsWith("/tmp") || remote.startsWith("/home") || remote.startsWith("/run")) return "Local: " + remote
+        if (remote !== "" && svc.sftpInfo !== "") return "Local: " + local + " → Phone: " + remote
+        if (remote !== "") return "Phone: " + remote + " → Local: " + local
+        return svc.sftpInfo !== "" ? svc.sftpInfo : "Local: " + local
+      }
       color: window.palette.mutedAlt
       font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
       elide: Text.ElideRight
@@ -543,18 +552,8 @@ AnimatedPopup {
       MouseArea {
         anchors.fill: parent
         cursorShape: Qt.PointingHandCursor
-        onClicked: { openShareProc.command = ["xdg-open", svc.sftpMountPoint]; openShareProc.running = true }
+        onClicked: { openShareProc.command = ["xdg-open", "/home/trip/Downloads/kcd/mnt"]; openShareProc.running = true }
       }
-    }
-    Text {
-      visible: root.installed && root.devId !== "" && svc && svc.sftpInfo !== "" && svc.sftpMountPoint === ""
-      text: svc ? svc.sftpInfo : ""
-      color: window.palette.mutedAlt
-      font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
-      wrapMode: Text.WordWrap
-      Layout.fillWidth: true
-      maximumLineCount: 2
-      elide: Text.ElideRight
     }
 
     // Роздільник
