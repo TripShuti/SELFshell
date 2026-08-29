@@ -30,6 +30,8 @@ Item {
   property var sftpVolumes: []
   property string sftpMountPoint: ""
   property string sftpInfo: ""
+  property var lastPhoneNotif: null // для дедупу з NotificationServer (kcd notify-send)
+  property double lastPhoneNotifTime: 0
   property string errorText: ""
 
   // Обмеження історії сповіщень (не роздувати пам'ять)
@@ -228,11 +230,23 @@ Item {
       return
     }
     if (t === "notification" || t === "notification.received") {
-      if (root.muted) return
       // payload.icon може бути шляхом до кешованого файлу (kcd fetch_icons) або іменем
       var iconSrc = String(payload.icon ?? payload.appIcon ?? payload.iconPath ?? "")
       var nid = String(payload.id ?? payload.key ?? "")
       // kcd інколи шле одне й те саме сповіщення повторно (при реконекті, при watch рестарті) — дедуплікуємо
+      // Зберігаємо останнє для дедупу з NotificationServer (kcd notify-send дублює)
+      var _n = {
+        appName: String(payload.appName ?? payload.app ?? "Phone"),
+        title: String(payload.title ?? payload.summary ?? ""),
+        text: String(payload.text ?? payload.body ?? ""),
+        id: nid !== "" ? nid : String(Date.now()) + "_" + Math.random().toString(36).slice(2,6),
+        icon: iconSrc,
+        deviceId: devId,
+        timestamp: ev.timestamp ?? new Date().toISOString()
+      }
+      root.lastPhoneNotif = _n
+      root.lastPhoneNotifTime = Date.now()
+      if (root.muted) return
       var n = {
         appName: String(payload.appName ?? payload.app ?? "Phone"),
         title: String(payload.title ?? payload.summary ?? ""),

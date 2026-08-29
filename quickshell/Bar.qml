@@ -360,6 +360,22 @@ PanelWindow {
     onNotification: (notif) => {
       // DND — повністю ховає сповіщення (тост, список, звук)
       if (root.appConfig.cfg.dndEnabled) return
+      // kcdMuted — ховає телефонні сповіщення що дублюються через notify-send (kcd notification plugin)
+      // Перевіряємо чи це телефонне сповіщення за останнім watch-події (5с вікно, збіг app/title/body)
+      if (root.appConfig.cfg.kcdMuted && root.kdeConnect && root.kdeConnect.lastPhoneNotif) {
+        var last = root.kdeConnect.lastPhoneNotif
+        var age = Date.now() - (root.kdeConnect.lastPhoneNotifTime ?? 0)
+        if (age < 5000) {
+          var a = String(notif.appName ?? ""), b = String(notif.summary ?? notif.title ?? ""), c = String(notif.body ?? notif.text ?? "")
+          if (a === last.appName && b === last.title && c === last.text) return
+          // kcd notify-send інколи ставить appName = телефонний app, summary = title — перевіряємо і так
+          if (a === last.appName || b === last.title) {
+            // якщо збіг по app+title, вважаємо телефонним і мутимо
+            // щоб не блокувати всі системні Telegram, перевіряємо що останнє phone-сповіщення було щойно
+            if (last.appName && a === last.appName) return
+          }
+        }
+      }
       notif.tracked = true
       notifToast.showNotif(notif)
       // Лічильник непрочитаних: росте, поки центр керування закритий
