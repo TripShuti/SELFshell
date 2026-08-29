@@ -49,14 +49,17 @@ Item {
       }
     }
     onExited: (code) => {
+      console.log("[kcd] installCheck exit", code)
       root.installed = (code === 0)
       if (root.installed && root.enabled) {
-        // одразу опитуємо пристрої і стартуємо watch
+        console.log("[kcd] install ok, start devices + watch")
+        devicesProc.command = ["kcd", "devices", "--json"]
         devicesProc.running = true
         watchRestartTimer.stop()
         if (!watchProc.running) watchProc.running = true
         pollTimer.running = true
       } else {
+        console.log("[kcd] not installed or disabled")
         watchProc.running = false
         pollTimer.running = false
       }
@@ -67,11 +70,15 @@ Item {
   // якщо watch ще не прислав battery)
   Process {
     id: devicesProc
+    command: ["kcd", "devices", "--json"]
+    onStarted: console.log("[kcd] devicesProc started")
+    onExited: (code, status) => console.log("[kcd] devicesProc exited", code, status, "text", String(devicesOut.text ?? "").slice(0,100))
     stdout: StdioCollector {
       id: devicesOut
       waitForEnd: true
       onStreamFinished: {
         var txt = String(devicesOut.text ?? "").trim()
+        console.log("[kcd] devicesOut", txt.slice(0,200))
         if (!txt) return
         try {
           var arr = JSON.parse(txt)
@@ -87,11 +94,6 @@ Item {
         }
       }
     }
-    onExited: (code) => {
-      if (code !== 0) {
-        // kcd не запущено або daemon не відповідає — не спамимо
-      }
-    }
   }
 
   Timer {
@@ -99,7 +101,10 @@ Item {
     interval: 30000
     repeat: true
     onTriggered: {
-      if (root.installed && root.enabled && !devicesProc.running) devicesProc.running = true
+      if (root.installed && root.enabled && !devicesProc.running) {
+        devicesProc.command = ["kcd", "devices", "--json"]
+        devicesProc.running = true
+      }
     }
   }
 
@@ -165,7 +170,12 @@ Item {
     if (primary) {
       root.primaryDeviceId = String(primary.ID ?? primary.Id ?? primary.id ?? primary.deviceId ?? "")
       root.primaryDeviceName = String(primary.Name ?? primary.name ?? primary.deviceName ?? primary.DeviceName ?? root.primaryDeviceId)
-      root.isReachable = !!(primary.Connected ?? primary.connected ?? false)
+      // kcd інколи повертає state PAIRED але connected true — вважаємо reachable якщо connected true або state CONNECTED
+      var st = String(primary.state ?? primary.State ?? "")
+      var isConn = !!(primary.Connected ?? primary.connected ?? false)
+      if (!isConn && st.toUpperCase() === "CONNECTED") isConn = true
+      root.isReachable = isConn
+      console.log("[kcd] _updatePrimary devId", root.primaryDeviceId, "name", root.primaryDeviceName, "isReachable", root.isReachable, "state", st, "connected", isConn, "raw", JSON.stringify(primary).slice(0,120))
       // батарея може бути в самому device об'єкті
       var ch = primary.Battery ?? primary.battery
       if (ch !== undefined && ch !== null) {
@@ -187,16 +197,24 @@ Item {
     if (!ev || !ev.type) return
     var t = String(ev.type)
     var payload = ev.payload ?? ev.data ?? {}
-    var devId = String(ev.deviceId ?? ev.deviceID ?? payload.deviceId ?? "")
+    var devId = String(ev.deviceId ?? ev.deviceID ?? payload.deviceId ?? payload.id ?? "")
     // оновлюємо devices через опитування при зміні підключення
     if (t === "device.connected" || t === "device.disconnected" || t === "device.paired" || t === "device.unpaired" || t === "pair.requested" || t === "pair.accepted") {
-      if (!devicesProc.running) devicesProc.running = true
-      // pair.requested — можна показати в попапі, але поки просто оновлюємо
-      if (t === "device.connected") {
+      console.log("[kcd] device event", t, devId, "primary", root.primaryDeviceId)
+      // якщо прийшов конект і primary ще порожній — заповнюємо з payload
+      if ((t === "device.connected" || t === "device.paired" || t === "pair.accepted") && devId) {
+        if (!root.primaryDeviceId) {
+          root.primaryDeviceId = devId
+          root.primaryDeviceName = String(payload.name ?? payload.deviceName ?? devId)
+          console.log("[kcd] set primary from event", root.primaryDeviceId, root.primaryDeviceName)
+        }
         root.isReachable = true
       } else if (t === "device.disconnected") {
-        // якщо це primary — позначити не reachable, повний список оновить poll
-        if (!devId || devId === root.primaryDeviceId) root.isReachable = false
+        if (!devId || devId === root.primaryDeviceId || root.primaryDeviceId === "") root.isReachable = false
+      }
+      if (!devicesProc.running) {
+        devicesProc.command = ["kcd", "devices", "--json"]
+        devicesProc.running = true
       }
       return
     }
@@ -205,10 +223,14 @@ Item {
       var charging = payload.charging ?? payload.isCharging ?? false
       if (charge !== undefined && charge !== null) root.batteryCharge = Math.round(Number(charge))
       root.batteryCharging = !!charging
-      // також оновити primary якщо збігається
-      if (devId && devId === root.primaryDeviceId) {
-        // вже оновлено
+      // якщо прийшла батарея — девайс точно reachable, навіть якщо devices ще не оновився
+      if (root.batteryCharge >= 0) root.isReachable = true
+      if (devId && !root.primaryDeviceId) {
+        root.primaryDeviceId = devId
+        root.primaryDeviceName = String(payload.name ?? devId)
+        console.log("[kcd] set primary from battery", devId)
       }
+      console.log("[kcd] battery", charge, charging, "isReachable", root.isReachable, "devId", devId, "primary", root.primaryDeviceId)
       return
     }
     if (t === "notification" || t === "notification.received") {
@@ -249,7 +271,11 @@ Item {
   // Process-и живуть в попапі, щоб не множити логіку помилок тут.
   // Лишаємо для сумісності, якщо хтось викличе напряму.
   function refresh() {
-    if (!devicesProc.running) devicesProc.running = true
+    console.log("[kcd] refresh called, devices running", devicesProc.running)
+    if (!devicesProc.running) {
+      devicesProc.command = ["kcd", "devices", "--json"]
+      devicesProc.running = true
+    }
   }
 
   // Життєвий цикл
@@ -261,7 +287,10 @@ Item {
     if (root.enabled) {
       if (!root.installed) installCheck.running = true
       else {
-        if (!devicesProc.running) devicesProc.running = true
+        if (!devicesProc.running) {
+          devicesProc.command = ["kcd", "devices", "--json"]
+          devicesProc.running = true
+        }
         if (!watchProc.running) watchProc.running = true
         pollTimer.running = true
       }

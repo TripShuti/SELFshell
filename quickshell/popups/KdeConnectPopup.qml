@@ -125,6 +125,15 @@ AnimatedPopup {
         font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
       }
     }
+    // Debug — тимчасово, показує реальний стан сервісу
+    Text {
+      visible: true
+      text: "[debug] installed=" + root.installed + " reachable=" + root.reachable + " devId=" + (root.devId ? root.devId.slice(0,8) : "none") + " charge=" + root.charge
+      color: window.palette.mutedAlt
+      font.family: window.palette.font; font.pixelSize: appConfig.scaled(9)
+      Layout.fillWidth: true
+      elide: Text.ElideRight
+    }
 
     // Статус kcd не встановлено
     Rectangle {
