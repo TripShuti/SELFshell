@@ -26,6 +26,10 @@ Item {
   property var recentNotifications: [] // [{appName,title,text,deviceId,timestamp}]
   property var shareProgress: null // {file,current,total} або null
   property string lastSharePath: ""
+  property string lastClipboard: ""
+  property var sftpVolumes: []
+  property string sftpMountPoint: ""
+  property string sftpInfo: ""
   property string errorText: ""
 
   // Обмеження історії сповіщень (не роздувати пам'ять)
@@ -250,6 +254,27 @@ Item {
     if (t === "share.complete" || t === "share.received") {
       root.shareProgress = null
       root.lastSharePath = String(payload.path ?? payload.file ?? "")
+      return
+    }
+    // Clipboard — телефон прислав буфер (або підтвердження push)
+    if (t.indexOf("clipboard") !== -1) {
+      var clipTxt = String(payload.content ?? payload.text ?? payload.clipboard ?? payload.data ?? "")
+      if (clipTxt) {
+        root.lastClipboard = clipTxt.slice(0, 500)
+        // показуємо тост, щоб було видно що прийшло
+        root.notificationReceived({ appName: "Clipboard", title: "From phone", text: clipTxt.slice(0, 80), appIcon: "edit-paste", actions: [] })
+      }
+      return
+    }
+    // SFTP — volumes / mount / info
+    if (t.indexOf("sftp") !== -1) {
+      if (payload.volumes && Array.isArray(payload.volumes)) root.sftpVolumes = payload.volumes
+      else if (payload.volume) root.sftpVolumes = [payload.volume]
+      else if (Array.isArray(payload)) root.sftpVolumes = payload
+      if (payload.mountPoint) root.sftpMountPoint = String(payload.mountPoint)
+      if (payload.path) root.sftpMountPoint = String(payload.path)
+      if (payload.info) root.sftpInfo = String(payload.info)
+      else root.sftpInfo = JSON.stringify(payload).slice(0, 200)
       return
     }
   }

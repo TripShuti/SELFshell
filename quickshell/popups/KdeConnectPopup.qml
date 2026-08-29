@@ -49,7 +49,7 @@ AnimatedPopup {
     }
   }
 
-  // --- Дії: ping / ring / share ---
+  // --- Дії: ping / ring / share / clipboard / sftp ---
   Process { id: pingProc; onExited: running = false }
   Process { id: ringProc; onExited: running = false }
   Process {
@@ -58,6 +58,47 @@ AnimatedPopup {
   }
   Process {
     id: openShareProc
+    onExited: running = false
+  }
+  Process { id: clipboardPushProc; onExited: (code) => { running = false; if (code !== 0) console.warn("[kcd] clipboard push failed", code) } }
+  Process { id: sftpRequestProc; onExited: running = false }
+  Process { id: sftpMountProc; onExited: running = false }
+  Process { id: sftpUnmountProc; onExited: running = false }
+  Process {
+    id: sftpVolumesProc
+    stdout: StdioCollector {
+      id: sftpVolumesOut
+      waitForEnd: true
+      onStreamFinished: {
+        var txt = String(sftpVolumesOut.text ?? "").trim()
+        if (!txt) return
+        try {
+          // kcd sftp volumes може повернути JSON або текст — пробуємо JSON
+          var arr = JSON.parse(txt)
+          if (Array.isArray(arr)) svc.sftpVolumes = arr
+          else if (arr.volumes) svc.sftpVolumes = arr.volumes
+          else svc.sftpVolumes = [arr]
+        } catch (e) {
+          // текстовий список — розбиваємо по рядках
+          var lines = txt.split("\n").filter(s => s.trim() !== "")
+          svc.sftpVolumes = lines
+          svc.sftpInfo = txt.slice(0,200)
+        }
+      }
+    }
+    onExited: running = false
+  }
+  Process {
+    id: sftpInfoProc
+    stdout: StdioCollector {
+      id: sftpInfoOut
+      waitForEnd: true
+      onStreamFinished: {
+        var txt = String(sftpInfoOut.text ?? "").trim()
+        svc.sftpInfo = txt.slice(0,300)
+        svc.sftpMountPoint = txt.slice(0,200)
+      }
+    }
     onExited: running = false
   }
   // Вибір файлу для share — через zenity/kdialog (FileDialog крашить quickshell)
@@ -94,6 +135,36 @@ AnimatedPopup {
     // пробуємо zenity → kdialog → yad, тихо якщо нічого нема
     sharePickerProc.command = ["sh", "-c", "zenity --file-selection 2>/dev/null || kdialog --getopenfilename \"$HOME\" 2>/dev/null || yad --file-selection 2>/dev/null || true"]
     sharePickerProc.running = true
+  }
+  function doClipboardPush() {
+    if (!root.devId) return
+    clipboardPushProc.command = ["kcd", "clipboard", root.devId]
+    clipboardPushProc.running = true
+  }
+  function doSftpRequest() {
+    if (!root.devId) return
+    sftpRequestProc.command = ["kcd", "sftp", "request", root.devId]
+    sftpRequestProc.running = true
+  }
+  function doSftpMount() {
+    if (!root.devId) return
+    sftpMountProc.command = ["kcd", "sftp", "mount", root.devId]
+    sftpMountProc.running = true
+  }
+  function doSftpUnmount() {
+    if (!root.devId) return
+    sftpUnmountProc.command = ["kcd", "sftp", "unmount", root.devId]
+    sftpUnmountProc.running = true
+  }
+  function doSftpBrowse() {
+    if (!root.devId) return
+    sftpMountProc.command = ["kcd", "sftp", "browse", root.devId]
+    sftpMountProc.running = true
+  }
+  function doSftpVolumes() {
+    if (!root.devId) return
+    sftpVolumesProc.command = ["kcd", "sftp", "volumes", root.devId]
+    sftpVolumesProc.running = true
   }
 
   ColumnLayout {
@@ -370,6 +441,120 @@ AnimatedPopup {
           openShareProc.running = true
         }
       }
+    }
+
+    // --- Clipboard ---
+    RowLayout {
+      visible: root.installed && root.devId !== ""
+      Layout.fillWidth: true
+      spacing: 6
+      Text {
+        text: "Clipboard"
+        color: window.palette.accent
+        font.family: window.palette.font; font.pixelSize: appConfig.scaled(11); font.bold: true
+        Layout.fillWidth: true
+      }
+      Rectangle {
+        property bool hovered: false
+        width: 90; height: 24; radius: 6
+        color: hovered ? window.palette.accent : window.palette.bg1
+        border.width: 1; border.color: window.palette.bg2
+        Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
+        enabled: root.reachable
+        opacity: root.reachable ? 1 : 0.5
+        Text {
+          anchors.centerIn: parent
+          text: "Push"
+          color: parent.hovered ? window.palette.bg0H : window.palette.textLight
+          font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
+        }
+        MouseArea {
+          anchors.fill: parent
+          hoverEnabled: true
+          onEntered: parent.hovered = true
+          onExited: parent.hovered = false
+          onClicked: root.doClipboardPush()
+        }
+      }
+    }
+    Text {
+      visible: svc && svc.lastClipboard !== ""
+      text: "Last from phone: " + svc.lastClipboard.slice(0, 60)
+      color: window.palette.mutedAlt
+      font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
+      wrapMode: Text.WordWrap
+      Layout.fillWidth: true
+      maximumLineCount: 2
+      elide: Text.ElideRight
+    }
+
+    // --- SFTP (файли телефону) ---
+    RowLayout {
+      visible: root.installed && root.devId !== ""
+      Layout.fillWidth: true
+      spacing: 6
+      Text {
+        text: "Files"
+        color: window.palette.accent
+        font.family: window.palette.font; font.pixelSize: appConfig.scaled(11); font.bold: true
+        Layout.fillWidth: true
+      }
+      Rectangle {
+        property bool hovered: false
+        width: 56; height: 22; radius: 6
+        color: hovered ? window.palette.accent : window.palette.bg1
+        border.width: 1; border.color: window.palette.bg2
+        Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
+        enabled: root.reachable
+        opacity: root.reachable ? 1 : 0.5
+        Text { anchors.centerIn: parent; text: "Browse"; color: parent.hovered ? window.palette.bg0H : window.palette.textLight; font.family: window.palette.font; font.pixelSize: appConfig.scaled(10) }
+        MouseArea { anchors.fill: parent; hoverEnabled: true; onEntered: parent.hovered = true; onExited: parent.hovered = false; onClicked: root.doSftpBrowse() }
+      }
+      Rectangle {
+        property bool hovered: false
+        width: 56; height: 22; radius: 6
+        color: hovered ? window.palette.hoverOverlay : window.palette.bg1
+        border.width: 1; border.color: window.palette.bg2
+        Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
+        enabled: root.reachable
+        opacity: root.reachable ? 1 : 0.5
+        Text { anchors.centerIn: parent; text: "Mount"; color: window.palette.textLight; font.family: window.palette.font; font.pixelSize: appConfig.scaled(10) }
+        MouseArea { anchors.fill: parent; hoverEnabled: true; onEntered: parent.hovered = true; onExited: parent.hovered = false; onClicked: root.doSftpMount() }
+      }
+      Rectangle {
+        property bool hovered: false
+        width: 64; height: 22; radius: 6
+        color: hovered ? window.palette.hoverOverlay : window.palette.bg1
+        border.width: 1; border.color: window.palette.bg2
+        Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
+        enabled: root.reachable
+        opacity: root.reachable ? 1 : 0.5
+        Text { anchors.centerIn: parent; text: "Unmount"; color: window.palette.textLight; font.family: window.palette.font; font.pixelSize: appConfig.scaled(10) }
+        MouseArea { anchors.fill: parent; hoverEnabled: true; onEntered: parent.hovered = true; onExited: parent.hovered = false; onClicked: root.doSftpUnmount() }
+      }
+    }
+    Text {
+      visible: root.installed && root.devId !== "" && svc && svc.sftpMountPoint !== ""
+      text: "Mount: " + svc.sftpMountPoint
+      color: window.palette.mutedAlt
+      font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
+      elide: Text.ElideRight
+      Layout.fillWidth: true
+      MouseArea {
+        anchors.fill: parent
+        cursorShape: Qt.PointingHandCursor
+        onClicked: { openShareProc.command = ["xdg-open", svc.sftpMountPoint]; openShareProc.running = true }
+      }
+    }
+    Text {
+      visible: root.installed && root.devId !== "" && svc && svc.sftpInfo !== "" && svc.sftpMountPoint === ""
+      text: svc ? svc.sftpInfo : ""
+      color: window.palette.mutedAlt
+      font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
+      wrapMode: Text.WordWrap
+      Layout.fillWidth: true
+      maximumLineCount: 2
+      elide: Text.ElideRight
     }
 
     // Роздільник
