@@ -2,7 +2,6 @@
 // KdeConnectPopup.qml — попап телефону (kcd): батарея, ping/ring,
 // share, сповіщення
 // ============================================================
-import Quickshell
 import Quickshell.Io
 import "../core"
 import QtQuick
@@ -66,46 +65,8 @@ AnimatedPopup {
     onExited: running = false
   }
   Process { id: clipboardPushProc; onExited: (code) => { running = false; if (code !== 0) console.warn("[kcd] clipboard push failed", code) } }
-  Process { id: sftpRequestProc; onExited: running = false }
   Process { id: sftpMountProc; onExited: running = false }
   Process { id: sftpUnmountProc; onExited: running = false }
-  Process {
-    id: sftpVolumesProc
-    stdout: StdioCollector {
-      id: sftpVolumesOut
-      waitForEnd: true
-      onStreamFinished: {
-        var txt = String(sftpVolumesOut.text ?? "").trim()
-        if (!txt) return
-        try {
-          // kcd sftp volumes може повернути JSON або текст — пробуємо JSON
-          var arr = JSON.parse(txt)
-          if (Array.isArray(arr)) svc.sftpVolumes = arr
-          else if (arr.volumes) svc.sftpVolumes = arr.volumes
-          else svc.sftpVolumes = [arr]
-        } catch (e) {
-          // текстовий список — розбиваємо по рядках
-          var lines = txt.split("\n").filter(s => s.trim() !== "")
-          svc.sftpVolumes = lines
-          svc.sftpInfo = txt.slice(0,200)
-        }
-      }
-    }
-    onExited: running = false
-  }
-  Process {
-    id: sftpInfoProc
-    stdout: StdioCollector {
-      id: sftpInfoOut
-      waitForEnd: true
-      onStreamFinished: {
-        var txt = String(sftpInfoOut.text ?? "").trim()
-        svc.sftpInfo = txt.slice(0,300)
-        svc.sftpMountPoint = txt.slice(0,200)
-      }
-    }
-    onExited: running = false
-  }
   // Вибір файлу для share — через zenity/kdialog (FileDialog крашить quickshell)
   Process {
     id: sharePickerProc
@@ -146,11 +107,6 @@ AnimatedPopup {
     clipboardPushProc.command = ["kcd", "clipboard", root.devId]
     clipboardPushProc.running = true
   }
-  function doSftpRequest() {
-    if (!root.devId) return
-    sftpRequestProc.command = ["kcd", "sftp", "request", root.devId]
-    sftpRequestProc.running = true
-  }
   function doSftpMount() {
     if (!root.devId) return
     sftpMountProc.command = ["kcd", "sftp", "mount", root.devId]
@@ -166,21 +122,19 @@ AnimatedPopup {
     sftpMountProc.command = ["kcd", "sftp", "browse", root.devId]
     sftpMountProc.running = true
   }
-  function doSftpVolumes() {
-    if (!root.devId) return
-    sftpVolumesProc.command = ["kcd", "sftp", "volumes", root.devId]
-    sftpVolumesProc.running = true
-  }
   property string pairStatus: ""
   property string connectIp: ""
+  Timer { id: pairClearTimer; interval: 8000; repeat: false; onTriggered: root.pairStatus = "" }
   function doPair() {
     pairStatus = "Waiting for phone to accept..."
+    pairClearTimer.restart()
     pairProc.command = ["kcd", "pair"]
     pairProc.running = true
   }
   function doPairDevice(id) {
     if (!id) return
     pairStatus = "Pairing " + id.slice(0,8) + "..."
+    pairClearTimer.restart()
     pairProc.command = ["kcd", "pair", id]
     pairProc.running = true
   }
@@ -193,9 +147,11 @@ AnimatedPopup {
     var ip = connectIp.trim()
     if (!ip) return
     pairStatus = "Connecting to " + ip + "..."
+    pairClearTimer.restart()
     connectProc.command = ["kcd", "connect", ip]
     connectProc.running = true
   }
+  onPairStatusChanged: if (pairStatus !== "") pairClearTimer.restart()
 
   ColumnLayout {
     id: layout
@@ -774,13 +730,14 @@ AnimatedPopup {
       visible: root.installed && root.devId !== "" && svc && (svc.sftpMountPoint !== "" || svc.sftpInfo !== "")
       text: {
         // sftpMountPoint з watch — це шлях на телефоні (/storage/...), локально монтується в ~/Downloads/kcd/mnt
-        var local = "/home/trip/Downloads/kcd/mnt"
+        // Не хардкодимо /home/trip — показуємо ~/ для портативності (kcd mount_dir = ~/Downloads/kcd/mnt за замовч.)
+        var localDisplay = "~/Downloads/kcd/mnt"
         // якщо svc.sftpMountPoint вже локальний (/tmp,/home,/run) — показуємо його, інакше показуємо локаль + телефон
         var remote = svc.sftpMountPoint
         if (remote.startsWith("/tmp") || remote.startsWith("/home") || remote.startsWith("/run")) return "Local: " + remote
-        if (remote !== "" && svc.sftpInfo !== "") return "Local: " + local + " → Phone: " + remote
-        if (remote !== "") return "Phone: " + remote + " → Local: " + local
-        return svc.sftpInfo !== "" ? svc.sftpInfo : "Local: " + local
+        if (remote !== "" && svc.sftpInfo !== "") return "Local: " + localDisplay + " → Phone: " + remote
+        if (remote !== "") return "Phone: " + remote + " → Local: " + localDisplay
+        return svc.sftpInfo !== "" ? svc.sftpInfo : "Local: " + localDisplay
       }
       color: window.palette.mutedAlt
       font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
@@ -789,7 +746,7 @@ AnimatedPopup {
       MouseArea {
         anchors.fill: parent
         cursorShape: Qt.PointingHandCursor
-        onClicked: { openShareProc.command = ["xdg-open", "/home/trip/Downloads/kcd/mnt"]; openShareProc.running = true }
+        onClicked: { openShareProc.command = ["sh", "-c", "xdg-open \"$HOME/Downloads/kcd/mnt\""]; openShareProc.running = true }
       }
     }
 

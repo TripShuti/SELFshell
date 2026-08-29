@@ -32,7 +32,6 @@ Item {
   property string sftpInfo: ""
   property var lastPhoneNotif: null // для дедупу з NotificationServer (kcd notify-send)
   property double lastPhoneNotifTime: 0
-  property string errorText: ""
 
   // Обмеження історії сповіщень (не роздувати пам'ять)
   readonly property int maxNotifications: 10
@@ -51,9 +50,6 @@ Item {
     stdout: StdioCollector {
       id: installOut
       waitForEnd: true
-      onStreamFinished: {
-        // exitCode перевіряється в onExited, тут лише текст
-      }
     }
     onExited: (code) => {
       root.installed = (code === 0)
@@ -127,14 +123,23 @@ Item {
         }
       }
     }
-    onStarted: root._watchRestarts = 0
+    onStarted: {
+      // стабільний запуск 60с скидає лічильник падінь — щоб 5 швидких крашів не застрягали назавжди,
+      // але й щоб не скидати одразу (інакше ліміт 5 ніколи не спрацює)
+      watchStableTimer.restart()
+    }
     onExited: (code) => {
+      watchStableTimer.stop()
       if (!root.enabled || !root.installed) return
       // watch впав (daemon перезапустився тощо) — рестарт з бек-оффом
       if (root._watchRestarts < 5) {
         root._watchRestarts++
         watchRestartTimer.interval = Math.min(1000 * Math.pow(2, root._watchRestarts), 15000)
         watchRestartTimer.restart()
+      } else {
+        console.warn("[kcd] watch gave up after 5 restarts, will retry in 60s")
+        watchStableTimer.interval = 60000
+        watchStableTimer.restart()
       }
     }
   }
@@ -144,6 +149,20 @@ Item {
     repeat: false
     onTriggered: {
       if (root.installed && root.enabled) watchProc.running = true
+    }
+  }
+
+  Timer {
+    id: watchStableTimer
+    interval: 60000
+    repeat: false
+    onTriggered: {
+      if (root._watchRestarts !== 0) console.log("[kcd] watch stable 60s — reset restarts")
+      root._watchRestarts = 0
+      // якщо watch був у стані give-up (5 падінь) — пробуємо знову
+      if (root.enabled && root.installed && !watchProc.running) {
+        watchProc.running = true
+      }
     }
   }
 
@@ -205,8 +224,11 @@ Item {
         if (!root.primaryDeviceId) {
           root.primaryDeviceId = devId
           root.primaryDeviceName = String(payload.name ?? payload.deviceName ?? devId)
+          root.isReachable = true
+        } else if (devId === root.primaryDeviceId) {
+          root.isReachable = true
         }
-        root.isReachable = true
+        // для іншого device не чіпаємо isReachable — дочекаємося poll, щоб не підняти офлайн primary
       } else if (t === "device.disconnected") {
         if (!devId || devId === root.primaryDeviceId || root.primaryDeviceId === "") root.isReachable = false
       }
@@ -221,8 +243,11 @@ Item {
       var charging = payload.charging ?? payload.isCharging ?? false
       if (charge !== undefined && charge !== null) root.batteryCharge = Math.round(Number(charge))
       root.batteryCharging = !!charging
-      // якщо прийшла батарея — девайс точно reachable, навіть якщо devices ще не оновився
-      if (root.batteryCharge >= 0) root.isReachable = true
+      // якщо прийшла батарея — девайс точно reachable, але тільки якщо це primary або primary ще не вибраний
+      // (інакше батарея від другого телефону помилково підніме offline primary)
+      if (root.batteryCharge >= 0) {
+        if (!devId || devId === root.primaryDeviceId || !root.primaryDeviceId) root.isReachable = true
+      }
       if (devId && !root.primaryDeviceId) {
         root.primaryDeviceId = devId
         root.primaryDeviceName = String(payload.name ?? devId)
@@ -232,7 +257,8 @@ Item {
     if (t === "notification" || t === "notification.received") {
       // payload.icon може бути шляхом до кешованого файлу (kcd fetch_icons) або іменем
       var iconSrc = String(payload.icon ?? payload.appIcon ?? payload.iconPath ?? "")
-      var nid = String(payload.id ?? payload.key ?? "")
+      // kcd watch дає requestReplyId (UUID) для кожного сповіщення — використовуємо його як id
+      var nid = String(payload.id ?? payload.requestReplyId ?? payload.key ?? payload.requestId ?? "")
       // kcd інколи шле одне й те саме сповіщення повторно (при реконекті, при watch рестарті) — дедуплікуємо
       // Зберігаємо останнє для дедупу з NotificationServer (kcd notify-send дублює)
       var _n = {
@@ -246,30 +272,26 @@ Item {
       }
       root.lastPhoneNotif = _n
       root.lastPhoneNotifTime = Date.now()
-      if (root.muted) return
-      var n = {
-        appName: String(payload.appName ?? payload.app ?? "Phone"),
-        title: String(payload.title ?? payload.summary ?? ""),
-        text: String(payload.text ?? payload.body ?? ""),
-        id: nid !== "" ? nid : String(Date.now()) + "_" + Math.random().toString(36).slice(2,6),
-        icon: iconSrc,
-        deviceId: devId,
-        timestamp: ev.timestamp ?? new Date().toISOString()
-      }
+      // Зберігаємо в історію навіть при muted (глушимо тільки тост), інакше попап порожній при muted
+      // Дедуп тільки по id (requestReplyId) — однаковий текст "On" має показуватись кілька разів,
+      // а не глушитись як раніше (контент-дедуп блокував повтори з тим самим текстом).
       var arr = root.recentNotifications.slice()
       var isDup = false
-      for (var i = 0; i < arr.length; i++) {
-        var ex = arr[i]
-        if (ex.id === n.id && n.id.indexOf("_") === -1) { isDup = true; break }
-        // якщо id згенерований (з Date.now), порівнюємо контент
-        if (ex.appName === n.appName && ex.title === n.title && ex.text === n.text && ex.deviceId === n.deviceId) { isDup = true; break }
+      // Генерований id містить "_" (Date.now_random) — його не дедупликуємо, бо кожне повідомлення унікальне
+      if (_n.id.indexOf("_") === -1) {
+        for (var i = 0; i < arr.length; i++) {
+          if (arr[i].id === _n.id) { isDup = true; break }
+        }
       }
+      if (!isDup) {
+        arr.unshift(_n)
+        if (arr.length > root.maxNotifications) arr = arr.slice(0, root.maxNotifications)
+        root.recentNotifications = arr
+      }
+      if (root.muted) return
       if (isDup) return
-      arr.unshift(n)
-      if (arr.length > root.maxNotifications) arr = arr.slice(0, root.maxNotifications)
-      root.recentNotifications = arr
-      // показати тост через Bar (сигнал) — тільки для нових
-      root.notificationReceived(n)
+      // показати тост через Bar (сигнал) — тільки для нових і не в muted
+      root.notificationReceived(_n)
       return
     }
     if (t === "share.progress") {
@@ -287,11 +309,11 @@ Item {
     }
     // Clipboard — телефон прислав буфер (або підтвердження push)
     if (t.indexOf("clipboard") !== -1) {
-      if (root.muted) return
       var clipTxt = String(payload.content ?? payload.text ?? payload.clipboard ?? payload.data ?? "")
       if (clipTxt) {
         root.lastClipboard = clipTxt.slice(0, 500)
-        // показуємо тост, щоб було видно що прийшло
+        if (root.muted) return
+        // показуємо тост, щоб було видно що прийшло (тільки якщо не muted)
         root.notificationReceived({ appName: "Clipboard", title: "From phone", text: clipTxt.slice(0, 80), appIcon: "edit-paste", isPhone: true, actions: [] })
       }
       return
@@ -307,6 +329,43 @@ Item {
       else root.sftpInfo = JSON.stringify(payload).slice(0, 200)
       return
     }
+    // Notification dismissed on phone — прибираємо з історії
+    if (t === "notification.canceled" || t === "notification.cancelled") {
+      var cancelId = String(payload.id ?? payload.key ?? "")
+      if (cancelId) {
+        var filtered = root.recentNotifications.filter(n => String(n.id ?? "") !== cancelId)
+        if (filtered.length !== root.recentNotifications.length) root.recentNotifications = filtered
+      }
+      return
+    }
+    // Share text/url — телефон прислав текст або лінк
+    if (t === "share.text" || t === "share.url") {
+      var shareTxt = String(payload.text ?? payload.url ?? "")
+      if (shareTxt) {
+        root.lastClipboard = shareTxt.slice(0, 500)
+        if (!root.muted) root.notificationReceived({ appName: "Share", title: t === "share.url" ? "Link from phone" : "Text from phone", text: shareTxt.slice(0, 120), appIcon: "edit-paste", isPhone: true, actions: [] })
+      }
+      return
+    }
+    // Telephony — дзвінки
+    if (t.indexOf("telephony") !== -1) {
+      var contact = String(payload.contactName ?? payload.phoneNumber ?? "")
+      var phoneNum = String(payload.phoneNumber ?? "")
+      var teleTitle = t === "telephony.ringing" ? "Incoming call" : (t === "telephony.missed" ? "Missed call" : (t === "telephony.talking" ? "Call in progress" : "Call ended"))
+      var teleText = contact || phoneNum
+      if (t === "telephony.ringing" || t === "telephony.missed") {
+        if (!root.muted) root.notificationReceived({ appName: "Phone", title: teleTitle, text: teleText, appIcon: "call-start", isPhone: true, actions: [] })
+      }
+      return
+    }
+    // Ping
+    if (t === "ping.received" || t === "ping") {
+      if (!root.muted) root.notificationReceived({ appName: "Ping", title: "Ping received", text: devId ? devId.slice(0,8) : "", appIcon: "dialog-information", isPhone: true, actions: [] })
+      return
+    }
+    // Інші події ігноруємо (mpris/connectivity/volume/sms обробляються вище або не потрібні)
+    // Розкоментуй для дебагу нових типів kcd:
+    // console.log("[kcd] unhandled event: " + t + " " + JSON.stringify(payload).slice(0, 180))
   }
 
   signal notificationReceived(var notif)

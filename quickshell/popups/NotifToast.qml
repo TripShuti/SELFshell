@@ -3,7 +3,6 @@
 // ============================================================
 import Quickshell
 import Quickshell.Io
-import Quickshell.Widgets
 import "../core"
 import QtQuick
 import QtQuick.Layouts
@@ -16,6 +15,7 @@ PopupWindow {
   property string toastSummary: ""
   property string toastBody: ""
   property string toastAppIcon: ""
+  property string toastImage: ""
   property var toastNotification: null
   property QtObject anchorWindow: null
   property bool muted: false
@@ -23,24 +23,10 @@ PopupWindow {
   readonly property QtObject palette: anchorWindow ? anchorWindow.palette : null
   readonly property QtObject appConfig: anchorWindow ? anchorWindow.appConfig : null
 
-  // Резолвить іконку: файл → file://, ім'я → iconPath
-  readonly property string resolvedIcon: {
-    var icon = root.toastAppIcon
-    if (!icon) return ""
-    if (icon.startsWith("/") || icon.startsWith("file://")) {
-      return icon.startsWith("file://") ? icon : "file://" + icon
-    }
-    var p = Quickshell.iconPath(icon, true)
-    if (p !== "") return p
-    p = Quickshell.iconPath(icon, false)
-    if (p !== "") return p
-    var lower = icon.toLowerCase().replace(/\s+/g, "-")
-    p = Quickshell.iconPath(lower, true)
-    if (p !== "") return p
-    p = Quickshell.iconPath(lower, false)
-    if (p !== "") return p
-    return ""
-  }
+  IconResolver { id: iconResolver }
+
+  readonly property string resolvedIcon: iconResolver.resolve(root.toastAppIcon)
+  readonly property string resolvedImage: iconResolver.resolve(root.toastImage)
 
   // Є дії, окрім default (default — на клік по тосту)
   readonly property bool hasActions: {
@@ -83,6 +69,7 @@ PopupWindow {
     root.toastSummary = notif.summary ?? ""
     root.toastBody = notif.body ?? ""
     root.toastAppIcon = notif.appIcon ?? ""
+    root.toastImage = notif.image ?? ""
     root.isPhone = !!(notif.isPhone ?? (String(notif.appName ?? "").startsWith("Phone •")))
     root.toastNotification = notif
     if (root.anchorWindow) {
@@ -213,19 +200,31 @@ PopupWindow {
     width: parent.width - 20
     spacing: 3
 
-    // Назва додатка з іконкою — для phone показуємо іконку додатку + маленький phone badge
+    // Назва додатка з іконкою — для phone показуємо іконку додатку + fallback glyph
     RowLayout {
       spacing: 6
       visible: root.toastAppName !== ""
-      height: 20
+      Layout.fillWidth: true
 
       Item {
         Layout.preferredWidth: 16
         Layout.preferredHeight: 16
-        // Для стабільності поки тільки Text-гліф (IconImage з Gruvbox крашить на camera-photo/phone)
-        Text {
-          id: fallbackGlyph
+
+        Image {
+          id: iconImg
           anchors.fill: parent
+          // toastImage — фото сповіщення (Notification.image) має пріоритет, але перевіряємо на missing
+          source: root.resolvedImage !== "" ? root.resolvedImage : root.resolvedIcon
+          fillMode: Image.PreserveAspectFit
+          asynchronous: true
+          visible: status === Image.Ready
+          // Звичайний Image, не IconImage — не падає на кривих SVG,
+          // просто виставляє status: Error і ми ловимо це нижче
+        }
+
+        Text {
+          anchors.fill: parent
+          visible: iconImg.status !== Image.Ready
           text: {
             if (root.isPhone) return "\uF10B"
             if (root.toastAppIcon === "camera-photo") return "\uF030"
@@ -233,7 +232,8 @@ PopupWindow {
             return "•"
           }
           color: root.palette ? root.palette.green : "#8aa9fc"
-          font.family: root.palette ? root.palette.font : "sans-serif"; font.pixelSize: root.appConfig ? root.appConfig.scaled(12) : 12
+          font.family: root.palette ? root.palette.font : "sans-serif"
+          font.pixelSize: root.appConfig ? root.appConfig.scaled(12) : 12
           horizontalAlignment: Text.AlignHCenter
           verticalAlignment: Text.AlignVCenter
         }
@@ -241,8 +241,12 @@ PopupWindow {
 
       Text {
         text: root.toastAppName
-        color: root.palette ? root.palette.green : "#8aa9fc"
-        font.family: root.palette ? root.palette.font : "sans-serif"; font.pixelSize: root.appConfig ? root.appConfig.scaled(13) : 13; font.bold: true
+        color: root.palette ? root.palette.mutedAlt : "#aaaaaa"
+        font.family: root.palette ? root.palette.font : "sans-serif"
+        font.pixelSize: root.appConfig ? root.appConfig.scaled(11) : 11
+        elide: Text.ElideRight
+        Layout.fillWidth: true
+        verticalAlignment: Text.AlignVCenter
       }
     }
 

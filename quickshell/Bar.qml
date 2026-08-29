@@ -7,7 +7,6 @@ import Quickshell.Io
 import Quickshell.Services.Notifications
 import "core"
 import QtQuick
-import QtQuick.Layouts
 import "widgets"
 import "popups"
 import "monitors"
@@ -56,18 +55,7 @@ PanelWindow {
   readonly property Item trayWidget: activeWidgets["tray"] ?? null
   readonly property Item kcdWidget: activeWidgets["kcd"] ?? null
 
-  // Всі попапи бару (крім транзитних тостів): поки будь-який відкритий,
-  // автоскривання не ховає бар
-  property var popups: [
-    calendarPopup, audioPopup, btPopup, netPopup, mprisPopup, workspacesPopup,
-    keyboardPopup, genshinPopup, controlPopup, clipboardPopup, wallpaperPopup,
-    settingsPopup, launcherPopup, trayPopup, pairingPopup, kcdPopup
-  ]
-  function anyPopupOpen() {
-    for (var i = 0; i < root.popups.length; i++)
-      if (root.popups[i].visible) return true
-    return false
-  }
+  IconResolver { id: iconResolver }
 
   anchors {
     left: true
@@ -361,19 +349,14 @@ PanelWindow {
       // DND — повністю ховає сповіщення (тост, список, звук)
       if (root.appConfig.cfg.dndEnabled) return
       // kcdMuted — ховає телефонні сповіщення що дублюються через notify-send (kcd notification plugin)
-      // Перевіряємо чи це телефонне сповіщення за останнім watch-події (5с вікно, збіг app/title/body)
+      // Перевіряємо чи це телефонне сповіщення за останнім watch-події (5с вікно, точний збіг app+title+body)
+      // Раніше була широка умова по appName — глушила ВСІ сповіщення додатку; лишаємо тільки точний збіг
       if (root.appConfig.cfg.kcdMuted && root.kdeConnect && root.kdeConnect.lastPhoneNotif) {
         var last = root.kdeConnect.lastPhoneNotif
         var age = Date.now() - (root.kdeConnect.lastPhoneNotifTime ?? 0)
         if (age < 5000) {
           var a = String(notif.appName ?? ""), b = String(notif.summary ?? notif.title ?? ""), c = String(notif.body ?? notif.text ?? "")
           if (a === last.appName && b === last.title && c === last.text) return
-          // kcd notify-send інколи ставить appName = телефонний app, summary = title — перевіряємо і так
-          if (a === last.appName || b === last.title) {
-            // якщо збіг по app+title, вважаємо телефонним і мутимо
-            // щоб не блокувати всі системні Telegram, перевіряємо що останнє phone-сповіщення було щойно
-            if (last.appName && a === last.appName) return
-          }
         }
       }
       notif.tracked = true
@@ -496,7 +479,6 @@ PanelWindow {
   Connections {
     target: controlPopup
     function onScreenshotTaken(path) {
-      console.log("[shot] toast for: " + path)
       notifToast.showNotif({
         appName: "Screenshot",
         summary: "Saved to " + path,
@@ -596,9 +578,7 @@ PanelWindow {
         for (var i = 0; i < cands.length; i++) {
           var c = cands[i]
           if (!c) continue
-          var p = Quickshell.iconPath(c, true)
-          if (p === "") p = Quickshell.iconPath(c, false)
-          if (p !== "") { iconSrc = c; break }
+          if (iconResolver.resolve(c) !== "") { iconSrc = c; break }
         }
       }
       notif.isPhone = true

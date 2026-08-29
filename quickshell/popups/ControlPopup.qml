@@ -3,11 +3,9 @@
 // кнопки живлення
 // ============================================================
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
-import Quickshell.Widgets
 import "../core"
 import "../scripts/ControlState.js" as State
 
@@ -48,6 +46,8 @@ AnimatedPopup {
     root.groupedModel = out
   }
   onUnreadChanged: root.rebuildGroups()
+
+  IconResolver { id: iconResolver }
 
   signal openWallpaperPopup()
   signal openBtManager()
@@ -118,7 +118,7 @@ AnimatedPopup {
   function shotDebouncedClick(kind) {
     let now = (new Date()).getTime()
     let prev = kind === "full" ? root._lastShotTimeFull : root._lastShotTimeRegion
-    if (now - prev < 350) { console.log("[shot] debounce: block second click (" + kind + ")"); return true }
+    if (now - prev < 350) return true
     if (kind === "full") root._lastShotTimeFull = now
     else root._lastShotTimeRegion = now
     return false
@@ -137,7 +137,6 @@ AnimatedPopup {
   }
 
   function takeScreenshot(kind) {
-    console.log("[shot] takeScreenshot(" + kind + ") — hyprctl dispatch")
     root.close()
     delayedShotTimer.shotKind = kind
     delayedShotTimer.start()
@@ -156,10 +155,7 @@ AnimatedPopup {
 
   Process {
     id: shotProc
-    onExited: exitCode => {
-      console.log("[shot] dispatch exit " + exitCode)
-      running = false
-    }
+    onExited: running = false
   }
 
   // Маркер готовності: quickshell сам лише ЧИТАЄ/ЧИСТИТЬ файл,
@@ -172,7 +168,6 @@ AnimatedPopup {
     onDataChanged: {
       var p = shotMarkerFile.text().trim()
       if (!p) return
-      console.log("[shot] marker: " + p)
       shotMarkerFile.setText("")
       root.screenshotTaken(p)
     }
@@ -735,10 +730,44 @@ AnimatedPopup {
                 width: parent.width
                 spacing: 6
 
-                IconImage {
+                Item {
                   Layout.preferredWidth: 16
                   Layout.preferredHeight: 16
-                  source: Quickshell.iconPath(modelData.icon, true)
+                  property string _res: {
+                    var r = iconResolver.resolve(modelData.icon)
+                    if (r !== "") return r
+                    // fallback на image першого сповіщення групи (коли appIcon порожній, а image — "telegram")
+                    var first = modelData.notifs && modelData.notifs.length > 0 ? modelData.notifs[0] : null
+                    if (first && first.image && String(first.image).startsWith("image://icon/")) {
+                      var n = String(first.image).substring("image://icon/".length)
+                      if (!n.startsWith("/")) {
+                        var rr = iconResolver.resolve(n)
+                        if (rr !== "") return rr
+                      }
+                    }
+                    return r
+                  }
+                  Image {
+                    id: grpIconImg
+                    anchors.fill: parent
+                    source: parent._res
+                    fillMode: Image.PreserveAspectFit
+                    asynchronous: true
+                    visible: status === Image.Ready
+                  }
+                  Text {
+                    anchors.fill: parent
+                    visible: grpIconImg.status !== Image.Ready
+                    text: {
+                      if (modelData.icon === "camera-photo") return "\uF030"
+                      if (modelData.icon === "dialog-information") return "\uF05A"
+                      return "•"
+                    }
+                    color: window.palette.green
+                    font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                  }
                 }
 
                 Text {
@@ -835,11 +864,44 @@ AnimatedPopup {
                       Layout.fillWidth: true
                       spacing: 8
 
-                      // Іконка додатка
-                      IconImage {
+                      // Іконка додатка — файл або тема, з fallback на image (коли appIcon порожній, а image — "telegram")
+                      Item {
                         Layout.preferredWidth: 18
                         Layout.preferredHeight: 18
-                        source: Quickshell.iconPath(notif.appIcon, true)
+                        property string _res2: {
+                          var r = iconResolver.resolve(notif.appIcon)
+                          if (r !== "") return r
+                          // fallback: якщо appIcon порожній, а image — "image://icon/telegram", спробуємо резолвити image
+                          if (notif.image && String(notif.image).startsWith("image://icon/")) {
+                            var n = String(notif.image).substring("image://icon/".length)
+                            if (n.startsWith("/")) return "" // файл — large image вже покаже його
+                            var rr = iconResolver.resolve(n)
+                            if (rr !== "") return rr
+                          }
+                          return r
+                        }
+                        Image {
+                          id: rowIconImg
+                          anchors.fill: parent
+                          source: parent._res2
+                          fillMode: Image.PreserveAspectFit
+                          asynchronous: true
+                          visible: status === Image.Ready
+                        }
+                        Text {
+                          anchors.fill: parent
+                          visible: rowIconImg.status !== Image.Ready
+                          text: {
+                            if (notif.appIcon === "camera-photo") return "\uF030"
+                            if (notif.appIcon === "dialog-information") return "\uF05A"
+                            // якщо image був telegram, покажемо phone glyph як fallback, але _res2 вже спробував org.telegram.desktop
+                            return "•"
+                          }
+                          color: window.palette.green
+                          font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
+                          horizontalAlignment: Text.AlignHCenter
+                          verticalAlignment: Text.AlignVCenter
+                        }
                       }
 
                       ColumnLayout {
@@ -868,14 +930,37 @@ AnimatedPopup {
                         }
                       }
 
-                      // Картинка сповіщення
-                      Image {
-                        visible: notif.image !== ""
+                      // Картинка сповіщення — показуємо тільки якщо це валідний файл або існуюча іконка теми
+                      // image://icon/telegram з missing іконкою дає checker як Ready, тому перевіряємо через _resolvedIcon
+                      Item {
+                        property string _imgResolved: {
+                          if (!notif.image) return ""
+                          var src = String(notif.image)
+                          // quickshell дає image як "image://icon/<name>" або "file://..." або "/path"
+                          if (src.startsWith("image://icon/")) {
+                            var name = src.substring("image://icon/".length)
+                            if (name === "") return ""
+                            // якщо це шлях до файлу (починається з /), повертаємо file://
+                            if (name.startsWith("/")) return "file://" + name
+                            return iconResolver.resolve(name)
+                          }
+                          if (src.startsWith("/") || src.startsWith("file://")) return src.startsWith("file://") ? src : "file://" + src
+                          // звичайний шлях або іконка
+                          return iconResolver.resolve(src)
+                        }
+                        visible: _imgResolved !== ""
                         Layout.preferredWidth: 56
                         Layout.preferredHeight: 56
-                        source: notif.image
-                        fillMode: Image.PreserveAspectFit
-                        clip: true
+                        Image {
+                          id: notifImg
+                          anchors.fill: parent
+                          source: parent._imgResolved
+                          fillMode: Image.PreserveAspectFit
+                          asynchronous: true
+                          visible: status === Image.Ready
+                          clip: true
+                          onStatusChanged: if (status === Image.Error) console.warn("[ControlPopup] image load failed:", notif.image, "resolved:", parent._imgResolved, "appIcon:", notif.appIcon)
+                        }
                       }
 
                       // Кнопка закриття сповіщення
