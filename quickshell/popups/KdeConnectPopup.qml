@@ -33,6 +33,7 @@ AnimatedPopup {
 
   property int screenW: window ? window.screen.width : 1920
   property int screenH: window ? window.screen.height : 1080
+  property bool devicesExpanded: false
 
   Component.onCompleted: anchor.window = window
 
@@ -293,128 +294,168 @@ AnimatedPopup {
       }
     }
 
-    // --- Devices (kcd devices) ---
+    // --- Devices (kcd devices) — collapsible ---
     ColumnLayout {
       visible: root.installed
       Layout.fillWidth: true
       spacing: 4
-      RowLayout {
+      // Header — завжди видно, клік розгортає pairing/connect
+      Rectangle {
         Layout.fillWidth: true
-        spacing: 6
-        Text {
-          text: "Devices (" + (svc ? svc.devices.length : 0) + ")"
-          color: window.palette.accent
-          font.family: window.palette.font; font.pixelSize: appConfig.scaled(11); font.bold: true
-          Layout.fillWidth: true
+        height: 28
+        radius: 6
+        color: headerArea.containsMouse ? window.palette.bg1 : "transparent"
+        Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
+        RowLayout {
+          anchors.fill: parent
+          anchors.margins: 6
+          spacing: 6
+          Text {
+            text: "Devices (" + (svc ? svc.devices.length : 0) + ")"
+            color: window.palette.accent
+            font.family: window.palette.font; font.pixelSize: appConfig.scaled(11); font.bold: true
+            Layout.fillWidth: true
+          }
+          Text {
+            text: root.devicesExpanded ? "▾" : "▸"
+            color: window.palette.mutedAlt
+            font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
+          }
+          Rectangle {
+            property bool hovered: false
+            width: 60; height: 20; radius: 4
+            color: hovered ? window.palette.accent : window.palette.bg1
+            border.width: 1; border.color: window.palette.bg2
+            Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
+            visible: !root.devicesExpanded
+            Text { anchors.centerIn: parent; text: "Refresh"; color: parent.hovered ? window.palette.bg0H : window.palette.mutedAlt; font.family: window.palette.font; font.pixelSize: appConfig.scaled(9) }
+            MouseArea { anchors.fill: parent; hoverEnabled: true; onEntered: parent.hovered = true; onExited: parent.hovered = false; onClicked: { if (svc) svc.refresh(); mouse.accepted = true } }
+          }
         }
-        Rectangle {
-          property bool hovered: false
-          width: 60; height: 22; radius: 6
-          color: hovered ? window.palette.accent : window.palette.bg1
-          border.width: 1; border.color: window.palette.bg2
-          Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
-          Text { anchors.centerIn: parent; text: "Refresh"; color: parent.hovered ? window.palette.bg0H : window.palette.textLight; font.family: window.palette.font; font.pixelSize: appConfig.scaled(10) }
-          MouseArea { anchors.fill: parent; hoverEnabled: true; onEntered: parent.hovered = true; onExited: parent.hovered = false; onClicked: if (svc) svc.refresh() }
-        }
-        Rectangle {
-          property bool hovered: false
-          width: 60; height: 22; radius: 6
-          color: hovered ? window.palette.accent : window.palette.bg1
-          border.width: 1; border.color: window.palette.bg2
-          Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
-          Text { anchors.centerIn: parent; text: "Pair"; color: parent.hovered ? window.palette.bg0H : window.palette.textLight; font.family: window.palette.font; font.pixelSize: appConfig.scaled(10) }
-          MouseArea { anchors.fill: parent; hoverEnabled: true; onEntered: parent.hovered = true; onExited: parent.hovered = false; onClicked: root.doPair() }
+        MouseArea {
+          id: headerArea
+          anchors.fill: parent
+          hoverEnabled: true
+          onClicked: root.devicesExpanded = !root.devicesExpanded
         }
       }
-      // Список відомих пристроїв
-      Repeater {
-        model: svc ? svc.devices : []
-        delegate: Rectangle {
-          required property var modelData
+      // Вміст — pairing/connect, список
+      ColumnLayout {
+        visible: root.devicesExpanded
+        Layout.fillWidth: true
+        spacing: 4
+        RowLayout {
           Layout.fillWidth: true
-          height: devRow.implicitHeight + 8
-          radius: 6
-          color: window.palette.bg1
-          border.width: 1; border.color: (modelData.id === root.devId && root.reachable) ? window.palette.green : window.palette.bg2
-          RowLayout {
-            id: devRow
-            anchors.centerIn: parent
-            width: parent.width - 12
-            spacing: 6
-            ColumnLayout {
-              Layout.fillWidth: true
-              spacing: 1
-              Text {
-                text: String(modelData.name ?? modelData.id ?? "").slice(0, 24)
-                color: window.palette.textLight
-                font.family: window.palette.font; font.pixelSize: appConfig.scaled(11); font.bold: true
-                elide: Text.ElideRight
+          spacing: 6
+          Rectangle {
+            property bool hovered: false
+            Layout.fillWidth: true; height: 24; radius: 6
+            color: hovered ? window.palette.accent : window.palette.bg1
+            border.width: 1; border.color: window.palette.bg2
+            Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
+            Text { anchors.centerIn: parent; text: "Refresh"; color: parent.hovered ? window.palette.bg0H : window.palette.textLight; font.family: window.palette.font; font.pixelSize: appConfig.scaled(10) }
+            MouseArea { anchors.fill: parent; hoverEnabled: true; onEntered: parent.hovered = true; onExited: parent.hovered = false; onClicked: if (svc) svc.refresh() }
+          }
+          Rectangle {
+            property bool hovered: false
+            Layout.fillWidth: true; height: 24; radius: 6
+            color: hovered ? window.palette.accent : window.palette.bg1
+            border.width: 1; border.color: window.palette.bg2
+            Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
+            Text { anchors.centerIn: parent; text: "Pair"; color: parent.hovered ? window.palette.bg0H : window.palette.textLight; font.family: window.palette.font; font.pixelSize: appConfig.scaled(10) }
+            MouseArea { anchors.fill: parent; hoverEnabled: true; onEntered: parent.hovered = true; onExited: parent.hovered = false; onClicked: root.doPair() }
+          }
+        }
+        // Список відомих пристроїв
+        Repeater {
+          model: svc ? svc.devices : []
+          delegate: Rectangle {
+            required property var modelData
+            Layout.fillWidth: true
+            height: devRow.implicitHeight + 8
+            radius: 6
+            color: window.palette.bg1
+            border.width: 1; border.color: (modelData.id === root.devId && root.reachable) ? window.palette.green : window.palette.bg2
+            RowLayout {
+              id: devRow
+              anchors.centerIn: parent
+              width: parent.width - 12
+              spacing: 6
+              ColumnLayout {
                 Layout.fillWidth: true
+                spacing: 1
+                Text {
+                  text: String(modelData.name ?? modelData.id ?? "").slice(0, 24)
+                  color: window.palette.textLight
+                  font.family: window.palette.font; font.pixelSize: appConfig.scaled(11); font.bold: true
+                  elide: Text.ElideRight
+                  Layout.fillWidth: true
+                }
+                Text {
+                  text: (modelData.connected ? "Connected" : (modelData.state ?? "PAIRED")) + " • " + String(modelData.id ?? "").slice(0,8)
+                  color: modelData.connected ? window.palette.accent : window.palette.mutedAlt
+                  font.family: window.palette.font; font.pixelSize: appConfig.scaled(9)
+                  elide: Text.ElideRight
+                  Layout.fillWidth: true
+                }
               }
-              Text {
-                text: (modelData.connected ? "Connected" : (modelData.state ?? "PAIRED")) + " • " + String(modelData.id ?? "").slice(0,8)
-                color: modelData.connected ? window.palette.accent : window.palette.mutedAlt
-                font.family: window.palette.font; font.pixelSize: appConfig.scaled(9)
-                elide: Text.ElideRight
-                Layout.fillWidth: true
+              // Pair (якщо не paired) / Unpair
+              Rectangle {
+                property bool hovered: false
+                visible: !(modelData.state === "PAIRED" || modelData.paired)
+                width: 48; height: 20; radius: 4
+                color: hovered ? window.palette.accent : window.palette.bg2
+                Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
+                Text { anchors.centerIn: parent; text: "Pair"; color: parent.hovered ? window.palette.bg0H : window.palette.textLight; font.family: window.palette.font; font.pixelSize: appConfig.scaled(9) }
+                MouseArea { anchors.fill: parent; hoverEnabled: true; onEntered: parent.hovered = true; onExited: parent.hovered = false; onClicked: root.doPairDevice(String(modelData.id ?? "")) }
               }
-            }
-            // Pair (якщо не paired) / Unpair
-            Rectangle {
-              property bool hovered: false
-              visible: !(modelData.state === "PAIRED" || modelData.paired)
-              width: 48; height: 20; radius: 4
-              color: hovered ? window.palette.accent : window.palette.bg2
-              Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
-              Text { anchors.centerIn: parent; text: "Pair"; color: parent.hovered ? window.palette.bg0H : window.palette.textLight; font.family: window.palette.font; font.pixelSize: appConfig.scaled(9) }
-              MouseArea { anchors.fill: parent; hoverEnabled: true; onEntered: parent.hovered = true; onExited: parent.hovered = false; onClicked: root.doPairDevice(String(modelData.id ?? "")) }
-            }
-            Rectangle {
-              property bool hovered: false
-              width: 56; height: 20; radius: 4
-              color: hovered ? window.palette.danger : window.palette.bg2
-              Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
-              Text { anchors.centerIn: parent; text: "Unpair"; color: window.palette.textLight; font.family: window.palette.font; font.pixelSize: appConfig.scaled(9) }
-              MouseArea { anchors.fill: parent; hoverEnabled: true; onEntered: parent.hovered = true; onExited: parent.hovered = false; onClicked: root.doUnpair(String(modelData.id ?? "")) }
+              Rectangle {
+                property bool hovered: false
+                width: 56; height: 20; radius: 4
+                color: hovered ? window.palette.danger : window.palette.bg2
+                Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
+                Text { anchors.centerIn: parent; text: "Unpair"; color: window.palette.textLight; font.family: window.palette.font; font.pixelSize: appConfig.scaled(9) }
+                MouseArea { anchors.fill: parent; hoverEnabled: true; onEntered: parent.hovered = true; onExited: parent.hovered = false; onClicked: root.doUnpair(String(modelData.id ?? "")) }
+              }
             }
           }
         }
-      }
-      // Connect by IP
-      RowLayout {
-        Layout.fillWidth: true
-        spacing: 6
-        TextField {
-          id: ipField
+        // Connect by IP
+        RowLayout {
           Layout.fillWidth: true
-          placeholderText: "192.168.1.101"
-          text: root.connectIp
-          onTextChanged: root.connectIp = text
+          spacing: 6
+          TextField {
+            id: ipField
+            Layout.fillWidth: true
+            placeholderText: "192.168.1.101"
+            text: root.connectIp
+            onTextChanged: root.connectIp = text
+            font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
+            color: window.palette.textLight
+            placeholderTextColor: window.palette.mutedAlt
+            background: Rectangle { color: window.palette.bg1; border.width: 1; border.color: window.palette.bg2; radius: 4 }
+            padding: 6
+          }
+          Rectangle {
+            property bool hovered: false
+            width: 72; height: 24; radius: 6
+            color: hovered ? window.palette.accent : window.palette.bg1
+            border.width: 1; border.color: window.palette.bg2
+            Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
+            Text { anchors.centerIn: parent; text: "Connect"; color: parent.hovered ? window.palette.bg0H : window.palette.textLight; font.family: window.palette.font; font.pixelSize: appConfig.scaled(10) }
+            MouseArea { anchors.fill: parent; hoverEnabled: true; onEntered: parent.hovered = true; onExited: parent.hovered = false; onClicked: root.doConnectIp() }
+          }
+        }
+        Text {
+          visible: pairStatus !== ""
+          text: pairStatus
+          color: window.palette.mutedAlt
           font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
-          color: window.palette.textLight
-          placeholderTextColor: window.palette.mutedAlt
-          background: Rectangle { color: window.palette.bg1; border.width: 1; border.color: window.palette.bg2; radius: 4 }
-          padding: 6
+          wrapMode: Text.WordWrap
+          Layout.fillWidth: true
+          maximumLineCount: 3
+          elide: Text.ElideRight
         }
-        Rectangle {
-          property bool hovered: false
-          width: 72; height: 24; radius: 6
-          color: hovered ? window.palette.accent : window.palette.bg1
-          border.width: 1; border.color: window.palette.bg2
-          Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
-          Text { anchors.centerIn: parent; text: "Connect"; color: parent.hovered ? window.palette.bg0H : window.palette.textLight; font.family: window.palette.font; font.pixelSize: appConfig.scaled(10) }
-          MouseArea { anchors.fill: parent; hoverEnabled: true; onEntered: parent.hovered = true; onExited: parent.hovered = false; onClicked: root.doConnectIp() }
-        }
-      }
-      Text {
-        visible: pairStatus !== ""
-        text: pairStatus
-        color: window.palette.mutedAlt
-        font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
-        wrapMode: Text.WordWrap
-        Layout.fillWidth: true
-        maximumLineCount: 3
-        elide: Text.ElideRight
       }
     }
 
