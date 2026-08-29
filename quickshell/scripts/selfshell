@@ -376,6 +376,29 @@ doctor() {
   fi
 
   echo
+  echo "== Phone (optional, kcd) =="
+  if command -v kcd &>/dev/null; then
+    local kcd_v
+    kcd_v="$(kcd --version 2>&1 | head -1)"
+    ok "kcd $kcd_v"
+    if systemctl --user is-active --quiet kcd 2>/dev/null || pgrep -x kcd &>/dev/null; then
+      ok "kcd daemon is running"
+    else
+      warn "kcd daemon not running — run: systemctl --user enable --now kcd"
+    fi
+    # firewall hint (only if kcd installed and not preboot)
+    if ! $preboot && command -v ss &>/dev/null; then
+      if ss -tuln 2>/dev/null | grep -q ":1716"; then
+        ok "kcd port 1716 listening"
+      else
+        warn "kcd port 1716 not listening — check firewall 1716/udp+tcp 1739:1764/tcp"
+      fi
+    fi
+  else
+    warn "kcd not installed — phone features disabled (yay -S kcd-bin, systemctl --user enable --now kcd)"
+  fi
+
+  echo
   echo "== Hardware =="
   if command -v ddcutil &>/dev/null; then
     if timeout 6 ddcutil detect &>/dev/null; then

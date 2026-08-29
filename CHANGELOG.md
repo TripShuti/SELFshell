@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Toast/OSD opacity** — `AppConfig.qml` `toastBgOpacity`/`osdBgOpacity` (0.90), `data/config.json`, `CONFIG_FORMAT.md` and `PopupsSection` sliders (0.5–1.0) with live preview (`notify-send` / `qs ipc call osd volume` via `Bar.toast`/`Bar.osd` aliases). `NotifToast`/`OsdPopup` now use `Qt.rgba(..., bgOpacity)` like `AnimatedPopup`.
+- **Phone integration (kcd / KDE Connect) v1** — optional headless Go daemon `kcd` (`AUR kcd-bin`, `systemctl --user enable --now kcd`, LAN-only `1716/udp+tcp` `1739:1764/tcp`, no KDE stack, no telemetry, 0% idle when all devices connected) for `battery + ping/ring + share file + notification`. New `services/KdeConnectService.qml` (single instance in `shell.qml`, `kcd watch --json` + `kcd devices --json` 30s poll, 5× backoff) → `widgets/KdeConnectWidget.qml` (phone/battery icon + charge + reachable dot, draggable across `left/center/right` via `BarSection` `allWidgetNames`) → `popups/KdeConnectPopup.qml` (centered `AnimatedPopup`, battery bar, Ping (`kcd ping`), Ring (`kcd findmyphone`), Share (`FileDialog` → `kcd share`), share progress, recent notifications with Clear, firewall hint). `Bar.qml` bridges `KdeConnectService.onNotificationReceived` → `NotifToast` (DND-respecting, `tracked=true`). `shell.qml` injects `kdeConnect` into `Bar`, `core/AppConfig.qml` `kcdEnabled` + `rightOrder` includes `kcd`, `data/config.json` `kcdEnabled:false`, `tests/check_config_schema.py` `kcdEnabled`, `docs/CONFIG_FORMAT.md` table, `scripts/selfshell doctor` `Phone (optional, kcd)` section (version, daemon, `ss :1716`), `install.sh` AUR `kcd-bin` prompt + `systemctl --user enable --now kcd`.
 
 ### Changed
 
@@ -32,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Network popup** — `NetworkPopup.qml:324` `onToggled: value=>` → `function`.
 - **Toast action buttons** — `NotifToast.qml:243` `MouseArea` for default action was outside `container` (sibling of `PopupWindow`), `toastLayout:146` `z:1` didn’t escape parent → `actionArea:225` never received clicks, `Mark as read` triggered default dismiss. Moved `MouseArea` inside `container` before `toastLayout`, added `HoverHandler` for autoClose pause.
 - **Toast border/top highlight** — `NotifToast.qml:126` `border.color: green` → `bg2` (`#525256`) to match `AnimatedPopup.qml:88`/`OsdPopup.qml:156` (was distinct), `NotifToast.qml:139` top 1px `color: hoverOverlay` → `gradient: transparent→hoverOverlay→transparent` like `AnimatedPopup.qml:116` so it doesn’t cut `radius:9` corners.
+- **PillBar unregisterActive** — `core/PillBar.qml:73` `Component.onDestruction: root.unregisterActive(modelData)` called undefined (`required` `unregisterActive` missing, `Bar.qml` only passed `registerActive`) → added `required property var unregisterActive` and `Bar.qml` passes `unregisterActive: root.unregisterActive` for all three pills, no more `TypeError` on widget hide/destroy.
 
 ### Removed
 

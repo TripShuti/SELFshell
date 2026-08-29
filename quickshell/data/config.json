@@ -53,11 +53,13 @@
   "popupBorderWidth": 1,
   "popupRadius": 14,
   "preferredPlayer": "selfsonic",
+  "kcdEnabled": false,
   "rightOrder": [
     "tray",
     "sep-12",
     "net",
     "bt",
+    "kcd",
     "keyboard",
     "sep-10",
     "audio",

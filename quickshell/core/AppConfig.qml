@@ -48,6 +48,7 @@ Item {
       property bool netEnabled: false
       property bool trayEnabled: true
       property bool batteryEnabled: false
+      property bool kcdEnabled: false
 
       // DND — повністю ховає сповіщення (тост, список, звук)
       property bool dndEnabled: false
@@ -155,7 +156,7 @@ Item {
   // того, в якій пігулці зараз лежить віджет).
   readonly property var allWidgetNames: [
     "launcher", "workspaces", "mpris", "clock", "timer",
-    "genshin", "keyboard", "audio", "battery", "control", "clipboard", "bt", "net", "tray"
+    "genshin", "keyboard", "audio", "battery", "control", "clipboard", "bt", "net", "tray", "kcd"
   ]
 
   // Порядок ВСЕРЕДИНІ пігулки + приналежність до пігулки визначаються
@@ -250,7 +251,7 @@ Item {
     clockEnabled: true, timerEnabled: true, genshinEnabled: true,
     keyboardEnabled: true, audioEnabled: true, controlEnabled: true,
     clipboardEnabled: false, btEnabled: false, netEnabled: false,
-    trayEnabled: true, batteryEnabled: false, dndEnabled: false,
+    trayEnabled: true, batteryEnabled: false, kcdEnabled: false, dndEnabled: false,
     timerSoundPath: "",
     preferredPlayer: "selfsonic",
     idleLockTimeout: 300, idleDpmsTimeout: 360, idleSuspendTimeout: 900,
@@ -269,7 +270,7 @@ Item {
     animationsEnabled: true, animSpeed: 1.0,
     leftOrder: ["launcher", "sep-2", "workspaces", "sep-7", "mpris"],
     centerOrder: ["clock", "sep-5", "timer", "sep-6", "genshin", "battery"],
-    rightOrder: ["tray", "sep-12", "net", "bt", "keyboard", "sep-10", "audio", "sep-11", "control", "clipboard"]
+    rightOrder: ["tray", "sep-12", "net", "bt", "kcd", "keyboard", "sep-10", "audio", "sep-11", "control", "clipboard"]
   })
 
   function resetCfg() {

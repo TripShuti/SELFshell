@@ -390,6 +390,30 @@ else
   warn "No AUR helper — cursor theme (bibata) skipped, cursor stays default."
 fi
 
+# --- Крок 4.6: телефон (kcd, опційно) ---
+# kcd — Go KDE Connect daemon без KDE-стеку: батарея/ping/ring/share/notifications
+# Працює з офіційним Android KDE Connect, LAN-only, без телеметрії
+if [ -n "$aur_helper" ]; then
+  if confirm "Install kcd for phone integration (kcd-bin, AUR, optional)?" n; then
+    "$aur_helper" -S --needed --noconfirm kcd-bin || warn "kcd install failed — phone features will stay disabled (yay -S kcd-bin)"
+    if command -v kcd &>/dev/null; then
+      info "kcd installed: $(kcd --version 2>&1 | head -1)"
+      if [ -n "${XDG_RUNTIME_DIR:-}" ] && [ -d "$XDG_RUNTIME_DIR" ]; then
+        systemctl --user daemon-reload 2>/dev/null || true
+        systemctl --user enable --now kcd 2>/dev/null || systemctl --user enable kcd 2>/dev/null || true
+        info "kcd service: systemctl --user status kcd"
+      else
+        warn "No user session — skipped kcd enable. After login: systemctl --user enable --now kcd"
+      fi
+      warn "Firewall: allow 1716/udp+tcp and 1739:1764/tcp for phone discovery (ufw allow kcd or manual)"
+    fi
+  else
+    info "kcd skipped — phone widget will stay disabled (enable later: yay -S kcd-bin)"
+  fi
+else
+  warn "No AUR helper — kcd skipped (install later: yay -S kcd-bin)"
+fi
+
 # --- Крок 5: менеджер входу (greetd+tuigreet) / автозапуск ---
 echo
 info "On a bare Arch there is no display manager. After login you get a TTY."

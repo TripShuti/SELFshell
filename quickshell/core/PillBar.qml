@@ -13,6 +13,7 @@ Item {
   required property var widgetComponents
   required property var needsFillHeight
   required property var registerActive
+  required property var unregisterActive
 
   property real radius: 4
   property real padding: 8

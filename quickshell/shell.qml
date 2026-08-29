@@ -6,6 +6,7 @@ import Quickshell.Hyprland
 import Quickshell.Io
 import Quickshell.Wayland
 import "core"
+import "services"
 import QtQuick
 
 ShellRoot {
@@ -16,6 +17,8 @@ ShellRoot {
   // Спільний стан конфігурації — єдиний інстанс на весь шелл.
   // Доступний барам через window.appConfig, моніторам — напряму.
   AppConfig { id: rootAppConfig }
+
+  KdeConnectService { id: kdeConnectService; enabled: rootAppConfig.cfg.kcdEnabled }
 
   LockContext { id: lockContext }
 
@@ -125,6 +128,6 @@ ShellRoot {
 
   Variants {
     model: Quickshell.screens
-    Bar { palette: paletteService; appConfig: rootAppConfig }
+    Bar { palette: paletteService; appConfig: rootAppConfig; kdeConnect: kdeConnectService }
   }
 }

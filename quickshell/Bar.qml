@@ -54,13 +54,14 @@ PanelWindow {
   readonly property Item btWidget: activeWidgets["bt"] ?? null
   readonly property Item netWidget: activeWidgets["net"] ?? null
   readonly property Item trayWidget: activeWidgets["tray"] ?? null
+  readonly property Item kcdWidget: activeWidgets["kcd"] ?? null
 
   // Всі попапи бару (крім транзитних тостів): поки будь-який відкритий,
   // автоскривання не ховає бар
   property var popups: [
     calendarPopup, audioPopup, btPopup, netPopup, mprisPopup, workspacesPopup,
     keyboardPopup, genshinPopup, controlPopup, clipboardPopup, wallpaperPopup,
-    settingsPopup, launcherPopup, trayPopup, pairingPopup
+    settingsPopup, launcherPopup, trayPopup, pairingPopup, kcdPopup
   ]
   function anyPopupOpen() {
     for (var i = 0; i < root.popups.length; i++)
@@ -115,7 +116,7 @@ PanelWindow {
       root.barHidden = true
     }
   }
-  readonly property bool anyPopupOpenState: calendarPopup.visible || audioPopup.visible || btPopup.visible || netPopup.visible || mprisPopup.visible || workspacesPopup.visible || keyboardPopup.visible || genshinPopup.visible || controlPopup.visible || clipboardPopup.visible || wallpaperPopup.visible || settingsPopup.visible || launcherPopup.visible || trayPopup.visible || pairingPopup.visible || notifToast.visible || osdPopup.visible
+  readonly property bool anyPopupOpenState: calendarPopup.visible || audioPopup.visible || btPopup.visible || netPopup.visible || mprisPopup.visible || workspacesPopup.visible || keyboardPopup.visible || genshinPopup.visible || controlPopup.visible || clipboardPopup.visible || wallpaperPopup.visible || settingsPopup.visible || launcherPopup.visible || trayPopup.visible || pairingPopup.visible || kcdPopup.visible || notifToast.visible || osdPopup.visible
   function _updateAutoHide() {
     if (!root.autoHideOn) { hideDelay.stop(); root.barHidden = false; return }
     if (root.anyPopupOpenState || autoHideWatch.containsMouse || revealWatch.containsMouse) {
@@ -162,6 +163,7 @@ PanelWindow {
 
   required property QtObject palette
   required property QtObject appConfig
+  required property QtObject kdeConnect
 
   // --- Шаблони компонентів для динамічного рендеру пігулок ---
   // Loader.sourceComponent бере звідси потрібний тип за іменем віджета.
@@ -182,13 +184,14 @@ PanelWindow {
   Component { id: btComp;         BluetoothWidget { window: root; anchors.fill: parent } }
   Component { id: netComp;        NetWidget { window: root; anchors.fill: parent } }
   Component { id: trayComp;       TrayWidget { window: root; anchors.fill: parent } }
+  Component { id: kcdComp;        KdeConnectWidget { window: root; anchors.fill: parent } }
 
   readonly property var widgetComponents: ({
     launcher: launcherComp, workspaces: workspacesComp, mpris: mprisComp,
     clock: clockComp, timer: timerComp, genshin: genshinComp,
     keyboard: keyboardComp, audio: audioComp, battery: batteryComp, control: controlComp,
     clipboard: clipboardComp,
-    bt: btComp, net: netComp, tray: trayComp
+    bt: btComp, net: netComp, tray: trayComp, kcd: kcdComp
   })
 
   // Ці віджети самі всередині читають implicitHeight: parent?.height,
@@ -273,6 +276,7 @@ PanelWindow {
       widgetComponents: root.widgetComponents
       needsFillHeight: root.widgetNeedsFillHeight
       registerActive: root.registerActive
+      unregisterActive: root.unregisterActive
     }
 
     // Центральна пігулка
@@ -292,6 +296,7 @@ PanelWindow {
       widgetComponents: root.widgetComponents
       needsFillHeight: root.widgetNeedsFillHeight
       registerActive: root.registerActive
+      unregisterActive: root.unregisterActive
     }
 
     // Права пігулка
@@ -315,6 +320,7 @@ PanelWindow {
       widgetComponents: root.widgetComponents
       needsFillHeight: root.widgetNeedsFillHeight
       registerActive: root.registerActive
+      unregisterActive: root.unregisterActive
     }
   }
 
@@ -546,6 +552,30 @@ PanelWindow {
     }
   }
 
+  // Телефон (kcd) — попап по кліку на віджет телефону
+  KdeConnectPopup {
+    id: kcdPopup
+    window: root
+    visible: false
+  }
+
+  // Міст: сповіщення з телефону → системний тост (поважає DND)
+  Connections {
+    target: kdeConnect
+    function onNotificationReceived(notif) {
+      if (root.appConfig.cfg.dndEnabled) return
+      notif.tracked = true
+      notifToast.showNotif({
+        appName: notif.appName,
+        summary: notif.title,
+        body: notif.text,
+        appIcon: "phone",
+        actions: []
+      })
+      if (!controlPopup.visible) root.newNotifs++
+    }
+  }
+
   // IpcHandler для глобального виклику лаунчера
   IpcHandler {
     target: "launcher"
@@ -567,6 +597,14 @@ PanelWindow {
     target: "clipboard"
     function toggle(): void {
       clipboardPopup.toggle()
+    }
+  }
+
+  // IpcHandler для телефону (kcd)
+  IpcHandler {
+    target: "kcd"
+    function toggle(): void {
+      kcdPopup.toggle()
     }
   }
 
@@ -603,6 +641,7 @@ PanelWindow {
   Connections { target: controlWidget; enabled: target !== null; function onClicked() { controlPopup.toggle() } }
   Connections { target: btWidget; enabled: target !== null; function onClicked() { btPopup.toggle() } }
   Connections { target: netWidget; enabled: target !== null; function onClicked() { netPopup.toggle() } }
+  Connections { target: kcdWidget; enabled: target !== null; function onClicked() { kcdPopup.toggle() } }
   Connections { target: controlPopup;   function onOpenWallpaperPopup() { controlPopup.visible = false; wallpaperPopup.toggle() } }
   Connections { target: controlPopup;   function onOpenBtManager() { controlPopup.visible = false; btPopup.toggle() } }
   Connections { target: controlPopup;   function onOpenNetManager() { controlPopup.visible = false; netPopup.toggle() } }
