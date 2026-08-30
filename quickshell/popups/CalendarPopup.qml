@@ -1,5 +1,5 @@
 // ============================================================
-// CalendarPopup.qml — календар з сіткою днів та задачами
+// quickshell/popups/CalendarPopup.qml — календар з сіткою днів та задачами
 // ============================================================
 import Quickshell
 import Quickshell.Io
@@ -168,7 +168,6 @@ AnimatedPopup {
       Layout.fillWidth: true
       spacing: 4
 
-      // Кнопка назад
       Rectangle {
         property bool hovered: false
         width: 26; height: 26; radius: 4
@@ -196,7 +195,6 @@ AnimatedPopup {
         color: window.palette.fg; font.family: window.palette.font; font.pixelSize: appConfig.scaled(14); font.bold: true
       }
 
-      // Кнопка вперед
       Rectangle {
         property bool hovered: false
         width: 26; height: 26; radius: 4
@@ -217,7 +215,6 @@ AnimatedPopup {
       }
     }
 
-    // Назви днів тижня
     RowLayout {
       Layout.fillWidth: true
       spacing: 2

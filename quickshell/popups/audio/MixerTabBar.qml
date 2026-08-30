@@ -1,5 +1,5 @@
 // ============================================================
-// popups/audio/MixerTabBar.qml — вкладки pavucontrol (5 штук)
+// quickshell/popups/audio/MixerTabBar.qml — вкладки pavucontrol (5 штук)
 // ============================================================
 import QtQuick
 import QtQuick.Layouts

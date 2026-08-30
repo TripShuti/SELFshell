@@ -1,8 +1,8 @@
 # ============================================================
 # fish/config.fish — головний конфіг Fish shell
 # ============================================================
-function fish_greeting                                            
-    # do nothing
+function fish_greeting
+    # нічого не робимо
     fastfetch
 end 
 

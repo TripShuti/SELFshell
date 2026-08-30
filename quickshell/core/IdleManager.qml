@@ -1,6 +1,5 @@
 // ============================================================
-// IdleManager.qml — багаторівневе керування бездіяльністю:
-// блокування, DPMS, suspend
+// quickshell/core/IdleManager.qml — багаторівневе керування бездіяльністю: блокування, DPMS, suspend
 // ============================================================
 import QtQuick
 import Quickshell
@@ -8,8 +7,7 @@ import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Services.Mpris
 
-// Менеджер бездіяльності з трьома рівнями:
-//   lock < dpms < suspend
+// Менеджер бездіяльності з трьома рівнями (порядок: lock < dpms < suspend):
 //
 // Таймаути (секунди) налаштовуються в config.json:
 //   idleLockTimeout / idleDpmsTimeout / idleSuspendTimeout

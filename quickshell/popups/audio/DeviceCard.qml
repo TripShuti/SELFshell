@@ -1,6 +1,5 @@
 // ============================================================
-// popups/audio/DeviceCard.qml — картка пристрою (Output/Input)
-// з портом, fallback та слайдером
+// quickshell/popups/audio/DeviceCard.qml — картка пристрою (Output/Input) з портом, fallback та слайдером
 // ============================================================
 import Quickshell
 import Quickshell.Services.Pipewire
@@ -39,7 +38,7 @@ Item {
       anchors.margins: 6
       spacing: 6
 
-      // Header: icon + name + port combo + fallback
+      // Заголовок: іконка + назва + комбобокс порту + fallback-кнопка
       RowLayout {
         Layout.fillWidth: true
         spacing: 6
@@ -86,7 +85,7 @@ Item {
           }
         }
 
-        // Fallback
+        // Кнопка «за замовчуванням»
         Rectangle {
           property bool hovered: false
           width: 24; height: 24; radius: 4

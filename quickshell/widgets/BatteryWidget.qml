@@ -1,5 +1,5 @@
 // ============================================================
-// widgets/BatteryWidget.qml — віджет заряду батареї на панелі
+// quickshell/widgets/BatteryWidget.qml — віджет заряду батареї на панелі
 // ============================================================
 import Quickshell
 import Quickshell.Io

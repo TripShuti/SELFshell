@@ -1,6 +1,5 @@
 // ============================================================
-// TrackListService.qml — сервіс MPRIS TrackList: список треків
-// через scripts/tracklist.py (обгортка D-Bus TrackList)
+// quickshell/services/TrackListService.qml — сервіс MPRIS TrackList: список треків через scripts/tracklist.py (обгортка D-Bus TrackList)
 // ============================================================
 import Quickshell.Io
 import QtQuick

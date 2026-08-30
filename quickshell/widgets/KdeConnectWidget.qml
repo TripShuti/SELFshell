@@ -1,5 +1,5 @@
 // ============================================================
-// KdeConnectWidget.qml — віджет телефону (kcd) на панелі
+// quickshell/widgets/KdeConnectWidget.qml — віджет телефону (kcd) на панелі
 // ============================================================
 import QtQuick
 import QtQuick.Layouts

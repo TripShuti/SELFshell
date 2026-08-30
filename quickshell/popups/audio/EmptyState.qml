@@ -1,5 +1,5 @@
 // ============================================================
-// popups/audio/EmptyState.qml — placeholder для порожніх списків
+// quickshell/popups/audio/EmptyState.qml — placeholder для порожніх списків
 // ============================================================
 import QtQuick
 import QtQuick.Layouts

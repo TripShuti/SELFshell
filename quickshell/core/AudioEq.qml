@@ -1,13 +1,5 @@
 // ============================================================
-// core/AudioEq.qml — справжній еквалайзер на PipeWire.
-// EQ sink (SELFshell_EQ, стерео, mbeq 15-band) створюється статичним
-// конфігом ~/.config/pipewire/pipewire.conf.d/10-selfshell-eq.conf
-// (пише цей компонент, якщо файла нема) — тому він є завжди, а
-// увімкнення/вимкнення = ЧИСТИЙ РОУТИНГ:
-//   enable  = зберегти default → перенести потоки → default = EQ
-//   disable = перенести потоки назад → default = збережений
-// Смуги змінюються live через pw-cli set-param (Props.params,
-// порти "mbeqL:..."/"mbeqR:..."). Стан — data/eq.json.
+// quickshell/core/AudioEq.qml — 15-смуговий еквалайзер PipeWire (filter-chain SELFshell_EQ, live pw-cli, data/eq.json)
 // ============================================================
 import Quickshell
 import Quickshell.Io

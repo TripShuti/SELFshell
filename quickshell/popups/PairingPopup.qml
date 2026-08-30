@@ -1,8 +1,5 @@
 // ============================================================
-// popups/PairingPopup.qml — підтвердження Bluetooth-парингу:
-// numeric comparison (код на обох екранах), введення PIN,
-// дозвіл на паринг/сервіс. Дані приходять з core/PairingAgent.qml
-// (qs-bt-agent пише запити в XDG_RUNTIME_DIR).
+// quickshell/popups/PairingPopup.qml — підтвердження Bluetooth-парингу (numeric comparison, PIN, авторизація)
 // ============================================================
 import Quickshell
 import Quickshell.Bluetooth

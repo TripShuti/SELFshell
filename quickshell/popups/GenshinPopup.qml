@@ -1,5 +1,5 @@
 // ============================================================
-// GenshinPopup.qml — детальна інформація Genshin Impact
+// quickshell/popups/GenshinPopup.qml — детальна інформація Genshin Impact
 // ============================================================
 import Quickshell
 import Quickshell.Io

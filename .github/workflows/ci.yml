@@ -106,6 +106,9 @@ jobs:
           python3 tests/check_config_schema.py
           python3 tests/check_md_links.py
 
+      - name: Banner check (quickshell)
+        run: python3 tests/check_banner.py
+
       - name: Canonical repo URL casing
         run: |
           ! grep -rn "TripShuti/[s]elfshell" . --exclude-dir=.git --exclude-dir=__pycache__ 2>/dev/null

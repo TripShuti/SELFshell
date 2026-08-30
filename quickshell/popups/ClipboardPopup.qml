@@ -1,5 +1,5 @@
 // ============================================================
-// ClipboardPopup.qml — історія буфера обміну (cliphist)
+// quickshell/popups/ClipboardPopup.qml — історія буфера обміну (cliphist)
 // ============================================================
 import Quickshell
 import Quickshell.Io

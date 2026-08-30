@@ -1,6 +1,5 @@
 // ============================================================
-// settings/BehaviorSection.qml — розділ Behavior: DND, idle-таймаути,
-// кроки колеса, скидання до заводських налаштувань
+// quickshell/popups/settings/BehaviorSection.qml — розділ Behavior: DND, idle-таймаути, кроки колеса, скидання до заводських налаштувань
 // ============================================================
 import QtQuick
 import QtQuick.Layouts

@@ -1,6 +1,5 @@
 // ============================================================
-// SettingsPopup.qml — налаштування: Bar (з Layout всередині), Popups,
-// Hyprland, Appearance, Wallpaper, Behavior, Binds, About.
+// quickshell/popups/SettingsPopup.qml — налаштування: Bar (з Layout всередині), Popups, Hyprland, Appearance, Wallpaper, Behavior, Binds, About.
 // ============================================================
 import QtQuick
 import QtQuick.Layouts

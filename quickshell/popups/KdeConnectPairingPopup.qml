@@ -1,7 +1,5 @@
 // ============================================================
-// KdeConnectPairingPopup.qml — підтвердження парування телефону (kcd)
-// Показується коли телефон (Android/iOS) надсилає запит на парування
-// Дані приходять з services/KdeConnectService.qml (pendingPairRequest)
+// quickshell/popups/KdeConnectPairingPopup.qml — підтвердження парування телефону (kcd)
 // ============================================================
 import Quickshell
 import Quickshell.Io

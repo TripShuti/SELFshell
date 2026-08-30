@@ -1,10 +1,5 @@
 // ============================================================
-// settings/BindsSection.qml — розділ Binds: перегляд і переназначення
-// гарячих клавіш. Пише ~/.config/hypr/binds.json (читає hypr/modules/
-// binds.lua з фолбеком на дефолти) і застосовує через hyprctl reload.
-// Захоплення клавіші — без SUPER: він додається автоматично (Hyprland
-// перехоплює SUPER-комбінації глобально, тому зловити їх у попапі
-// неможливо). Escape під час запису — скасувати.
+// quickshell/popups/settings/BindsSection.qml — розділ Binds: перегляд і переназначення гарячих клавіш (hypr/binds.json)
 // ============================================================
 import QtQuick
 import QtQuick.Layouts

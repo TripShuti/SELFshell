@@ -1,9 +1,5 @@
 // ============================================================
-// core/PairingAgent.qml — міст між qs-bt-agent і UI парингу.
-// Стежить за $XDG_RUNTIME_DIR/selfshell-pairing/request.json
-// (пише services/qs-bt-agent), відповідь кладе в response.json.
-// Той самий патерн, що last-shot.txt у ControlPopup: обмін
-// через FileView, без нових залежностей.
+// quickshell/core/PairingAgent.qml — міст між qs-bt-agent та UI парингу через FileView
 // ============================================================
 import Quickshell
 import Quickshell.Io

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # ============================================================
-# scripts/tracklist.py — обгортка MPRIS TrackList D-Bus
+# quickshell/scripts/tracklist.py — обгортка MPRIS TrackList D-Bus
 # ============================================================
 import argparse
 import json
@@ -91,7 +91,7 @@ def _clean_metadata(meta: dict) -> dict:
     for key, value in meta.items():
         if isinstance(value, dbus.Array):
             cleaned = [str(v) for v in value]
-            # artist and albumArtist are arrays in MPRIS
+            # artist та albumArtist — масиви в MPRIS
             if key == "xesam:artist":
                 result["artist"] = cleaned[0] if cleaned else ""
             elif key == "xesam:albumArtist":

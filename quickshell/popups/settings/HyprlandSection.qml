@@ -1,7 +1,5 @@
 // ============================================================
-// settings/HyprlandSection.qml — візуальні налаштування Hyprland:
-// вікна (gaps, border, rounding, opacity, shadows) + blur
-// (visual.json + hyprctl reload)
+// quickshell/popups/settings/HyprlandSection.qml — візуальні налаштування Hyprland: вікна (gaps, border, rounding, opacity, shadows) + blur (visual.json + hyprctl reload)
 // ============================================================
 import QtQuick
 import QtQuick.Layouts

@@ -1,6 +1,5 @@
 // ============================================================
-// BluetoothPopup.qml — менеджер Bluetooth: адаптер, пристрої,
-// сканування
+// quickshell/popups/BluetoothPopup.qml — менеджер Bluetooth: адаптер, пристрої, сканування
 // ============================================================
 import Quickshell
 import Quickshell.Bluetooth

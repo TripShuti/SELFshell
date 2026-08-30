@@ -1,5 +1,5 @@
 // ============================================================
-// popups/audio/PortCombo.qml — комбобокс вибору порту (sink/source)
+// quickshell/popups/audio/PortCombo.qml — комбобокс вибору порту (sink/source)
 // ============================================================
 import QtQuick
 import QtQuick.Layouts

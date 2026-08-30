@@ -1,5 +1,5 @@
 // ============================================================
-// MprisWidget.qml — віджет медіаплеєра на панелі
+// quickshell/widgets/MprisWidget.qml — віджет медіаплеєра на панелі
 // ============================================================
 import Quickshell.Services.Mpris
 import QtQuick

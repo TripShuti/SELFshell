@@ -1,6 +1,5 @@
 // ============================================================
-// KdeConnectService.qml — обгортка над kcd (Go KDE Connect)
-// для battery + ping/ring + share + notification (v1)
+// quickshell/services/KdeConnectService.qml — обгортка над kcd (Go KDE Connect) для battery + ping/ring + share + notification (v1)
 // ============================================================
 import Quickshell
 import Quickshell.Io
@@ -428,7 +427,7 @@ Item {
       }
       return
     }
-    // SFTP — volumes / mount / info
+    // SFTP — томи / монтування / інфо
     if (t.indexOf("sftp") !== -1) {
       if (payload.volumes && Array.isArray(payload.volumes)) root.sftpVolumes = payload.volumes
       else if (payload.volume) root.sftpVolumes = [payload.volume]
@@ -468,7 +467,7 @@ Item {
       }
       return
     }
-    // Ping
+    // Пінг
     if (t === "ping.received" || t === "ping") {
       if (!root.muted) root.notificationReceived({ appName: "Ping", title: "Ping received", text: devId ? devId.slice(0,8) : "", appIcon: "dialog-information", isPhone: true, actions: [] })
       return

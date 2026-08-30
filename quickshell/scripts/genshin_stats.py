@@ -1,6 +1,5 @@
 # ============================================================
-# genshin_stats.py — API-клієнт HoYoLAB для Genshin Impact:
-# смола, чекін, дейліки. Викликається з GenshinMonitor.qml
+# quickshell/scripts/genshin_stats.py — API-клієнт HoYoLAB для Genshin Impact: смола, чекін, дейліки. Викликається з GenshinMonitor.qml
 # ============================================================
 import requests
 import json

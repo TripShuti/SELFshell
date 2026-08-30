@@ -1,8 +1,5 @@
 // ============================================================
-// AudioMixerPopup.qml — мікшер аудіо в стилі pavucontrol: 5
-// вкладок (Playback/Recording/Output/Input/Configuration) з
-// керуванням гучністю, вибором пристрою для кожного потоку,
-// портами, профілями карт та fallback-пристроями
+// quickshell/popups/AudioMixerPopup.qml — мікшер аудіо в стилі pavucontrol (5 вкладок: потоки, пристрої, профілі)
 // ============================================================
 import Quickshell
 import Quickshell.Io
@@ -13,8 +10,6 @@ import "audio"
 import QtQuick
 import QtQuick.Layouts
 
-// Мікшер аудіо — подоба pavucontrol: вкладки Playback,
-// Recording, Output Devices, Input Devices, Configuration
 AnimatedPopup {
   id: root
 
@@ -383,7 +378,7 @@ AnimatedPopup {
       Behavior on implicitHeight { NumberAnimation { duration: appConfig.anim(200); easing.type: Easing.OutCubic } }
       clip: true
 
-      // ===== Playback =====
+      // ===== Відтворення =====
       Flickable {
         id: playbackFlick
         width: parent.width
@@ -461,7 +456,7 @@ AnimatedPopup {
           }
         }
 
-        // ===== Recording =====
+        // ===== Запис =====
         Flickable {
           id: recordingFlick
           width: parent.width
@@ -539,7 +534,7 @@ AnimatedPopup {
           }
         }
 
-        // ===== Output Devices =====
+        // ===== Пристрої виведення =====
         Flickable {
           id: outputFlick
           width: parent.width
@@ -600,7 +595,7 @@ AnimatedPopup {
           }
         }
 
-        // ===== Input Devices =====
+        // ===== Пристрої введення =====
         Flickable {
           id: inputFlick
           width: parent.width
@@ -661,7 +656,7 @@ AnimatedPopup {
           }
         }
 
-        // ===== Configuration =====
+        // ===== Конфігурація =====
         Flickable {
           id: configFlick
           width: parent.width

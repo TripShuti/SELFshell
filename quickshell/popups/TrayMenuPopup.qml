@@ -1,5 +1,5 @@
 // ============================================================
-// popups/TrayMenuPopup.qml — QML-рендер меню системного трею
+// quickshell/popups/TrayMenuPopup.qml — QML-рендер меню системного трею
 // ============================================================
 import Quickshell
 import Quickshell.Widgets

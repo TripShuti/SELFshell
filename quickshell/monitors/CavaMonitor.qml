@@ -1,5 +1,5 @@
 // ============================================================
-// CavaMonitor.qml — аудіо-візуалізатор (cava)
+// quickshell/monitors/CavaMonitor.qml — аудіо-візуалізатор (cava)
 // ============================================================
 import Quickshell.Io
 import QtQuick

@@ -1,7 +1,6 @@
 #!/bin/bash
 # ============================================================
-# update-palette.sh — генерує палітру з шпалери через matugen
-# + оновлює palette.json, сповіщає quickshell через IPC
+# quickshell/scripts/update-palette.sh — генерує палітру з шпалери через matugen + оновлює palette.json, сповіщає quickshell через IPC
 # ============================================================
 set -euo pipefail
 WALLPAPER="$1"

@@ -1,6 +1,5 @@
 // ============================================================
-// settings/WallpaperSection.qml — вибір шпалер: мініатюри,
-// клік застосовує через update-palette.sh і перегенеровує палітру
+// quickshell/popups/settings/WallpaperSection.qml — вибір шпалер: мініатюри, клік застосовує через update-palette.sh і перегенеровує палітру
 // ============================================================
 import QtQuick
 import QtQuick.Layouts

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # ============================================================
-# update-palette.py — генерація палітри та тем зі шпалер
+# quickshell/scripts/update-palette.py — генерація палітри та тем зі шпалер
 # ============================================================
 # Генерує data/palette.json, kitty тему, fish кольори, starship, yazi, foot
 # та qt6ct color scheme на основі поточних шпалер через matugen

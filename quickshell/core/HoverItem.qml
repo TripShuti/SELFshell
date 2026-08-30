@@ -1,5 +1,5 @@
 // ============================================================
-// core/HoverItem.qml — контейнер з вбудованим MouseArea для hover/click
+// quickshell/core/HoverItem.qml — контейнер з вбудованим MouseArea для hover/click
 // ============================================================
 import QtQuick
 

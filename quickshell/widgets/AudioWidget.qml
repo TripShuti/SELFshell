@@ -1,5 +1,5 @@
 // ============================================================
-// AudioWidget.qml — віджет гучності на панелі
+// quickshell/widgets/AudioWidget.qml — віджет гучності на панелі
 // ============================================================
 import Quickshell.Services.Pipewire
 import "../core"

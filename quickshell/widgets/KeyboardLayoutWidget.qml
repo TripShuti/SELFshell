@@ -1,5 +1,5 @@
 // ============================================================
-// KeyboardLayoutWidget.qml — розкладка клавіатури на панелі
+// quickshell/widgets/KeyboardLayoutWidget.qml — розкладка клавіатури на панелі
 // ============================================================
 import Quickshell.Io
 import "../core"

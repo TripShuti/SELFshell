@@ -1,5 +1,5 @@
 // ============================================================
-// GenshinWidget.qml — віджет Genshin Impact на панелі
+// quickshell/widgets/GenshinWidget.qml — віджет Genshin Impact на панелі
 // ============================================================
 import "../core"
 import QtQuick
@@ -18,7 +18,6 @@ Item {
   // Hover-стан для фідбеку (HoverText-рецепт: колір + масштаб)
   property bool hovered: false
 
-  // Іконка смоли
   property string resinIconSource: "../assets/resin2.png"
 
   // Текст без гліфа, якщо є іконка
@@ -34,7 +33,6 @@ Item {
     anchors.verticalCenter: parent.verticalCenter
     spacing: 4
 
-    // Іконка смоли (блимає якщо critical)
     Image {
       source: root.resinIconSource
       visible: root.resinIconSource !== ""
@@ -56,7 +54,6 @@ Item {
       }
     }
 
-    // Текст смоли
     Text {
       id: txt
       text: root.resinDisplayText

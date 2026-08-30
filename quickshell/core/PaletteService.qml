@@ -1,6 +1,5 @@
 // ============================================================
-// PaletteService.qml — реактивна палітра кольорів з FileView.
-// Стежить за data/palette.json, оновлює кольори на льоту
+// quickshell/core/PaletteService.qml — реактивна палітра кольорів з FileView. Стежить за data/palette.json, оновлює кольори на льоту
 // ============================================================
 import Quickshell.Io
 import QtQuick

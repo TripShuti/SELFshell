@@ -1,3 +1,4 @@
+# yazi/package.toml — залежності плагінів та тем (flavor)
 [plugin]
 deps = []
 

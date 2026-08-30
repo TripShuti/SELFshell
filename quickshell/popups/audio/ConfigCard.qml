@@ -1,5 +1,5 @@
 // ============================================================
-// popups/audio/ConfigCard.qml — картка карти з вибором профілю
+// quickshell/popups/audio/ConfigCard.qml — картка карти з вибором профілю
 // ============================================================
 import QtQuick
 import QtQuick.Layouts

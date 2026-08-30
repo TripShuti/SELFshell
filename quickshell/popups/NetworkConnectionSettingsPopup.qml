@@ -1,6 +1,5 @@
 // ============================================================
-// NetworkConnectionSettingsPopup.qml — налаштування IPv4, DNS,
-// безпеки Wi-Fi через nmcli
+// quickshell/popups/NetworkConnectionSettingsPopup.qml — налаштування IPv4, DNS, безпеки Wi-Fi через nmcli
 // ============================================================
 import Quickshell
 import Quickshell.Io

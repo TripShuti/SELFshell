@@ -1,6 +1,5 @@
 // ============================================================
-// popups/OsdPopup.qml — оверлей OSD під час зміни гучності
-// або яскравості гарячими клавішами
+// quickshell/popups/OsdPopup.qml — оверлей OSD під час зміни гучності або яскравості гарячими клавішами
 // ============================================================
 import Quickshell
 import Quickshell.Io
@@ -20,7 +19,7 @@ PopupWindow {
   readonly property QtObject palette: anchorWindow ? anchorWindow.palette : null
   readonly property QtObject appConfig: anchorWindow ? anchorWindow.appConfig : null
 
-  // "volume" | "brightness"
+  // режим: "volume" | "brightness"
   property string mode: "volume"
 
   color: "transparent"

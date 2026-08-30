@@ -1,6 +1,5 @@
 // ============================================================
-// ControlPopup.qml — центр керування: сповіщення, швидкі дії,
-// кнопки живлення
+// quickshell/popups/ControlPopup.qml — центр керування: сповіщення, швидкі дії, кнопки живлення
 // ============================================================
 import QtQuick
 import QtQuick.Layouts
@@ -71,7 +70,7 @@ AnimatedPopup {
 
   // --- Режим читання ---
   property int readingTemp: 6500
-  // 3500 = max warmth, 6500 = off (≈identity)
+  // 3500 = макс. тепло, 6500 = вимкнено (≈identity)
 
   // Виконує дію живлення: shutdown, reboot, suspend, logout, lock
   function runPowerAction(action) {

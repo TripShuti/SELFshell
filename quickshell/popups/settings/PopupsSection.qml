@@ -1,6 +1,5 @@
 // ============================================================
-// settings/PopupsSection.qml — налаштування попапів: фон, градієнт,
-// радіуси, бордери, тости/OSD
+// quickshell/popups/settings/PopupsSection.qml — налаштування попапів: фон, градієнт, радіуси, бордери, тости/OSD
 // ============================================================
 import Quickshell.Io
 import QtQuick
@@ -14,7 +13,7 @@ Item {
   readonly property var cfg: sys.cfg
   readonly property var ac: sys.ac
 
-  // Preview helpers — at root so SetSlider onMoved can see them
+  // Хелпери превʼю — на рівні root, щоб SetSlider.onMoved їх бачив
   Process { id: toastPreviewProc; command: ["notify-send", "Preview", "Toast preview — drag sliders"] }
   Process { id: osdPreviewProc; command: ["sh", "-c", "qs ipc call osd volume 2>&1 | head"] }
   function _previewToast() { toastPreviewProc.running = true }

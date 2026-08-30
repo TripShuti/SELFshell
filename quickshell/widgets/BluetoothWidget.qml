@@ -1,5 +1,5 @@
 // ============================================================
-// BluetoothWidget.qml — віджет Bluetooth на панелі
+// quickshell/widgets/BluetoothWidget.qml — віджет Bluetooth на панелі
 // ============================================================
 import QtQuick
 import QtQuick.Layouts

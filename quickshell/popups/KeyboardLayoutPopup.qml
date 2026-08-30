@@ -1,5 +1,5 @@
 // ============================================================
-// KeyboardLayoutPopup.qml — вибір розкладки клавіатури
+// quickshell/popups/KeyboardLayoutPopup.qml — вибір розкладки клавіатури
 // ============================================================
 import Quickshell
 import Quickshell.Io

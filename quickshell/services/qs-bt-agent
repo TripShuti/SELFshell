@@ -1,14 +1,6 @@
 #!/usr/bin/env python3
 # ============================================================
-# qs-bt-agent — BlueZ pairing agent (KeyboardDisplay) з підтвердженням
-# у шеллі: кожен запит парингу пишеться в $XDG_RUNTIME_DIR/selfshell-pairing/
-# request.json, рішення користувача чекається в response.json
-# (QML-бік — core/PairingAgent.qml + popups/PairingPopup.qml).
-# Запускається як systemd user-сервіс.
-#
-# Попап видно тільки в активній сесії: під локскріном запит просто
-# не показується і через REQUEST_TIMEOUT_S відхиляється — свідомо
-# безпечний дефолт ("хто чужий" не отримує нічого мовчки).
+# quickshell/services/qs-bt-agent — BlueZ pairing agent (KeyboardDisplay) з підтвердженням у шеллі: кожен запит парингу пишеться в $XDG_RUNTIME_DIR/selfshell-pairing/ request.json, рішення користувача чекається в response.json (QML-бік — core/PairingAgent.qml + popups/PairingPopup.qml). Запускається як systemd user-сервіс. Попап видно тільки в активній сесії: під локскріном запит просто не показується і через REQUEST_TIMEOUT_S відхиляється — свідомо безпечний дефолт ("хто чужий" не отримує нічого мовчки).
 # ============================================================
 
 import json

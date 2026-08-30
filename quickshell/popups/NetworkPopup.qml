@@ -1,5 +1,5 @@
 // ============================================================
-// NetworkPopup.qml — менеджер мереж: Wi-Fi, Ethernet, сканування
+// quickshell/popups/NetworkPopup.qml — менеджер мереж: Wi-Fi, Ethernet, сканування
 // ============================================================
 import Quickshell
 import Quickshell.Networking

@@ -1,6 +1,5 @@
 // ============================================================
-// Bar.qml — головна панель системи (top bar) з віджетами,
-// попапами та моніторами
+// quickshell/Bar.qml — головна панель системи (top bar) з віджетами, попапами та моніторами
 // ============================================================
 import Quickshell
 import Quickshell.Io
@@ -11,7 +10,6 @@ import "widgets"
 import "popups"
 import "monitors"
 
-// --- Сама панель ---
 PanelWindow {
   id: root
 
@@ -243,7 +241,6 @@ PanelWindow {
       onEntered: { if (root.barHidden) root.barHidden = false }
     }
 
-    // Ліва пігулка
     PillBar {
       anchors {
         left: parent.left
@@ -267,7 +264,6 @@ PanelWindow {
       unregisterActive: root.unregisterActive
     }
 
-    // Центральна пігулка
     PillBar {
       anchors.centerIn: parent
       visible: root.appConfig.cfg.centerPillEnabled
@@ -287,7 +283,6 @@ PanelWindow {
       unregisterActive: root.unregisterActive
     }
 
-    // Права пігулка
     PillBar {
       anchors {
         right: parent.right
@@ -586,7 +581,7 @@ PanelWindow {
       if (!iconSrc) {
         var base = String(notif.appName ?? "").toLowerCase().replace(/\s+/g, "-")
         var cands = [base, "org." + base + ".desktop", base + "-desktop", base.replace(/^org\./, "")]
-        // Telegram → org.telegram.desktop, WhatsApp → whatsapp, etc.
+        // Telegram → org.telegram.desktop, WhatsApp → whatsapp тощо
         if (base === "telegram") cands.unshift("org.telegram.desktop", "telegram-desktop")
         if (base === "whatsapp") cands.unshift("whatsapp", "whatsapp-desktop")
         iconSrc = "phone"

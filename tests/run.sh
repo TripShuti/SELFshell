@@ -72,6 +72,7 @@ fi
 # --- Python-перевірки конфігів та документації ---
 run "config schema check" python3 tests/check_config_schema.py
 run "markdown links check" python3 tests/check_md_links.py
+run "banner check (quickshell)" python3 tests/check_banner.py
 
 # --- Канонічний регістр URL репозиторію (TripShuti/SELFshell) ---
 # Нижній регістр імені репо працює лише через редирект GitHub —

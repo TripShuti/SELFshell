@@ -1,6 +1,5 @@
 // ============================================================
-// popups/audio/StreamCard.qml — картка потоку (Playback/Recording)
-// з іконкою, слайдером, вибором пристрою та кнопкою закриття
+// quickshell/popups/audio/StreamCard.qml — картка потоку (Playback/Recording) з іконкою, слайдером, вибором пристрою та кнопкою закриття
 // ============================================================
 import Quickshell
 import Quickshell.Io

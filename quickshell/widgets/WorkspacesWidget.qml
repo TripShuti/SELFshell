@@ -1,5 +1,5 @@
 // ============================================================
-// WorkspacesWidget.qml — робочі столи Hyprland на панелі
+// quickshell/widgets/WorkspacesWidget.qml — робочі столи Hyprland на панелі
 // ============================================================
 import Quickshell
 import Quickshell.Hyprland

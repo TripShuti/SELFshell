@@ -1,7 +1,5 @@
 // ============================================================
-// core/IconResolver.qml — єдиний резолв іконок для всього шела
-// file:// або /path → file://, image://icon/name → резолв, ім'я → iconPath true
-// з fallback telegram→org.telegram.desktop, щоб уникнути purple/black checker
+// quickshell/core/IconResolver.qml — єдиний резолв іконок для всього шела
 // ============================================================
 import Quickshell
 import QtQuick

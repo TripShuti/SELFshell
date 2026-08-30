@@ -1,6 +1,5 @@
 // ============================================================
-// GenshinMonitor.qml — монітор Genshin Impact: поллінг HoYoLAB
-// API, локальний обрахунок смоли, чекін
+// quickshell/monitors/GenshinMonitor.qml — монітор Genshin Impact: поллінг HoYoLAB API, локальний обрахунок смоли, чекін
 // ============================================================
 import Quickshell
 import Quickshell.Io

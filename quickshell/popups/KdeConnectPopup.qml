@@ -1,6 +1,5 @@
 // ============================================================
-// KdeConnectPopup.qml — попап телефону (kcd): батарея, ping/ring,
-// share, сповіщення
+// quickshell/popups/KdeConnectPopup.qml — попап телефону (kcd): батарея, ping/ring, share, сповіщення
 // ============================================================
 import Quickshell
 import Quickshell.Io
@@ -306,7 +305,7 @@ AnimatedPopup {
       visible: root.installed && root.isPaired && root.devId !== ""
       Layout.fillWidth: true
       spacing: 6
-      // Ping
+      // Пінг
       Rectangle {
         property bool hovered: false
         Layout.fillWidth: true; height: 28; radius: 6
@@ -329,7 +328,7 @@ AnimatedPopup {
           onClicked: root.doPing()
         }
       }
-      // Ring (find my phone)
+      // Пошук телефону
       Rectangle {
         property bool hovered: false
         Layout.fillWidth: true; height: 28; radius: 6
@@ -352,7 +351,7 @@ AnimatedPopup {
           onClicked: root.doRing()
         }
       }
-      // Share
+      // Поділитися
       Rectangle {
         property bool hovered: false
         Layout.fillWidth: true; height: 28; radius: 6
@@ -429,7 +428,7 @@ AnimatedPopup {
       }
     }
 
-    // --- Clipboard ---
+    // --- Буфер обміну ---
     RowLayout {
       visible: root.installed && root.isPaired && root.devId !== ""
       Layout.fillWidth: true

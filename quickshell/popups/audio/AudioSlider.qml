@@ -1,6 +1,5 @@
 // ============================================================
-// popups/audio/AudioSlider.qml — уніфікований рядок гучності:
-// mute-кнопка + трек + відсоток/dB + lock (як у pavucontrol)
+// quickshell/popups/audio/AudioSlider.qml — уніфікований рядок гучності: mute-кнопка + трек + відсоток/dB + lock (як у pavucontrol)
 // ============================================================
 import Quickshell
 import Quickshell.Services.Pipewire

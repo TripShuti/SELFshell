@@ -1,19 +1,31 @@
 # Contributing
 
 ## Language
-- Code and comments — **Ukrainian**
+- Code and comments — **Ukrainian** (tags `FIXME`/`TODO`/`HACK`/`NOTE` allowed as English prefix, but explanation after `—`/`:` — Ukrainian)
 - Documentation (`docs/`, README), UI strings, commit messages — English
 - Variable/function/component names — English (the programming language)
 
 ## Code style
-- Every project file must start with a banner:
+- Every project file must start with a banner (for shebang files — right after `#!/...`):
   ```
   // ============================================================
   // <path>/<name> — short one-sentence description
   // ============================================================
   ```
+  `<path>` is relative to the component root (`quickshell/core/AppConfig.qml`, `hypr/modules/env.lua`, `fish/config.fish`). Marker matches the file language: `//` for QML/JS/JSONC, `#` for Bash/Python/Fish/TOML/conf, `--` for Lua. Separator is 60 `=`, em dash `—` (U+2014) on line 2, one-sentence description.
+  Exceptions:
+  - pure JSON (`*.json` — `data/config.json`, `data/palette.json`, `hypr/env.json`) — no banner (JSON forbids comments);
+  - generated files (`fish/conf.d/99-palette.fish`, `kitty/current-theme.conf`, `yazi/theme.toml`) — short one-line comment, language per generator;
+  - auxiliary files (data, simple config) — a shorter one-line comment is enough.
   Comment markers matching the file's language (`#`, `//`, `--`).
-- For auxiliary files (data, simple config) — a shorter one-line comment
+
+- **Formatting (incremental, no mass refactor):**
+  - `import`: `Quickshell*` → `QtQuick*` → local (`"core"`, `"widgets"`, `"popups"`). Don't reorder old files — follow for new code.
+  - `property` order: `id` → `required property` → `implicit*`/`property` → `signal` → `function` → children. Avoid mixing `signal` inside `property`.
+  - QML JS: `var` (canonical for QML), not `let`/`const` — to keep one style (`widgets/BluetoothWidget.qml:23` is an exception until next touch).
+  - Quotes: QML — double (`"..."`), JS inside QML also double; single only if it saves escaping. No mass `'` → `"` churn.
+  - Anchors: `anchors { left: }` vs `anchors.left:` — both valid, keep one style per file.
+  - 2-space indent, no trailing whitespace, no mass `qmlformat` — large diff breaks `git blame` and risks binding loops (`Bar.qml` `Layout.fillHeight` on `Loader`).
 
 ## When to write a comment
 - The decision is not obvious from the code (architectural choice, bug workaround, trade-off)

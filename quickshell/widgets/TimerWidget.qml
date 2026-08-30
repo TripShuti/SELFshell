@@ -1,5 +1,5 @@
 // ============================================================
-// TimerWidget.qml — таймер на панелі
+// quickshell/widgets/TimerWidget.qml — таймер на панелі
 // ============================================================
 import Quickshell
 import Quickshell.Io
