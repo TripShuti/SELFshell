@@ -416,12 +416,14 @@ Item {
           if (arr[i].id === _n.id) { isDup = true; break }
         }
       }
-      // 2) контент-дедуп по нормалізованому хешу (15с вікно, arrival-time)
-      // 15с покриває реплеї після watch-рестарту (бек-офф до 15с), але не ховає легітимні повтори через 30с
+      // 2) контент-дедуп по нормалізованому хешу (60с вікно, arrival-time)
+      // 60с покриває реплеї всього active set при кожному новому сповіщенні + watch-рестарти,
+      // і не дає "Clear → нове повідомлення → реплей 3 старих" (було 15с — занадто мало після Clear)
+      // Очищення через 5хв, щоб легітимні повтори з тим же текстом через 5хв знову показались
       if (!isDup) {
         var hash = normApp + "|" + normTitle + "|" + normText + "|" + devId
         var lastSeen = root._notifSeen[hash]
-        if (lastSeen !== undefined && (now - lastSeen) < 15000) {
+        if (lastSeen !== undefined && (now - lastSeen) < 60000) {
           isDup = true
         } else {
           // fallback: лінійний скан по історії (на випадок якщо хеш-мапа була скинута)
@@ -430,17 +432,17 @@ Item {
             // порівнюємо нормалізовано
             if (_norm(ex.appName) === normApp && _norm(ex.title) === normTitle && _norm(ex.text) === normText && ex.deviceId === _n.deviceId) {
               var exTime = ex._arrival ?? new Date(ex.timestamp).getTime()
-              if (Math.abs(now - exTime) < 15000) { isDup = true; break }
+              if (Math.abs(now - exTime) < 60000) { isDup = true; break }
             }
           }
         }
         if (!isDup) {
-          // оновлюємо мапу та чистимо старі записи >60с
+          // оновлюємо мапу та чистимо старі записи >5хв
           var copy = Object.assign({}, root._notifSeen)
           copy[hash] = now
           var cleaned = {}
           for (var c in copy) {
-            if (now - copy[c] < 60000) cleaned[c] = copy[c]
+            if (now - copy[c] < 300000) cleaned[c] = copy[c]
           }
           root._notifSeen = cleaned
         }
@@ -498,15 +500,38 @@ Item {
       var cancelId = String(payload.id ?? payload.requestReplyId ?? payload.key ?? "")
       var cancelKey = String(payload.key ?? "")
       if (cancelId || cancelKey) {
+        // знаходимо що видаляємо, щоб почистити _notifSeen
+        var toRemove = []
+        for (var ci = 0; ci < root.recentNotifications.length; ci++) {
+          var cn = root.recentNotifications[ci]
+          var nid = String(cn.id ?? "")
+          var nkey = String(cn.key ?? "")
+          if ((cancelId && nid === cancelId) || (cancelKey && nkey === cancelKey) || (cancelKey && nid === cancelKey)) toRemove.push(cn)
+        }
         var filtered = root.recentNotifications.filter(n => {
-          var nid = String(n.id ?? "")
-          var nkey = String(n.key ?? "")
-          if (cancelId && nid === cancelId) return false
-          if (cancelKey && nkey === cancelKey) return false
-          if (cancelKey && nid === cancelKey) return false
+          var nid2 = String(n.id ?? "")
+          var nkey2 = String(n.key ?? "")
+          if (cancelId && nid2 === cancelId) return false
+          if (cancelKey && nkey2 === cancelKey) return false
+          if (cancelKey && nid2 === cancelKey) return false
           return true
         })
-        if (filtered.length !== root.recentNotifications.length) root.recentNotifications = filtered
+        if (filtered.length !== root.recentNotifications.length) {
+          root.recentNotifications = filtered
+          // чистимо хеш-мапу дедупу для видалених, щоб той же контент міг знову показатись після dismiss
+          if (toRemove.length > 0) {
+            var copy2 = Object.assign({}, root._notifSeen)
+            for (var ri = 0; ri < toRemove.length; ri++) {
+              var rn = toRemove[ri]
+              var h = String(rn.appName ?? "").trim().replace(/\s+/g, " ") + "|" + String(rn.title ?? "").trim().replace(/\s+/g, " ") + "|" + String(rn.text ?? "").trim().replace(/\s+/g, " ") + "|" + String(rn.deviceId ?? "")
+              if (copy2[h] !== undefined) delete copy2[h]
+              // також видаляємо за key, якщо раптом хеш інший
+              var hk = String(rn.key ?? "")
+              if (hk && copy2[hk] !== undefined) delete copy2[hk]
+            }
+            root._notifSeen = copy2
+          }
+        }
       }
       return
     }
