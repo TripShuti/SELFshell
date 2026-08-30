@@ -185,7 +185,7 @@ array in the script for the complete list. Key packages:
 
 ## Structure
 
-```
+``` 
 docs/        - documentation (architecture, components, config formats)
 fastfetch/   - system info config
 fish/        - shell config, functions, yt-dlp wrapper
@@ -196,8 +196,8 @@ quickshell/  - QML panels, core, popups, widgets, monitors, scripts, data, asset
              - core/ — shell infrastructure (AppConfig, IdleManager, LockScreen, etc.)
              - monitors/ — background data monitors (Cava, Genshin)
              - widgets/ — panel widgets (15 total, incl. KdeConnectWidget)
-             - popups/ — popup windows (17 total, incl. KdeConnectPopup + settings sections)
-             - scripts/ — helper scripts (palette, Genshin, etc.)
+             - popups/ — popup windows (17 total, incl. KdeConnectPopup + settings sections) + audio/ subcomponents (AudioSlider/StreamCard/DeviceCard)
+             - scripts/ — helper scripts (palette, Genshin, AudioMixerUtils, etc.)
              - data/ — persisted state (config.json, calendar-tasks, eq.json, etc.)
              - assets/ — icons, sounds
              - services/ — pairing agent, MPRIS tracklist bridge, cava config, KdeConnectService

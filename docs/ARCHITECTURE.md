@@ -12,15 +12,15 @@ selfshell/                       # git repo root (cloned into ~/.config)
   │   │                          #   IdleManager, LockContext/Surface, AnimatedPopup,
   │   │                          #   PillBar, HoverItem/Text, ToggleSwitch,
   │   │                          #   AudioEq, VertSlider, ...)
-  │   ├── widgets/               # bar widgets
-  │   ├── popups/                # popup windows
-  │   ├── monitors/              # 2 background monitors (Cava, Genshin)
-  │   ├── services/              # systemd units and QML services (qs-bt-agent,
-  │   │                          #   TrackListService, cava-vis.conf)
-  │   ├── scripts/               # selfshell CLI, python/js scripts, .env + EqPresets.js
-  │   ├── data/                  # persisted JSON (config, eq, palette, tasks...)
-  │   ├── assets/                # resources (sounds, icons)
-  │   └── pam/                   # lock screen PAM config
+   │   ├── widgets/               # bar widgets
+   │   ├── popups/                # popup windows (incl. audio/ — AudioSlider/StreamCard/DeviceCard)
+   │   ├── monitors/              # 2 background monitors (Cava, Genshin)
+   │   ├── services/              # systemd units and QML services (qs-bt-agent,
+   │   │                          #   TrackListService, cava-vis.conf)
+   │   ├── scripts/               # selfshell CLI, python/js scripts, .env + EqPresets.js + AudioMixerUtils.js
+   │   ├── data/                  # persisted JSON (config, eq, palette, tasks...)
+   │   ├── assets/                # resources (sounds, icons)
+   │   └── pam/                   # lock screen PAM config
   ├── hypr/                      # ~/.config/hypr/ — Hyprland configs
   │   ├── hyprland.lua           # root Lua config
   │   ├── env.json               # user settings (browser, terminal,

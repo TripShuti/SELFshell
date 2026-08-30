@@ -126,7 +126,14 @@
 | `CalendarPopup.qml` | Calendar | `scripts/CalendarTasks.js` |
 | `MprisPopup.qml` | Media player (details + cava + EQ 15-band) | CavaMonitor, TrackListService, `EqPresets.js`, `AudioEq`, `VertSlider` |
 | `GenshinPopup.qml` | Genshin details, manual refresh, check-in | GenshinMonitor, `scripts/genshin_stats.py` |
-| `AudioMixerPopup.qml` | Audio mixer (output devices + streams, moves `sink-inputs` on default change, relinks `filter-chain` when EQ on) | PipeWire |
+| `AudioMixerPopup.qml` | Audio mixer — pavucontrol-style 5 tabs (Playback/Recording/Output/Input/Configuration), stream/device volume + port/profile/fallback, single-pass `_filtered` + `ScriptModel` + `sinkNameMap` cache | PipeWire, `AudioMixerUtils.js` |
+| `popups/audio/AudioSlider.qml` | Unified volume row (mute + track + %/dB + lock, `PwNode` direct, `Item` anchors) | PipeWire, `AudioMixerUtils.js` |
+| `popups/audio/StreamCard.qml` | Stream card (icon + `AudioSlider` + device combo + destroy) | PipeWire, `AudioMixerUtils.js` |
+| `popups/audio/DeviceCard.qml` | Device card (icon + `PortCombo` + `AudioSlider` + fallback + base) | PipeWire |
+| `popups/audio/PortCombo.qml` | Port combo (button + inline menu, `unplugged`) | — |
+| `popups/audio/MixerTabBar.qml` | 5-tab bar (active underline) | — |
+| `popups/audio/EmptyState.qml` | Empty placeholder | — |
+| `popups/audio/ConfigCard.qml` | Card + profile combo | PipeWire |
 | `BluetoothPopup.qml` | Bluetooth management | bluez |
 | `NetworkPopup.qml` | Network management | NetworkManager |
 | `NetworkConnectionSettingsPopup.qml` | Details of a specific Wi-Fi/connection | NetworkPopup |
@@ -165,6 +172,7 @@
 | `tracklist.py` | Python | MPRIS TrackList (player queue) for MprisPopup |
 | `update-palette.py` | Python | Generates the palette and themes for the whole project |
 | `update-palette.sh` | Bash | Wrapper: matugen + update-palette.py + palette IPC update |
+| `AudioMixerUtils.js` | JS | Audio mixer pure helpers (`formatPercent/Db`, `sinkNameForStream` `O(1)` cache) |
 | `CalendarTasks.js` | JS | Calendar task save/load |
 | `ControlState.js` | JS | Control center state |
 | `LauncherUsage.js` | JS | Application launch frequency |
