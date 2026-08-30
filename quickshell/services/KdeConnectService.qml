@@ -362,9 +362,9 @@ Item {
       // payload.icon може бути шляхом до кешованого файлу (kcd fetch_icons) або іменем
       var iconSrc = String(payload.icon ?? payload.appIcon ?? payload.iconPath ?? "")
       // Стабільний ключ Android-нотифікації (0|org.telegram... ) — не змінюється при реплеї,
-      // на відміну від requestReplyId/UUID який kcd генерує новий при кожному watch-рестарті
+      // на відміну від requestReplyId/UUID який kcd генерує новий при кожному watch-рестарті — його не використовуємо
       var stableKey = String(payload.key ?? payload.tag ?? "")
-      var nid = String(payload.id ?? payload.requestReplyId ?? stableKey ?? payload.requestId ?? "")
+      var nid = String(payload.id ?? stableKey ?? "")
       // Нормалізуємо текст для дедупу: trim + схлопуємо пробіли/переведення рядків
       function _norm(s) { return String(s ?? "").trim().replace(/\s+/g, " ") }
       var normTitle = _norm(payload.title ?? payload.summary ?? "")
@@ -388,9 +388,9 @@ Item {
       // Зберігаємо в історію навіть при muted (глушимо тільки тост), інакше попап порожній при muted
       // Дедуп: 0) по stableKey (якщо є) — якщо key вже в історії і контент той же → реплей → ігнор
       //        якщо key той же але контент новий → це справжнє оновлення, лишаємо як нове (не оновлюємо існуючу, "залишити як є")
-      //        1) по id (якщо не fallback) — завжди, 2) по нормалізованому контенту в межах 15с
-      // 15с покриває реплеї після watch-рестарту (бек-офф до 15с, було 3с — занадто мало)
-      // Також використовуємо хеш-мапу _notifSeen для швидкого дедупу незалежно від maxNotifications
+      //        1) по id (якщо не fallback) — завжди, 2) по нормалізованому контенту без часового ліміту
+      // Контент-дедуп без вікна: kcd реплеїть весь pending set при кожному новому повідомленні (62мс пачка),
+      // тому будь-який повтор того ж app|title|text має ігноруватись поки нотифікація не canceled на телефоні
       var arr = root.recentNotifications.slice()
       var isDup = false
       var now = Date.now()
@@ -416,14 +416,12 @@ Item {
           if (arr[i].id === _n.id) { isDup = true; break }
         }
       }
-      // 2) контент-дедуп по нормалізованому хешу (60с вікно, arrival-time)
-      // 60с покриває реплеї всього active set при кожному новому сповіщенні + watch-рестарти,
-      // і не дає "Clear → нове повідомлення → реплей 3 старих" (було 15с — занадто мало після Clear)
-      // Очищення через 5хв, щоб легітимні повтори з тим же текстом через 5хв знову показались
+      // 2) контент-дедуп по нормалізованому хешу без часового ліміту
+      // kcd шле весь active set при кожному новому повідомленні — тому будь-який повтор того ж контенту,
+      // навіть через хвилини після Clear, має ігноруватись поки не canceled. Хеш живе в _notifSeen до canceled.
       if (!isDup) {
         var hash = normApp + "|" + normTitle + "|" + normText + "|" + devId
-        var lastSeen = root._notifSeen[hash]
-        if (lastSeen !== undefined && (now - lastSeen) < 60000) {
+        if (root._notifSeen[hash] !== undefined) {
           isDup = true
         } else {
           // fallback: лінійний скан по історії (на випадок якщо хеш-мапа була скинута)
@@ -431,20 +429,16 @@ Item {
             var ex = arr[i]
             // порівнюємо нормалізовано
             if (_norm(ex.appName) === normApp && _norm(ex.title) === normTitle && _norm(ex.text) === normText && ex.deviceId === _n.deviceId) {
-              var exTime = ex._arrival ?? new Date(ex.timestamp).getTime()
-              if (Math.abs(now - exTime) < 60000) { isDup = true; break }
+              isDup = true
+              break
             }
           }
         }
         if (!isDup) {
-          // оновлюємо мапу та чистимо старі записи >5хв
+          // додаємо в мапу без часового чищення — чиститься тільки при canceled
           var copy = Object.assign({}, root._notifSeen)
           copy[hash] = now
-          var cleaned = {}
-          for (var c in copy) {
-            if (now - copy[c] < 300000) cleaned[c] = copy[c]
-          }
-          root._notifSeen = cleaned
+          root._notifSeen = copy
         }
       }
       if (!isDup) {
