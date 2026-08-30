@@ -641,6 +641,13 @@ PanelWindow {
     }
   }
 
+  IpcHandler {
+    target: "audio"
+    function toggle(): void {
+      audioPopup.toggle()
+    }
+  }
+
   // Зв'язки: клік на віджеті → відкриває відповідний попап
   Connections { target: launcherWidget; enabled: target !== null; function onClicked() { launcherPopup.toggle() } }
   Connections { target: clipboardWidget; enabled: target !== null; function onClicked() { clipboardPopup.toggle() } }
