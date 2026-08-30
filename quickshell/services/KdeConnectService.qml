@@ -361,8 +361,10 @@ Item {
     if (t === "notification" || t === "notification.received") {
       // payload.icon може бути шляхом до кешованого файлу (kcd fetch_icons) або іменем
       var iconSrc = String(payload.icon ?? payload.appIcon ?? payload.iconPath ?? "")
-      // kcd watch дає requestReplyId (UUID) для кожного сповіщення — використовуємо його як id
-      var nid = String(payload.id ?? payload.requestReplyId ?? payload.key ?? payload.requestId ?? "")
+      // Стабільний ключ Android-нотифікації (0|org.telegram... ) — не змінюється при реплеї,
+      // на відміну від requestReplyId/UUID який kcd генерує новий при кожному watch-рестарті
+      var stableKey = String(payload.key ?? payload.tag ?? "")
+      var nid = String(payload.id ?? payload.requestReplyId ?? stableKey ?? payload.requestId ?? "")
       // Нормалізуємо текст для дедупу: trim + схлопуємо пробіли/переведення рядків
       function _norm(s) { return String(s ?? "").trim().replace(/\s+/g, " ") }
       var normTitle = _norm(payload.title ?? payload.summary ?? "")
@@ -375,6 +377,7 @@ Item {
         title: normTitle,
         text: normText,
         id: nid !== "" ? nid : String(Date.now()) + "_" + Math.random().toString(36).slice(2,6),
+        key: stableKey,
         icon: iconSrc,
         deviceId: devId,
         timestamp: ev.timestamp ?? new Date().toISOString(),
@@ -383,14 +386,32 @@ Item {
       root.lastPhoneNotif = _n
       root.lastPhoneNotifTime = Date.now()
       // Зберігаємо в історію навіть при muted (глушимо тільки тост), інакше попап порожній при muted
-      // Дедуп: 1) по id (якщо не fallback) — завжди, 2) по нормалізованому контенту в межах 15с
+      // Дедуп: 0) по stableKey (якщо є) — якщо key вже в історії і контент той же → реплей → ігнор
+      //        якщо key той же але контент новий → це справжнє оновлення, лишаємо як нове (не оновлюємо існуючу, "залишити як є")
+      //        1) по id (якщо не fallback) — завжди, 2) по нормалізованому контенту в межах 15с
       // 15с покриває реплеї після watch-рестарту (бек-офф до 15с, було 3с — занадто мало)
       // Також використовуємо хеш-мапу _notifSeen для швидкого дедупу незалежно від maxNotifications
       var arr = root.recentNotifications.slice()
       var isDup = false
       var now = Date.now()
+      // 0) stableKey-дедуп (пріоритет)
+      if (!isDup && stableKey !== "") {
+        for (var k = 0; k < arr.length; k++) {
+          var ek = arr[k]
+          var ekKey = String(ek.key ?? "")
+          // старі записи до міграції зберігалися з id==key, перевіряємо обидва
+          if ((ekKey !== "" && ekKey === stableKey) || (ekKey === "" && ek.id === stableKey)) {
+            if (_norm(ek.title) === normTitle && _norm(ek.text) === normText && _norm(ek.appName) === normApp && ek.deviceId === devId) {
+              isDup = true
+            }
+            // якщо контент інший — це не дублікат, а нове сповіщення з тим же key (напр. оновлений summary)
+            // "залишити як є" — не оновлюємо існуючу, просто додаємо нову
+            break
+          }
+        }
+      }
       // 1) id-дедуп (тільки для реальних id kcd, fallback з "_" — ігноруємо)
-      if (_n.id.indexOf("_") === -1) {
+      if (!isDup && _n.id.indexOf("_") === -1) {
         for (var i = 0; i < arr.length; i++) {
           if (arr[i].id === _n.id) { isDup = true; break }
         }
@@ -418,8 +439,8 @@ Item {
           var copy = Object.assign({}, root._notifSeen)
           copy[hash] = now
           var cleaned = {}
-          for (var k in copy) {
-            if (now - copy[k] < 60000) cleaned[k] = copy[k]
+          for (var c in copy) {
+            if (now - copy[c] < 60000) cleaned[c] = copy[c]
           }
           root._notifSeen = cleaned
         }
@@ -429,7 +450,7 @@ Item {
         if (arr.length > root.maxNotifications) arr = arr.slice(0, root.maxNotifications)
         root.recentNotifications = arr
       } else {
-        // console.log("[kcd] dup suppressed", _n.appName, _n.title.slice(0,20))
+        // console.log("[kcd] dup suppressed", _n.appName, _n.title.slice(0,20), "key", stableKey.slice(0,20))
       }
       if (root.muted) return
       if (isDup) return
@@ -474,9 +495,17 @@ Item {
     }
     // Notification dismissed on phone — прибираємо з історії
     if (t === "notification.canceled" || t === "notification.cancelled") {
-      var cancelId = String(payload.id ?? payload.key ?? "")
-      if (cancelId) {
-        var filtered = root.recentNotifications.filter(n => String(n.id ?? "") !== cancelId)
+      var cancelId = String(payload.id ?? payload.requestReplyId ?? payload.key ?? "")
+      var cancelKey = String(payload.key ?? "")
+      if (cancelId || cancelKey) {
+        var filtered = root.recentNotifications.filter(n => {
+          var nid = String(n.id ?? "")
+          var nkey = String(n.key ?? "")
+          if (cancelId && nid === cancelId) return false
+          if (cancelKey && nkey === cancelKey) return false
+          if (cancelKey && nid === cancelKey) return false
+          return true
+        })
         if (filtered.length !== root.recentNotifications.length) root.recentNotifications = filtered
       }
       return
