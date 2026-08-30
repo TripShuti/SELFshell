@@ -80,6 +80,10 @@ Item {
   // Обмеження історії сповіщень (не роздувати пам'ять)
   readonly property int maxNotifications: 10
 
+  // Дедуп-мапа для сповіщень: hash(normalized app|title|text|device) → час останнього показу (ms)
+  // Потрібна бо kcd інколи шле дублікати при реконекті/watch-рестарті з різними id та старими timestamp
+  property var _notifSeen: ({})
+
   // Чи ввімкнено віджет взагалі (читається з AppConfig в shell.qml)
   property bool enabled: true
   property bool muted: false
@@ -359,43 +363,73 @@ Item {
       var iconSrc = String(payload.icon ?? payload.appIcon ?? payload.iconPath ?? "")
       // kcd watch дає requestReplyId (UUID) для кожного сповіщення — використовуємо його як id
       var nid = String(payload.id ?? payload.requestReplyId ?? payload.key ?? payload.requestId ?? "")
+      // Нормалізуємо текст для дедупу: trim + схлопуємо пробіли/переведення рядків
+      function _norm(s) { return String(s ?? "").trim().replace(/\s+/g, " ") }
+      var normTitle = _norm(payload.title ?? payload.summary ?? "")
+      var normText = _norm(payload.text ?? payload.body ?? "")
+      var normApp = _norm(payload.appName ?? payload.app ?? "Phone")
       // kcd інколи шле одне й те саме сповіщення повторно (при реконекті, при watch рестарті) — дедуплікуємо
       // Зберігаємо останнє для дедупу з NotificationServer (kcd notify-send дублює)
       var _n = {
-        appName: String(payload.appName ?? payload.app ?? "Phone"),
-        title: String(payload.title ?? payload.summary ?? ""),
-        text: String(payload.text ?? payload.body ?? ""),
+        appName: normApp,
+        title: normTitle,
+        text: normText,
         id: nid !== "" ? nid : String(Date.now()) + "_" + Math.random().toString(36).slice(2,6),
         icon: iconSrc,
         deviceId: devId,
-        timestamp: ev.timestamp ?? new Date().toISOString()
+        timestamp: ev.timestamp ?? new Date().toISOString(),
+        _arrival: Date.now()
       }
       root.lastPhoneNotif = _n
       root.lastPhoneNotifTime = Date.now()
       // Зберігаємо в історію навіть при muted (глушимо тільки тост), інакше попап порожній при muted
-      // Дедуп: по id (requestReplyId) + по контенту в межах 3с (щоб не спамити 16 однакових підряд,
-      // але дозволити "On" → 5с → "On" знову).
+      // Дедуп: 1) по id (якщо не fallback) — завжди, 2) по нормалізованому контенту в межах 15с
+      // 15с покриває реплеї після watch-рестарту (бек-офф до 15с, було 3с — занадто мало)
+      // Також використовуємо хеш-мапу _notifSeen для швидкого дедупу незалежно від maxNotifications
       var arr = root.recentNotifications.slice()
       var isDup = false
       var now = Date.now()
+      // 1) id-дедуп (тільки для реальних id kcd, fallback з "_" — ігноруємо)
       if (_n.id.indexOf("_") === -1) {
         for (var i = 0; i < arr.length; i++) {
           if (arr[i].id === _n.id) { isDup = true; break }
         }
       }
+      // 2) контент-дедуп по нормалізованому хешу (15с вікно, arrival-time)
+      // 15с покриває реплеї після watch-рестарту (бек-офф до 15с), але не ховає легітимні повтори через 30с
       if (!isDup) {
-        for (var i = 0; i < arr.length; i++) {
-          var ex = arr[i]
-          if (ex.appName === _n.appName && ex.title === _n.title && ex.text === _n.text && ex.deviceId === _n.deviceId) {
-            var exTime = new Date(ex.timestamp).getTime()
-            if (Math.abs(now - exTime) < 3000) { isDup = true; break }
+        var hash = normApp + "|" + normTitle + "|" + normText + "|" + devId
+        var lastSeen = root._notifSeen[hash]
+        if (lastSeen !== undefined && (now - lastSeen) < 15000) {
+          isDup = true
+        } else {
+          // fallback: лінійний скан по історії (на випадок якщо хеш-мапа була скинута)
+          for (var i = 0; i < arr.length; i++) {
+            var ex = arr[i]
+            // порівнюємо нормалізовано
+            if (_norm(ex.appName) === normApp && _norm(ex.title) === normTitle && _norm(ex.text) === normText && ex.deviceId === _n.deviceId) {
+              var exTime = ex._arrival ?? new Date(ex.timestamp).getTime()
+              if (Math.abs(now - exTime) < 15000) { isDup = true; break }
+            }
           }
+        }
+        if (!isDup) {
+          // оновлюємо мапу та чистимо старі записи >60с
+          var copy = Object.assign({}, root._notifSeen)
+          copy[hash] = now
+          var cleaned = {}
+          for (var k in copy) {
+            if (now - copy[k] < 60000) cleaned[k] = copy[k]
+          }
+          root._notifSeen = cleaned
         }
       }
       if (!isDup) {
         arr.unshift(_n)
         if (arr.length > root.maxNotifications) arr = arr.slice(0, root.maxNotifications)
         root.recentNotifications = arr
+      } else {
+        // console.log("[kcd] dup suppressed", _n.appName, _n.title.slice(0,20))
       }
       if (root.muted) return
       if (isDup) return
