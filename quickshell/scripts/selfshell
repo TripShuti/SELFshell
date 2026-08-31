@@ -2,7 +2,7 @@
 # ============================================================
 # quickshell/scripts/selfshell — CLI для керування SELFshell: IPC-виклики, діагностика (doctor), версія, оновлення, перезапуск
 # ============================================================
-set -uo pipefail
+set -euo pipefail
 
 # --- Резолюція шляхів: працює і з клону репо, і з ~/.config/quickshell ---
 SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
@@ -21,48 +21,146 @@ selfshell — SELFshell CLI
 
 Usage:
   selfshell <command> [arguments...]
+  selfshell help [command]       Show help for a command
+  selfshell <command> --help     Show help for a command
 
-Commands:
-  help                           Show this help
-  version                        SELFshell version
-  ipc call <target> <fn> [args]  Call a quickshell IPC function
+System:
+  doctor [--preboot]             System diagnostics
+  reload                         Restart quickshell
+  update [--yes]                 Update the config (git pull or archive) and restart
+  version [--short]              SELFshell version
+  list                           List running quickshell instances
+  status                         Quick status summary
+
+Bar / Popups:
   lock                           Lock the screen
   toggle-lock                    Toggle the lock
   launcher                       Open/close the launcher
   settings                       Open/close the bar settings
-  palette-reload                 Re-read the palette from the wallpaper
-  doctor                         System diagnostics
-  reload                         Restart quickshell
-  update                         Update the config (git pull or archive) and restart the shell
-  list                           List running quickshell instances
+  control                        Toggle control center
+  clipboard                      Toggle clipboard history
+  kcd                            Toggle phone (kcd) popup
+  audio                          Toggle audio mixer
+  osd <volume|brightness>         Show OSD overlay
+
+Theme / Wallpaper / Palette:
+  theme [list|status|set <black|matugen>]  Manage theme
+  wallpaper <list|current|set <file>|random> Manage wallpapers
+  palette <reload|show|path>     Palette operations
+
+Config / IPC:
+  config <get <key>|set <key> <value>|edit|reset>  Manage config.json
+  ipc [call] <target> <fn> [args...]               Call a quickshell IPC function
+
+Options:
+  -h, --help                     Show this help
+
+Examples:
+  selfshell status
+  selfshell wallpaper list
+  selfshell wallpaper set ~/Pictures/wall.jpg
+  selfshell theme set black
+  selfshell theme status
+  selfshell config get themeMode
+  selfshell doctor
+EOF
+}
+
+usage_theme() {
+  cat <<'EOF'
+selfshell theme — manage theme
+
+Usage:
+  selfshell theme [list|status]
+  selfshell theme set <black|matugen>
+
+  list          List available themes (black, matugen)
+  status        Show current themeMode from data/config.json
+  set <name>    Switch theme (writes palette + wallpaper)
+EOF
+}
+
+usage_wallpaper() {
+  cat <<'EOF'
+selfshell wallpaper — manage wallpapers
+
+Usage:
+  selfshell wallpaper list              List wallpapers in wp/
+  selfshell wallpaper current           Show current wallpaper (for lock screen)
+  selfshell wallpaper set <file>        Set wallpaper (respects themeMode)
+  selfshell wallpaper random            Set random wallpaper
+  selfshell wallpaper reload            Re-apply current wallpaper
+
+For Black theme wallpaper is set without palette regeneration (wallpaper-only).
+For Matugen theme wallpaper triggers palette generation via matugen.
+EOF
+}
+
+usage_palette() {
+  cat <<'EOF'
+selfshell palette — palette operations
+
+Usage:
+  selfshell palette reload          Re-read palette.json (ipc palette-reload reload)
+  selfshell palette show            Show current palette.json path and colors
+  selfshell palette path            Print palette.json path
+EOF
+}
+
+usage_config() {
+  cat <<'EOF'
+selfshell config — manage data/config.json
+
+Usage:
+  selfshell config get <key>          Get config value (python json)
+  selfshell config set <key> <value>  Set value (string; use JSON for numbers/bool)
+  selfshell config edit               Open config in $EDITOR
+  selfshell config reset              Reset to defaults (via quickshell resetCfg)
+  selfshell config path               Print config path
+  selfshell config check              Validate config.json
+
+Keys: themeMode, uiScale, barHeight, etc. See docs/CONFIG_FORMAT.md
 EOF
 }
 
 version() {
+  local short=false
+  [ "${1:-}" = "--short" ] && short=true
   local v=""
   if [ -f "$QS_CONFIG_DIR/VERSION" ]; then
-    v="$(cat "$QS_CONFIG_DIR/VERSION")"
+    v="$(tr -d '\n' < "$QS_CONFIG_DIR/VERSION")"
   fi
   if git -C "$QS_CONFIG_DIR" rev-parse --is-inside-work-tree &>/dev/null; then
     local tag
-    tag="$(git -C "$QS_CONFIG_DIR" describe --tags --exact-match 2>/dev/null)"
-    # теги з v-префіксом (v0.2.0), а VERSION-файл без — приводимо до одного вигляду
+    tag="$(git -C "$QS_CONFIG_DIR" describe --tags --exact-match 2>/dev/null || true)"
     [ -n "$tag" ] && v="${tag#v}"
+    if $short; then
+      echo "${v:-$(git -C "$QS_CONFIG_DIR" rev-parse --short HEAD 2>/dev/null || echo unknown)}"
+      return
+    fi
     echo "selfshell ${v:-$(git -C "$QS_CONFIG_DIR" rev-parse --short HEAD)} ($QS_CONFIG_DIR)"
     return
   fi
-  echo "selfshell ${v:-unknown} ($QS_CONFIG_DIR)"
+  if $short; then
+    echo "${v:-unknown}"
+  else
+    echo "selfshell ${v:-unknown} ($QS_CONFIG_DIR)"
+  fi
 }
 
 # --- Виклик IPC: приймає "call" або одразу target ---
 ipc() {
   if [ "${1:-}" = "call" ]; then shift; fi
   if [ "$#" -lt 2 ]; then
-    error "Usage: selfshell ipc call <target> <function> [args...]"
+    error "Usage: selfshell ipc [call] <target> <function> [args...]"
     exit 1
   fi
   local target="$1"; shift
   local fn="$1"; shift
+  if ! command -v qs &>/dev/null; then
+    error "qs not found — quickshell not in PATH"
+    exit 1
+  fi
   qs ipc call "$target" "$fn" "$@"
 }
 
@@ -70,7 +168,20 @@ lock()        { ipc lockscreen lock; }
 toggle_lock() { ipc lockscreen toggle; }
 launcher()    { ipc launcher toggle; }
 settings()    { ipc settings toggle; }
+control()     { ipc control toggle; }
+clipboard()   { ipc clipboard toggle; }
+kcd_toggle()  { ipc kcd toggle; }
+audio_toggle(){ ipc audio toggle; }
 palette()     { ipc palette-reload reload; }
+
+osd() {
+  if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
+    echo "Usage: selfshell osd <volume|brightness>"
+    return 0
+  fi
+  if [ "$#" -lt 1 ]; then error "Usage: selfshell osd <volume|brightness>"; exit 1; fi
+  ipc osd "$1"
+}
 
 # quickshell у daemonize-режимі перейменовує comm на "qs",
 # тому перевірка лише по "quickshell" дає хибний результат
@@ -84,14 +195,18 @@ reload() {
     error "Hyprland is not running — nothing to restart quickshell in."
     exit 1
   fi
+  if ! command -v qs &>/dev/null; then
+    error "qs not found"
+    exit 1
+  fi
   if qs_running; then
     info "Stopping quickshell..."
     qs kill &>/dev/null || true
     sleep 1
     if qs_running; then
-      # qs kill може не спрацювати — запасний варіант
-      pkill -x qs 2>/dev/null
-      pkill -x quickshell 2>/dev/null
+      pkill -f "[q]s -d" 2>/dev/null || true
+      pkill -x qs 2>/dev/null || true
+      pkill -x quickshell 2>/dev/null || true
       sleep 1
     fi
   fi
@@ -110,11 +225,19 @@ reload() {
 # → завантажуємо архів з GitHub і rsync-имо quickshell/. Локальні файли
 # (LOCAL_FILES — ті самі, що в .gitignore репозиторію) не перезаписуються.
 update() {
+  local auto_yes=false
+  [ "${1:-}" = "--yes" ] && auto_yes=true
+  [ "${1:-}" = "-y" ] && auto_yes=true
+  if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
+    echo "Usage: selfshell update [--yes]"
+    return 0
+  fi
   if git -C "$QS_CONFIG_DIR" rev-parse --is-inside-work-tree &>/dev/null; then
+    if ! command -v git &>/dev/null; then error "git not found"; exit 1; fi
     info "Updating $QS_CONFIG_DIR (git pull)..."
     git -C "$QS_CONFIG_DIR" pull --ff-only || { error "git pull failed."; exit 1; }
   else
-    update_from_archive
+    update_from_archive "$auto_yes"
   fi
   reload
 }
@@ -123,97 +246,327 @@ update() {
 LOCAL_FILES=(
   data/config.json          # налаштування з Settings
   data/palette.json         # генерується update-palette
+  data/eq.json              # EQ пресети
   data/calendar-tasks.json  # задачі календаря
   data/control-state.json   # стан центру керування
   data/launcher-usage.json  # статистика лаунчера
+  data/last-shot.txt        # скріншоти
   scripts/.env              # секрети (HoYoLAB)
   scripts/.genshin_state.json
   scripts/.genshin_requests.log
   scripts/__pycache__/
-  wp/                       # персональні шпалери + current.jpg
+  services/__pycache__/
+  wp/                       # персональні шпалери + current.* + current-lock.jpg
   .qmlls.ini
   .opencode/
-  Palette.js
 )
 
 update_from_archive() {
+  local auto_yes="${1:-false}"
   command -v curl &>/dev/null || { error "curl not found (package: curl)."; exit 1; }
+  command -v tar &>/dev/null || { error "tar not found"; exit 1; }
   local tmp url
   tmp="$(mktemp -d)"
+  trap 'rm -rf "$tmp"' EXIT
   url="$REPO_URL/archive/refs/heads/main.tar.gz"
   info "Downloading archive: $url"
   if ! curl -fsSL "$url" -o "$tmp/selfshell.tar.gz"; then
-    rm -rf "$tmp"
+    rm -rf "$tmp"; trap - EXIT
     error "Failed to download the archive — check your internet connection and the repository name."
     exit 1
   fi
   # --strip-components=1: ім'я кореневої теки архіву не фіксоване
   if ! tar -xzf "$tmp/selfshell.tar.gz" -C "$tmp" --strip-components=1; then
-    rm -rf "$tmp"
+    rm -rf "$tmp"; trap - EXIT
     error "Archive is corrupt — extraction failed."
     exit 1
   fi
   local src="$tmp/quickshell"
   if [ ! -d "$src" ]; then
-    rm -rf "$tmp"
+    rm -rf "$tmp"; trap - EXIT
     error "Archive is corrupt — quickshell/ not found."
     exit 1
   fi
   # Guard проти розсинхрону: архів старіший за встановлену версію майже
   # завжди означає помилку (stale кеш, відкат), тож питаємо дозвіл
   local old_v new_v
-  old_v="$(cat "$QS_CONFIG_DIR/VERSION" 2>/dev/null)"
-  new_v="$(cat "$src/VERSION" 2>/dev/null)"
+  old_v="$(tr -d '\n' < "$QS_CONFIG_DIR/VERSION" 2>/dev/null || true)"
+  new_v="$(tr -d '\n' < "$src/VERSION" 2>/dev/null || true)"
   if [ -n "$old_v" ] && [ -n "$new_v" ] && [ "$old_v" != "$new_v" ] \
      && [ "$(printf '%s\n%s' "$old_v" "$new_v" | sort -V | head -1)" = "$new_v" ]; then
     warn "Downgrade detected: installed $old_v, archive has $new_v."
     warn "This usually means a stale archive — update anyway?"
-    read -r -p "[y/N] " ans
-    case "$ans" in
-      y|Y|yes) ;;
-      *) rm -rf "$tmp"; error "Update aborted."; exit 1 ;;
-    esac
+    if [ "$auto_yes" = true ]; then
+      info "Auto-yes: proceeding"
+    else
+      local ans
+      if ! read -r -t 10 -p "[y/N] " ans; then ans=""; fi
+      case "$ans" in
+        y|Y|yes) ;;
+        *) rm -rf "$tmp"; trap - EXIT; error "Update aborted."; exit 1 ;;
+      esac
+    fi
   fi
   # Копіюємо через tar: виключення не пропустять локальні файли
   local excludes=()
-  for f in "${LOCAL_FILES[@]}"; do excludes+=(--exclude="*/$f"); done
+  for f in "${LOCAL_FILES[@]}"; do excludes+=(--exclude="./$f" --exclude="$f"); done
   info "Extracting into $QS_CONFIG_DIR (local files are kept)..."
   if ! tar -C "$src" -cf - . | tar -C "$QS_CONFIG_DIR" -xf - "${excludes[@]}"; then
-    rm -rf "$tmp"
+    rm -rf "$tmp"; trap - EXIT
     error "Update failed."
     exit 1
   fi
-  rm -rf "$tmp"
+  rm -rf "$tmp"; trap - EXIT
   ok "Config updated."
+}
+
+# --- Theme / Wallpaper helpers ---
+get_theme_mode() {
+  python3 -c "import json;print(json.load(open('$QS_CONFIG_DIR/data/config.json')).get('themeMode','matugen'))" 2>/dev/null || echo "matugen"
+}
+
+theme_cmd() {
+  if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then usage_theme; return 0; fi
+  local sub="${1:-status}"
+  case "$sub" in
+    list)
+      echo "Available themes: black, matugen"
+      ;;
+    status)
+      local m; m="$(get_theme_mode)"
+      info "themeMode: $m"
+      if [ -f "$QS_CONFIG_DIR/data/palette.json" ]; then
+        local bg; bg="$(python3 -c "import json;print(json.load(open('$QS_CONFIG_DIR/data/palette.json')).get('bg0H',''))" 2>/dev/null || true)"
+        [ -n "$bg" ] && info "palette bg0H: $bg"
+      fi
+      ;;
+    set)
+      local name="${2:-}"
+      if [ "$name" != "black" ] && [ "$name" != "matugen" ]; then
+        error "Usage: selfshell theme set <black|matugen>"
+        exit 1
+      fi
+      info "Switching theme to $name..."
+      # Update config.json themeMode via python (keep other keys)
+      python3 - "$QS_CONFIG_DIR/data/config.json" "$name" <<'PY'
+import json, sys
+path, name = sys.argv[1], sys.argv[2]
+with open(path) as f:
+    data=json.load(f)
+data["themeMode"]=name
+with open(path,"w") as f:
+    json.dump(data,f,indent=2)
+PY
+      if [ "$name" = "black" ]; then
+        "$QS_CONFIG_DIR/scripts/update-palette.py" --theme black || { error "palette generation failed"; exit 1; }
+        if [ -f "$QS_CONFIG_DIR/wp/black.png" ]; then
+          "$QS_CONFIG_DIR/scripts/update-wallpaper-only.sh" "$QS_CONFIG_DIR/wp/black.png" || true
+        fi
+        qs ipc call palette-reload reload 2>/dev/null || true
+        pkill -USR1 -x foot 2>/dev/null || true
+        ok "Theme black applied (wallpaper black.png)"
+      else
+        # matugen: regenerate from current wallpaper if exists
+        local cur
+        cur="$(python3 "$QS_CONFIG_DIR/scripts/update-palette.py" current 2>/dev/null | tr -d '\n' || true)"
+        if [ -n "$cur" ] && [ -f "$cur" ]; then
+          "$QS_CONFIG_DIR/scripts/update-palette.sh" "$cur" || true
+        else
+          qs ipc call palette-reload reload 2>/dev/null || true
+          warn "No current wallpaper — pick one: selfshell wallpaper list"
+        fi
+        ok "Theme matugen active"
+      fi
+      ;;
+    *)
+      error "Unknown theme subcommand: $sub"; usage_theme; exit 1 ;;
+  esac
+}
+
+wallpaper_cmd() {
+  if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ] || [ "$#" -eq 0 ]; then usage_wallpaper; return 0; fi
+  local sub="$1"; shift || true
+  case "$sub" in
+    list)
+      python3 "$QS_CONFIG_DIR/scripts/update-palette.py" list 2>/dev/null || { error "failed to list wallpapers"; exit 1; }
+      ;;
+    current)
+      local cur; cur="$(python3 "$QS_CONFIG_DIR/scripts/update-palette.py" current 2>/dev/null | tr -d '\n' || true)"
+      if [ -n "$cur" ]; then echo "$cur"; else error "no current wallpaper"; exit 1; fi
+      ;;
+    set)
+      local file="${1:-}"
+      if [ -z "$file" ]; then error "Usage: selfshell wallpaper set <file>"; exit 1; fi
+      if [ ! -f "$file" ]; then error "file not found: $file"; exit 1; fi
+      local mode; mode="$(get_theme_mode)"
+      if [ "$mode" = "black" ]; then
+        "$QS_CONFIG_DIR/scripts/update-wallpaper-only.sh" "$file"
+        ok "Wallpaper set (palette stays, Black theme): $file"
+      else
+        "$QS_CONFIG_DIR/scripts/update-palette.sh" "$file"
+        ok "Wallpaper set (palette regenerated, Matugen): $file"
+      fi
+      ;;
+    random)
+      local list; list="$(python3 "$QS_CONFIG_DIR/scripts/update-palette.py" list 2>/dev/null || true)"
+      if [ -z "$list" ]; then error "no wallpapers in wp/"; exit 1; fi
+      local pick; pick="$(echo "$list" | shuf -n1)"
+      "$0" wallpaper set "$pick"
+      ;;
+    reload)
+      local cur; cur="$(python3 "$QS_CONFIG_DIR/scripts/update-palette.py" current 2>/dev/null | tr -d '\n' || true)"
+      if [ -n "$cur" ] && [ -f "$cur" ]; then
+        wallpaper_cmd set "$cur"
+      else
+        error "no current wallpaper to reload"
+        exit 1
+      fi
+      ;;
+    *)
+      error "Unknown wallpaper subcommand: $sub"; usage_wallpaper; exit 1 ;;
+  esac
+}
+
+palette_cmd() {
+  if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then usage_palette; return 0; fi
+  local sub="${1:-reload}"
+  case "$sub" in
+    reload) palette ;;
+    path) echo "$QS_CONFIG_DIR/data/palette.json" ;;
+    show)
+      if [ -f "$QS_CONFIG_DIR/data/palette.json" ]; then
+        cat "$QS_CONFIG_DIR/data/palette.json"
+      else
+        error "palette.json not found"
+        exit 1
+      fi
+      ;;
+    *) error "Unknown palette subcommand: $sub"; usage_palette; exit 1 ;;
+  esac
+}
+
+config_cmd() {
+  if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ] || [ "$#" -eq 0 ]; then usage_config; return 0; fi
+  local sub="$1"; shift || true
+  case "$sub" in
+    path) echo "$QS_CONFIG_DIR/data/config.json" ;;
+    check)
+      python3 "$QS_CONFIG_DIR/../tests/check_config_schema.py" 2>&1 || python3 -m json.tool "$QS_CONFIG_DIR/data/config.json" >/dev/null
+      ;;
+    get)
+      local key="${1:-}"
+      [ -z "$key" ] && { error "Usage: selfshell config get <key>"; exit 1; }
+      python3 -c "import json;print(json.load(open('$QS_CONFIG_DIR/data/config.json')).get('$key',''))" 2>/dev/null || error "failed to read config"
+      ;;
+    set)
+      local key="${1:-}"; local val="${2:-}"
+      [ -z "$key" ] || [ -z "$val" ] && { error "Usage: selfshell config set <key> <value>"; exit 1; }
+      python3 - "$QS_CONFIG_DIR/data/config.json" "$key" "$val" <<'PY'
+import json, sys
+path, key, val = sys.argv[1], sys.argv[2], sys.argv[3]
+# try to parse as json, else string
+try:
+    parsed=json.loads(val)
+except:
+    parsed=val
+with open(path) as f:
+    data=json.load(f)
+data[key]=parsed
+with open(path,"w") as f:
+    json.dump(data,f,indent=2)
+PY
+      ok "config $key = $val"
+      ;;
+    edit)
+      local ed="${EDITOR:-nano}"
+      "$ed" "$QS_CONFIG_DIR/data/config.json"
+      ;;
+    reset)
+      warn "Reset config to defaults via quickshell — use Settings > Behavior > Reset or qs ipc call"
+      error "Not implemented via CLI (use GUI)"
+      exit 1
+      ;;
+    *) error "Unknown config subcommand: $sub"; usage_config; exit 1 ;;
+  esac
+}
+
+status_cmd() {
+  local v; v="$(version --short 2>/dev/null || echo unknown)"
+  local theme; theme="$(get_theme_mode)"
+  local cur; cur="$(python3 "$QS_CONFIG_DIR/scripts/update-palette.py" current 2>/dev/null | tr -d '\n' || echo "none")"
+  local hypr; hypr="$(hyprctl version 2>/dev/null | grep -oE 'Hyprland [0-9]+\.[0-9]+' | head -1 || echo "unknown")"
+  local qsst; qs_running && qsst="running" || qsst="not running"
+  echo "selfshell $v ($QS_CONFIG_DIR)"
+  echo "themeMode: $theme"
+  echo "wallpaper: $cur"
+  echo "Hyprland: $hypr"
+  echo "quickshell: $qsst"
+}
+
+services_cmd() {
+  for svc in NetworkManager bluetooth "qs-bt-agent --user" "kcd --user" "pipewire --user" "wireplumber --user"; do
+    local is_user=false
+    [[ "$svc" == *"--user"* ]] && is_user=true
+    local name="${svc%% *}"
+    if $is_user; then
+      if systemctl --user is-active --quiet "$name" 2>/dev/null; then ok "$name (user) active"; else warn "$name (user) not active"; fi
+    else
+      if systemctl is-active --quiet "$name" 2>/dev/null; then ok "$name active"; else warn "$name not active"; fi
+    fi
+  done
 }
 
 doctor() {
   local problems=0
-  # --preboot: інсталер до першого входу в Hyprland (пропуск перевірки сесії)
   local preboot=false
-  [ "${1:-}" = "--preboot" ] && preboot=true
+  # parse --preboot and --help
+  for arg in "$@"; do
+    case "$arg" in
+      --preboot) preboot=true ;;
+      --help|-h) echo "Usage: selfshell doctor [--preboot]"; echo "  --preboot  Skip session checks (for installer)"; return 0 ;;
+    esac
+  done
 
   echo
   echo "== Dependencies (required) =="
   local deps=(hyprland qs kitty fish starship yazi fastfetch playerctl
               cava matugen hyprsunset awww grim slurp wl-copy socat
-              yt-dlp notify-send ddcutil upower uwsm)
+              yt-dlp notify-send ddcutil upower uwsm nmcli cliphist magick)
   for dep in "${deps[@]}"; do
-    if command -v "$dep" &>/dev/null; then
+    local bin="$dep"
+    [ "$bin" = "wl-copy" ] && bin="wl-copy"
+    [ "$bin" = "magick" ] && bin="magick"
+    if command -v "$bin" &>/dev/null || command -v "$dep" &>/dev/null; then
       ok "$dep"
     else
+      # try alternative names
+      if [ "$dep" = "qs" ] && command -v quickshell &>/dev/null; then ok "qs (via quickshell)"; continue; fi
+      if [ "$dep" = "notify-send" ] && command -v notify-send &>/dev/null; then ok "$dep"; continue; fi
       error "$dep — not found"
       problems=$((problems + 1))
     fi
   done
+  # extra binaries not in deps array
+  for dep in pipewire wireplumber; do
+    if command -v "$dep" &>/dev/null || systemctl --user is-active --quiet "$dep" 2>/dev/null || pgrep -x "$dep" &>/dev/null; then
+      ok "$dep"
+    else
+      warn "$dep — not found (audio)"
+    fi
+  done
+  if command -v ttf-jetbrains-mono-nerd &>/dev/null || fc-list 2>/dev/null | grep -qi "JetBrainsMono.*Nerd"; then
+    ok "ttf-jetbrains-mono-nerd (JetBrainsMonoNL Nerd Font)"
+  else
+    warn "ttf-jetbrains-mono-nerd not found — bar glyphs may be missing (pacman -S ttf-jetbrains-mono-nerd)"
+  fi
   # swh-plugins — LADSPA mbeq для аудіо-еквалайзера (без нього EQ вимкнений)
-  if [ -f /usr/lib/ladspa/mbeq_1197.so ]; then
+  if [ -f /usr/lib/ladspa/mbeq_1197.so ] || [ -f /usr/lib64/ladspa/mbeq_1197.so ]; then
     ok "swh-plugins (audio equalizer)"
   else
     warn "swh-plugins not found — audio equalizer disabled (pacman -S swh-plugins)"
   fi
   # qt6-5compat — модуль Qt5Compat.GraphicalEffects, без нього шелл не стартує
-  if [ -d /usr/lib/qt6/qml/Qt5Compat/GraphicalEffects ]; then
+  if [ -d /usr/lib/qt6/qml/Qt5Compat/GraphicalEffects ] || [ -d /usr/lib64/qt6/qml/Qt5Compat/GraphicalEffects ]; then
     ok "qt6-5compat (Qt5Compat.GraphicalEffects)"
   else
     error "qt6-5compat — Qt5Compat.GraphicalEffects module not found"
@@ -240,8 +593,10 @@ doctor() {
       problems=$((problems + 1))
     fi
     # Lua-конфіг вимагає Hyprland >= 0.52 (Lua API в конфігах)
-    local hver
-    hver="$(command -v hyprctl &>/dev/null && hyprctl version 2>/dev/null | grep -oP 'Hyprland \K[0-9]+\.[0-9]+' | head -1)"
+    local hver=""
+    if command -v hyprctl &>/dev/null; then
+      hver="$(hyprctl version 2>/dev/null | grep -oE 'Hyprland [0-9]+\.[0-9]+' | head -1 || true)"
+    fi
     if [ -n "$hver" ]; then
       if [ "$(printf '%s\n0.52' "$hver" | sort -V | head -1)" = "0.52" ]; then
         ok "Hyprland $hver (>= 0.52 required)"
@@ -260,15 +615,17 @@ doctor() {
     fi
     echo
     echo "== Polkit agent =="
-    # -x не підходить: ім'я процесу довше за 15 символів (comm-truncation),
-    # тож шукаємо по повному командному рядку; [l] — щоб pgrep не зловив
-    # сам себе в рядку запуску.
     if pgrep -f "[l]xqt-policykit-agent" >/dev/null; then
       ok "lxqt-policykit-agent is running"
     else
       warn "lxqt-policykit-agent is NOT running — GUI privilege prompts (Pamac etc.) will fail silently"
       warn "restart the shell or run: lxqt-policykit-agent &"
     fi
+    # optional daemons
+    for daemon in "awww-daemon" "hyprsunset"; do
+      if pgrep -f "$daemon" &>/dev/null; then ok "$daemon is running"; else warn "$daemon not running"; fi
+    done
+    if pgrep -f "wl-paste.*cliphist" &>/dev/null; then ok "cliphist watcher (wl-paste) running"; else warn "cliphist watcher not running — clipboard history disabled"; fi
   fi
 
   echo
@@ -283,6 +640,16 @@ doctor() {
   if [ -f "$QS_CONFIG_DIR/data/config.json" ]; then
     if python3 -m json.tool "$QS_CONFIG_DIR/data/config.json" >/dev/null 2>&1; then
       ok "data/config.json (valid JSON)"
+      # themeMode check
+      local tm; tm="$(python3 -c "import json;print(json.load(open('$QS_CONFIG_DIR/data/config.json')).get('themeMode','matugen'))" 2>/dev/null || echo matugen)"
+      info "themeMode: $tm"
+      # idle ordering check
+      python3 - "$QS_CONFIG_DIR/data/config.json" <<'PY' 2>/dev/null || warn "idle timeouts misordered (lock<dpms<suspend)"
+import json,sys
+d=json.load(open(sys.argv[1]))
+a=d.get("idleLockTimeout",300); b=d.get("idleDpmsTimeout",360); c=d.get("idleSuspendTimeout",900)
+if not (a==0 or b==0 or c==0 or (a<b<c)): sys.exit(1)
+PY
     else
       error "data/config.json — broken JSON"
       problems=$((problems + 1))
@@ -290,6 +657,13 @@ doctor() {
   else
     warn "data/config.json is missing — default settings will apply"
   fi
+  for f in data/palette.json data/eq.json data/control-state.json data/calendar-tasks.json data/launcher-usage.json; do
+    if [ -f "$QS_CONFIG_DIR/$f" ]; then
+      if python3 -m json.tool "$QS_CONFIG_DIR/$f" >/dev/null 2>&1; then ok "$f (valid JSON)"; else warn "$f — broken JSON"; fi
+    else
+      warn "$f is missing — will be created on first use"
+    fi
+  done
   if [ -f "$QS_CONFIG_DIR/scripts/.env" ]; then
     if grep -qi "your_" "$QS_CONFIG_DIR/scripts/.env"; then
       warn "scripts/.env contains placeholder values (the Genshin widget will not work)"
@@ -299,24 +673,41 @@ doctor() {
   else
     warn "scripts/.env is missing — copy it from .env.example"
   fi
-  if [ -f "$QS_CONFIG_DIR/wp/current.jpg" ]; then
-    ok "wp/current.jpg (lock screen background)"
+  # Wallpaper — check any current.* + lock, not just jpg
+  shopt -s nullglob
+  local cur_files=("$QS_CONFIG_DIR"/wp/current.*)
+  local has_cur=false
+  for cf in "${cur_files[@]}"; do [[ -f "$cf" ]] && has_cur=true && break; done
+  # filter out current-lock.jpg from count? keep simple: any current.*
+  if $has_cur || [ -f "$QS_CONFIG_DIR/wp/current-lock.jpg" ]; then
+    local cur_show; cur_show="$(python3 "$QS_CONFIG_DIR/scripts/update-palette.py" current 2>/dev/null | tr -d '\n' || echo "${cur_files[0]:-}")"
+    ok "wallpaper current: ${cur_show:-found}"
+    # count wallpapers
+    local cnt; cnt="$(python3 "$QS_CONFIG_DIR/scripts/update-palette.py" list 2>/dev/null | grep -c . || true)"
+    info "wallpapers in wp/: $cnt"
   else
-    warn "wp/current.jpg is missing — the wp1.jpg fallback will be used (set it up: selfshell palette-reload)"
+    warn "wp/current.* is missing — the wp1.jpg fallback will be used (set it up: selfshell wallpaper set <file> or selfshell theme set black)"
+  fi
+  shopt -u nullglob
+  if [ -d "$QS_CONFIG_DIR/wp" ]; then
+    local wp_cnt; wp_cnt="$(find "$QS_CONFIG_DIR/wp" -maxdepth 1 -type f \( -iname "*.jpg" -o -iname "*.png" -o -iname "*.gif" \) ! -name "current*" | wc -l | tr -d ' ')"
+    if [ "$wp_cnt" -eq 0 ]; then warn "wp/ has no wallpapers (only wp1.jpg fallback)"; fi
   fi
 
   echo
   echo "== Version =="
-  # Ручне копіювання файлів конфігу часто лишає застарілий VERSION —
-  # показуємо розбіжність з main, щоб про це можна було дізнатись
-  # заздалегідь (правильний шлях оновлення — selfshell update)
   local live_v
-  live_v="$(cat "$QS_CONFIG_DIR/VERSION" 2>/dev/null)"
+  live_v="$(tr -d '\n' < "$QS_CONFIG_DIR/VERSION" 2>/dev/null || true)"
   if [ -n "$live_v" ]; then
     ok "installed: $live_v"
     if ! $preboot && command -v curl &>/dev/null; then
       local remote_v
-      remote_v="$(timeout 8 curl -fsSL "https://raw.githubusercontent.com/TripShuti/SELFshell/main/quickshell/VERSION" 2>/dev/null)"
+      if command -v timeout &>/dev/null; then
+        remote_v="$(timeout 8 curl -fsSL "https://raw.githubusercontent.com/TripShuti/SELFshell/main/quickshell/VERSION" 2>/dev/null || true)"
+      else
+        remote_v="$(curl -fsSL "https://raw.githubusercontent.com/TripShuti/SELFshell/main/quickshell/VERSION" 2>/dev/null || true)"
+      fi
+      remote_v="$(echo "$remote_v" | tr -d '\n' | tr -d '\r' || true)"
       if [ -n "$remote_v" ]; then
         if [ "$live_v" = "$remote_v" ]; then
           ok "up to date with main ($remote_v)"
@@ -353,6 +744,12 @@ doctor() {
       error "modules/json.lua is missing — hyprland.lua will not load"
       problems=$((problems + 1))
     fi
+    for f in binds.json visual.json; do
+      if [ -f "$HOME/.config/hypr/$f" ]; then
+        if python3 -m json.tool "$HOME/.config/hypr/$f" >/dev/null 2>&1; then ok "hypr/$f (valid JSON)"; else warn "hypr/$f — broken JSON"; fi
+      fi
+    done
+    if [ -f "$HOME/.config/hypr/hyprsunset.conf" ]; then ok "hyprsunset.conf"; else warn "hyprsunset.conf missing"; fi
   fi
 
   echo
@@ -363,11 +760,16 @@ doctor() {
     error "NetworkManager is not active"
     problems=$((problems + 1))
   fi
-  if systemctl is-active --quiet bluetooth 2>/dev/null; then
+  if systemctl is-active --quiet bluetooth 2>/dev/null || systemctl is-active --quiet bluetooth.service 2>/dev/null; then
     ok "bluetooth is active"
   else
     warn "bluetooth is not active (an adapter may be missing)"
   fi
+  for svc in "pipewire --user" "wireplumber --user" "pipewire-pulse --user"; do
+    local n="${svc%% *}"
+    if systemctl --user is-active --quiet "$n" 2>/dev/null; then ok "$n (user) active"; else warn "$n (user) not active — audio may fail"; fi
+  done
+  if pgrep -f "awww-daemon" &>/dev/null; then ok "awww-daemon is running"; else warn "awww-daemon not running — wallpapers won't apply"; fi
   if systemctl --user is-active --quiet qs-bt-agent 2>/dev/null; then
     ok "qs-bt-agent (user service) is active"
   else
@@ -385,14 +787,16 @@ doctor() {
     else
       warn "kcd daemon not running — run: systemctl --user enable --now kcd"
     fi
-    # firewall hint (only if kcd installed and not preboot)
     if ! $preboot && command -v ss &>/dev/null; then
-      if ss -tuln 2>/dev/null | grep -q ":1716"; then
+      if ss -tuln 2>/dev/null | grep -Eq "[:.]1716\b"; then
         ok "kcd port 1716 listening"
       else
         warn "kcd port 1716 not listening — check firewall 1716/udp+tcp 1739:1764/tcp"
       fi
     fi
+    for dep in sshfs zenity kdialog yad; do
+      if command -v "$dep" &>/dev/null; then ok "$dep (for kcd)"; else warn "$dep not found — kcd share/SFTP may fail"; fi
+    done
   else
     warn "kcd not installed — phone features disabled (yay -S kcd-bin, systemctl --user enable --now kcd)"
   fi
@@ -400,14 +804,18 @@ doctor() {
   echo
   echo "== Hardware =="
   if command -v ddcutil &>/dev/null; then
-    if timeout 6 ddcutil detect &>/dev/null; then
-      ok "ddcutil detects monitors"
+    if command -v timeout &>/dev/null; then
+      if timeout 6 ddcutil detect &>/dev/null; then ok "ddcutil detects monitors"; else warn "ddcutil sees no monitors (i2c permissions/udev — brightness will be unavailable)"; fi
     else
-      warn "ddcutil sees no monitors (i2c permissions/udev — brightness will be unavailable)"
+      if ddcutil detect &>/dev/null; then ok "ddcutil detects monitors"; else warn "ddcutil sees no monitors"; fi
     fi
   else
     warn "ddcutil is not installed — DDC brightness is unavailable"
   fi
+  if command -v upower &>/dev/null; then
+    if upower -e 2>/dev/null | grep -q battery; then ok "upower: battery found"; else info "upower: no battery (desktop)"; fi
+  fi
+  if command -v hyprsunset &>/dev/null; then ok "hyprsunset found"; else warn "hyprsunset not found — night light unavailable"; fi
 
   echo
   if [ "$problems" -gt 0 ]; then
@@ -418,17 +826,53 @@ doctor() {
 }
 
 case "${1:-help}" in
-  help|-h|--help) usage ;;
-  version|-V|--version) version ;;
+  help|-h|--help)
+    if [ -n "${2:-}" ]; then
+      case "$2" in
+        theme) usage_theme ;;
+        wallpaper) usage_wallpaper ;;
+        palette) usage_palette ;;
+        config) usage_config ;;
+        doctor) echo "Usage: selfshell doctor [--preboot]";;
+        update) echo "Usage: selfshell update [--yes]";;
+        version) echo "Usage: selfshell version [--short]";;
+        *) usage ;;
+      esac
+    else
+      usage
+    fi
+    ;;
+  version|-V|--version) version "${2:-}" ;;
   ipc) shift; ipc "$@" ;;
   lock) lock ;;
   toggle-lock) toggle_lock ;;
   launcher) launcher ;;
   settings) settings ;;
+  control) control ;;
+  clipboard) clipboard ;;
+  kcd) kcd_toggle ;;
+  audio) audio_toggle ;;
+  osd) shift; osd "$@" ;;
   palette-reload) palette ;;
+  palette) shift; palette_cmd "$@" ;;
+  wallpaper) shift; wallpaper_cmd "$@" ;;
+  theme) shift; theme_cmd "$@" ;;
+  config) shift; config_cmd "$@" ;;
+  status) status_cmd ;;
+  services) services_cmd ;;
   doctor) shift; doctor "$@" ;;
   reload) reload ;;
-  update) update ;;
-  list) qs list ;;
+  update) shift; update "$@" ;;
+  list) qs list 2>/dev/null || quickshell list 2>/dev/null || { error "qs not found"; exit 1; } ;;
+  completion)
+    cat <<'COMP'
+# selfshell fish completion
+complete -c selfshell -f
+complete -c selfshell -n "__fish_use_subcommand" -a "help version status theme wallpaper palette config doctor reload update lock toggle-lock launcher settings control clipboard kcd audio osd ipc list services completion" -d "command"
+complete -c selfshell -n "__fish_seen_subcommand_from theme" -a "list status set" -d "theme"
+complete -c selfshell -n "__fish_seen_subcommand_from wallpaper" -a "list current set random reload" -d "wallpaper"
+complete -c selfshell -n "__fish_seen_subcommand_from palette" -a "reload show path" -d "palette"
+COMP
+    ;;
   *) error "Unknown command: ${1:-}"; usage; exit 1 ;;
 esac
