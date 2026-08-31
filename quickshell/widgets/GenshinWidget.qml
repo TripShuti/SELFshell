@@ -61,7 +61,7 @@ Item {
            : root.hovered ? window.palette.green
            : window.palette.blue
       font.family: window.palette.font
-      font.pixelSize: window.appConfig.scaled(12)
+      font.pixelSize: window.appConfig.scaled(14)
       Layout.alignment: Qt.AlignVCenter
       scale: root.hovered ? 1.08 : 1.0
 

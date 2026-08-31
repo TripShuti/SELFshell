@@ -128,6 +128,11 @@ Item {
       // Множник тривалостей усіх анімацій (1.0 = база)
       property real animSpeed: 1.0
 
+      // --- Тема ---
+      // Режим темінгу: "matugen" — динамічна палітра зі шпалери,
+      // "black" — статична монохромна палітра без matugen, шпалери змінюються без регенерації
+      property string themeMode: "matugen"
+
       // --- Порядки віджетів ---
       property var leftOrder: ["launcher", "sep-2", "workspaces", "sep-7", "mpris"]
       property var centerOrder: ["clock", "sep-5", "timer", "sep-6", "genshin", "battery"]
@@ -268,6 +273,7 @@ Item {
     separatorOpacity: 0.65, separatorGlowOpacity: 0.10,
     uiScale: 1.0,
     animationsEnabled: true, animSpeed: 1.0,
+    themeMode: "matugen",
     leftOrder: ["launcher", "sep-2", "workspaces", "sep-7", "mpris"],
     centerOrder: ["clock", "sep-5", "timer", "sep-6", "genshin", "battery"],
     rightOrder: ["tray", "sep-12", "net", "bt", "kcd", "keyboard", "sep-10", "audio", "sep-11", "control", "clipboard"]

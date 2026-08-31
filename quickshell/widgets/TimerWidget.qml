@@ -141,7 +141,7 @@ Item {
          : root.timerClass === "done" ? window.palette.red
          : window.palette.widgetFg
     font.family: window.palette.font
-    font.pixelSize: window.appConfig.scaled(13)
+    font.pixelSize: window.appConfig.scaled(14)
     anchors.verticalCenter: parent.verticalCenter
     scale: root.hovered ? 1.08 : 1.0
 

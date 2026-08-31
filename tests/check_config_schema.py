@@ -52,7 +52,7 @@ NUM_FIELDS = {
     "separatorOpacity": (0.0, 1.0), "separatorGlowOpacity": (0.0, 1.0),
     "uiScale": (0.5, 2.0),
 }
-STR_FIELDS = ["barPos"]
+STR_FIELDS = ["barPos", "themeMode"]
 ORDER_FIELDS = ["leftOrder", "centerOrder", "rightOrder"]
 
 cfg = load(CONFIG_PATH)
@@ -73,6 +73,10 @@ if cfg is not None:
     if "barPos" in cfg:
         check(cfg["barPos"] in ("top", "bottom"),
               f"config barPos: expected top/bottom, got {cfg['barPos']!r}")
+    if "themeMode" in cfg:
+        # white лишається валідним для зворотної сумісності (міграція → matugen), але UI більше не пропонує
+        check(cfg["themeMode"] in ("black", "white", "matugen"),
+              f"config themeMode: expected black/white/matugen, got {cfg['themeMode']!r}")
     for field in ORDER_FIELDS:
         if field in cfg:
             check(isinstance(cfg[field], list) and all(isinstance(x, str) for x in cfg[field]),

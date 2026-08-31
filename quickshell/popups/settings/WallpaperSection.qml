@@ -13,6 +13,7 @@ Item {
   readonly property var window: sys.window
 
   readonly property string paletteScriptPath: Qt.resolvedUrl("../../scripts/update-palette.sh").toString().replace("file://", "")
+  readonly property string wallpaperOnlyPath: Qt.resolvedUrl("../../scripts/update-wallpaper-only.sh").toString().replace("file://", "")
   readonly property string listScriptPath: Qt.resolvedUrl("../../scripts/update-palette.py").toString().replace("file://", "")
 
   property var wallpapers: []
@@ -56,8 +57,10 @@ Item {
   }
 
   function setWallpaper(path) {
-    root.statusText = "\uF002 Setting wallpaper..."
-    applyProc.command = [root.paletteScriptPath, path]
+    if (applyProc.running) return
+    var isStatic = window.appConfig.cfg.themeMode === "black"
+    root.statusText = isStatic ? "\uF002 Setting wallpaper (palette stays)..." : "\uF002 Setting wallpaper..."
+    applyProc.command = isStatic ? [root.wallpaperOnlyPath, path] : [root.paletteScriptPath, path]
     applyProc.running = true
   }
 
@@ -73,8 +76,12 @@ Item {
       spacing: 8
 
       Text {
-        text: root.statusText !== "" ? root.statusText
-                                     : "Pick a wallpaper — the palette regenerates automatically"
+        text: {
+          if (root.statusText !== "") return root.statusText
+          if (window.appConfig.cfg.themeMode === "black")
+            return "Pick a wallpaper — palette stays fixed (black theme, wallpaper-only)"
+          return "Pick a wallpaper — the palette regenerates automatically (Matugen)"
+        }
         color: root.statusText !== "" ? window.palette.green : window.palette.gray
         font.family: window.palette.font
         font.pixelSize: window.appConfig.scaled(11)
@@ -148,7 +155,9 @@ Item {
     }
 
     Text {
-      text: "Note: applying a wallpaper re-runs the palette generator — bar and popup colors update live."
+      text: window.appConfig.cfg.themeMode === "black"
+            ? "Note: in Black theme the palette is static — only the wallpaper image changes."
+            : "Note: applying a wallpaper re-runs the palette generator — bar and popup colors update live."
       color: window.palette.mutedAlt
       font.family: window.palette.font
       font.pixelSize: window.appConfig.scaled(10)

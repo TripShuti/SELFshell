@@ -137,7 +137,7 @@ Item {
     text: root.displayText
     color: root.hovered ? window.palette.green : window.palette.widgetFg
     font.family: window.palette.font
-    font.pixelSize: window.appConfig.scaled(12)
+    font.pixelSize: window.appConfig.scaled(14)
     anchors.verticalCenter: parent.verticalCenter
     scale: root.hovered ? 1.08 : 1.0
 

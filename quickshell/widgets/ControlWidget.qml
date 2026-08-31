@@ -26,7 +26,7 @@ HoverItem {
       if (root.hovered) return window.palette.light
       return window.palette.widgetFg
     }
-    font.pixelSize: window.appConfig.scaled(19)
+    font.pixelSize: window.appConfig.scaled(22)
     anchors.verticalCenter: parent.verticalCenter
 
     // Блимання при непрочитаних

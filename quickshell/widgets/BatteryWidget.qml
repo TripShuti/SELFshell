@@ -142,14 +142,14 @@ Item {
       text: root.icon
       color: root.iconColor
       font.family: window.palette.font
-      font.pixelSize: window.appConfig.scaled(13)
+      font.pixelSize: window.appConfig.scaled(14)
       Behavior on color { ColorAnimation { duration: window.appConfig.anim(220) } }
     }
     Text {
       text: root.percent >= 0 ? root.percent + "%" : "--"
       color: root.iconColor
       font.family: window.palette.font
-      font.pixelSize: window.appConfig.scaled(12)
+      font.pixelSize: window.appConfig.scaled(14)
       Behavior on color { ColorAnimation { duration: window.appConfig.anim(220) } }
     }
   }

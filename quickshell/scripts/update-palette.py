@@ -149,69 +149,29 @@ def foot_hex(h):
     return to_hex(r, g, b).strip("#")
 
 
-def main():
+STATIC_PALETTES = {
+    "black": {
+        # Пом’якшений чорний — не OLED #000000, а глибокий сірий #121212 (менш різкий)
+        "fg": "#e8e8eb", "gray": "#7a7a7a", "green": "#d0d0d0", "red": "#b0b0b0",
+        "bg0H": "#121212", "bg1": "#1e1e1e", "bg2": "#2c2c2e",
+        "muted": "#9a9a9a", "light": "#d0d0d0", "bright": "#f5f5f5",
+        "yellow": "#c8c8c8", "blue": "#c0c0c0", "purple": "#b0b0b0",
+        "orange": "#c8c8c8", "aqua": "#d0d0d0",
+        "accent": "#e0e0e0", "on_primary": "#121212",
+        "background": "#121212", "on_surface": "#e8e8eb",
+    },
+}
 
-    if len(sys.argv) >= 2 and sys.argv[1] == "list":
-        list_wallpapers()
-        return 0
 
-    if len(sys.argv) >= 2 and sys.argv[1] == "current":
-        current_wallpaper()
-        return 0
-
-    if len(sys.argv) < 2:
-        print(f"usage: {os.path.basename(sys.argv[0])} <wallpaper> | list | current", file=sys.stderr)
-        return 1
-
-    wallpaper = sys.argv[1]
-
-    result = subprocess.run(
-        ["matugen", "image", wallpaper, "--source-color-index", "0", "--mode", "dark", "-j", "hex"],
-        capture_output=True, text=True, check=True
-    )
-
-    data = json.loads(result.stdout)
-    raw = data["colors"]
-    palettes = data["palettes"]
-
-    # Отримує колір з raw
-    def col(name):
-        return raw[name]["dark"]["color"]
-
-    # Отримує тон з палітри (neutral, primary, secondary, tertiary)
-    def tone(palette_name, level):
-        return palettes[palette_name][str(level)]["color"]
-
-    fg        = col("on_background")
-    gray      = col("outline")
-    green     = tone("primary", 70)
-    red       = tone("error", 80)
-    bg0H      = tone("neutral", 20)
-    bg1       = tone("neutral", 25)
-    bg2       = tone("neutral", 35)
-    muted     = col("on_surface_variant")
-    light     = tone("neutral", 90)
-    bright    = tone("neutral", 95)
-    yellow    = col("tertiary")
-    blue      = col("secondary")
-    purple    = tone("secondary", 70)
-    # orange з третинної палітри: раніше був тотожній green (primary 70) —
-    # копіпаста, через що UI-елементи з orange виглядали зеленими
-    orange    = tone("tertiary", 70)
-    aqua      = tone("tertiary", 70)
-
-    widgetFg   = blend(col("primary"), col("on_background"), 0.6)
-    audioVolume = tone("tertiary", 80)
-    accent     = col("primary")
-    textLight  = tone("neutral", 95)
-    mutedAlt   = blend(col("outline"), col("on_background"), 0.45)
-    danger     = col("error")
-    bgLayer    = alpha(blend(col("background"), col("on_surface"), 0.15), 0.6)
-    sepBg      = alpha(col("primary"), 0.6)
-    outlineVariant = alpha(bg2, 0.4)
-
-    # --- Генерація data/palette.json (для PaletteService) ---
-
+def _build_and_write_palette(fg, gray, green, red, bg0H, bg1, bg2, muted, light, bright,
+                              yellow, blue, purple, orange, aqua,
+                              widgetFg, audioVolume, accent, textLight, mutedAlt,
+                              danger, bgLayer, sepBg, outlineVariant, on_primary):
+    # Для світлого фону hover має бути темним, для темного — світлим
+    r, g, b = parse_hex(bg0H)
+    is_light = (r + g + b) / 3 > 128
+    hover_overlay = alpha('#000000', 0.06) if is_light else alpha('#ffffff', 0.08)
+    press_overlay = alpha('#000000', 0.10) if is_light else alpha('#ffffff', 0.12)
     palette_values = {
         "font": "JetBrainsMonoNL Nerd Font",
         "fg": fg, "gray": gray, "green": green, "red": red,
@@ -219,7 +179,7 @@ def main():
         "muted": muted, "light": light, "bright": bright,
         "yellow": yellow, "blue": blue, "purple": purple, "orange": orange, "aqua": aqua,
         "widgetFg": widgetFg, "audioVolume": audioVolume,
-        "hoverOverlay": alpha('#ffffff', 0.08), "pressOverlay": alpha('#ffffff', 0.12),
+        "hoverOverlay": hover_overlay, "pressOverlay": press_overlay,
         "bgAlpha": alpha(bg0H, 0.6),
         "hoverBg": alpha(blend(bg0H, gray, 0.15), 0.6),
         "baseOverlay": alpha(bg0H, 0.6), "softOverlay": alpha(bg0H, 0.65),
@@ -228,16 +188,12 @@ def main():
     }
 
     palette_json = json.dumps(palette_values, indent=2)
-
     qs_dir = QS_DIR
-
     palette_json_path = os.path.join(qs_dir, "data", "palette.json")
     os.makedirs(os.path.dirname(palette_json_path), exist_ok=True)
     atomic_write(palette_json_path, palette_json)
 
-    # --- Генерація kitty current-theme.conf ---
-
-    kitty_bg = tone("neutral", 20)
+    kitty_bg = bg0H
 
     kitty = f"""## Згенеровано update-palette.py
 
@@ -279,8 +235,6 @@ def main():
     os.makedirs(os.path.dirname(kitty_path), exist_ok=True)
     atomic_write(kitty_path, kitty)
 
-    # --- Генерація fish conf.d/99-palette.fish ---
-
     fish = f"""# Згенеровано update-palette.py
     set -g fish_color_normal "{fg}"
     set -g fish_color_command "{green}"
@@ -306,8 +260,6 @@ def main():
     fish_dir = os.path.expanduser("~/.config/fish/conf.d")
     os.makedirs(fish_dir, exist_ok=True)
     atomic_write(os.path.join(fish_dir, "99-palette.fish"), fish)
-
-    # --- Оновлення starship config.toml палітри ---
 
     starship_path = os.path.expanduser("~/.config/starship/config.toml")
     if os.path.isfile(starship_path):
@@ -356,13 +308,8 @@ def main():
 
         atomic_write(starship_path, "\n".join(new_lines))
 
-    # --- Генерація foot theme ---
-
     FOOT_DIR = os.path.expanduser("~/.config/foot")
 
-    # foot 1.27: секція [colors-dark] — дефолтна тема; live-перефарбування
-    # через SIGUSR1 (pkill -USR1 foot), без рестарту терміналів.
-    # Формат тільки key=value — foot не приймає роздільник пробілами.
     foot = f"""# Згенеровано update-palette.py
 
     [colors-dark]
@@ -396,7 +343,6 @@ def main():
     os.makedirs(FOOT_DIR, exist_ok=True)
     atomic_write(os.path.join(FOOT_DIR, "colors.ini"), foot)
 
-    # foot.ini: створюємо з include, якщо немає; наявні налаштування не чіпаємо
     foot_ini_path = os.path.join(FOOT_DIR, "foot.ini")
     include_line = "include=~/.config/foot/colors.ini"
     if os.path.isfile(foot_ini_path):
@@ -407,8 +353,6 @@ def main():
                 f.write(f"\n{include_line}\n")
     else:
         atomic_write(foot_ini_path, f"# Згенеровано update-palette.py\n{include_line}\n")
-
-    # --- Генерація yazi flavor ---
 
     yazi_flavor_dir = os.path.expanduser("~/.config/yazi/flavors/palette.yazi")
     os.makedirs(yazi_flavor_dir, exist_ok=True)
@@ -516,8 +460,6 @@ def main():
 
     atomic_write(os.path.join(yazi_flavor_dir, "flavor.toml"), yazi_flavor)
 
-    # --- Генерація yazi theme.toml ---
-
     yazi_theme = f"""# Згенеровано update-palette.py
 
     [flavor]
@@ -543,12 +485,6 @@ def main():
     yazi_theme_path = os.path.expanduser("~/.config/yazi/theme.toml")
     atomic_write(yazi_theme_path, yazi_theme)
 
-    # --- Генерація qt6ct color scheme (Qt акцент) ---
-    # Qt-додатки (Telegram) читають акцент з QPalette::Highlight.
-    # Формат — власний формат qt6ct: [ColorScheme] зі списками #AARRGGBB у порядку
-    # ролей QPalette (Qt 6.11): індекс 12 = Highlight (акцент), 13 = HighlightedText
-    # (on_primary), 21 = Accent. Три списки (active/inactive/disabled) — тотожні,
-    # qt6ct латентно кладе їх у відповідні ColorGroup.
     qt_roles = [
         fg,        # 0  WindowText
         bg2,       # 1  Button
@@ -563,7 +499,7 @@ def main():
         bg0H,      # 10 Window
         bg0H,      # 11 Shadow
         accent,    # 12 Highlight
-        col("on_primary"),  # 13 HighlightedText
+        on_primary,  # 13 HighlightedText
         blue,      # 14 Link
         purple,    # 15 LinkVisited
         bg0H,      # 16 AlternateBase
@@ -585,6 +521,100 @@ def main():
     os.makedirs(os.path.dirname(qt_scheme_path), exist_ok=True)
     atomic_write(qt_scheme_path, qt_scheme)
     ensure_qt6ct_palette(qt_scheme_path)
+
+
+def main():
+
+    if len(sys.argv) >= 2 and sys.argv[1] == "list":
+        list_wallpapers()
+        return 0
+
+    if len(sys.argv) >= 2 and sys.argv[1] == "current":
+        current_wallpaper()
+        return 0
+
+    # Статична тема Black — без matugen, без шпалери
+    if len(sys.argv) >= 2 and sys.argv[1] == "--theme":
+        if len(sys.argv) < 3 or sys.argv[2] not in STATIC_PALETTES:
+            print(f"usage: {os.path.basename(sys.argv[0])} --theme <black>", file=sys.stderr)
+            return 1
+        theme = sys.argv[2]
+        p = STATIC_PALETTES[theme]
+        fg = p["fg"]; gray = p["gray"]; green = p["green"]; red = p["red"]
+        bg0H = p["bg0H"]; bg1 = p["bg1"]; bg2 = p["bg2"]
+        muted = p["muted"]; light = p["light"]; bright = p["bright"]
+        yellow = p["yellow"]; blue = p["blue"]; purple = p["purple"]
+        orange = p["orange"]; aqua = p["aqua"]
+        accent = p["accent"]; on_primary = p["on_primary"]
+        widgetFg = blend(accent, fg, 0.6)
+        audioVolume = aqua
+        textLight = bright
+        mutedAlt = blend(gray, fg, 0.45)
+        danger = red
+        bgLayer = alpha(blend(p["background"], p["on_surface"], 0.15), 0.6)
+        sepBg = alpha(accent, 0.6)
+        outlineVariant = alpha(bg2, 0.4)
+        _build_and_write_palette(fg, gray, green, red, bg0H, bg1, bg2, muted, light, bright,
+                                 yellow, blue, purple, orange, aqua,
+                                 widgetFg, audioVolume, accent, textLight, mutedAlt,
+                                 danger, bgLayer, sepBg, outlineVariant, on_primary)
+        return 0
+
+    if len(sys.argv) < 2:
+        print(f"usage: {os.path.basename(sys.argv[0])} <wallpaper> | --theme <black> | list | current", file=sys.stderr)
+        return 1
+
+    wallpaper = sys.argv[1]
+
+    result = subprocess.run(
+        ["matugen", "image", wallpaper, "--source-color-index", "0", "--mode", "dark", "-j", "hex"],
+        capture_output=True, text=True, check=True
+    )
+
+    data = json.loads(result.stdout)
+    raw = data["colors"]
+    palettes = data["palettes"]
+
+    # Отримує колір з raw
+    def col(name):
+        return raw[name]["dark"]["color"]
+
+    # Отримує тон з палітри (neutral, primary, secondary, tertiary)
+    def tone(palette_name, level):
+        return palettes[palette_name][str(level)]["color"]
+
+    fg        = col("on_background")
+    gray      = col("outline")
+    green     = tone("primary", 70)
+    red       = tone("error", 80)
+    bg0H      = tone("neutral", 20)
+    bg1       = tone("neutral", 25)
+    bg2       = tone("neutral", 35)
+    muted     = col("on_surface_variant")
+    light     = tone("neutral", 90)
+    bright    = tone("neutral", 95)
+    yellow    = col("tertiary")
+    blue      = col("secondary")
+    purple    = tone("secondary", 70)
+    # orange з третинної палітри: раніше був тотожній green (primary 70) —
+    # копіпаста, через що UI-елементи з orange виглядали зеленими
+    orange    = tone("tertiary", 70)
+    aqua      = tone("tertiary", 70)
+
+    widgetFg   = blend(col("primary"), col("on_background"), 0.6)
+    audioVolume = tone("tertiary", 80)
+    accent     = col("primary")
+    textLight  = tone("neutral", 95)
+    mutedAlt   = blend(col("outline"), col("on_background"), 0.45)
+    danger     = col("error")
+    bgLayer    = alpha(blend(col("background"), col("on_surface"), 0.15), 0.6)
+    sepBg      = alpha(col("primary"), 0.6)
+    outlineVariant = alpha(bg2, 0.4)
+
+    _build_and_write_palette(fg, gray, green, red, bg0H, bg1, bg2, muted, light, bright,
+                             yellow, blue, purple, orange, aqua,
+                             widgetFg, audioVolume, accent, textLight, mutedAlt,
+                             danger, bgLayer, sepBg, outlineVariant, col("on_primary"))
     return 0
 
 

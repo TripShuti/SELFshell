@@ -87,7 +87,7 @@ Item {
       color: root.player?.isPlaying ? window.palette.green
            : root.hovered ? window.palette.green
            : window.palette.fg
-      font.family: window.palette.font; font.pixelSize: window.appConfig.scaled(10)
+      font.family: window.palette.font; font.pixelSize: window.appConfig.scaled(8)
       Layout.alignment: Qt.AlignVCenter
       scale: root.hovered ? 1.15 : 1.0
       Behavior on color { ColorAnimation { duration: window.appConfig.anim(220) } }

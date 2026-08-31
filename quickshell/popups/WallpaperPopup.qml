@@ -45,6 +45,7 @@ AnimatedPopup {
 
 
   readonly property string paletteScriptPath: Qt.resolvedUrl("../scripts/update-palette.sh").toString().replace("file://", "")
+  readonly property string wallpaperOnlyPath: Qt.resolvedUrl("../scripts/update-wallpaper-only.sh").toString().replace("file://", "")
   readonly property string listScriptPath: Qt.resolvedUrl("../scripts/update-palette.py").toString().replace("file://", "")
 
   // Отримує список файлів шпалер з директорії wp/
@@ -85,8 +86,9 @@ AnimatedPopup {
     // повторний клік під час apply губиться б мовчки, а статус
     // "Setting wallpaper..." застрягав назавжди (onExited не приходить)
     if (applyProc.running) return
-    statusText = "\uF002 Setting wallpaper..."
-    applyProc.command = [root.paletteScriptPath, path]
+    var isStatic = window.appConfig.cfg.themeMode === "black"
+    statusText = isStatic ? "\uF002 Setting wallpaper (palette stays)..." : "\uF002 Setting wallpaper..."
+    applyProc.command = isStatic ? [root.wallpaperOnlyPath, path] : [root.paletteScriptPath, path]
     applyProc.running = true
   }
 
