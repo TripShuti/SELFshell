@@ -794,9 +794,12 @@ PY
         warn "kcd port 1716 not listening — check firewall 1716/udp+tcp 1739:1764/tcp"
       fi
     fi
-    for dep in sshfs zenity kdialog yad; do
-      if command -v "$dep" &>/dev/null; then ok "$dep (for kcd)"; else warn "$dep not found — kcd share/SFTP may fail"; fi
+    if command -v sshfs &>/dev/null; then ok "sshfs (for kcd SFTP)"; else warn "sshfs not found — SFTP mount/browse may fail (sudo pacman -S sshfs)"; fi
+    local has_dialog=false
+    for d in zenity kdialog yad; do
+      if command -v "$d" &>/dev/null; then ok "$d (for kcd Share)"; has_dialog=true; break; fi
     done
+    if ! $has_dialog; then warn "neither zenity/kdialog/yad found — Share file picker will fail (install one: sudo pacman -S zenity)"; fi
   else
     warn "kcd not installed — phone features disabled (yay -S kcd-bin, systemctl --user enable --now kcd)"
   fi
