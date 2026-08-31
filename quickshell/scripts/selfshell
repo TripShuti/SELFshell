@@ -554,7 +554,7 @@ doctor() {
       warn "$dep — not found (audio)"
     fi
   done
-  if command -v ttf-jetbrains-mono-nerd &>/dev/null || fc-list 2>/dev/null | grep -qi "JetBrainsMono.*Nerd"; then
+  if pacman -Q ttf-jetbrains-mono-nerd &>/dev/null 2>&1 || command -v ttf-jetbrains-mono-nerd &>/dev/null || fc-match "JetBrainsMonoNL Nerd Font" &>/dev/null 2>&1; then
     ok "ttf-jetbrains-mono-nerd (JetBrainsMonoNL Nerd Font)"
   else
     warn "ttf-jetbrains-mono-nerd not found — bar glyphs may be missing (pacman -S ttf-jetbrains-mono-nerd)"
