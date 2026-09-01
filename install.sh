@@ -365,32 +365,32 @@ else
   info "Found AUR helper: $aur_helper"
 fi
 
-# --- Крок 4.5: курсор Bibata (AUR) ---
+# --- Крок 4.5: курсор Breeze (extra) ---
 # XCURSOR_THEME/HYPRCURSOR_THEME ставить exec.lua; тут додатково
 # застосовуємо тему для GTK (gsettings) і X-додатків без env (index.theme)
-CURSOR_THEME="Bibata-Modern-Classic"
-if [ -n "$aur_helper" ]; then
-  if confirm "Install Bibata cursor theme ($CURSOR_THEME, AUR)?" n; then
-    "$aur_helper" -S --needed --noconfirm bibata-cursor-theme || warn "Bibata install failed — cursor stays default"
-    if [ -d /usr/share/icons/"$CURSOR_THEME" ]; then
-      sudo mkdir -p /usr/share/icons/default
-      printf '[Icon Theme]\nInherits=%s\n' "$CURSOR_THEME" | sudo tee /usr/share/icons/default/index.theme >/dev/null
-      if command -v gsettings &>/dev/null; then
-        gsettings set org.gnome.desktop.interface cursor-theme "$CURSOR_THEME" 2>/dev/null || true
-        gsettings set org.gnome.desktop.interface cursor-size 24 2>/dev/null || true
-      fi
-      info "Cursor applied: $CURSOR_THEME, size 24"
-    else
-      warn "Cursor theme dir missing after install — cursor stays default"
-    fi
+CURSOR_THEME="breeze_cursors"
+if confirm "Install Breeze cursor theme ($CURSOR_THEME, extra)?" n; then
+  if pacman -Qi "$CURSOR_THEME" &>/dev/null; then
+    info "Cursor $CURSOR_THEME already installed."
   else
-    info "Cursor skipped — Hyprland will use its default cursor."
+    sudo pacman -S --needed --noconfirm "$CURSOR_THEME" || warn "Breeze install failed — cursor stays default"
+  fi
+  if [ -d /usr/share/icons/"$CURSOR_THEME" ]; then
+    sudo mkdir -p /usr/share/icons/default
+    printf '[Icon Theme]\nInherits=%s\n' "$CURSOR_THEME" | sudo tee /usr/share/icons/default/index.theme >/dev/null
+    if command -v gsettings &>/dev/null; then
+      gsettings set org.gnome.desktop.interface cursor-theme "$CURSOR_THEME" 2>/dev/null || true
+      gsettings set org.gnome.desktop.interface cursor-size 24 2>/dev/null || true
+    fi
+    info "Cursor applied: $CURSOR_THEME, size 24"
+  else
+    warn "Cursor theme dir missing after install — cursor stays default"
   fi
 else
-  warn "No AUR helper — cursor theme (bibata) skipped, cursor stays default."
+  info "Cursor skipped — Hyprland will use its default cursor."
 fi
 
-# --- Крок 4.6: телефон (kcd, опційно) ---
+# --- Крок 4.6: телефон (kcd, опційно, AUR — потребує yay/paru) ---
 # kcd — Go KDE Connect daemon без KDE-стеку: батарея/ping/ring/share/notifications
 # Працює з офіційним Android KDE Connect, LAN-only, без телеметрії
 if [ -n "$aur_helper" ]; then
@@ -406,6 +406,9 @@ if [ -n "$aur_helper" ]; then
         warn "No user session — skipped kcd enable. After login: systemctl --user enable --now kcd"
       fi
       warn "Firewall: allow 1716/udp+tcp and 1739:1764/tcp for phone discovery (ufw allow kcd or manual)"
+      if confirm "Install kcd optional deps (sshfs for SFTP, wl-clipboard for clipboard, zenity for Share)?" n; then
+        sudo pacman -S --needed --noconfirm sshfs wl-clipboard zenity 2>/dev/null || warn "Optional kcd deps install failed — doctor may warn (pacman -S sshfs wl-clipboard zenity)"
+      fi
     fi
   else
     info "kcd skipped — phone widget will stay disabled (enable later: yay -S kcd-bin)"

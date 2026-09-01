@@ -135,7 +135,7 @@ Flow:
 3. Installs `qs-bt-agent` as a systemd user service
 4. Installs the `selfshell` CLI (chmod + symlink into `~/.local/bin/`)
 5. Offers to copy hypr/kitty/fish/yazi/starship/fastfetch (backing up existing ones)
-6. Offers an AUR helper (yay) and the Bibata cursor theme
+6. Offers an AUR helper (yay) and the Breeze cursor theme (extra/breeze-cursors)
 7. Sets up the login screen: greetd + tuigreet (TUI, starts Hyprland via uwsm), or uwsm autostart on tty1 if greetd is declined
 
 The script is idempotent — re-running it backs up existing configs

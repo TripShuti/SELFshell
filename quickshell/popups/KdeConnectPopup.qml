@@ -601,14 +601,17 @@ AnimatedPopup {
           required property var modelData
           required property int index
           Layout.fillWidth: true
-          height: notifCol.implicitHeight + 10
+          implicitHeight: notifCol.implicitHeight + 10
+          clip: true
           radius: 6
           color: window.palette.bg1
           border.width: 1; border.color: window.palette.bg2
           ColumnLayout {
             id: notifCol
-            anchors.centerIn: parent
-            width: parent.width - 12
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.margins: 5
             spacing: 2
             Text {
               text: modelData.appName + (modelData.title ? " • " + modelData.title : "")
@@ -622,7 +625,7 @@ AnimatedPopup {
               text: modelData.text
               color: window.palette.mutedAlt
               font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
-              wrapMode: Text.WordWrap
+              wrapMode: Text.Wrap
               maximumLineCount: 2
               elide: Text.ElideRight
               Layout.fillWidth: true

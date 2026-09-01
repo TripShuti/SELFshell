@@ -102,7 +102,7 @@ hardcoded values).
   "terminal": "kitty",
   "fileManager": "kitty -e yazi",
   "browser": "chromium",
-  "cursorTheme": "Bibata-Modern-Classic",
+  "cursorTheme": "breeze_cursors",
   "cursorSize": 24,
   "kbLayout": "us",
   "kbOptions": "",
@@ -124,7 +124,7 @@ hardcoded values).
 | `terminal` | `string` | `"kitty"` | Terminal (binds: SUPER+Q) |
 | `fileManager` | `string` | `"kitty -e yazi"` | File manager (SUPER+E) |
 | `browser` | `string` | `"chromium"` | Browser (SUPER+W) |
-| `cursorTheme` | `string` | `"Bibata-Modern-Classic"` | Cursor theme; `""` — do not set |
+| `cursorTheme` | `string` | `"breeze_cursors"` | Cursor theme; `""` — do not set |
 | `cursorSize` | `number` | `24` | Cursor size |
 | `kbLayout` | `string` | `"us"` | Comma-separated keyboard layouts (`input:kb_layout`) |
 | `kbOptions` | `string` | `""` | Keyboard options, e.g. `"grp:alt_shift_toggle"` for layout switching |

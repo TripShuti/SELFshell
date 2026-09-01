@@ -122,7 +122,7 @@ Re-running `./install.sh` does not touch anything without confirmation:
   defaults — the default answer is **no**, and declining aborts the script
   with nothing changed
 - Already-installed packages and services are skipped; the optional steps
-  (dotfiles, yay, Bibata cursor, greetd) default to **no**
+  (dotfiles, yay, Breeze cursor, greetd) default to **no**
 
 Non-interactive runs: `./install.sh --yes` answers yes to every prompt,
 `./install.sh --no` answers no (both are useful for CI / scripts).
@@ -173,7 +173,7 @@ array in the script for the complete list. Key packages:
 | `pipewire wireplumber pipewire-pulse` | Audio |
 | `hyprsunset` | Blue-light filter |
 | `matugen awww` | Color generation & wallpaper |
-| `bibata-cursor-theme` (AUR) | Modern cursor theme (XCURSOR_THEME + gsettings + index.theme) |
+| `breeze-cursors` (extra) | KDE Breeze cursor theme (XCURSOR_THEME + gsettings + index.theme) |
 | `grim slurp wl-clipboard` | Screenshots & clipboard |
 | `ddcutil` | Monitor brightness control |
 | `upower` | Battery widget |
