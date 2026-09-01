@@ -343,15 +343,18 @@ PanelWindow {
     onNotification: (notif) => {
       // DND — повністю ховає сповіщення (тост, список, звук)
       if (root.appConfig.cfg.dndEnabled) return
-      // kcdMuted — ховає телефонні сповіщення що дублюються через notify-send (kcd notification plugin)
-      // Перевіряємо чи це телефонне сповіщення за останнім watch-події (5с вікно, точний збіг app+title+body)
-      // Раніше була широка умова по appName — глушила ВСІ сповіщення додатку; лишаємо тільки точний збіг
-      if (root.appConfig.cfg.kcdMuted && root.kdeConnect && root.kdeConnect.lastPhoneNotif) {
+      // kcd DND — ховає телефонні дублі через notify-send (kcd notification plugin)
+      // Уніфіковано з KdeConnectService.dnd: коли в попапі кде DND увімкнено — тільки попап, нікуди більше
+      // Нормалізуємо як в сервісі (trim+collapse whitespace, lower) і матчимо нестрого, бо kcd та notify-send мають різні appName
+      if (root.appConfig.cfg.kcdDndEnabled && root.kdeConnect && root.kdeConnect.lastPhoneNotif) {
         var last = root.kdeConnect.lastPhoneNotif
         var age = Date.now() - (root.kdeConnect.lastPhoneNotifTime ?? 0)
-        if (age < 5000) {
-          var a = String(notif.appName ?? ""), b = String(notif.summary ?? notif.title ?? ""), c = String(notif.body ?? notif.text ?? "")
-          if (a === last.appName && b === last.title && c === last.text) return
+        if (age < 10000) {
+          function _norm(s) { return String(s ?? "").trim().replace(/\s+/g, " ").toLowerCase() }
+          var a = _norm(notif.appName ?? ""), b = _norm(notif.summary ?? notif.title ?? ""), c = _norm(notif.body ?? notif.text ?? "")
+          var la = _norm(last.appName), lb = _norm(last.title), lc = _norm(last.text)
+          // строгий збіг або вміст — покриває Telegram vs org.telegram.desktop
+          if ((a === la && b === lb && c === lc) || (b === lb && c === lc) || (a !== "" && la !== "" && (a.includes(la) || la.includes(a)) && b === lb)) return
         }
       }
       notif.tracked = true
@@ -567,13 +570,14 @@ PanelWindow {
     }
   }
 
-  // Міст: сповіщення з телефону → системний тост (поважає DND + kcdMuted)
+  // Міст: сповіщення з телефону → системний тост (поважає DND + kcd DND)
+  // Уніфіковано: KdeConnectService вже глушить по kcdDndEnabled (тільки попап), тут другий рубіж + глобальний DND
   // Маркування: "Phone • WhatsApp" + іконка додатку (файл з kcd або тема) + phone badge
   Connections {
     target: kdeConnect
     function onNotificationReceived(notif) {
       if (root.appConfig.cfg.dndEnabled) return
-      if (root.appConfig.cfg.kcdMuted) return
+      if (root.appConfig.cfg.kcdDndEnabled) return
       notif.tracked = true
       var phoneApp = notif.appName ? "Phone • " + notif.appName : "Phone"
       // іконка додатку: payload.icon (файл з kcd fetch_icons) або підбір за ім'ям

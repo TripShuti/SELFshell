@@ -34,8 +34,8 @@ no separate lock/idle daemons.
 
 **Phone — KDE Connect via [kcd](https://github.com/bethropolis/kcd)**
 - Optional headless Go daemon [kcd](https://github.com/bethropolis/kcd) (`AUR kcd-bin`, `systemctl --user enable --now kcd`), LAN-only `1716/udp+tcp` `1739:1764/tcp`, no KDE stack, no telemetry
-- Battery + reachable dot, Ping / Ring (FindMyPhone), Share file (`zenity`/`kdialog` → `kcd share`), Clipboard push (`kcd clipboard`), SFTP browse/mount/unmount (`kcd sftp` → `~/Downloads/kcd/mnt` ↔ `/storage/emulated/0`), notifications (`Phone • App` in toast + Control Center, deduplicated, `kcdMuted` mute without disconnect)
-- Devices popup: battery bar, per-device Pair/Unpair, Pair new device (`kcd pair`), Connect by IP (`kcd connect`), `kcdMuted` toggle (header bell `F0F3`/`F1F6` + widget badge)
+- Battery + reachable dot, Ping / Ring (FindMyPhone), Share file (`zenity`/`kdialog` → `kcd share`), Clipboard push (`kcd clipboard`), SFTP browse/mount/unmount (`kcd sftp` → `~/Downloads/kcd/mnt` ↔ `/storage/emulated/0`), notifications (`Phone • App` in toast + Control Center, deduplicated, `kcdDndEnabled` — only popup when DND on)
+- Devices popup: battery bar, per-device Pair/Unpair, Pair new device (`kcd pair`), Connect by IP (`kcd connect`), `kcdDndEnabled` toggle (header bell `F0F3`/`F1F6` + widget badge)
 - MPRIS/media, volume and lock work via `kcd` plugins automatically (no extra UI)
 
 **Dynamic Theming**

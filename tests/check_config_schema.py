@@ -34,7 +34,7 @@ BOOL_FIELDS = [
     "launcherEnabled", "workspacesEnabled", "mprisEnabled", "clockEnabled",
     "timerEnabled", "genshinEnabled", "keyboardEnabled", "audioEnabled",
     "controlEnabled", "clipboardEnabled", "btEnabled", "netEnabled", "trayEnabled",
-    "batteryEnabled", "kcdEnabled", "kcdMuted", "dndEnabled", "barAutoHide",
+    "batteryEnabled", "kcdEnabled", "kcdDndEnabled", "dndEnabled", "barAutoHide",
     "leftPillEnabled", "centerPillEnabled", "rightPillEnabled",
 ]
 NUM_FIELDS = {

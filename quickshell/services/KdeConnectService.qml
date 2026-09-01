@@ -86,7 +86,7 @@ Item {
 
   // Чи ввімкнено віджет взагалі (читається з AppConfig в shell.qml)
   property bool enabled: true
-  property bool muted: false
+  property bool dnd: false
 
   // --- Внутрішнє ---
   property int _watchRestarts: 0
@@ -448,9 +448,10 @@ Item {
       } else {
         // console.log("[kcd] dup suppressed", _n.appName, _n.title.slice(0,20), "key", stableKey.slice(0,20))
       }
-      if (root.muted) return
+      // DND: тільки попап, нікуди більше (тост/звук/ControlCenter) — recent вже додано
+      if (root.dnd) return
       if (isDup) return
-      // показати тост через Bar (сигнал) — тільки для нових і не в muted
+      // показати тост через Bar (сигнал) — тільки для нових і не в DND
       root.notificationReceived(_n)
       return
     }
@@ -472,8 +473,8 @@ Item {
       var clipTxt = String(payload.content ?? payload.text ?? payload.clipboard ?? payload.data ?? "")
       if (clipTxt) {
         root.lastClipboard = clipTxt.slice(0, 500)
-        if (root.muted) return
-        // показуємо тост, щоб було видно що прийшло (тільки якщо не muted)
+        if (root.dnd) return
+        // показуємо тост, щоб було видно що прийшло (тільки якщо не DND — тільки попап лишає lastClipboard)
         root.notificationReceived({ appName: "Clipboard", title: "From phone", text: clipTxt.slice(0, 80), appIcon: "edit-paste", isPhone: true, actions: [] })
       }
       return
@@ -534,7 +535,7 @@ Item {
       var shareTxt = String(payload.text ?? payload.url ?? "")
       if (shareTxt) {
         root.lastClipboard = shareTxt.slice(0, 500)
-        if (!root.muted) root.notificationReceived({ appName: "Share", title: t === "share.url" ? "Link from phone" : "Text from phone", text: shareTxt.slice(0, 120), appIcon: "edit-paste", isPhone: true, actions: [] })
+        if (!root.dnd) root.notificationReceived({ appName: "Share", title: t === "share.url" ? "Link from phone" : "Text from phone", text: shareTxt.slice(0, 120), appIcon: "edit-paste", isPhone: true, actions: [] })
       }
       return
     }
@@ -545,13 +546,13 @@ Item {
       var teleTitle = t === "telephony.ringing" ? "Incoming call" : (t === "telephony.missed" ? "Missed call" : (t === "telephony.talking" ? "Call in progress" : "Call ended"))
       var teleText = contact || phoneNum
       if (t === "telephony.ringing" || t === "telephony.missed") {
-        if (!root.muted) root.notificationReceived({ appName: "Phone", title: teleTitle, text: teleText, appIcon: "call-start", isPhone: true, actions: [] })
+        if (!root.dnd) root.notificationReceived({ appName: "Phone", title: teleTitle, text: teleText, appIcon: "call-start", isPhone: true, actions: [] })
       }
       return
     }
     // Пінг
     if (t === "ping.received" || t === "ping") {
-      if (!root.muted) root.notificationReceived({ appName: "Ping", title: "Ping received", text: devId ? devId.slice(0,8) : "", appIcon: "dialog-information", isPhone: true, actions: [] })
+      if (!root.dnd) root.notificationReceived({ appName: "Ping", title: "Ping received", text: devId ? devId.slice(0,8) : "", appIcon: "dialog-information", isPhone: true, actions: [] })
       return
     }
     // Інші події ігноруємо (mpris/connectivity/volume/sms обробляються вище або не потрібні)

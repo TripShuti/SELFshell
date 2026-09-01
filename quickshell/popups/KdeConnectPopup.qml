@@ -154,18 +154,18 @@ AnimatedPopup {
         color: (root.isPaired && root.reachable) ? window.palette.accent : window.palette.mutedAlt
         font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
       }
-      // Mute toggle — іконка дзвінка з перекресленням
+      // DND toggle — тільки попап (kcd DND), без тостів/звуку/ControlCenter
       Rectangle {
         visible: root.installed
         width: 24; height: 24; radius: 4
-        color: muteArea.containsMouse ? window.palette.hoverOverlay : (window.appConfig.cfg.kcdMuted ? window.palette.bg2 : "transparent")
-        border.width: window.appConfig.cfg.kcdMuted ? 1 : 0
-        border.color: window.appConfig.cfg.kcdMuted ? window.palette.danger : "transparent"
+        color: muteArea.containsMouse ? window.palette.hoverOverlay : (window.appConfig.cfg.kcdDndEnabled ? window.palette.bg2 : "transparent")
+        border.width: window.appConfig.cfg.kcdDndEnabled ? 1 : 0
+        border.color: window.appConfig.cfg.kcdDndEnabled ? window.palette.danger : "transparent"
         Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
         Text {
           anchors.centerIn: parent
-          text: window.appConfig.cfg.kcdMuted ? "\uF1F6" : "\uF0F3"
-          color: window.appConfig.cfg.kcdMuted ? window.palette.danger : (muteArea.containsMouse ? window.palette.green : window.palette.mutedAlt)
+          text: window.appConfig.cfg.kcdDndEnabled ? "\uF1F6" : "\uF0F3"
+          color: window.appConfig.cfg.kcdDndEnabled ? window.palette.danger : (muteArea.containsMouse ? window.palette.green : window.palette.mutedAlt)
           font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
           Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
         }
@@ -175,7 +175,7 @@ AnimatedPopup {
           hoverEnabled: true
           cursorShape: Qt.PointingHandCursor
           onClicked: {
-            window.appConfig.cfg.kcdMuted = !window.appConfig.cfg.kcdMuted
+            window.appConfig.cfg.kcdDndEnabled = !window.appConfig.cfg.kcdDndEnabled
             window.appConfig.saveToFile()
           }
         }

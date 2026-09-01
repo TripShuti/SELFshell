@@ -48,7 +48,7 @@ Item {
       property bool trayEnabled: true
       property bool batteryEnabled: false
       property bool kcdEnabled: false
-      property bool kcdMuted: false
+      property bool kcdDndEnabled: false
 
       // DND — повністю ховає сповіщення (тост, список, звук)
       property bool dndEnabled: false
@@ -256,7 +256,7 @@ Item {
     clockEnabled: true, timerEnabled: true, genshinEnabled: true,
     keyboardEnabled: true, audioEnabled: true, controlEnabled: true,
     clipboardEnabled: false, btEnabled: false, netEnabled: false,
-    trayEnabled: true, batteryEnabled: false, kcdEnabled: false, kcdMuted: false, dndEnabled: false,
+    trayEnabled: true, batteryEnabled: false, kcdEnabled: false, kcdDndEnabled: false, dndEnabled: false,
     timerSoundPath: "",
     preferredPlayer: "selfsonic",
     idleLockTimeout: 300, idleDpmsTimeout: 360, idleSuspendTimeout: 900,

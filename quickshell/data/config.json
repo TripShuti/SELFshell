@@ -54,7 +54,7 @@
   "popupRadius": 14,
   "preferredPlayer": "selfsonic",
   "kcdEnabled": false,
-  "kcdMuted": false,
+  "kcdDndEnabled": false,
   "rightOrder": [
     "tray",
     "sep-12",

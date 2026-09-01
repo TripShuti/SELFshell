@@ -18,7 +18,7 @@ ShellRoot {
   // Доступний барам через window.appConfig, моніторам — напряму.
   AppConfig { id: rootAppConfig }
 
-  KdeConnectService { id: kdeConnectService; enabled: rootAppConfig.cfg.kcdEnabled; muted: rootAppConfig.cfg.kcdMuted }
+  KdeConnectService { id: kdeConnectService; enabled: rootAppConfig.cfg.kcdEnabled; dnd: rootAppConfig.cfg.kcdDndEnabled }
 
   LockContext { id: lockContext }
 
