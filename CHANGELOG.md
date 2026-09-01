@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-09-01
+
 ### Added
 
 - **Black static theme (mono)** — `core/AppConfig.qml` `themeMode: "black" | "matugen"` (default `matugen`), mono palette `#121212` via `scripts/update-palette.py --theme black` (`is_light` hover overlay, `CONFIG_FORMAT.md`/`check_config_schema.py` validation). New `scripts/update-wallpaper-only.sh` for wallpaper-only switch in Black mode (no palette regen). `popups/settings/AppearanceSection.qml` Theme selector `Black/Matugen` (auto `black.png` wallpaper), `WallpaperPopup.qml`/`WallpaperSection.qml` wallpaper-only path when Black. Bar widgets unified to `14px` (`scaled(14)`, keep `Control/Launcher 22`, `Mpris 8/12`).
