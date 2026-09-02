@@ -47,12 +47,18 @@ Item {
     onDataChanged: root._parseCaffeine(caffeineFile.text())
   }
 
-  readonly property bool mediaPlaying: {
+  // Лічильник граючих плеєрів — реактивний через сигнал isPlaying кожного делегата,
+  // на відміну від старого циклу по count який не трекав зміну playing
+  property int _playingCount: 0
+  readonly property bool mediaPlaying: _playingCount > 0
+
+  function _recalcPlaying() {
+    var c = 0
     for (var i = 0; i < playerRepeater.count; ++i) {
-      var item = playerRepeater.itemAt(i)
-      if (item && item.playing) return true
+      var it = playerRepeater.itemAt(i)
+      if (it && it.playing) c++
     }
-    return false
+    _playingCount = c
   }
 
   // Стежить за MPRIS-плеєрами: коли хоч один відтворює медіа —
@@ -64,6 +70,9 @@ Item {
     delegate: Item {
       required property var modelData
       readonly property bool playing: modelData.isPlaying
+      onPlayingChanged: root._recalcPlaying()
+      Component.onCompleted: root._recalcPlaying()
+      Component.onDestruction: root._recalcPlaying()
     }
   }
 

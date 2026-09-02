@@ -37,6 +37,22 @@ Item {
   signal pairRequested(var req)
   signal pairFinished(var result)
 
+  Timer {
+    id: _pairTimeout
+    interval: 65000
+    repeat: false
+    onTriggered: {
+      if (root.pendingPairRequest) {
+        root.pendingPairRequest = null
+        console.warn("[kcd] pair request timed out")
+      }
+    }
+  }
+  onPendingPairRequestChanged: {
+    if (pendingPairRequest) _pairTimeout.restart()
+    else _pairTimeout.stop()
+  }
+
   // SFTP mount dir — читаємо з kcd.toml, без хардкоду ~/Downloads/kcd/mnt
   property string sftpMountDir: ""
   property string sftpMountDirDisplay: {
@@ -82,7 +98,31 @@ Item {
 
   // Дедуп-мапа для сповіщень: hash(normalized app|title|text|device) → час останнього показу (ms)
   // Потрібна бо kcd інколи шле дублікати при реконекті/watch-рестарті з різними id та старими timestamp
+  // Чиститься тільки при canceled з телефону; додатково TTL 24h через таймер щоб не росла безмежно
   property var _notifSeen: ({})
+
+  Timer {
+    id: _notifSeenCleanup
+    interval: 3600000
+    repeat: true
+    running: true
+    onTriggered: {
+      var now = Date.now()
+      var copy = {}
+      var kept = 0
+      for (var k in root._notifSeen) {
+        if (now - root._notifSeen[k] < 86400000) { copy[k] = root._notifSeen[k]; kept++ }
+      }
+      // також обмежуємо розмір щоб не тримати тисячі
+      if (kept > 500) {
+        var keys = Object.keys(copy).sort((a,b) => copy[a] - copy[b])
+        var trimmed = {}
+        for (var i = keys.length - 250; i < keys.length; i++) trimmed[keys[i]] = copy[keys[i]]
+        copy = trimmed
+      }
+      if (Object.keys(copy).length !== Object.keys(root._notifSeen).length) root._notifSeen = copy
+    }
+  }
 
   // Чи ввімкнено віджет взагалі (читається з AppConfig в shell.qml)
   property bool enabled: true

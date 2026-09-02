@@ -38,6 +38,7 @@ PopupWindow {
   // Закриває попап з анімацією
   function close() {
     if (exitAnim.running) return
+    if (enterAnim.running) enterAnim.stop()
     exitAnim.start()
   }
 
@@ -70,7 +71,7 @@ PopupWindow {
     color: "transparent"
     border.width: root.borderWidth
     border.color: root.borderColor
-    opacity: 0.50
+    opacity: 0
     scale: root.enterScale
     transformOrigin: root.transformOrigin
     clip: true
@@ -178,6 +179,7 @@ PopupWindow {
   onVisibleChanged: {
     if (visible) {
       if (exitAnim.running) exitAnim.stop()
+      if (enterAnim.running) enterAnim.stop()
       container.opacity = 0
       container.scale = root.enterScale
       animY.y = -root.slideDistance

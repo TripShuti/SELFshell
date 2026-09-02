@@ -71,6 +71,10 @@ Item {
   property bool active: false
 
   function _updateRunning() {
+    if (root.monitorEnabled && root.active) {
+      // скидаємо лічильник щоб після ручного re-enable був свіжий ліміт 5
+      if (root._restarts >= 5) root._restarts = 0
+    }
     cavaProcess.running = root.monitorEnabled && root.active
   }
 

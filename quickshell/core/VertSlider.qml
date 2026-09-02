@@ -21,6 +21,12 @@ Item {
   signal moved(real value)
 
   readonly property bool dragging: ma.pressed
+  // Внутрішнє значення під час drag — не рве зовнішній біндинг value,
+  // зовні оновлюється через moved → батько міняє bands → value
+  property real _dragValue: value
+  readonly property real _displayValue: dragging ? _dragValue : value
+  onValueChanged: if (!dragging) _dragValue = value
+  onDraggingChanged: if (dragging) _dragValue = value
 
   implicitWidth: 26
   implicitHeight: 120
@@ -44,7 +50,7 @@ Item {
       anchors.left: parent.left
       anchors.right: parent.right
       anchors.bottom: parent.bottom
-      height: track.height * (root.value - root.from) / (root.to - root.from)
+      height: (root.to !== root.from) ? track.height * (root._displayValue - root.from) / (root.to - root.from) : 0
       radius: 3
       color: root.fillColor
     }
@@ -67,7 +73,7 @@ Item {
     id: valueLabel
     anchors.horizontalCenter: parent.horizontalCenter
     anchors.bottom: parent.bottom
-    text: Math.round(root.value)
+    text: Math.round(root._displayValue)
     color: root.labelColor
     font.family: root.fontFamily
     font.pixelSize: root.fontPx
@@ -95,8 +101,9 @@ Item {
       var t = 1 - Math.max(0, Math.min(1, (y - knob.height / 2) / (track.height - knob.height)))
       var raw = root.from + t * (root.to - root.from)
       var v = Math.round(raw / root.step) * root.step
-      if (v !== root.value) {
-        root.value = v
+      v = Math.max(root.from, Math.min(root.to, v))
+      if (v !== root._dragValue) {
+        root._dragValue = v
         root.moved(v)
       }
     }
@@ -105,9 +112,13 @@ Item {
     onPositionChanged: if (pressed) apply(mouse.y)
     onWheel: wheel => {
       if (wheel.angleDelta.y === 0) return
-      var v = root.value + (wheel.angleDelta.y > 0 ? root.step : -root.step)
+      var base = root.dragging ? root._dragValue : root.value
+      var v = base + (wheel.angleDelta.y > 0 ? root.step : -root.step)
       v = Math.max(root.from, Math.min(root.to, v))
-      if (v !== root.value) { root.value = v; root.moved(v) }
+      v = Math.round(v / root.step) * root.step
+      if (!root.dragging) root._dragValue = v
+      else root._dragValue = v
+      root.moved(v)
     }
   }
 }

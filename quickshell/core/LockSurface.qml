@@ -102,8 +102,11 @@ Rectangle {
   FastBlur {
     anchors.fill: parent
     source: wallpaperImg
-    radius: 24
+    radius: 16
     transparentBorder: true
+    // Кешуємо блюр у шарі — без layer 3 монітори = 3× full-screen blur 60fps
+    layer.enabled: true
+    layer.smooth: true
   }
 
   // Затемнення поверх блюра
@@ -178,13 +181,15 @@ Rectangle {
       border.color: root.palette.mutedAlt
       Behavior on opacity { NumberAnimation { duration: root._d(200) } }
 
-      // Прихований TextInput — тільки приймає введення
+      // Прихований TextInput — тільки приймає введення (echoMode Password щоб не
+      // світився в accessibility/clipboard, ImhHiddenText + SensitiveData)
       TextInput {
         id: hiddenInput
         anchors.fill: parent
         color: "transparent"
-        echoMode: TextInput.Normal
-        inputMethodHints: Qt.ImhSensitiveData
+        echoMode: TextInput.Password
+        inputMethodHints: Qt.ImhHiddenText | Qt.ImhSensitiveData
+        passwordCharacter: " "
         focus: true
         enabled: !root.context.unlockInProgress && root.context.lockoutRemaining === 0
 
@@ -264,9 +269,9 @@ Rectangle {
     spacing: 24
 
     property var actions: [
-      { icon: "\uF186", tooltip: "Suspend", cmd: ["systemctl", "suspend"] },
-      { icon: "\uF021", tooltip: "Reboot", cmd: ["reboot"] },
-      { icon: "\uF011", tooltip: "Shutdown", cmd: ["shutdown", "now"] }
+      { icon: "\uF186", tooltip: "Suspend", cmd: ["/usr/bin/systemctl", "suspend"] },
+      { icon: "\uF021", tooltip: "Reboot", cmd: ["/usr/bin/systemctl", "reboot"] },
+      { icon: "\uF011", tooltip: "Shutdown", cmd: ["/usr/bin/systemctl", "poweroff"] }
     ]
 
     Repeater {

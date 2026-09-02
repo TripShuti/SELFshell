@@ -164,4 +164,5 @@ Item {
     initialProc.running = true
     socketProc.running = true
   }
+  Component.onDestruction: socketProc.running = false
 }

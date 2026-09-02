@@ -286,7 +286,7 @@ def _build_and_write_palette(fg, gray, green, red, bg0H, bg1, bg2, muted, light,
         new_lines = []
         for line in lines:
             stripped = line.strip()
-            if stripped == "[palettes.tokyonight]":
+            if stripped == "[palettes.self]":
                 in_palette = True
                 new_lines.append(line)
             elif in_palette and stripped.startswith("["):

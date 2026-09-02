@@ -109,10 +109,15 @@ Item {
   Process {
     id: watchProc
 
-    // SplitParser не накопичує вивід — кожен рядок це окремий сигнал
+    // SplitParser не накопичує вивід — кожен рядок це окремий сигнал;
+    // фільтруємо в QML, щоб не використовувати sh -c + grep (ін'єкція через bus)
     stdout: SplitParser {
       splitMarker: "\n"
-      onRead: _signalDebounce.restart()
+      onRead: data => {
+        var s = String(data ?? "")
+        if (s.includes("TrackListReplaced") || s.includes("TrackAdded") || s.includes("TrackRemoved"))
+          _signalDebounce.restart()
+      }
     }
 
     onExited: {
@@ -187,10 +192,9 @@ Item {
     watchRestartTimer.stop()
     watchProc.running = false
     var bus = root._resolvedBusName !== "" ? root._resolvedBusName : root._playerBusName()
-    watchProc.command = ["sh", "-c",
-      "dbus-monitor --session \"type=signal,sender=" + bus +
-      ",interface=org.mpris.MediaPlayer2.TrackList\" 2>/dev/null "
-      + "| grep --line-buffered -E 'TrackListReplaced|TrackAdded|TrackRemoved'"]
+    // Прямий виклик без sh -c — bus не парситься шеллом (безпечно від ін'єкції через playerName)
+    watchProc.command = ["dbus-monitor", "--session",
+      "type=signal,sender=" + bus + ",interface=org.mpris.MediaPlayer2.TrackList"]
     watchProc.running = true
   }
 

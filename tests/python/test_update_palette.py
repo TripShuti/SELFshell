@@ -233,7 +233,7 @@ class MainEndToEndTest(unittest.TestCase):
         os.makedirs(os.path.join(self.home, ".config", "starship"))
         starship = os.path.join(self.home, ".config", "starship", "config.toml")
         with open(starship, "w") as f:
-            f.write('[palettes.tokyonight]\nbackground = "#111111"\nred = "#ff0000"\n\n'
+            f.write('[palettes.self]\nbackground = "#111111"\nred = "#ff0000"\n\n'
                     "[palettes.other]\nred = '#0000ff'\n")
         self.addCleanup(shutil.rmtree, self.home, True)
         self.ctx = [

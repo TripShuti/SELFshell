@@ -8,6 +8,13 @@ Item {
   id: root
   visible: false
 
+  // УВАГА: watchChanges навмисно не ввімкнено — той самий UAF-баг
+  // Quickshell 0.3.0 що й у AppConfig (atomic rename → inotify → краш).
+  // palette.json пишеться тільки update-palette.py ззовні, live-оновлення
+  // через qs ipc call palette-reload reload (див. shell.qml:65 та
+  // update-palette.sh:41). Вмикати watchChanges лише після перевірки
+  // на qs ≥0.4. У black-режимі файл вже статичний (#121212), тому
+  // ігнорувати його не треба — PaletteService просто читає те що є.
   FileView {
     id: paletteFile
     // blockLoading — перший text() (в onCompleted) робить синхронне

@@ -58,28 +58,38 @@ Item {
     spacing: root.contentSpacing
 
     Repeater {
-      model: root.orderModel.filter(name => root.appConfig.isSep(name) || root.appConfig.cfg[name + "Enabled"])
+      model: root.orderModel
       delegate: RowLayout {
         required property string modelData
+        readonly property bool _isSep: root.appConfig.isSep(modelData)
+        readonly property bool _shouldShow: _isSep || !!root.appConfig.cfg[modelData + "Enabled"]
+        visible: _shouldShow
         spacing: 4
+        // Невидимі делегати не займають місце в RowLayout
+        Layout.preferredWidth: _shouldShow ? rowInner.implicitWidth : 0
+        Layout.preferredHeight: _shouldShow ? rowInner.implicitHeight : 0
 
-        Loader {
-          Layout.alignment: Qt.AlignVCenter
-          Layout.fillHeight: typeof root.needsFillHeight === "function" ? root.needsFillHeight(modelData) : false
-          sourceComponent: root.widgetComponents[modelData] ?? null
-          active: !root.appConfig.isSep(modelData)
-          asynchronous: true
-          visible: !root.appConfig.isSep(modelData) && status === Loader.Ready
-          onLoaded: root.registerActive(modelData, item)
-          Component.onDestruction: root.unregisterActive(modelData)
-        }
+        RowLayout {
+          id: rowInner
+          spacing: 0
+          Loader {
+            Layout.alignment: Qt.AlignVCenter
+            Layout.fillHeight: typeof root.needsFillHeight === "function" ? root.needsFillHeight(modelData) : false
+            sourceComponent: root.widgetComponents[modelData] ?? null
+            active: !_isSep
+            asynchronous: true
+            visible: !_isSep && status === Loader.Ready
+            onLoaded: root.registerActive(modelData, item)
+            Component.onDestruction: root.unregisterActive(modelData)
+          }
 
-        Separator {
-          Layout.alignment: Qt.AlignVCenter
-          pal: root.palette
-          lineOpacity: root.appConfig.cfg.separatorOpacity
-          glowOpacity: root.appConfig.cfg.separatorGlowOpacity
-          visible: root.appConfig.isSep(modelData)
+          Separator {
+            Layout.alignment: Qt.AlignVCenter
+            pal: root.palette
+            lineOpacity: root.appConfig.cfg.separatorOpacity
+            glowOpacity: root.appConfig.cfg.separatorGlowOpacity
+            visible: _isSep
+          }
         }
       }
     }

@@ -3,28 +3,32 @@
 # ============================================================
 add_newline = false
 
-palette = "tokyonight"
-
-[palettes.tokyonight]
-background = "#2e3132"
-current_line = "#505354"
-foreground = "#dee3e5"
-comment = "#bfc8ca"
-cyan = "#9faace"
-green = "#23bcd0"
-orange = "#23bcd0"
-pink = "#f5d9d5"
-purple = "#96b0b5"
-red = "#ffb4ab"
-yellow = "#bbc6ea"
-white = "#eff1f1"
+palette = "self"
 
 format = "$username$hostname$directory$git_branch$git_status$nodejs$python$rust$golang$cmd_duration$fill$time\n$character"
+
+[palettes.self]
+background = "#121212"
+current_line = "#2c2c2e"
+foreground = "#e8e8eb"
+comment = "#9a9a9a"
+cyan = "#d0d0d0"
+green = "#d0d0d0"
+orange = "#c8c8c8"
+pink = "#d9d9d9"
+purple = "#b0b0b0"
+red = "#b0b0b0"
+yellow = "#c8c8c8"
+white = "#f5f5f5"
+
 
 [character]
 success_symbol = "[ ](bold green) "
 error_symbol = "[ ](bold red) "
 vicmd_symbol = "[](bold purple) "
+
+[fill]
+symbol = " "
 
 [username]
 show_always = true
@@ -52,6 +56,7 @@ Fedora = " "
 Pop = " "
 Kali = " "
 CachyOS = " 󰌽 "
+Arch = " 󰣇"
 
 #[custom.saludo]
 #command = "echo Hi, $USER"

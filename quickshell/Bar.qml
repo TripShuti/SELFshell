@@ -102,7 +102,12 @@ PanelWindow {
       root.barHidden = true
     }
   }
-  readonly property bool anyPopupOpenState: calendarPopup.visible || audioPopup.visible || btPopup.visible || netPopup.visible || mprisPopup.visible || workspacesPopup.visible || keyboardPopup.visible || genshinPopup.visible || controlPopup.visible || clipboardPopup.visible || wallpaperPopup.visible || settingsPopup.visible || launcherPopup.visible || trayPopup.visible || pairingPopup.visible || kcdPopup.visible || kcdPairingPopup.visible || notifToast.visible || osdPopup.visible
+  // Централізований список попапів для auto-hide — додаючи новий попап, додай сюди видимість
+  readonly property var _popupList: [calendarPopup, audioPopup, btPopup, netPopup, mprisPopup, workspacesPopup, keyboardPopup, genshinPopup, controlPopup, clipboardPopup, wallpaperPopup, settingsPopup, launcherPopup, trayPopup, pairingPopup, kcdPopup, kcdPairingPopup, notifToast, osdPopup]
+  readonly property bool anyPopupOpenState: {
+    for (var i = 0; i < _popupList.length; i++) if (_popupList[i] && _popupList[i].visible) return true
+    return false
+  }
   function _updateAutoHide() {
     if (!root.autoHideOn) { hideDelay.stop(); root.barHidden = false; return }
     if (root.anyPopupOpenState || autoHideWatch.containsMouse || revealWatch.containsMouse) {

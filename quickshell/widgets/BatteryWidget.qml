@@ -65,12 +65,12 @@ Item {
       : root.hovered ? window.palette.green
       : window.palette.fg
 
-  // sysfs не підтримує inotify, тому раз на 30 с опитуємо upower
+  // sysfs не підтримує inotify, тому раз на 30 с опитуємо upower — тільки коли є батарея
   Timer {
     interval: 30000
     repeat: true
     triggeredOnStart: true
-    running: true
+    running: root.available
     onTriggered: devsProc.running = true
   }
 

@@ -105,6 +105,10 @@ Item {
     _confFile.setText(content)
   }
 
+  function _shellQuote(s) {
+    return "'" + String(s).replace(/'/g, "'\\''") + "'"
+  }
+
   function _zeroControls() {
     var parts = []
     for (var i = 0; i < bandCount; i++)
@@ -322,14 +326,16 @@ Item {
     // Резолв fallback-у: 1) збережений sink з моменту увімкнення (якщо
     // досі існує), 2) поточний default якщо не EQ, 3) перший RUNNING не-EQ,
     // 4) перший не-EQ. Без збереженого — fallback ставав мертвим S/PDIF
+    var _sq = _shellQuote(root._savedSink)
+    var _eqQ = _shellQuote(root.sinkName)
     _moveInputsProc.command = ["bash", "-c",
-      "SAVED='" + root._savedSink + "'; " +
+      "SAVED=" + _sq + "; " +
       "T=''; " +
       "if [ -n \"$SAVED\" ] && pactl list short sinks | grep -q \"$SAVED\"; then " +
       "T=$(pactl list short sinks | grep \"$SAVED\" | head -1 | cut -f1); fi; " +
-      "if [ -z \"$T\" ]; then T=$(pactl get-default-sink); [ \"$T\" = \"" + root.sinkName + "\" ] && T=''; fi; " +
-      "if [ -z \"$T\" ]; then T=$(pactl list short sinks | grep -v " + root.sinkName + " | grep RUNNING | head -1 | cut -f1); fi; " +
-      "if [ -z \"$T\" ]; then T=$(pactl list short sinks | grep -v " + root.sinkName + " | head -1 | cut -f1); fi; " +
+      "if [ -z \"$T\" ]; then T=$(pactl get-default-sink); [ \"$T\" = " + _eqQ + " ] && T=''; fi; " +
+      "if [ -z \"$T\" ]; then T=$(pactl list short sinks | grep -v " + _eqQ + " | grep RUNNING | head -1 | cut -f1); fi; " +
+      "if [ -z \"$T\" ]; then T=$(pactl list short sinks | grep -v " + _eqQ + " | head -1 | cut -f1); fi; " +
       "[ -z \"$T\" ] && exit 0; " +
       "pactl list short sink-inputs | cut -f1 | " +
       "xargs -r -n1 -I{} pactl move-sink-input {} \"$T\"; " +
@@ -342,11 +348,12 @@ Item {
     id: _getDefaultSinkProc
     // резолвимо sink-for-restore: поточний default, але якщо це вже EQ
     // (отруєний стан попередніх кривих спроб) — перший не-EQ RUNNING
+    readonly property string _eqQuoted: "'" + root.sinkName.replace(/'/g, "'\\''") + "'"
     command: ["bash", "-c",
       "d=$(pactl get-default-sink); " +
-      "if [ \"$d\" = \"" + root.sinkName + "\" ]; then " +
-      "d=$(pactl list short sinks | grep -v " + root.sinkName + " | grep RUNNING | head -1 | cut -f1); fi; " +
-      "if [ -z \"$d\" ]; then d=$(pactl list short sinks | grep -v " + root.sinkName + " | head -1 | cut -f1); fi; " +
+      "if [ \"$d\" = " + _eqQuoted + " ]; then " +
+      "d=$(pactl list short sinks | grep -v " + _eqQuoted + " | grep RUNNING | head -1 | cut -f1); fi; " +
+      "if [ -z \"$d\" ]; then d=$(pactl list short sinks | grep -v " + _eqQuoted + " | head -1 | cut -f1); fi; " +
       "echo \"$d\""]
     stdout: StdioCollector {
       onStreamFinished: {
@@ -412,12 +419,13 @@ Item {
     id: _moveInputsProc
     onExited: (code) => {
       // default повертаємо навіть якщо move впав (може, потоків не було)
+      var _eqQ2 = "'" + root.sinkName.replace(/'/g, "'\\''") + "'"
       _restoreDefaultProc.command = ["bash", "-c",
         "T=$(pactl get-default-sink); " +
-        "[ \"$T\" = \"" + root.sinkName + "\" ] && " +
-        "T=$(pactl list short sinks | grep -v " + root.sinkName + " | grep RUNNING | head -1 | cut -f1); " +
-        "[ \"$T\" = \"" + root.sinkName + "\" ] && " +
-        "T=$(pactl list short sinks | grep -v " + root.sinkName + " | head -1 | cut -f1); " +
+        "[ \"$T\" = " + _eqQ2 + " ] && " +
+        "T=$(pactl list short sinks | grep -v " + _eqQ2 + " | grep RUNNING | head -1 | cut -f1); " +
+        "[ \"$T\" = " + _eqQ2 + " ] && " +
+        "T=$(pactl list short sinks | grep -v " + _eqQ2 + " | head -1 | cut -f1); " +
         "[ -z \"$T\" ] && exit 0; " +
         "pactl set-default-sink \"$T\""]
       _restoreDefaultProc.running = true
@@ -513,6 +521,8 @@ Timer {
 
   Process {
     id: _relinkProc
+    // sinkName — константа "SELFshell_EQ", екрануємо на випадок зміни
+    readonly property string _relinkEqQ: "'" + root.sinkName.replace(/'/g, "'\\''") + "'"
     command: ["bash", "-c",
       "SRC=$(pw-link -o 2>/dev/null | grep 'output.filter-chain' | head -1 | cut -d: -f1); " +
       "[ -z \"$SRC\" ] && exit 0; " +
@@ -520,7 +530,7 @@ Timer {
       "if pactl list short sinks 2>/dev/null | grep -q \"bluez\"; then " +
       "  BEST=$(pactl list short sinks 2>/dev/null | grep \"bluez\" | head -1 | cut -f2); " +
       "  [ -z \"$BEST\" ] && exit 0; " +
-      "  for T in $(pactl list short sinks 2>/dev/null | grep -v '" + root.sinkName + "' | cut -f2); do " +
+      "  for T in $(pactl list short sinks 2>/dev/null | grep -v " + _relinkEqQ + " | cut -f2); do " +
       "    if [ \"$T\" != \"$BEST\" ]; then " +
       "      if echo \"$LINKS\" | grep -q \"$T:playback_FL\"; then " +
       "        pw-link -d \"$SRC:output_FL\" \"$T:playback_FL\" 2>/dev/null || true; " +
@@ -533,7 +543,7 @@ Timer {
       "    pw-link \"$SRC:output_FR\" \"$BEST:playback_FR\" 2>/dev/null || true; " +
       "  fi; " +
       "else " +
-      "  for T in $(pactl list short sinks 2>/dev/null | grep -v '" + root.sinkName + "' | cut -f2); do " +
+      "  for T in $(pactl list short sinks 2>/dev/null | grep -v " + _relinkEqQ + " | cut -f2); do " +
       "    if ! echo \"$LINKS\" | grep -q \"$T:playback_FL\"; then " +
       "      pw-link \"$SRC:output_FL\" \"$T:playback_FL\" 2>/dev/null || true; " +
       "      pw-link \"$SRC:output_FR\" \"$T:playback_FR\" 2>/dev/null || true; " +
@@ -555,8 +565,9 @@ Timer {
   FileView {
     id: _stateFile
     path: Qt.resolvedUrl("../data/eq.json")
+    // watchChanges лишаємо false — той самий UAF що в AppConfig (див. AudioEq:14)
+    // Зовнішні правки eq.json застосовуються після рестарту; мертвий onFileChanged прибрано
     watchChanges: false
-    onFileChanged: this.reload()
     onDataChanged: root._stateReady()
     onLoadFailed: root._stateReady()
   }

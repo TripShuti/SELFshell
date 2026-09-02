@@ -180,13 +180,10 @@ AnimatedPopup {
     }
   }
 
-  // Періодичний пошук плеєра. Крутиться ЗАВЖДИ: Mpris-модель наповнюється
-  // асинхронно (плеєри під'єднуються по одному), тож fallback (напр. mpv без
-  // artUrl/TrackList) може виграти спочатку. Постійний таймер підхоплює
-  // preferredPlayer, щойно той з'явиться в моделі.
+  // Періодичний пошук плеєра — тільки коли попап видимий, інакше Bar керує вибором
   Timer {
     interval: 2000
-    running: true
+    running: root.visible
     repeat: true
     onTriggered: root.findAndSetPlayer()
   }
@@ -1096,6 +1093,7 @@ AnimatedPopup {
             model: audioEq.bandCount
 
             VertSlider {
+              id: vs
               required property int index
               value: audioEq.bands[index] ?? 0
               from: -12; to: 12; step: 1
@@ -1113,13 +1111,11 @@ AnimatedPopup {
               Connections {
                 target: audioEq
                 function onBandsChanged() {
-                  // біндинг value руйнується після першого drag —
-                  // оновлюємо імперативно, крім активного drag
+                  // після фіксу VertSlider біндинг не рветься, але лишаємо
+                  // імперативний апдейт для сумісності
                   if (!vs.dragging) vs.value = audioEq.bands[index]
                 }
               }
-
-              id: vs
             }
           }
         }

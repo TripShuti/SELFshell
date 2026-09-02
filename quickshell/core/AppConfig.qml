@@ -136,7 +136,7 @@ Item {
       // --- Порядки віджетів ---
       property var leftOrder: ["launcher", "sep-2", "workspaces", "sep-7", "mpris"]
       property var centerOrder: ["clock", "sep-5", "timer", "sep-6", "genshin", "battery"]
-      property var rightOrder: ["tray", "sep-12", "net", "bt", "keyboard", "sep-10", "audio", "sep-11", "control", "clipboard"]
+      property var rightOrder: ["tray", "sep-12", "net", "bt", "kcd", "keyboard", "sep-10", "audio", "sep-11", "control", "clipboard"]
     }
   }
 

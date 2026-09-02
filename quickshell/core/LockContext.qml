@@ -45,6 +45,7 @@ Scope {
   function tryUnlock() {
     if (currentText === "") return
     if (lockoutRemaining > 0) return
+    if (unlockInProgress) return
     unlockInProgress = true
     pam.start()
   }
@@ -67,7 +68,7 @@ Scope {
 
   PamContext {
     id: pam
-    configDirectory: "../pam"
+    configDirectory: Qt.resolvedUrl("../pam").toString().replace("file://", "")
     config: "password.conf"
 
     onPamMessage: {
@@ -83,7 +84,7 @@ Scope {
         root.currentText = ""
         root.showFailure = true
         root.failCount++
-        if (root.failCount > root.failThreshold)
+        if (root.failCount >= root.failThreshold)
           root.lockoutRemaining = root.lockoutSeconds
         root.failed()
       }

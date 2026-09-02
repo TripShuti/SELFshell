@@ -55,7 +55,15 @@ ShellRoot {
     }
     function onSuspendRequested() {
       lockContext.locked = true
-      suspendProc.command = ["systemctl", "suspend"]
+      suspendDelay.restart()
+    }
+  }
+
+  Timer {
+    id: suspendDelay
+    interval: 400
+    onTriggered: {
+      suspendProc.command = ["/usr/bin/systemctl", "suspend"]
       suspendProc.running = true
     }
   }
@@ -79,11 +87,13 @@ ShellRoot {
 
   // Лочимо екран ПЕРЕД сном (для lid close, power button — шляхів,
   // які ми не контролюємо). Слухаємо PrepareForSleep(true) від logind.
-  StdioCollector {
-    id: sleepCollector
-    waitForEnd: false
-    onDataChanged: {
-      if (text.includes("boolean true"))
+  // Використовуємо SplitParser замість grep — без sh -c пайплайну та без
+  // накопичення тексту в StdioCollector (ротація після обробки).
+  SplitParser {
+    id: sleepParser
+    splitMarker: "\n"
+    onRead: data => {
+      if (String(data ?? "").includes("boolean true"))
         lockContext.locked = true
     }
   }
@@ -95,21 +105,19 @@ ShellRoot {
       "--mode=delay",
       "--who=quickshell-lockscreen",
       "--why=Lock screen before suspend",
-      "sh", "-c",
-      "dbus-monitor --system "
-      + "'type=signal,sender=org.freedesktop.login1,"
-      + "interface=org.freedesktop.login1.Manager,"
-      + "member=PrepareForSleep' 2>/dev/null "
-      + "| grep --line-buffered 'boolean true'"]
-    stdout: sleepCollector
+      "dbus-monitor", "--system",
+      "type=signal,sender=org.freedesktop.login1,interface=org.freedesktop.login1.Manager,member=PrepareForSleep"]
+    stdout: sleepParser
+    stderr: StdioCollector { id: sleepErr; waitForEnd: false }
     running: true
 
-    // Якщо пайплайн з якоїсь причини помре (гикання D-Bus сесії тощо) —
+    // Якщо процес з якоїсь причини помре (гикання D-Bus сесії тощо) —
     // перезапускаємо, а не лишаємось мовчки без захисту до рестарту
     // quickshell. Невелика затримка перед рестартом, щоб не спамити
     // спробами, якщо причина смерті постійна (наприклад dbus взагалі
     // недоступний).
     onExited: (exitCode) => {
+      if (sleepErr.text) console.warn("sleepMonitor stderr:", sleepErr.text.slice(0, 200))
       console.warn("sleepMonitor exited (code " + exitCode + "), restarting in 2s")
       restartTimer.start()
     }
