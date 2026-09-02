@@ -116,8 +116,7 @@ Item {
       var v = base + (wheel.angleDelta.y > 0 ? root.step : -root.step)
       v = Math.max(root.from, Math.min(root.to, v))
       v = Math.round(v / root.step) * root.step
-      if (!root.dragging) root._dragValue = v
-      else root._dragValue = v
+      root._dragValue = v
       root.moved(v)
     }
   }

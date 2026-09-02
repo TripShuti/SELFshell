@@ -63,6 +63,7 @@ ShellRoot {
     id: suspendDelay
     interval: 400
     onTriggered: {
+      if (!lockContext.locked) lockContext.locked = true
       suspendProc.command = ["/usr/bin/systemctl", "suspend"]
       suspendProc.running = true
     }
@@ -108,7 +109,6 @@ ShellRoot {
       "dbus-monitor", "--system",
       "type=signal,sender=org.freedesktop.login1,interface=org.freedesktop.login1.Manager,member=PrepareForSleep"]
     stdout: sleepParser
-    stderr: StdioCollector { id: sleepErr; waitForEnd: false }
     running: true
 
     // Якщо процес з якоїсь причини помре (гикання D-Bus сесії тощо) —
@@ -117,7 +117,6 @@ ShellRoot {
     // спробами, якщо причина смерті постійна (наприклад dbus взагалі
     // недоступний).
     onExited: (exitCode) => {
-      if (sleepErr.text) console.warn("sleepMonitor stderr:", sleepErr.text.slice(0, 200))
       console.warn("sleepMonitor exited (code " + exitCode + "), restarting in 2s")
       restartTimer.start()
     }

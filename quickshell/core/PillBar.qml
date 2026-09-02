@@ -65,31 +65,24 @@ Item {
         readonly property bool _shouldShow: _isSep || !!root.appConfig.cfg[modelData + "Enabled"]
         visible: _shouldShow
         spacing: 4
-        // Невидимі делегати не займають місце в RowLayout
-        Layout.preferredWidth: _shouldShow ? rowInner.implicitWidth : 0
-        Layout.preferredHeight: _shouldShow ? rowInner.implicitHeight : 0
 
-        RowLayout {
-          id: rowInner
-          spacing: 0
-          Loader {
-            Layout.alignment: Qt.AlignVCenter
-            Layout.fillHeight: typeof root.needsFillHeight === "function" ? root.needsFillHeight(modelData) : false
-            sourceComponent: root.widgetComponents[modelData] ?? null
-            active: !_isSep
-            asynchronous: true
-            visible: !_isSep && status === Loader.Ready
-            onLoaded: root.registerActive(modelData, item)
-            Component.onDestruction: root.unregisterActive(modelData)
-          }
+        Loader {
+          Layout.alignment: Qt.AlignVCenter
+          Layout.fillHeight: typeof root.needsFillHeight === "function" ? root.needsFillHeight(modelData) : false
+          sourceComponent: root.widgetComponents[modelData] ?? null
+          active: !_isSep
+          asynchronous: true
+          visible: !_isSep && status === Loader.Ready
+          onLoaded: root.registerActive(modelData, item)
+          Component.onDestruction: root.unregisterActive(modelData)
+        }
 
-          Separator {
-            Layout.alignment: Qt.AlignVCenter
-            pal: root.palette
-            lineOpacity: root.appConfig.cfg.separatorOpacity
-            glowOpacity: root.appConfig.cfg.separatorGlowOpacity
-            visible: _isSep
-          }
+        Separator {
+          Layout.alignment: Qt.AlignVCenter
+          pal: root.palette
+          lineOpacity: root.appConfig.cfg.separatorOpacity
+          glowOpacity: root.appConfig.cfg.separatorGlowOpacity
+          visible: _isSep
         }
       }
     }

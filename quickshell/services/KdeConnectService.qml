@@ -105,7 +105,7 @@ Item {
     id: _notifSeenCleanup
     interval: 3600000
     repeat: true
-    running: true
+    running: root.enabled
     onTriggered: {
       var now = Date.now()
       var copy = {}

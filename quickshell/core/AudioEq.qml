@@ -331,11 +331,11 @@ Item {
     _moveInputsProc.command = ["bash", "-c",
       "SAVED=" + _sq + "; " +
       "T=''; " +
-      "if [ -n \"$SAVED\" ] && pactl list short sinks | grep -q \"$SAVED\"; then " +
-      "T=$(pactl list short sinks | grep \"$SAVED\" | head -1 | cut -f1); fi; " +
+      "if [ -n \"$SAVED\" ] && pactl list short sinks | grep -F -q \"$SAVED\"; then " +
+      "T=$(pactl list short sinks | grep -F \"$SAVED\" | head -1 | cut -f1); fi; " +
       "if [ -z \"$T\" ]; then T=$(pactl get-default-sink); [ \"$T\" = " + _eqQ + " ] && T=''; fi; " +
-      "if [ -z \"$T\" ]; then T=$(pactl list short sinks | grep -v " + _eqQ + " | grep RUNNING | head -1 | cut -f1); fi; " +
-      "if [ -z \"$T\" ]; then T=$(pactl list short sinks | grep -v " + _eqQ + " | head -1 | cut -f1); fi; " +
+      "if [ -z \"$T\" ]; then T=$(pactl list short sinks | grep -v -F " + _eqQ + " | grep RUNNING | head -1 | cut -f1); fi; " +
+      "if [ -z \"$T\" ]; then T=$(pactl list short sinks | grep -v -F " + _eqQ + " | head -1 | cut -f1); fi; " +
       "[ -z \"$T\" ] && exit 0; " +
       "pactl list short sink-inputs | cut -f1 | " +
       "xargs -r -n1 -I{} pactl move-sink-input {} \"$T\"; " +
@@ -352,8 +352,8 @@ Item {
     command: ["bash", "-c",
       "d=$(pactl get-default-sink); " +
       "if [ \"$d\" = " + _eqQuoted + " ]; then " +
-      "d=$(pactl list short sinks | grep -v " + _eqQuoted + " | grep RUNNING | head -1 | cut -f1); fi; " +
-      "if [ -z \"$d\" ]; then d=$(pactl list short sinks | grep -v " + _eqQuoted + " | head -1 | cut -f1); fi; " +
+      "d=$(pactl list short sinks | grep -v -F " + _eqQuoted + " | grep RUNNING | head -1 | cut -f1); fi; " +
+      "if [ -z \"$d\" ]; then d=$(pactl list short sinks | grep -v -F " + _eqQuoted + " | head -1 | cut -f1); fi; " +
       "echo \"$d\""]
     stdout: StdioCollector {
       onStreamFinished: {
@@ -423,9 +423,9 @@ Item {
       _restoreDefaultProc.command = ["bash", "-c",
         "T=$(pactl get-default-sink); " +
         "[ \"$T\" = " + _eqQ2 + " ] && " +
-        "T=$(pactl list short sinks | grep -v " + _eqQ2 + " | grep RUNNING | head -1 | cut -f1); " +
+        "T=$(pactl list short sinks | grep -v -F " + _eqQ2 + " | grep RUNNING | head -1 | cut -f1); " +
         "[ \"$T\" = " + _eqQ2 + " ] && " +
-        "T=$(pactl list short sinks | grep -v " + _eqQ2 + " | head -1 | cut -f1); " +
+        "T=$(pactl list short sinks | grep -v -F " + _eqQ2 + " | head -1 | cut -f1); " +
         "[ -z \"$T\" ] && exit 0; " +
         "pactl set-default-sink \"$T\""]
       _restoreDefaultProc.running = true
@@ -527,10 +527,10 @@ Timer {
       "SRC=$(pw-link -o 2>/dev/null | grep 'output.filter-chain' | head -1 | cut -d: -f1); " +
       "[ -z \"$SRC\" ] && exit 0; " +
       "LINKS=$(pw-link -l 2>/dev/null); " +
-      "if pactl list short sinks 2>/dev/null | grep -q \"bluez\"; then " +
-      "  BEST=$(pactl list short sinks 2>/dev/null | grep \"bluez\" | head -1 | cut -f2); " +
+      "if pactl list short sinks 2>/dev/null | grep -F -q \"bluez\"; then " +
+      "  BEST=$(pactl list short sinks 2>/dev/null | grep -F \"bluez\" | head -1 | cut -f2); " +
       "  [ -z \"$BEST\" ] && exit 0; " +
-      "  for T in $(pactl list short sinks 2>/dev/null | grep -v " + _relinkEqQ + " | cut -f2); do " +
+      "  for T in $(pactl list short sinks 2>/dev/null | grep -v -F " + _relinkEqQ + " | cut -f2); do " +
       "    if [ \"$T\" != \"$BEST\" ]; then " +
       "      if echo \"$LINKS\" | grep -q \"$T:playback_FL\"; then " +
       "        pw-link -d \"$SRC:output_FL\" \"$T:playback_FL\" 2>/dev/null || true; " +
@@ -543,7 +543,7 @@ Timer {
       "    pw-link \"$SRC:output_FR\" \"$BEST:playback_FR\" 2>/dev/null || true; " +
       "  fi; " +
       "else " +
-      "  for T in $(pactl list short sinks 2>/dev/null | grep -v " + _relinkEqQ + " | cut -f2); do " +
+      "  for T in $(pactl list short sinks 2>/dev/null | grep -v -F " + _relinkEqQ + " | cut -f2); do " +
       "    if ! echo \"$LINKS\" | grep -q \"$T:playback_FL\"; then " +
       "      pw-link \"$SRC:output_FL\" \"$T:playback_FL\" 2>/dev/null || true; " +
       "      pw-link \"$SRC:output_FR\" \"$T:playback_FR\" 2>/dev/null || true; " +

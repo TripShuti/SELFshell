@@ -65,13 +65,17 @@ Item {
       : root.hovered ? window.palette.green
       : window.palette.fg
 
-  // sysfs не підтримує inotify, тому раз на 30 с опитуємо upower — тільки коли є батарея
+  // sysfs не підтримує inotify, тому раз на 30 с опитуємо upower.
+  // Гейтимо коли батареї нема, але перший запуск завжди — інакше device ніколи не знайдеться
   Timer {
     interval: 30000
     repeat: true
     triggeredOnStart: true
-    running: root.available
-    onTriggered: devsProc.running = true
+    running: root.visible || root.device === ""
+    onTriggered: {
+      if (!root.available && root.device !== "") return
+      devsProc.running = true
+    }
   }
 
   // Крок 1: знайти пристрій батареї
