@@ -8,29 +8,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **IconResolver cache** — `core/IconResolver.qml:8` `property var _cache` + `_resolveUncached` + LRU trim 200→100, `clearCache()`; 5× `Quickshell.iconPath` per `resolve()` тепер кешується для `Repeater` трею/лаунчера.
+- **IconResolver cache** — `core/IconResolver.qml:8` `property var _cache` + `_resolveUncached` + LRU trim 200→100, `clearCache()`; 6× `Quickshell.iconPath` per `resolve()` тепер кешується для `Repeater` трею/лаунчера.
 
 ### Changed
 
-- **PillBar model** — `core/PillBar.qml:60` `filter()` що перестворював `Loader`и кожну зміну `cfg.*Enabled` → `model: orderModel` + `visible: _shouldShow` + `Layout.preferredWidth` 0; без thrash, асинхронні `Loader`и лишаються живими.
-- **Bar auto-hide robustness** — `Bar.qml:105` ручний `||` 17 попапів → ` _popupList[]` + цикл; новий попап не забудеться; `anyPopupOpenState` тепер вираховується централізовано.
-- **CavaMonitor restart** — `monitors/CavaMonitor.qml:73` `_updateRunning()` скидає `_restarts` після 5 фейлів при re-enable; `Timer 2000` gated `visible` (`widgets/MprisWidget.qml:65`, `popups/MprisPopup.qml:187` → `running: root.visible`).
-- **Shell sleep/suspend** — `shell.qml:82` `dbus-monitor | grep` через `sh -c` → `SplitParser` прямий `dbus-monitor --system`; `StdioCollector` ротація; `onSuspendRequested` → `suspendDelay 400ms` перед `systemctl suspend` щоб `WlSessionLock` встиг закомітитись; `Process` шляхи `/usr/bin/systemctl`.
-- **KdeConnectService lifecycle** — `services/KdeConnectService.qml:85` TTL 24h `Timer 3600s` для `_notifSeen` + ліміт 500, `pendingPairRequest` таймаут 65s.
+- **PillBar model** — `core/PillBar.qml:60` `filter()` що перестворював `Loader`и кожну зміну `cfg.*Enabled` → `model: orderModel` + `visible: _shouldShow`; без thrash, асинхронні `Loader`и лишаються живими.
+- **Bar auto-hide robustness** — `Bar.qml:107` ручний `||` 19 попапів централізовано у `_anyPopupOpen()`; новий попап додається в одне місце; `anyPopupOpenState` тепер вираховується централізовано.
+- **CavaMonitor restart** — `monitors/CavaMonitor.qml:73` `_updateRunning()` скидає `_restarts` після 5 фейлів при re-enable; player-search `Timer 2000` gated `visible` (`widgets/MprisWidget.qml:65`, `popups/MprisPopup.qml:186` → `running: root.visible`).
+- **Shell sleep/suspend** — `shell.qml:93,102` `dbus-monitor | grep` через `sh -c` → `SplitParser` прямий `dbus-monitor --system` (через `systemd-inhibit`); `onSuspendRequested` → `suspendDelay 400ms` (`shell.qml:62`) перед `/usr/bin/systemctl suspend` щоб `WlSessionLock` встиг закомітитись.
+- **KdeConnectService lifecycle** — `services/KdeConnectService.qml:99,104` TTL 24h `Timer 3600s` для `_notifSeen` + ліміт 500, `pendingPairRequest` таймаут 65s (`:40`).
 
 ### Fixed
 
-- **Security: AudioEq shell injection** — `core/AudioEq.qml:18,325,415,516` `_shellQuote()` (`'`→`'\''`) для `_savedSink`/`sinkName` у `disable()`/`_getDefaultSinkProc`/`_restore`/`_relinkProc` (`pactl`/`pw-link`); константа `SELFshell_EQ` теж екранована.
-- **Security: TrackListService injection** — `services/TrackListService.qml:112,189` `sh -c "dbus-monitor ... | grep"` → `["dbus-monitor","--session","type=signal,sender="+bus]` + фільтр `TrackListReplaced/Added/Removed` в `SplitParser onRead`; `bus` з `playerName` більше не парситься шеллом.
+- **Security: AudioEq shell injection** — `core/AudioEq.qml:108,322,347,418,360,522` `_shellQuote()` (`'`→`'\''`) для `_savedSink`/`sinkName` у `disable()`/`_getDefaultSinkProc`/`_restore`/`_moveInputsOnProc`/`_relinkProc` (`pactl`/`pw-link`); константа `SELFshell_EQ` теж екранована; `grep` на імена сінків через `grep -F`.
+- **Security: TrackListService injection** — `services/TrackListService.qml:112,190` `sh -c "dbus-monitor ... | grep"` → `["dbus-monitor","--session","type=signal,sender="+bus]` + фільтр `TrackListReplaced/Added/Removed` в `SplitParser onRead`; `bus` з `playerName` більше не парситься шеллом.
 - **IdleManager mediaPlaying** — `core/IdleManager.qml:50` цикл по `playerRepeater.count` не трекав `isPlaying` → ` _playingCount` + `onPlayingChanged/Completed/Destruction → _recalcPlaying()`, `mediaPlaying = _playingCount>0`; екран не лочиться під час відтворення.
-- **LockContext brute-force** — `core/LockContext.qml:86` `failCount > failThreshold` → `>=` (3-я спроба лочить), `tryUnlock()` guard `unlockInProgress`, `PamContext configDirectory: Qt.resolvedUrl("../pam")` (було `../pam` відносний, ламався в systemd).
-- **AnimatedPopup race** — `core/AnimatedPopup.qml:39,73,178` `close()` зупиняє `enterAnim`, `onVisibleChanged` зупиняє обидві, `container.opacity 0.50→0` без спалаху.
-- **VertSlider binding loop** — `core/VertSlider.qml:11` мутація `value` всередині рве батьківський біндинг → ` _dragValue/_displayValue` + guard `to!=from`, `apply()`/`onWheel` пишуть `_dragValue` + `moved()`.
-- **LockSurface** — `core/LockSurface.qml:182` `echoMode Normal` → `Password + ImhHiddenText`, `FastBlur radius 24→16 + layer.enabled`, `power actions` абсолютні `/usr/bin/systemctl reboot/poweroff`.
+- **LockContext brute-force** — `core/LockContext.qml:87,48,71` `failCount > failThreshold` → `>=` (3-я спроба лочить), `tryUnlock()` guard `unlockInProgress`, `PamContext configDirectory: Qt.resolvedUrl("../pam")` (було `../pam` відносний, ламався в systemd).
+- **AnimatedPopup race** — `core/AnimatedPopup.qml:39,179` `close()` зупиняє `enterAnim`, `onVisibleChanged` зупиняє обидві, `container.opacity 0.50→0` без спалаху.
+- **VertSlider binding loop** — `core/VertSlider.qml:12` мутація `value` всередині рве батьківський біндинг → ` _dragValue/_displayValue` (`:26`) + guard `to!=from` (`:53`), `apply()`/`onWheel` (`:100`) пишуть `_dragValue` + `moved()`.
+- **LockSurface** — `core/LockSurface.qml:190,105,271` `echoMode Normal` → `Password + ImhHiddenText`, `FastBlur radius 24→16 + layer.enabled`, `power actions` абсолютні `/usr/bin/systemctl reboot/poweroff`.
 - **AppConfig defaults drift** — `core/AppConfig.qml:139` `rightOrder` адаптера додано `kcd` (синхронізовано з `defaultCfg:279`).
-- **PaletteService docs** — `core/PaletteService.qml:11` коментар про UAF Quickshell 0.3.0 (`watchChanges` вимкнено, `black` вже `#121212` в `palette.json`) та `AudioEq.qml:555` прибрано мертвий `onFileChanged`.
-- **Battery/Keyboard perf** — `widgets/BatteryWidget.qml:69` `running:true` → `running: root.available`, `widgets/KeyboardLayoutWidget.qml:163` `Component.onDestruction: socketProc.running=false`.
+- **PaletteService docs** — `core/PaletteService.qml:11` коментар про UAF Quickshell 0.3.0 (`watchChanges` вимкнено; `black`-тема дає `bg0H #121212` в `palette.json`) та `AudioEq.qml:565` прибрано мертвий `onFileChanged`.
+- **Battery/Keyboard perf** — `widgets/BatteryWidget.qml:74` `running:true` → `running: root.visible || device===""`, `widgets/KeyboardLayoutWidget.qml:167` `Component.onDestruction: socketProc.running=false`.
 - **MprisPopup id order** — `popups/MprisPopup.qml:1095` `id: vs` піднято перед `Connections` що його читає.
+- **Palette generation errors** — `scripts/update-palette.py` matugen/`KeyError` failures now print `error:` + exit 1 instead of a traceback with a half-applied state (new wallpaper, stale palette); `atomic_write()` no longer masks the original exception; missing wallpaper errors early; `orange`/`aqua` split to tertiary 80/70 (were identical); `update-palette.sh`/`update-wallpaper-only.sh` validate args (`-f`, jpg/png/gif) and `mkdir -p wp`.
+- **Theme switch reliability** — `popups/settings/AppearanceSection.qml` checks `exitCode` at every step (no more false "Applied"), shows errors, ignores stale `StdioCollector` text via `_curGotData`; `WallpaperPopup`/`WallpaperSection` same (`_listGotData`, visible errors).
+- **CLI atomicity** — `scripts/selfshell` `theme set`/`config set` write via tmp+rename; `config get`/`get_theme_mode` pass keys via argv (no quote injection).
+- **xdg-open allowlist** — `popups/KdeConnectPopup.qml` opens phone-provided paths only under `*/Downloads/kcd/*` (no `..`); `Bar.qml` screenshot open only under `*/Screenshots/*`; share-picker output truncated to the first line.
+- **AudioEq leftover quoting** — `core/AudioEq.qml:362` `_moveInputsOnProc` now `_shellQuote(root.sinkName)`; all `grep` on sink names uses `grep -F`.
+- **PillBar implicitHeight** — `core/PillBar.qml:33` self-reference `root.height` → `row.implicitHeight`.
+- **Config/schema drift** — `data/config.json` gains `"themeMode": "matugen"` default; `docs/CONFIG_FORMAT.md` documents `themeMode`; `tests/check_config_schema.py` accepts idle `0=never`, validates `animationsEnabled`/`animSpeed`/`preferredPlayer`, tightens `uiScale`/`separatorGlowOpacity` ranges.
 
 ## [0.9.0] - 2026-09-01
 

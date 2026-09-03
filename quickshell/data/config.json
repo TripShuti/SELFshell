@@ -73,6 +73,7 @@
   "separatorOpacity": 0.65,
   "timerEnabled": true,
   "timerSoundPath": "",
+  "themeMode": "matugen",
   "toastBgOpacity": 0.9,
   "toastLighten": 1.15,
   "toastRadius": 9,

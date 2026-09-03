@@ -69,7 +69,10 @@ def atomic_write(path, content):
             f.write(content)
         os.replace(tmp, path)
     except BaseException:
-        os.unlink(tmp)
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
         raise
 
 
@@ -565,15 +568,29 @@ def main():
         return 1
 
     wallpaper = sys.argv[1]
+    if not os.path.isfile(wallpaper):
+        print(f"error: wallpaper not found: {wallpaper}", file=sys.stderr)
+        return 1
 
-    result = subprocess.run(
-        ["matugen", "image", wallpaper, "--source-color-index", "0", "--mode", "dark", "-j", "hex"],
-        capture_output=True, text=True, check=True
-    )
+    try:
+        result = subprocess.run(
+            ["matugen", "image", wallpaper, "--source-color-index", "0", "--mode", "dark", "-j", "hex"],
+            capture_output=True, text=True, check=True
+        )
+    except FileNotFoundError:
+        print("error: matugen not installed (pacman -S matugen)", file=sys.stderr)
+        return 1
+    except subprocess.CalledProcessError as e:
+        print(f"error: matugen failed (code {e.returncode}): {(e.stderr or '').strip()}", file=sys.stderr)
+        return 1
 
-    data = json.loads(result.stdout)
-    raw = data["colors"]
-    palettes = data["palettes"]
+    try:
+        data = json.loads(result.stdout)
+        raw = data["colors"]
+        palettes = data["palettes"]
+    except (json.JSONDecodeError, KeyError, TypeError) as e:
+        print(f"error: unexpected matugen output: {e}", file=sys.stderr)
+        return 1
 
     # Отримує колір з raw
     def col(name):
@@ -583,38 +600,43 @@ def main():
     def tone(palette_name, level):
         return palettes[palette_name][str(level)]["color"]
 
-    fg        = col("on_background")
-    gray      = col("outline")
-    green     = tone("primary", 70)
-    red       = tone("error", 80)
-    bg0H      = tone("neutral", 20)
-    bg1       = tone("neutral", 25)
-    bg2       = tone("neutral", 35)
-    muted     = col("on_surface_variant")
-    light     = tone("neutral", 90)
-    bright    = tone("neutral", 95)
-    yellow    = col("tertiary")
-    blue      = col("secondary")
-    purple    = tone("secondary", 70)
-    # orange з третинної палітри: раніше був тотожній green (primary 70) —
-    # копіпаста, через що UI-елементи з orange виглядали зеленими
-    orange    = tone("tertiary", 70)
-    aqua      = tone("tertiary", 70)
+    # orange і aqua розведені по сусідніх тонах третинної палітри,
+    # щоб не зливатись в один колір (раніше обидва були primary 70 через копіпасту)
+    try:
+        fg        = col("on_background")
+        gray      = col("outline")
+        green     = tone("primary", 70)
+        red       = tone("error", 80)
+        bg0H      = tone("neutral", 20)
+        bg1       = tone("neutral", 25)
+        bg2       = tone("neutral", 35)
+        muted     = col("on_surface_variant")
+        light     = tone("neutral", 90)
+        bright    = tone("neutral", 95)
+        yellow    = col("tertiary")
+        blue      = col("secondary")
+        purple    = tone("secondary", 70)
+        orange    = tone("tertiary", 80)
+        aqua      = tone("tertiary", 70)
 
-    widgetFg   = blend(col("primary"), col("on_background"), 0.6)
-    audioVolume = tone("tertiary", 80)
-    accent     = col("primary")
-    textLight  = tone("neutral", 95)
-    mutedAlt   = blend(col("outline"), col("on_background"), 0.45)
-    danger     = col("error")
-    bgLayer    = alpha(blend(col("background"), col("on_surface"), 0.15), 0.6)
-    sepBg      = alpha(col("primary"), 0.6)
-    outlineVariant = alpha(bg2, 0.4)
+        widgetFg   = blend(col("primary"), col("on_background"), 0.6)
+        audioVolume = tone("tertiary", 80)
+        accent     = col("primary")
+        textLight  = tone("neutral", 95)
+        mutedAlt   = blend(col("outline"), col("on_background"), 0.45)
+        danger     = col("error")
+        bgLayer    = alpha(blend(col("background"), col("on_surface"), 0.15), 0.6)
+        sepBg      = alpha(col("primary"), 0.6)
+        outlineVariant = alpha(bg2, 0.4)
+        on_primary = col("on_primary")
+    except (KeyError, TypeError) as e:
+        print(f"error: unexpected matugen schema: {e}", file=sys.stderr)
+        return 1
 
     _build_and_write_palette(fg, gray, green, red, bg0H, bg1, bg2, muted, light, bright,
                              yellow, blue, purple, orange, aqua,
                              widgetFg, audioVolume, accent, textLight, mutedAlt,
-                             danger, bgLayer, sepBg, outlineVariant, col("on_primary"))
+                             danger, bgLayer, sepBg, outlineVariant, on_primary)
     return 0
 
 

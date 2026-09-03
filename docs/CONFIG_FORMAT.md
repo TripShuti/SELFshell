@@ -64,6 +64,7 @@ Edited through SettingsPopup (UI) or manually.
 | `animationsEnabled` | `boolean` | `true` | Master switch for all shell animations (hover, popups, sliders, lock screen) |
 | `animSpeed` | `number` | `1.0` | Multiplier for every animation duration; e.g. `1.5` = 50% slower, `0.5` = 2× faster (0.5–2.0) |
 | `preferredPlayer` | `string` | `"selfsonic"` | Favorite media player identity substring (`spotify`, `chromium` …), shared by bar widget and popup |
+| `themeMode` | `string` | `"matugen"` | Theming mode: `matugen` (dynamic palette from wallpaper via `update-palette.sh`) or `black` (static mono palette `#121212` via `update-palette.py --theme black`, wallpapers switch without regeneration). Legacy `white` is accepted and treated as `matugen` |
 
 Separators look like `sep-N`, where N is a unique numeric ID.
 Generated automatically by `addSep()` in AppConfig.

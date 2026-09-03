@@ -236,11 +236,14 @@ class MainEndToEndTest(unittest.TestCase):
             f.write('[palettes.self]\nbackground = "#111111"\nred = "#ff0000"\n\n'
                     "[palettes.other]\nred = '#0000ff'\n")
         self.addCleanup(shutil.rmtree, self.home, True)
+        wp = os.path.join(self.home, "wallpaper.jpg")
+        with open(wp, "w") as f:
+            f.write("x")
         self.ctx = [
             mock.patch.dict(os.environ, {"HOME": self.home}),
             mock.patch.object(up, "QS_DIR", self.qs_dir),
             mock.patch.object(up.subprocess, "run", return_value=FakeProc()),
-            mock.patch.object(sys, "argv", ["update-palette.py", "wallpaper.jpg"]),
+            mock.patch.object(sys, "argv", ["update-palette.py", wp]),
         ]
         for c in self.ctx:
             c.start()
@@ -299,6 +302,34 @@ class MainEndToEndTest(unittest.TestCase):
         for dirpath, _, files in os.walk(self.home):
             leftovers += [os.path.join(dirpath, n) for n in files if n.endswith(".tmp")]
         self.assertEqual(leftovers, [])
+
+    def test_theme_black_static(self):
+        with mock.patch.object(sys, "argv", ["update-palette.py", "--theme", "black"]):
+            self.assertEqual(up.main(), 0)
+        with open(os.path.join(self.qs_dir, "data", "palette.json")) as f:
+            palette = json.load(f)
+        self.assertEqual(palette["bg0H"], "#121212")
+        self.assertEqual(palette["accent"], "#e0e0e0")
+        # orange і aqua розведені — не тотожні
+        self.assertNotEqual(palette["orange"], palette["aqua"])
+
+    def test_theme_black_rejects_unknown(self):
+        with mock.patch.object(sys, "argv", ["update-palette.py", "--theme", "white"]):
+            self.assertEqual(up.main(), 1)
+
+    def test_matugen_failure_no_partial_write(self):
+        wp = os.path.join(self.home, "wallpaper.jpg")
+        with open(wp, "w") as f:
+            f.write("x")
+        with mock.patch.object(up.subprocess, "run",
+                               side_effect=up.subprocess.CalledProcessError(1, "matugen", "", "boom")), \
+             mock.patch.object(sys, "argv", ["update-palette.py", wp]):
+            self.assertEqual(up.main(), 1)
+        self.assertFalse(os.path.exists(os.path.join(self.qs_dir, "data", "palette.json")))
+
+    def test_missing_wallpaper_errors(self):
+        with mock.patch.object(sys, "argv", ["update-palette.py", os.path.join(self.home, "nope.jpg")]):
+            self.assertEqual(up.main(), 1)
 
 
 if __name__ == "__main__":

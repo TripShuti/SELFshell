@@ -21,6 +21,15 @@ Item {
 
   property string themeStatus: ""
   property bool themeBusy: false
+  // Прапор свіжих даних: StdioCollector не чиститься між запусками,
+  // тому порожній вивід відрізняємо від застарілого тексту
+  property bool _curGotData: false
+
+  function _themeFail(msg) {
+    themeStatus = msg
+    themeBusy = false
+    themeStatusTimer.restart()
+  }
 
   implicitWidth: parent?.width ?? 0
   implicitHeight: col.implicitHeight
@@ -45,6 +54,7 @@ Item {
   StdioCollector {
     id: curCollector
     waitForEnd: true
+    onDataChanged: root._curGotData = true
   }
 
   // Перевіряє current.* для Matugen
@@ -52,8 +62,13 @@ Item {
     id: matugenCheckProc
     stdout: curCollector
     command: ["python3", palettePy, "current"]
-    onExited: {
-      var cur = curCollector.text.trim()
+    onStarted: root._curGotData = false
+    onExited: (exitCode) => {
+      if (exitCode !== 0) {
+        root._themeFail("Failed to read current wallpaper (code " + exitCode + ")")
+        return
+      }
+      var cur = root._curGotData ? curCollector.text.trim() : ""
       if (cur !== "") {
         themePaletteProc.command = [wallpaperSh, cur]
         themePaletteProc.running = true
@@ -70,9 +85,14 @@ Item {
 
   Process {
     id: themePaletteProc
-    onExited: {
+    onExited: (exitCode) => {
+      if (exitCode !== 0) {
+        root._themeFail("Failed to apply theme (code " + exitCode + ") — see qs log")
+        return
+      }
       if (root.cfg.themeMode === "black") {
-        // Ставимо шпалеру black.png без регенерації
+        // Ставимо шпалеру black.png без регенерації;
+        // відсутній файл впіймає themeWallpaperProc через exitCode
         var wp = wpDir + "/black.png"
         themeWallpaperProc.command = [wallpaperOnlySh, wp]
         themeWallpaperProc.running = true
@@ -91,7 +111,12 @@ Item {
 
   Process {
     id: themeWallpaperProc
-    onExited: {
+    onExited: (exitCode) => {
+      if (exitCode !== 0) {
+        root._themeFail("Black palette applied, but wallpaper failed (code " + exitCode + ") — is wp/black.png present?")
+        window.palette.reload()
+        return
+      }
       window.palette.reload()
       footProc.command = ["pkill", "-USR1", "-x", "foot"]
       footProc.running = true

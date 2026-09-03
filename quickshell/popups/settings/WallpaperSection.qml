@@ -18,6 +18,8 @@ Item {
 
   property var wallpapers: []
   property string statusText: ""
+  // StdioCollector не чиститься між запусками — прапор свіжих даних
+  property bool _listGotData: false
 
   implicitWidth: parent?.width ?? 0
   implicitHeight: col.implicitHeight
@@ -31,12 +33,18 @@ Item {
     id: listProc
     stdout: listCollector
     command: ["python3", root.listScriptPath, "list"]
+    onStarted: root._listGotData = false
+    onExited: {
+      running = false
+      if (!root._listGotData) root.wallpapers = []
+    }
   }
 
   StdioCollector {
     id: listCollector
     waitForEnd: true
     onDataChanged: {
+      root._listGotData = true
       if (listCollector.text) {
         root.wallpapers = listCollector.text.trim().split("\n").filter(p => p.trim() !== "")
       }
@@ -44,10 +52,14 @@ Item {
   }
 
   // Застосовує вибрану шпалеру; статус "Setting wallpaper..." зникає
-  // за кілька секунд (як у WallpaperPopup)
+  // за кілька секунд (як у WallpaperPopup); помилку показуємо текстом
   Process {
     id: applyProc
-    onExited: { running = false; statusTimer.restart() }
+    onExited: (exitCode) => {
+      running = false
+      if (exitCode !== 0) root.statusText = "\u26A0 Failed to set wallpaper (code " + exitCode + ")"
+      statusTimer.restart()
+    }
   }
 
   Timer {

@@ -57,6 +57,15 @@ AnimatedPopup {
   onImplicitHeightChanged: if (visible) recenter()
 
   // --- Дії: ping / ring / share / clipboard / sftp ---
+  // Шлях від телефону (share.complete/sftp) відкриваємо лише всередині
+  // теки завантажень kcd — спарений пристрій у LAN не має диктувати довільний open
+  function _safeOpenPath(path) {
+    var p = String(path ?? "")
+    if (p === "" || p[0] !== "/" || p.includes("..")) return
+    if (!p.includes("/Downloads/kcd/")) return
+    openShareProc.command = ["xdg-open", p]
+    openShareProc.running = true
+  }
   Process { id: pingProc; onExited: running = false }
   Process { id: ringProc; onExited: running = false }
   Process {
@@ -79,8 +88,10 @@ AnimatedPopup {
       onStreamFinished: {
         var path = String(pickerOut.text ?? "").trim()
         if (!path) return
-        // zenity може повернути | розділені шляхи — беремо перший
+        // zenity може повернути | розділені чи багаторядкові шляхи — беремо перший
         if (path.includes("|")) path = path.split("|")[0]
+        if (path.includes("\n")) path = path.split("\n")[0]
+        path = path.trim()
         if (!path || !root.devId) return
         shareProc.command = ["kcd", "share", root.devId, path]
         shareProc.running = true
@@ -421,10 +432,7 @@ AnimatedPopup {
       MouseArea {
         anchors.fill: parent
         cursorShape: Qt.PointingHandCursor
-        onClicked: {
-          openShareProc.command = ["xdg-open", svc.lastSharePath]
-          openShareProc.running = true
-        }
+        onClicked: root._safeOpenPath(svc.lastSharePath)
       }
     }
 
@@ -538,9 +546,8 @@ AnimatedPopup {
         cursorShape: Qt.PointingHandCursor
         onClicked: {
           var dir = svc ? (svc.sftpMountDir || "") : ""
-          if (dir !== "") openShareProc.command = ["xdg-open", dir]
-          else openShareProc.command = ["sh", "-c", "xdg-open \"$HOME/Downloads/kcd/mnt\""]
-          openShareProc.running = true
+          // sftpMountDir — з локального kcd.toml через сервіс, не з payload телефону
+          if (dir !== "") root._safeOpenPath(dir)
         }
       }
     }

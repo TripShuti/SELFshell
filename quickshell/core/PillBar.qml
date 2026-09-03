@@ -30,7 +30,8 @@ Item {
   Behavior on radius { NumberAnimation { duration: appConfig.anim(150); easing.type: Easing.OutCubic } }
 
   implicitWidth: row.implicitWidth + 2 * root.padding
-  implicitHeight: root.height
+  // implicitHeight — від вмісту, не від root.height (самореференс давав 0/loop)
+  implicitHeight: row.implicitHeight
 
   Rectangle {
     id: bg

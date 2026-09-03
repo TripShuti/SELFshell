@@ -359,9 +359,10 @@ Item {
       onStreamFinished: {
         root._savedSink = text.trim()
         // переносимо граючі потоки в EQ ще ДО перемикання default
+        // sinkName екрановано — та сама _shellQuote-гігієна що й скрізь у файлі
         _moveInputsOnProc.command = ["bash", "-c",
           "pactl list short sink-inputs | cut -f1 | " +
-          "xargs -r -n1 -I{} pactl move-sink-input {} " + root.sinkName]
+          "xargs -r -n1 -I{} pactl move-sink-input {} " + _shellQuote(root.sinkName)]
         _moveInputsOnProc.running = true
       }
     }
@@ -532,19 +533,19 @@ Timer {
       "  [ -z \"$BEST\" ] && exit 0; " +
       "  for T in $(pactl list short sinks 2>/dev/null | grep -v -F " + _relinkEqQ + " | cut -f2); do " +
       "    if [ \"$T\" != \"$BEST\" ]; then " +
-      "      if echo \"$LINKS\" | grep -q \"$T:playback_FL\"; then " +
-      "        pw-link -d \"$SRC:output_FL\" \"$T:playback_FL\" 2>/dev/null || true; " +
-      "        pw-link -d \"$SRC:output_FR\" \"$T:playback_FR\" 2>/dev/null || true; " +
+      "      if echo \"$LINKS\" | grep -F -q \"$T:playback_FL\"; then " +
+        "pw-link -d \"$SRC:output_FL\" \"$T:playback_FL\" 2>/dev/null || true; " +
+        "pw-link -d \"$SRC:output_FR\" \"$T:playback_FR\" 2>/dev/null || true; " +
       "      fi; " +
       "    fi; " +
       "  done; " +
-      "  if ! echo \"$LINKS\" | grep -q \"$BEST:playback_FL\"; then " +
+      "  if ! echo \"$LINKS\" | grep -F -q \"$BEST:playback_FL\"; then " +
       "    pw-link \"$SRC:output_FL\" \"$BEST:playback_FL\" 2>/dev/null || true; " +
       "    pw-link \"$SRC:output_FR\" \"$BEST:playback_FR\" 2>/dev/null || true; " +
       "  fi; " +
       "else " +
       "  for T in $(pactl list short sinks 2>/dev/null | grep -v -F " + _relinkEqQ + " | cut -f2); do " +
-      "    if ! echo \"$LINKS\" | grep -q \"$T:playback_FL\"; then " +
+      "    if ! echo \"$LINKS\" | grep -F -q \"$T:playback_FL\"; then " +
       "      pw-link \"$SRC:output_FL\" \"$T:playback_FL\" 2>/dev/null || true; " +
       "      pw-link \"$SRC:output_FR\" \"$T:playback_FR\" 2>/dev/null || true; " +
       "    fi; " +

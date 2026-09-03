@@ -203,6 +203,13 @@ Settings are stored in `data/config.json` (JSON format).
 {
   "launcherEnabled": true,
   "workspacesEnabled": true,
+  "themeMode": "matugen",
+  "kcdEnabled": false,
+  "kcdDndEnabled": false,
+  "batteryEnabled": false,
+  "animationsEnabled": true,
+  "animSpeed": 1.0,
+  "preferredPlayer": "selfsonic",
   "leftOrder": ["launcher", "workspaces", "mpris"],
   "centerOrder": ["clock", "timer", "genshin"],
   "rightOrder": ["tray", "sep-0", "bt", "net", "sep-1", "keyboard", "audio", "control"]
@@ -424,11 +431,12 @@ killall quickshell && quickshell &
 lock screen stays active.
 
 ```
-StdioCollector ← dbus-monitor --system 'type=signal,...
+SplitParser ← dbus-monitor --system 'type=signal,...
               │                member=PrepareForSleep'
-              │ grep --line-buffered 'boolean true'
+              │ (wrapped in systemd-inhibit --what=sleep --mode=delay,
+              │  direct argv, no sh -c/grep pipeline)
               │
-              └→ onDataChanged → lockContext.locked = true
+              └→ onRead includes("boolean true") → lockContext.locked = true
 ```
 
 This also fires on `systemctl suspend` from a terminal — **every** path to
@@ -447,7 +455,10 @@ Three `IdleMonitor` levels instead of `hypridle.conf`:
 | 3 | 900 s | Signal `suspendRequested()` → `lockContext.locked = true`, then `systemctl suspend` |
 
 `IdleManager` does not know about `lockContext`/`sessionLock` — it talks
-via signals. `shell.qml` subscribes with `Connections`:
+via signals. Level timeouts of `0` mean "never" (exempt from the
+`lock < dpms < suspend` ordering). Media playback pauses all levels
+(`mediaPlaying` from `_playingCount`), and `caffeineEnabled` inhibits
+everything. `shell.qml` subscribes with `Connections`:
 
 ```qml
 Connections {
@@ -455,8 +466,7 @@ Connections {
   function onLockRequested()      { lockContext.locked = true }
   function onSuspendRequested()   {
     lockContext.locked = true      // lock before sleeping
-    suspendProc.command = ["systemctl", "suspend"]
-    suspendProc.running = true
+    suspendDelay.restart()         // 400ms so WlSessionLock commits, then /usr/bin/systemctl suspend
   }
 }
 ```
@@ -541,7 +551,7 @@ prompt is missed, the connect fails after the 55 s timeout.
 
 ### 9.9. Phone — kcd / KDE Connect
 
-`services/KdeConnectService.qml` — single instance in `shell.qml` (`enabled: appConfig.cfg.kcdEnabled`), `KdeConnectWidget.qml` in `Bar.qml` (`kcd` in `allWidgetNames`, `rightOrder`, `widgetNeedsFillHeight`), `popups/KdeConnectPopup.qml` centered `AnimatedPopup`.
+`services/KdeConnectService.qml` — single instance in `shell.qml` (`enabled: appConfig.cfg.kcdEnabled`, `dnd: appConfig.cfg.kcdDndEnabled`), `KdeConnectWidget.qml` in `Bar.qml` (`kcd` in `allWidgetNames`, `rightOrder`, `widgetNeedsFillHeight`), `popups/KdeConnectPopup.qml` centered `AnimatedPopup`. Notification dedup via stable `payload.key` + timeless content hash (`_notifSeen`, TTL 24h, cap 500); `pendingPairRequest` times out after 65s.
 
 * **Daemon:** optional `kcd` (`AUR kcd-bin`, `systemctl --user enable --now kcd`, LAN-only `1716/udp+tcp` `1739:1764/tcp`, no KDE stack, 0% idle when all devices connected). Config `~/.config/kcd/kcd.toml` (`download_dir ~/Downloads/kcd`, `sftp.mount_dir ~/Downloads/kcd/mnt`, `tcp_port 1716`). `kcd --version` check → `installed`, `kcd devices --json` 30s poll + `kcd watch --json` live (battery, device.connected, notification, clipboard, sftp, share.progress). `primaryDeviceId/name` from watch `device.connected`/`battery` + poll `connected`/`state`, `isReachable` from `connected` or battery, `lastClipboard`/`sftpVolumes`/`sftpMountPoint` from watch.
 * **Widget:** `KdeConnectWidget.qml` phone/battery icon + `charge%` + reachable dot (`green`/`mutedAlt`), `HoverText` scale, `MouseArea` → `kcdPopup.toggle()`, `IpcHandler kcd toggle` (`qs ipc call kcd toggle`).
@@ -556,7 +566,7 @@ prompt is missed, the connect fails after the 55 s timeout.
 * **Bands:** live `pw-cli s <node> 2 {params: ["mbeqL:50Hz...", v, "mbeqR:...", v]}` (`_applyAllNow` 30 entries, `setBand` 2 entries). `EqPresets.js` interpolates Winamp 10→15 bands (log-frequency, `all()` cached per call) + `bandLabels`.
 * **Presets:** `Flat` + 17 Winamp classics, `userPresets: {name:[15]}` shadow built-ins, `deletedBuiltins`, `pinned` (chronological chip order), `chipExists`/`isPinned`/`togglePin`/`renamePreset`/`saveChangesTo`/`deletePreset`/`createPreset` (`new`/`new2`…).
 * **State:** `data/eq.json` (`enabled`, `preset`, `bands[15]`, `userPresets`, `deletedBuiltins`, `pinned`) via `FileView` (`_stateFile` + `_loadState`/`saveState` + `Flat+bands` migration for removed `Custom`). `enabled` restored via `pw-dump` adoption (`_dumpProc` → `enable` if `enabled` and sink found) + relink (`_findNodeProc` → `_relinkProc`).
-* **Auto-relink:** `Timer _linkCheckTimer` (3s, `enabled && !busy && _eqNodeId>=0`) + `Process _relinkProc` (`pw-link -o | grep output.filter-chain` → `pactl list sinks` highest `priority.session` or `bluez` exclusive vs all) keeps `filter-chain` output on correct hardware after headphone/BT hotplug. Triggered also on `onEnabledChanged` / `_findNodeProc` / `_loadState` re-apply.
+* **Auto-relink:** `Timer _linkCheckTimer` (3s, `enabled && !busy && _eqNodeId>=0`) + `Process _relinkProc` (`pw-link -o | grep output.filter-chain` → bluetooth sink exclusive when present, otherwise all hardware sinks) keeps `filter-chain` output on correct hardware after headphone/BT hotplug. All sink names in shell snippets go through `_shellQuote()`; `grep` on sink names uses `grep -F`. Triggered also on `onEnabledChanged` / `_findNodeProc` / `_loadState` re-apply.
 * **UI:** `popups/MprisPopup.qml` — collapsible EQ section (`eqOpen`/`eqHeight`/`eqTarget:216`, `VertSlider` 15× `20x130`, `Flickable` chip row `pinned→builtins→user`, `+` `createPreset`, `ToggleSwitch` `enable`/`disable`, context menu `pin/rename/save/delete` + `Rename` `TextInput`).
 
 ---
@@ -571,12 +581,19 @@ prompt is missed, the connect fails after the 55 s timeout.
 | `ipc call <target> <fn> [args]` | Wrapper for `qs ipc call` |
 | `lock` / `toggle-lock` | `qs ipc call lockscreen ...` |
 | `launcher` / `settings` | `qs ipc call launcher/settings toggle` |
-| `osd` | `qs ipc call osd volume|brightness` (media-key overlay) |
-| `palette-reload` | `qs ipc call palette-reload reload` |
+| `control` / `clipboard` / `kcd` / `audio` | `qs ipc call <target> toggle` (control center, clipboard history, phone popup, audio mixer) |
+| `osd volume\|brightness` | `qs ipc call osd volume|brightness` (media-key overlay) |
+| `theme list\|status\|set <black\|matugen>` | Theming mode in `data/config.json` (`--theme black` static palette vs `update-palette.sh` regen) |
+| `wallpaper list\|current\|set <file>\|random\|reload` | Wallpaper picker (respects `themeMode`: wallpaper-only in Black, regen in Matugen) |
+| `palette reload\|show\|path` | `qs ipc call palette-reload reload`, dump `palette.json`, print its path |
+| `status` | One-line overview: version, `themeMode`, wallpaper, Hyprland, quickshell |
+| `config get\|set\|edit\|check\|path` | Read/write a `data/config.json` key (atomic writes), validate, print path |
+| `services` | `systemctl --user` status of shell services (qs-bt-agent, kcd, pipewire) |
 | `doctor` | Diagnostics: dependencies, python modules, session, configs, services, ddcutil. Exit 1 on critical problems |
 | `reload` | `qs kill` + `qs -d` (this quickshell version has no `qs reload`) |
 | `update` | Update the config: `git pull --ff-only` for git clones, or a GitHub archive download otherwise — both followed by `reload` |
-| `version` | Version from a git tag or `VERSION` |
+| `version [--short]` | Version from a git tag or `VERSION` |
+| `completion` | Shell completion script |
 | `list` | `qs list` |
 
 Paths are resolved relative to the script itself (`readlink -f`), so the

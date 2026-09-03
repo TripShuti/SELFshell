@@ -20,6 +20,9 @@ AnimatedPopup {
   transformOrigin: Item.Top
 
   property var wallpapers: []
+  // StdioCollector не чиститься між запусками — порожній список
+  // відрізняємо від застарілого тексту прапором свіжих даних
+  property bool _listGotData: false
 
   Component.onCompleted: {
     anchor.window = window
@@ -53,12 +56,18 @@ AnimatedPopup {
     id: listProc
     stdout: listCollector
     command: ["python3", root.listScriptPath, "list"]
+    onStarted: root._listGotData = false
+    onExited: (exitCode) => {
+      running = false
+      if (!root._listGotData) root.wallpapers = []
+    }
   }
 
   StdioCollector {
     id: listCollector
     waitForEnd: true
     onDataChanged: {
+      root._listGotData = true
       if (listCollector.text) {
         var parts = listCollector.text.trim().split("\n")
         root.wallpapers = parts.filter(function(p) { return p.trim() !== "" })
@@ -69,8 +78,10 @@ AnimatedPopup {
   // Застосовує вибрану шпалеру через update-palette.sh
   Process {
     id: applyProc
-    onExited: {
+    onExited: (exitCode) => {
       running = false
+      // Помилку показуємо текстом, а не мовчки гасимо статусом
+      if (exitCode !== 0) root.statusText = "\u26A0 Failed to set wallpaper (code " + exitCode + ")"
       // Статус "Setting wallpaper..." має зникнути через кілька секунд
       statusResetTimer.restart()
     }

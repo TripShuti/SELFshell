@@ -16,6 +16,10 @@ PanelWindow {
   required property var modelData
   screen: modelData
 
+  required property QtObject palette
+  required property QtObject appConfig
+  required property QtObject kdeConnect
+
   readonly property real pillHeight: root.implicitHeight - 8
 
 // Активні (реально завантажені зараз) інстанси віджетів — заповнюється
@@ -103,7 +107,8 @@ PanelWindow {
     }
   }
   // Централізований список попапів для auto-hide — додаючи новий попап, додай сюди перевірку
-  // Використовуємо функцію замість масиву з forward-id, щоб QML не зловив null при ініціалізації
+  // Функція замість масиву: масив forward-id ловить null при ініціалізації QML,
+  // тому централізація — через одну функцію _anyPopupOpen() (19 попапів/тостів)
   function _anyPopupOpen(): bool {
     return calendarPopup.visible || audioPopup.visible || btPopup.visible || netPopup.visible || mprisPopup.visible || workspacesPopup.visible || keyboardPopup.visible || genshinPopup.visible || controlPopup.visible || clipboardPopup.visible || wallpaperPopup.visible || settingsPopup.visible || launcherPopup.visible || trayPopup.visible || pairingPopup.visible || kcdPopup.visible || kcdPairingPopup.visible || notifToast.visible || osdPopup.visible
   }
@@ -151,10 +156,6 @@ PanelWindow {
       anchors.margins: 2
     }
   }
-
-  required property QtObject palette
-  required property QtObject appConfig
-  required property QtObject kdeConnect
 
   // --- Шаблони компонентів для динамічного рендеру пігулок ---
   // Loader.sourceComponent бере звідси потрібний тип за іменем віджета.
@@ -491,7 +492,12 @@ PanelWindow {
           identifier: "open",
           text: "Open",
           invoke: (function() {
-            openShotProc.command = ["xdg-open", path]
+            // path — з локального last-shot.txt (grim-пайплайн), але все одно
+            // відкриваємо лише абсолютний шлях без .. всередині ~/Screenshots
+            var p = String(path ?? "")
+            if (p === "" || p[0] !== "/" || p.includes("..")) return
+            if (!p.includes("/Screenshots/")) return
+            openShotProc.command = ["xdg-open", p]
             openShotProc.running = true
           })
         }]

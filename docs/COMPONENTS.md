@@ -84,6 +84,14 @@
 |------|------|--------------|--------------|
 | `AppConfig.qml` | state | Shared bar state: visibility, pill order; FileView persistence into `data/config.json`; global animation controls + `anim(ms)` duration helper | Quickshell.Io |
 | `PaletteService.qml` | service | Reactive palette (FileView + IPC updates) | `data/palette.json` |
+| `IconResolver.qml` | util | Icon lookup with LRU cache (`_cache`, `clearCache()`) | Quickshell |
+| `PairingAgent.qml` | service | Bridge between `qs-bt-agent` (`request/response.json`) and `PairingPopup` | `PairingPopup.qml` |
+| `SetButton.qml` | util | Settings button row | — |
+| `SetCard.qml` | util | Settings card container | — |
+| `SetLabel.qml` | util | Settings section label | — |
+| `SetSelect.qml` | util | Settings segmented selector | — |
+| `SetSlider.qml` | util | Settings slider row | — |
+| `SetToggle.qml` | util | Settings toggle row | — |
 | `AnimatedPopup.qml` | util | Base animated popup window (scale+fade+slide) | PaletteService |
 | `PillBar.qml` | util | Bar pill: Repeater + Loader with `widgetComponents` | AppConfig |
 | `HoverItem.qml` | util | Item with a built-in MouseArea for hover/click (exposes `hovered`/`pressed`) | — |
@@ -139,7 +147,7 @@
 | `NetworkConnectionSettingsPopup.qml` | Details of a specific Wi-Fi/connection | NetworkPopup |
 | `ControlPopup.qml` | Notifications + quick actions | NotificationServer |
 | `OsdPopup.qml` | Volume/brightness overlay for media keys | PipeWire, ddcutil |
-| `SettingsPopup.qml` | Bar settings (6 sections, drag-and-drop) | AppConfig |
+| `SettingsPopup.qml` | Bar settings (8 sections, drag-and-drop) | AppConfig |
 | `settings/BarSection.qml` | Settings: bar geometry, auto-hide, layout drag-and-drop, pills appearance, separators | AppConfig |
 | `settings/PopupsSection.qml` | Settings: popups + toast & OSD design | AppConfig |
 | `settings/HyprlandSection.qml` | Settings: Hyprland windows + blur (visual.json) | Quickshell.Io |
@@ -153,6 +161,8 @@
 | `ClipboardPopup.qml` | Clipboard history (`SUPER+SHIFT+V`) | cliphist |
 | `WallpaperPopup.qml` | Wallpaper picker | `scripts/update-palette.sh` |
 | `TrayMenuPopup.qml` | System tray menu (QML rendering via QsMenuOpener) | TrayWidget |
+| `PairingPopup.qml` | Bluetooth pairing confirmation (passkey/PIN/authorization, 55s countdown) | `PairingAgent.qml` |
+| `KdeConnectPairingPopup.qml` | Phone pairing request (accept/decline, 65s timeout) | KdeConnectService |
 | `NotifToast.qml` | Popup notification (toast) | NotificationServer |
 | `KdeConnectPopup.qml` | Phone (kcd) — battery, ping/ring, share, clipboard, SFTP | KdeConnectService |
 
@@ -167,17 +177,18 @@
 
 | File | Language | What it does |
 |------|----------|--------------|
-| `selfshell` | Bash | CLI: ipc, doctor, version, reload, update (symlink into `~/.local/bin/`) |
+| `selfshell` | Bash | CLI: theme, wallpaper, palette, status, config, services, osd, control/clipboard/kcd/audio, doctor, reload, update, version, completion (symlink into `~/.local/bin/`) |
 | `genshin_stats.py` | Python | HoYoLAB API client (resin, sign, daily notes) |
 | `tracklist.py` | Python | MPRIS TrackList (player queue) for MprisPopup |
 | `update-palette.py` | Python | Generates the palette and themes for the whole project |
 | `update-palette.sh` | Bash | Wrapper: matugen + update-palette.py + palette IPC update |
+| `update-wallpaper-only.sh` | Bash | Wallpaper-only switch without palette regen (Black theme) |
 | `AudioMixerUtils.js` | JS | Audio mixer pure helpers (`formatPercent/Db`, `sinkNameForStream` `O(1)` cache) |
 | `CalendarTasks.js` | JS | Calendar task save/load |
 | `ControlState.js` | JS | Control center state |
 | `LauncherUsage.js` | JS | Application launch frequency |
 | `EqPresets.js` | JS | 15-band EQ presets (Winamp 10→15 log-interpolation, `all()`, `bandLabels`) |
-| `.env` | env | HoYoLAB credentials (copied from `.env.example`) |
+| `.env.example` | env | HoYoLAB credentials template (runtime copy `.env`, git-ignored) |
 
 ### `services/`
 

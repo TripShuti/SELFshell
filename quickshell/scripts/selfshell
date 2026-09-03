@@ -322,7 +322,10 @@ update_from_archive() {
 
 # --- Theme / Wallpaper helpers ---
 get_theme_mode() {
-  python3 -c "import json;print(json.load(open('$QS_CONFIG_DIR/data/config.json')).get('themeMode','matugen'))" 2>/dev/null || echo "matugen"
+  python3 - "$QS_CONFIG_DIR/data/config.json" <<'PY' 2>/dev/null || echo "matugen"
+import json, sys
+print(json.load(open(sys.argv[1])).get('themeMode','matugen'))
+PY
 }
 
 theme_cmd() {
@@ -347,15 +350,24 @@ theme_cmd() {
         exit 1
       fi
       info "Switching theme to $name..."
-      # Update config.json themeMode via python (keep other keys)
+      # Update config.json themeMode via python (keep other keys, atomic tmp+mv)
       python3 - "$QS_CONFIG_DIR/data/config.json" "$name" <<'PY'
-import json, sys
+import json, os, sys, tempfile
 path, name = sys.argv[1], sys.argv[2]
 with open(path) as f:
     data=json.load(f)
 data["themeMode"]=name
-with open(path,"w") as f:
-    json.dump(data,f,indent=2)
+fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path), suffix=".tmp")
+try:
+    with os.fdopen(fd, "w") as f:
+        json.dump(data,f,indent=2)
+    os.replace(tmp, path)
+except BaseException:
+    try:
+        os.unlink(tmp)
+    except OSError:
+        pass
+    raise
 PY
       if [ "$name" = "black" ]; then
         "$QS_CONFIG_DIR/scripts/update-palette.py" --theme black || { error "palette generation failed"; exit 1; }
@@ -456,13 +468,17 @@ config_cmd() {
     get)
       local key="${1:-}"
       [ -z "$key" ] && { error "Usage: selfshell config get <key>"; exit 1; }
-      python3 -c "import json;print(json.load(open('$QS_CONFIG_DIR/data/config.json')).get('$key',''))" 2>/dev/null || error "failed to read config"
+      python3 - "$QS_CONFIG_DIR/data/config.json" "$key" <<'PY' 2>/dev/null || error "failed to read config"
+import json, sys
+path, key = sys.argv[1], sys.argv[2]
+print(json.load(open(path)).get(key,''))
+PY
       ;;
     set)
       local key="${1:-}"; local val="${2:-}"
       [ -z "$key" ] || [ -z "$val" ] && { error "Usage: selfshell config set <key> <value>"; exit 1; }
       python3 - "$QS_CONFIG_DIR/data/config.json" "$key" "$val" <<'PY'
-import json, sys
+import json, os, sys, tempfile
 path, key, val = sys.argv[1], sys.argv[2], sys.argv[3]
 # try to parse as json, else string
 try:
@@ -472,8 +488,17 @@ except:
 with open(path) as f:
     data=json.load(f)
 data[key]=parsed
-with open(path,"w") as f:
-    json.dump(data,f,indent=2)
+fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path), suffix=".tmp")
+try:
+    with os.fdopen(fd, "w") as f:
+        json.dump(data,f,indent=2)
+    os.replace(tmp, path)
+except BaseException:
+    try:
+        os.unlink(tmp)
+    except OSError:
+        pass
+    raise
 PY
       ok "config $key = $val"
       ;;
@@ -641,7 +666,7 @@ doctor() {
     if python3 -m json.tool "$QS_CONFIG_DIR/data/config.json" >/dev/null 2>&1; then
       ok "data/config.json (valid JSON)"
       # themeMode check
-      local tm; tm="$(python3 -c "import json;print(json.load(open('$QS_CONFIG_DIR/data/config.json')).get('themeMode','matugen'))" 2>/dev/null || echo matugen)"
+      local tm; tm="$(get_theme_mode)"
       info "themeMode: $tm"
       # idle ordering check
       python3 - "$QS_CONFIG_DIR/data/config.json" <<'PY' 2>/dev/null || warn "idle timeouts misordered (lock<dpms<suspend)"

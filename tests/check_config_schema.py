@@ -36,10 +36,12 @@ BOOL_FIELDS = [
     "controlEnabled", "clipboardEnabled", "btEnabled", "netEnabled", "trayEnabled",
     "batteryEnabled", "kcdEnabled", "kcdDndEnabled", "dndEnabled", "barAutoHide",
     "leftPillEnabled", "centerPillEnabled", "rightPillEnabled",
+    "animationsEnabled",
 ]
 NUM_FIELDS = {
-    "idleLockTimeout": (1, 86400), "idleDpmsTimeout": (1, 86400),
-    "idleSuspendTimeout": (1, 86400),
+    # 0 = never (рівень вимкнено, випадає з ordering-обмеження)
+    "idleLockTimeout": (0, 86400), "idleDpmsTimeout": (0, 86400),
+    "idleSuspendTimeout": (0, 86400),
     "audioStep": (0.0, 1.0), "brightnessStep": (0, 100),
     "barHeight": (1, 200), "barRadius": (0, 100),
     "edgeMargin": (0, 200), "pillPadding": (0, 100), "contentSpacing": (0, 100),
@@ -49,8 +51,9 @@ NUM_FIELDS = {
     "osdRadius": (0, 24), "osdLighten": (1.0, 2.0), "osdBgOpacity": (0.0, 1.0),
     "barLighten": (1.0, 2.0),
     "barBgOpacity": (0.0, 1.0), "barBorderWidth": (0, 4),
-    "separatorOpacity": (0.0, 1.0), "separatorGlowOpacity": (0.0, 1.0),
-    "uiScale": (0.5, 2.0),
+    "separatorOpacity": (0.0, 1.0), "separatorGlowOpacity": (0.0, 0.5),
+    "uiScale": (0.8, 1.5),
+    "animSpeed": (0.5, 2.0),
 }
 STR_FIELDS = ["barPos", "themeMode"]
 ORDER_FIELDS = ["leftOrder", "centerOrder", "rightOrder"]
@@ -81,12 +84,16 @@ if cfg is not None:
         if field in cfg:
             check(isinstance(cfg[field], list) and all(isinstance(x, str) for x in cfg[field]),
                   f"config {field}: expected string[]")
-    # Часові ліміти мають зростати: lock < dpms < suspend
+    if "preferredPlayer" in cfg:
+        check(isinstance(cfg["preferredPlayer"], str) and cfg["preferredPlayer"] != "",
+              f"config preferredPlayer: expected non-empty string, got {cfg['preferredPlayer']!r}")
+    # Часові ліміти мають зростати: lock < dpms < suspend (0 = never, випадає з порівняння)
     keys = ["idleLockTimeout", "idleDpmsTimeout", "idleSuspendTimeout"]
     vals = [cfg[k] for k in keys if k in cfg]
     if len(vals) == 3:
-        check(vals[0] < vals[1] < vals[2],
-              f"config: idle timeouts must ascend, got {vals}")
+        active = [v for v in vals if v != 0]
+        check(active == sorted(active) and len(active) == len(set(active)),
+              f"config: idle timeouts must ascend (0=never exempt), got {vals}")
     # sep-N суф інкатор для порядків — унікальні в межах кожного списку
     for field in ORDER_FIELDS:
         if field in cfg:
