@@ -216,6 +216,9 @@ when equal to defaults); JSON-only keys not present in the UI
   "active_border": "rgba(rrggbbff)", "inactive_border": "rgba(rrggbbff)",
   "layout": "master", "mfact": 0.7, "orientation": "left",
   "inactive_timeout": 3, "new_status": "slave", "always_keep_position": false,
+  "scroll_column_width": 0.5, "scroll_direction": "right",
+  "scroll_focus_fit": "fit", "scroll_follow_focus": true,
+  "scroll_follow_min_visible": 0.4, "scroll_fullscreen_on_one_column": true,
   "blur_enabled": true, "blur_size": 4, "blur_passes": 2,
   "blur_vibrancy": 0.4, "blur_vibrancy_darkness": 0.3,
   "blur_noise": 0.02, "blur_contrast": 1.05, "blur_brightness": 1.0,
@@ -235,8 +238,12 @@ Notes:
 - `blur_*` map to `decoration:blur:*` in `general.lua` (`popups_ignorealpha`
   is the decoration one; the layer thresholds are `layer_*`), `layer_*` map
   to `layerrule` in `rules.lua` (`blur`/`blur_popups` + `ignore_alpha` + `xray`)
-- `layout` accepts `dwindle` or `master`; `orientation` —
+- `layout` accepts `dwindle`, `master` or `scrolling`; `orientation` —
   `left`/`right`/`top`/`bottom`/`center`
+- `scroll_*` map to the `scrolling` section in `general.lua` (`focus_fit`
+  is `"center"`/`"fit"` in JSON, mapped to `focus_fit_method` 0/1);
+  `wrap_focus`/`wrap_swapcol`/`explicit_column_widths` keep Hyprland
+  defaults and are JSON-only (not in the Settings UI)
 
 ---
 

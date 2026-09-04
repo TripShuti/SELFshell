@@ -32,7 +32,7 @@ Item {
       SetSelect {
         sys: root.sys
         label: "Layout"
-        options: [{ id: "dwindle", text: "Dwindle" }, { id: "master", text: "Master" }]
+        options: [{ id: "dwindle", text: "Dwindle" }, { id: "master", text: "Master" }, { id: "scrolling", text: "Scrolling" }]
         value: root.vis.layout
         onPicked: id => root.setVal("layout", id)
       }
@@ -74,6 +74,59 @@ Item {
           sub: "Master tile stays in place even when smaller than slaves."
           on: root.vis.always_keep_position
           onToggled: v => root.setVal("always_keep_position", v)
+        }
+      }
+      ColumnLayout {
+        visible: root.vis.layout === "scrolling"
+        Layout.fillWidth: true
+        spacing: 6
+        SetSlider {
+          sys: root.sys
+          label: "Column width"; from: 0.1; to: 1.0; step: 0.05; decimals: 2
+          sub: "Default width of a column, as a fraction of the screen."
+          value: root.vis.scroll_column_width
+          onMoved: v => root.setVal("scroll_column_width", v)
+        }
+        SetSelect {
+          sys: root.sys
+          label: "Direction"
+          options: [
+            { id: "left", text: "Left" }, { id: "right", text: "Right" },
+            { id: "up", text: "Up" }, { id: "down", text: "Down" }
+          ]
+          value: root.vis.scroll_direction
+          onPicked: id => root.setVal("scroll_direction", id)
+        }
+        SetSelect {
+          sys: root.sys
+          label: "Focus fit"
+          options: [
+            { id: "center", text: "Center" }, { id: "fit", text: "Fit" }
+          ]
+          value: root.vis.scroll_focus_fit
+          onPicked: id => root.setVal("scroll_focus_fit", id)
+        }
+        SetToggle {
+          sys: root.sys
+          label: "Follow focus"
+          sub: "Auto-scroll the tape to the focused window."
+          on: root.vis.scroll_follow_focus
+          onToggled: v => root.setVal("scroll_follow_focus", v)
+        }
+        SetSlider {
+          visible: root.vis.scroll_follow_focus
+          sys: root.sys
+          label: "Follow min visible"; from: 0; to: 1.0; step: 0.1; decimals: 1
+          sub: "Fraction of a window that must stay visible for focus to follow."
+          value: root.vis.scroll_follow_min_visible
+          onMoved: v => root.setVal("scroll_follow_min_visible", v)
+        }
+        SetToggle {
+          sys: root.sys
+          label: "Fullscreen single column"
+          sub: "A lone column on a workspace spans the whole screen."
+          on: root.vis.scroll_fullscreen_on_one_column
+          onToggled: v => root.setVal("scroll_fullscreen_on_one_column", v)
         }
       }
       SetSlider {
@@ -336,6 +389,9 @@ Item {
     active_border: "", inactive_border: "",
     layout: "master", mfact: 0.7, orientation: "left",
     new_status: "slave", always_keep_position: false,
+    scroll_column_width: 0.5, scroll_direction: "right",
+    scroll_focus_fit: "fit", scroll_follow_focus: true,
+    scroll_follow_min_visible: 0.4, scroll_fullscreen_on_one_column: true,
     inactive_timeout: 3,
     blur_enabled: true, blur_size: 4, blur_passes: 2,
     blur_vibrancy: 0.4, blur_vibrancy_darkness: 0.3,

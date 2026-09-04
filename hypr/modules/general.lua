@@ -61,6 +61,15 @@ hl.config({
         split_bias                   = 0,
         precise_mouse_move           = false,
     },
+    scrolling = {
+        column_width = num(V.scroll_column_width, 0.5),
+        direction = str(V.scroll_direction, "right"), -- "left" "right" "up" "down"
+        -- focus_fit_method: 0 center, 1 fit (в JSON рядок "center"/"fit")
+        focus_fit_method = V.scroll_focus_fit == "center" and 0 or 1,
+        follow_focus = bool(V.scroll_follow_focus, true),
+        follow_min_visible = num(V.scroll_follow_min_visible, 0.4),
+        fullscreen_on_one_column = bool(V.scroll_fullscreen_on_one_column, true),
+    },
 
     cursor = {
         no_warps = true,
