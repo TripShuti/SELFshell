@@ -529,7 +529,7 @@ status_cmd() {
 }
 
 services_cmd() {
-  for svc in NetworkManager bluetooth "qs-bt-agent --user" "kcd --user" "pipewire --user" "wireplumber --user"; do
+  for svc in NetworkManager bluetooth "qs-bt-agent --user" "kcd --user" "selftrack-daemon --user" "pipewire --user" "wireplumber --user"; do
     local is_user=false
     [[ "$svc" == *"--user"* ]] && is_user=true
     local name="${svc%% *}"
@@ -827,6 +827,19 @@ PY
     if ! $has_dialog; then warn "neither zenity/kdialog/yad found — Share file picker will fail (install one: sudo pacman -S zenity)"; fi
   else
     warn "kcd not installed — phone features disabled (yay -S kcd-bin, systemctl --user enable --now kcd)"
+  fi
+
+  echo
+  echo "== Time tracking (optional, selftrack) =="
+  if command -v selftrack &>/dev/null || [ -x "$HOME/.cargo/bin/selftrack" ]; then
+    ok "selftrack installed"
+    if systemctl --user is-active --quiet selftrack-daemon 2>/dev/null || pgrep -f "[s]elftrack daemon" &>/dev/null; then
+      ok "selftrack-daemon is running"
+    else
+      warn "selftrack-daemon not running — run: systemctl --user enable --now selftrack-daemon"
+    fi
+  else
+    warn "selftrack not installed — time tracking widget will show no data (cargo install --git https://github.com/TripShuti/SELFtrack)"
   fi
 
   echo

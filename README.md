@@ -76,6 +76,7 @@ no separate lock/idle daemons.
 | [Yazi](https://yazi-rs.github.io) | File manager 
 | [Fastfetch](https://github.com/fastfetch-cli/fastfetch) | System info
 | [kcd](https://github.com/bethropolis/kcd) | Headless KDE Connect daemon (phone, optional, AUR `kcd-bin`) |
+| [selftrack](https://github.com/TripShuti/SELFtrack) | Focus-based time tracker (time tracking widget, optional, `cargo install --git`) |
 
 ## Quick start for fresh installed Arch
 I haven't tested it on an existing setup, but I assume everything works fine there too.
@@ -183,6 +184,7 @@ array in the script for the complete list. Key packages:
 | `uwsm` | User session manager (session start from greetd / fallback autostart) |
 | `python-requests python-dotenv` | Genshin Impact widget (Hoyolab API) |
 | `kcd` ([kcd](https://github.com/bethropolis/kcd), AUR `kcd-bin`) | Phone — KDE Connect without KDE stack (optional, `systemctl --user enable --now kcd`, `sshfs` for SFTP, `zenity`/`kdialog` for Share) |
+| `selftrack` ([SELFtrack](https://github.com/TripShuti/SELFtrack), cargo) | Time tracking widget (optional, `systemctl --user enable --now selftrack-daemon`) |
 
 ## Structure
 

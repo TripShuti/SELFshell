@@ -417,6 +417,57 @@ else
   warn "No AUR helper — kcd skipped (install later: yay -S kcd-bin)"
 fi
 
+# --- Крок 4.7: трекер часу (selftrack, опційно, cargo) ---
+# Focus-based time tracker для віджета Time Tracking (selftrackEnabled).
+# Ставиться з git через cargo; демон — user-сервіс selftrack-daemon.
+# Сервісний файл пишемо лише якщо його нема — юзер міг додати свої прапорці
+# (наприклад --retention-days) і перезапис затре б його налаштування.
+SELFTRACK_BIN=""
+[ -x "$HOME/.cargo/bin/selftrack" ] && SELFTRACK_BIN="$HOME/.cargo/bin/selftrack"
+command -v selftrack &>/dev/null && SELFTRACK_BIN="$(command -v selftrack)"
+if [ -z "$SELFTRACK_BIN" ]; then
+  if confirm "Install selftrack time tracker (cargo build from git, optional)?" n; then
+    if ! command -v cargo &>/dev/null; then
+      run_retry 3 sudo pacman -S --needed --noconfirm rust || warn "rust install failed — selftrack needs cargo (sudo pacman -S rust)"
+    fi
+    if command -v cargo &>/dev/null; then
+      run_retry 3 cargo install --locked --git https://github.com/TripShuti/SELFtrack || warn "selftrack install failed — time tracking widget will show no data (cargo install --git https://github.com/TripShuti/SELFtrack)"
+      [ -x "$HOME/.cargo/bin/selftrack" ] && SELFTRACK_BIN="$HOME/.cargo/bin/selftrack"
+    fi
+  else
+    info "selftrack skipped — time tracking widget will show no data (install later: cargo install --git https://github.com/TripShuti/SELFtrack)"
+  fi
+else
+  info "selftrack already installed: $SELFTRACK_BIN"
+fi
+if [ -n "$SELFTRACK_BIN" ]; then
+  svc_file="$HOME/.config/systemd/user/selftrack-daemon.service"
+  if [ ! -f "$svc_file" ]; then
+    mkdir -p "$HOME/.config/systemd/user"
+    cat > "$svc_file" << 'SVCEOF'
+[Unit]
+Description=SELFTrack daemon — focus-based time tracker for Hyprland
+After=graphical-session.target
+
+[Service]
+ExecStart=%h/.cargo/bin/selftrack daemon
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
+SVCEOF
+    info "selftrack-daemon service written: $svc_file"
+  fi
+  if [ -n "${XDG_RUNTIME_DIR:-}" ] && [ -d "$XDG_RUNTIME_DIR" ]; then
+    systemctl --user daemon-reload 2>/dev/null || true
+    systemctl --user enable --now selftrack-daemon 2>/dev/null || systemctl --user enable selftrack-daemon 2>/dev/null || true
+    info "selftrack-daemon service: systemctl --user status selftrack-daemon"
+  else
+    warn "No user session — skipped selftrack-daemon enable. After login: systemctl --user enable --now selftrack-daemon"
+  fi
+fi
+
 # --- Крок 5: менеджер входу (greetd+tuigreet) / автозапуск ---
 echo
 info "On a bare Arch there is no display manager. After login you get a TTY."
