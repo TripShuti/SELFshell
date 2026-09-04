@@ -69,6 +69,37 @@ AnimatedPopup {
   function hourOf(ms) {
     return Math.max(0, Math.min(23, Math.floor((ms - ST.dayStartMs(root.dateStr)) / 3600000)))
   }
+
+  // Сесія під позицією курсору на треку: шукаємо в ДАНИХ, а не ховеримо
+  // прямокутники — 2px-сегменти під сусідами інакше ніколи не ховеряться.
+  // З кількох перекритих беремо найкоротшу (найточнішу), при рівності — пізнішу
+  function hoverAt(x) {
+    var frac = Math.max(0, Math.min(1, x / timelineTrack.width))
+    var base = ST.dayStartMs(root.dateStr)
+    var t = root.zoomHour < 0 ? base + frac * 86400000 : base + root.zoomHour * 3600000 + frac * 3600000
+    var best = null
+    var count = 0
+    for (var i = 0; i < root.sessionsModel.length; i++) {
+      var s = root.sessionsModel[i]
+      if (s.start_ms <= t && t < s.end_ms) {
+        count++
+        if (!best || (s.end_ms - s.start_ms) < (best.end_ms - best.start_ms)) best = s
+      }
+    }
+    if (!best) {
+      root.hoverInfo = ST.formatClock(t) + "  — no data —"
+      return
+    }
+    var txt = ST.formatClock(best.start_ms) + "–" + ST.formatClock(best.end_ms) + "  "
+    if (best.idle) {
+      txt += "idle"
+    } else {
+      var title = ST.cleanTitle(best.title)
+      txt += best.app + (title !== "" ? " • " + title : "")
+    }
+    if (count > 1) txt += "  (+" + (count - 1) + " overlapping)"
+    root.hoverInfo = txt
+  }
   // Підписи шкали: доба або чверті розгорнутої години
   function tickLabels() {
     if (root.zoomHour < 0) return ["00", "06", "12", "18", "24"]
@@ -316,30 +347,33 @@ AnimatedPopup {
             anchors.bottomMargin: 3
             radius: 2
             color: modelData.idle ? window.palette.bg2 : root.appColor(modelData.app)
-            opacity: segMa.containsMouse ? 1.0 : 0.8
-            Behavior on opacity { NumberAnimation { duration: appConfig.anim(120) } }
+            opacity: 0.85
 
+            // Тільки клік (зум); ховер — єдиний на весь трек нижче,
+            // інакше перекриті сусідами 2px-сегменти ніколи не ховеряться
             MouseArea {
-              id: segMa
               anchors.fill: parent
-              hoverEnabled: true
+              hoverEnabled: false
               cursorShape: Qt.PointingHandCursor
-              onEntered: {
-                var t = ST.formatClock(modelData.start_ms) + "–" + ST.formatClock(modelData.end_ms) + "  "
-                if (modelData.idle) {
-                  root.hoverInfo = t + "idle"
-                } else {
-                  var title = ST.cleanTitle(modelData.title)
-                  root.hoverInfo = t + modelData.app + (title !== "" ? " • " + title : "")
-                }
-              }
-              onExited: root.hoverInfo = ""
               // Клік по сегменту в огляді доби — розгорнути його годину
               onClicked: {
                 if (root.zoomHour < 0) root.zoomToHour(root.hourOf(modelData.start_ms))
               }
             }
           }
+        }
+
+        // Єдиний ховер треку (поверх сегментів): кліки провалюються
+        // вниз через NoButton (той самий прийом що autoHideWatch в Bar),
+        // а позицію рахуємо в даних — видно навіть перекриті сегменти
+        MouseArea {
+          id: trackHoverMa
+          anchors.fill: parent
+          hoverEnabled: true
+          acceptedButtons: Qt.NoButton
+          onEntered: root.hoverAt(mouseX)
+          onPositionChanged: root.hoverAt(mouseX)
+          onExited: root.hoverInfo = ""
         }
       }
 
@@ -370,7 +404,7 @@ AnimatedPopup {
         Text {
           Layout.fillWidth: true
           text: root.hoverInfo !== "" ? root.hoverInfo
-            : (root.zoomHour < 0 ? "Hover a segment for details • Click the strip to zoom an hour" : "Zoomed hour — click ‹ › to move")
+            : (root.zoomHour < 0 ? "Hover the strip for details • Click to zoom an hour" : "Zoomed hour — click ‹ › to move")
           color: root.hoverInfo !== "" ? window.palette.fg : window.palette.muted
           font.family: window.palette.font
           font.pixelSize: appConfig.scaled(10)
