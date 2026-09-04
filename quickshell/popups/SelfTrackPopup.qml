@@ -51,23 +51,50 @@ AnimatedPopup {
   // Інформація про сегмент під курсором (таймлайн)
   property string hoverInfo: ""
 
-  // Зум таймлайну: -1 огляд доби, 0–23 розгорнута година.
+  // Зум таймлайну — довільне вікно часу (як на мапі): зсув від початку
+  // доби + довжина. Огляд доби: start 0, len 86400000. Колесо зумить
+  // відносно курсора, клік в огляді стрибає в годину, клік в зумі центрує.
   // Скидається при зміні дати
-  property int zoomHour: -1
-  onDateStrChanged: zoomHour = -1
+  property real zoomStartMs: 0
+  property real zoomLenMs: 86400000
+  readonly property bool zoomed: root.zoomLenMs < 86400000
+  onDateStrChanged: zoomReset()
 
-  function zoomToHour(h) {
-    root.zoomHour = Math.max(0, Math.min(23, h))
+  function zoomReset() {
+    root.zoomStartMs = 0
+    root.zoomLenMs = 86400000
   }
   function zoomOut() {
-    root.zoomHour = -1
+    root.zoomReset()
   }
-  function stepZoom(d) {
-    if (root.zoomHour >= 0) root.zoomHour = (root.zoomHour + d + 24) % 24
+  // Колесо: вгору — ближче (мінімум 1 хв), вниз — далі (максимум доба), якір — курсор
+  function wheelZoom(frac, up) {
+    var dayLen = 86400000
+    var minLen = 60000
+    if (up && root.zoomLenMs <= minLen) return
+    if (!up && root.zoomLenMs >= dayLen) return
+    var newLen = Math.max(minLen, Math.min(dayLen, root.zoomLenMs * (up ? 1 / 1.3 : 1.3)))
+    var tCursor = root.zoomStartMs + frac * root.zoomLenMs
+    root.zoomStartMs = Math.max(0, Math.min(dayLen - newLen, tCursor - frac * newLen))
+    root.zoomLenMs = newLen
+    if (newLen >= dayLen) root.zoomReset()
   }
-  // Година доби (0–23) для epoch-мс відносно вибраної дати
-  function hourOf(ms) {
-    return Math.max(0, Math.min(23, Math.floor((ms - ST.dayStartMs(root.dateStr)) / 3600000)))
+  // Клік: в огляді — стрибок у годину, в зумі — центрування вікна на кліку
+  function stripClickAt(frac) {
+    var dayLen = 86400000
+    if (root.zoomLenMs >= dayLen) {
+      var h = Math.max(0, Math.min(23, Math.floor(frac * 24)))
+      root.zoomStartMs = h * 3600000
+      root.zoomLenMs = 3600000
+    } else {
+      var rel = root.zoomStartMs + frac * root.zoomLenMs
+      root.zoomStartMs = Math.max(0, Math.min(dayLen - root.zoomLenMs, rel - root.zoomLenMs / 2))
+    }
+  }
+  // Крок вікном на півдовжини (кнопки ‹ ›)
+  function panWindow(d) {
+    var dayLen = 86400000
+    root.zoomStartMs = Math.max(0, Math.min(dayLen - root.zoomLenMs, root.zoomStartMs + d * root.zoomLenMs / 2))
   }
 
   // Сесія під позицією курсору на треку: шукаємо в ДАНИХ, а не ховеримо
@@ -76,7 +103,7 @@ AnimatedPopup {
   function hoverAt(x) {
     var frac = Math.max(0, Math.min(1, x / timelineTrack.width))
     var base = ST.dayStartMs(root.dateStr)
-    var t = root.zoomHour < 0 ? base + frac * 86400000 : base + root.zoomHour * 3600000 + frac * 3600000
+    var t = base + root.zoomStartMs + frac * root.zoomLenMs
     var best = null
     var count = 0
     for (var i = 0; i < root.sessionsModel.length; i++) {
@@ -100,12 +127,22 @@ AnimatedPopup {
     if (count > 1) txt += "  (+" + (count - 1) + " overlapping)"
     root.hoverInfo = txt
   }
-  // Підписи шкали: доба або чверті розгорнутої години
+  // Підписи шкали: рівномірно 5 міток по вікні, з секундами на глибині ≤5 хв
   function tickLabels() {
-    if (root.zoomHour < 0) return ["00", "06", "12", "18", "24"]
-    var h1 = String(root.zoomHour).padStart(2, "0")
-    var h2 = String((root.zoomHour + 1) % 24).padStart(2, "0")
-    return [h1 + ":00", h1 + ":15", h1 + ":30", h1 + ":45", h2 + ":00"]
+    if (root.zoomLenMs >= 86400000) return ["00", "06", "12", "18", "24"]
+    var base = ST.dayStartMs(root.dateStr)
+    var showSec = root.zoomLenMs <= 300000
+    var labels = []
+    for (var i = 0; i <= 4; i++) {
+      var t = base + root.zoomStartMs + root.zoomLenMs * i / 4
+      labels.push(showSec ? ST.formatClockS(t) : ST.formatClock(t))
+    }
+    return labels
+  }
+  // Діапазон вікна для підпису (14:05–14:35)
+  function zoomRangeText() {
+    var base = ST.dayStartMs(root.dateStr)
+    return ST.formatClock(base + root.zoomStartMs) + "–" + ST.formatClock(base + root.zoomStartMs + root.zoomLenMs)
   }
 
   // Палітра смуги таймлайну та барів (імена полів window.palette)
@@ -322,21 +359,19 @@ AnimatedPopup {
           color: window.palette.bg1
         }
 
-        // Клік по порожньому місцю в огляді доби — розгорнути годину
+        // Клік по порожньому місцю треку (сегменти мають свої кліки вище)
         MouseArea {
           anchors.fill: parent
           cursorShape: Qt.PointingHandCursor
-          onClicked: (mouse) => {
-            if (root.zoomHour < 0) root.zoomToHour(Math.floor(mouse.x / timelineTrack.width * 24))
-          }
+          onClicked: (mouse) => root.stripClickAt(mouse.x / timelineTrack.width)
         }
 
         Repeater {
           model: root.sessionsModel
           delegate: Rectangle {
             required property var modelData
-            readonly property real winStart: ST.dayStartMs(root.dateStr) + (root.zoomHour < 0 ? 0 : root.zoomHour * 3600000)
-            readonly property real winLen: root.zoomHour < 0 ? 86400000 : 3600000
+            readonly property real winStart: ST.dayStartMs(root.dateStr) + root.zoomStartMs
+            readonly property real winLen: root.zoomLenMs
             readonly property real frac0: Math.max(0, Math.min(1, (modelData.start_ms - winStart) / winLen))
             readonly property real frac1: Math.max(0, Math.min(1, (modelData.end_ms - winStart) / winLen))
             x: frac0 * timelineTrack.width
@@ -349,23 +384,22 @@ AnimatedPopup {
             color: modelData.idle ? window.palette.bg2 : root.appColor(modelData.app)
             opacity: 0.85
 
-            // Тільки клік (зум); ховер — єдиний на весь трек нижче,
+            // Тільки клік; ховер — єдиний на весь трек нижче,
             // інакше перекриті сусідами 2px-сегменти ніколи не ховеряться
             MouseArea {
               anchors.fill: parent
               hoverEnabled: false
               cursorShape: Qt.PointingHandCursor
-              // Клік по сегменту в огляді доби — розгорнути його годину
-              onClicked: {
-                if (root.zoomHour < 0) root.zoomToHour(root.hourOf(modelData.start_ms))
-              }
+              // mouse.x тут відносно сегмента — додаємо його x для координати треку
+              onClicked: (mouse) => root.stripClickAt((parent.x + mouse.x) / timelineTrack.width)
             }
           }
         }
 
         // Єдиний ховер треку (поверх сегментів): кліки провалюються
         // вниз через NoButton (той самий прийом що autoHideWatch в Bar),
-        // а позицію рахуємо в даних — видно навіть перекриті сегменти
+        // а позицію рахуємо в даних — видно навіть перекриті сегменти.
+        // Колесо тут же — динамічний зум відносно курсора
         MouseArea {
           id: trackHoverMa
           anchors.fill: parent
@@ -374,6 +408,10 @@ AnimatedPopup {
           onEntered: root.hoverAt(mouseX)
           onPositionChanged: root.hoverAt(mouseX)
           onExited: root.hoverInfo = ""
+          onWheel: (wheel) => {
+            if (wheel.angleDelta.y === 0) return
+            root.wheelZoom(wheel.x / timelineTrack.width, wheel.angleDelta.y > 0)
+          }
         }
       }
 
@@ -404,7 +442,7 @@ AnimatedPopup {
         Text {
           Layout.fillWidth: true
           text: root.hoverInfo !== "" ? root.hoverInfo
-            : (root.zoomHour < 0 ? "Hover the strip for details • Click to zoom an hour" : "Zoomed hour — click ‹ › to move")
+            : (root.zoomed ? "Wheel to zoom • Click to center • ‹ › to move" : "Hover for details • Wheel to zoom • Click for an hour")
           color: root.hoverInfo !== "" ? window.palette.fg : window.palette.muted
           font.family: window.palette.font
           font.pixelSize: appConfig.scaled(10)
@@ -412,9 +450,19 @@ AnimatedPopup {
           opacity: 0.9
         }
 
-        // Крок на годину назад (тільки в зумі)
+        // Діапазон вікна (тільки в зумі)
+        Text {
+          visible: root.zoomed
+          text: root.zoomRangeText()
+          color: window.palette.green
+          font.family: window.palette.font
+          font.pixelSize: appConfig.scaled(10)
+          font.bold: true
+        }
+
+        // Зсув вікном назад (тільки в зумі)
         Rectangle {
-          visible: root.zoomHour >= 0
+          visible: root.zoomed
           implicitWidth: 22
           implicitHeight: 20
           radius: 5
@@ -432,13 +480,13 @@ AnimatedPopup {
             anchors.fill: parent
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
-            onClicked: root.stepZoom(-1)
+            onClicked: root.panWindow(-1)
           }
         }
 
-        // Крок на годину вперед (тільки в зумі)
+        // Зсув вікном вперед (тільки в зумі)
         Rectangle {
-          visible: root.zoomHour >= 0
+          visible: root.zoomed
           implicitWidth: 22
           implicitHeight: 20
           radius: 5
@@ -456,13 +504,13 @@ AnimatedPopup {
             anchors.fill: parent
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
-            onClicked: root.stepZoom(1)
+            onClicked: root.panWindow(1)
           }
         }
 
         // Повернутись до огляду доби (тільки в зумі)
         Rectangle {
-          visible: root.zoomHour >= 0
+          visible: root.zoomed
           implicitWidth: 34
           implicitHeight: 20
           radius: 5

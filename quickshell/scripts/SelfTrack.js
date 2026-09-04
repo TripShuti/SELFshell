@@ -33,6 +33,12 @@ function formatClock(ms) {
   return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0")
 }
 
+// Час доби з секундами (10:24:31) — для глибокого зуму таймлайну
+function formatClockS(ms) {
+  var d = new Date(ms)
+  return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0") + ":" + String(d.getSeconds()).padStart(2, "0")
+}
+
 // Початок локальної доби для дати YYYY-MM-DD (epoch ms)
 function dayStartMs(dateStr) {
   var p = String(dateStr).split("-")
