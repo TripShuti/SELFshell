@@ -24,6 +24,20 @@ Item {
   property var pagesModel: []
   property string pageApp: ""
   property bool loading: false
+  // Старт видимого оновлення — щоб спінер встиг обернутись хоча б раз,
+  // гасіння loading затримуємо до мінімальних 700мс (export локальний
+  // і проходить за ~50мс, інакше видно лише смикання)
+  property real _refreshStartMs: 0
+
+  function _finishLoading() {
+    var wait = 700 - (Date.now() - root._refreshStartMs)
+    if (wait > 0) {
+      loadingMinTimer.interval = wait
+      loadingMinTimer.restart()
+    } else {
+      root.loading = false
+    }
+  }
   property string errorText: ""
 
   // Активний час СЬОГОДНІ — незалежний від вибраної в попапі дати,
@@ -65,6 +79,8 @@ Item {
     if (fetchProc.running) return
     root.loading = true
     root.errorText = ""
+    root._refreshStartMs = Date.now()
+    loadingMinTimer.stop()
     fetchProc._todayOnly = false
     fetchProc.command = ["selftrack", "export", "--date", root.dateStr]
     fetchProc.running = true
@@ -139,6 +155,13 @@ Item {
     }
   }
 
+  // Дотягує спінер до мінімальних 700мс (див. _finishLoading)
+  Timer {
+    id: loadingMinTimer
+    repeat: false
+    onTriggered: root.loading = false
+  }
+
   Process {
     id: fetchProc
     property bool _todayOnly: false
@@ -164,13 +187,19 @@ Item {
             if (!todayOnly) root.errorText = "Parse error"
           }
         }
-        root.loading = false
+        // Тихе фонове оновлення гасне одразу, видиме — через мінімальний спін
+        if (todayOnly) root.loading = false
+        else root._finishLoading()
       }
     }
     onExited: (code) => {
       running = false
-      root.loading = false
-      if (code !== 0 && !fetchProc._todayOnly && root.errorText === "") root.errorText = "selftrack failed (" + code + ")"
+      if (fetchProc._todayOnly) {
+        root.loading = false
+      } else {
+        if (code !== 0 && root.errorText === "") root.errorText = "selftrack failed (" + code + ")"
+        if (root.loading) root._finishLoading()
+      }
     }
   }
 
