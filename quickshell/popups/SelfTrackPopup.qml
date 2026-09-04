@@ -63,11 +63,7 @@ AnimatedPopup {
   function zoomReset() {
     root.zoomStartMs = 0
     root.zoomLenMs = 86400000
-  }
-  function zoomOut() {
-    root.zoomReset()
-  }
-  // Колесо: вгору — ближче (мінімум 1 хв), вниз — далі (максимум доба), якір — курсор
+  }  // Колесо: вгору — ближче (мінімум 1 хв), вниз — далі (максимум доба), якір — курсор
   function wheelZoom(frac, up) {
     var dayLen = 86400000
     var minLen = 60000
@@ -91,12 +87,6 @@ AnimatedPopup {
       root.zoomStartMs = Math.max(0, Math.min(dayLen - root.zoomLenMs, rel - root.zoomLenMs / 2))
     }
   }
-  // Крок вікном на півдовжини (кнопки ‹ ›)
-  function panWindow(d) {
-    var dayLen = 86400000
-    root.zoomStartMs = Math.max(0, Math.min(dayLen - root.zoomLenMs, root.zoomStartMs + d * root.zoomLenMs / 2))
-  }
-
   // Сесія під позицією курсору на треку: шукаємо в ДАНИХ, а не ховеримо
   // прямокутники — 2px-сегменти під сусідами інакше ніколи не ховеряться.
   // З кількох перекритих беремо найкоротшу (найточнішу), при рівності — пізнішу
@@ -359,13 +349,6 @@ AnimatedPopup {
           color: window.palette.bg1
         }
 
-        // Клік по порожньому місцю треку (сегменти мають свої кліки вище)
-        MouseArea {
-          anchors.fill: parent
-          cursorShape: Qt.PointingHandCursor
-          onClicked: (mouse) => root.stripClickAt(mouse.x / timelineTrack.width)
-        }
-
         Repeater {
           model: root.sessionsModel
           delegate: Rectangle {
@@ -383,30 +366,38 @@ AnimatedPopup {
             radius: 2
             color: modelData.idle ? window.palette.bg2 : root.appColor(modelData.app)
             opacity: 0.85
-
-            // Тільки клік; ховер — єдиний на весь трек нижче,
-            // інакше перекриті сусідами 2px-сегменти ніколи не ховеряться
-            MouseArea {
-              anchors.fill: parent
-              hoverEnabled: false
-              cursorShape: Qt.PointingHandCursor
-              // mouse.x тут відносно сегмента — додаємо його x для координати треку
-              onClicked: (mouse) => root.stripClickAt((parent.x + mouse.x) / timelineTrack.width)
-            }
           }
         }
 
-        // Єдиний ховер треку (поверх сегментів): кліки провалюються
-        // вниз через NoButton (той самий прийом що autoHideWatch в Bar),
-        // а позицію рахуємо в даних — видно навіть перекриті сегменти.
-        // Колесо тут же — динамічний зум відносно курсора
+        // Єдиний хендлер треку: ховер (позиційний, видно навіть перекриті
+        // сегменти), колесо (зум відносно курсора) і drag-to-pan.
+        // Клік без руху — стрибок у годину / центрування (stripClickAt)
         MouseArea {
           id: trackHoverMa
           anchors.fill: parent
           hoverEnabled: true
-          acceptedButtons: Qt.NoButton
+          cursorShape: pressed ? Qt.ClosedHandCursor : Qt.PointingHandCursor
+          property real _pressX: 0
+          property real _pressStartMs: 0
+          property bool _dragging: false
           onEntered: root.hoverAt(mouseX)
-          onPositionChanged: root.hoverAt(mouseX)
+          onPositionChanged: (mouse) => {
+            root.hoverAt(mouseX)
+            if (pressed && Math.abs(mouse.x - _pressX) > 4) _dragging = true
+            if (_dragging) {
+              var dayLen = 86400000
+              root.zoomStartMs = Math.max(0, Math.min(dayLen - root.zoomLenMs, _pressStartMs - (mouse.x - _pressX) / timelineTrack.width * root.zoomLenMs))
+            }
+          }
+          onPressed: (mouse) => {
+            _pressX = mouse.x
+            _pressStartMs = root.zoomStartMs
+            _dragging = false
+          }
+          onReleased: (mouse) => {
+            if (!_dragging) root.stripClickAt(mouse.x / timelineTrack.width)
+            _dragging = false
+          }
           onExited: root.hoverInfo = ""
           onWheel: (wheel) => {
             if (wheel.angleDelta.y === 0) return
@@ -434,7 +425,7 @@ AnimatedPopup {
         }
       }
 
-      // Рядок ховера сегмента + керування зумом
+      // Рядок ховера + діапазон вікна (керування — drag/wheel/click по смузі)
       RowLayout {
         Layout.fillWidth: true
         spacing: 4
@@ -442,7 +433,7 @@ AnimatedPopup {
         Text {
           Layout.fillWidth: true
           text: root.hoverInfo !== "" ? root.hoverInfo
-            : (root.zoomed ? "Wheel to zoom • Click to center • ‹ › to move" : "Hover for details • Wheel to zoom • Click for an hour")
+            : (root.zoomed ? "Drag to move • Wheel to zoom • Click to center" : "Hover for details • Wheel to zoom • Drag to move")
           color: root.hoverInfo !== "" ? window.palette.fg : window.palette.muted
           font.family: window.palette.font
           font.pixelSize: appConfig.scaled(10)
@@ -458,78 +449,6 @@ AnimatedPopup {
           font.family: window.palette.font
           font.pixelSize: appConfig.scaled(10)
           font.bold: true
-        }
-
-        // Зсув вікном назад (тільки в зумі)
-        Rectangle {
-          visible: root.zoomed
-          implicitWidth: 22
-          implicitHeight: 20
-          radius: 5
-          color: zoomPrevMa.containsMouse ? window.palette.bg2 : window.palette.bg1
-          Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
-          Text {
-            anchors.centerIn: parent
-            text: "‹"
-            color: window.palette.fg
-            font.family: window.palette.font
-            font.pixelSize: appConfig.scaled(14)
-          }
-          MouseArea {
-            id: zoomPrevMa
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: root.panWindow(-1)
-          }
-        }
-
-        // Зсув вікном вперед (тільки в зумі)
-        Rectangle {
-          visible: root.zoomed
-          implicitWidth: 22
-          implicitHeight: 20
-          radius: 5
-          color: zoomNextMa.containsMouse ? window.palette.bg2 : window.palette.bg1
-          Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
-          Text {
-            anchors.centerIn: parent
-            text: "›"
-            color: window.palette.fg
-            font.family: window.palette.font
-            font.pixelSize: appConfig.scaled(14)
-          }
-          MouseArea {
-            id: zoomNextMa
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: root.panWindow(1)
-          }
-        }
-
-        // Повернутись до огляду доби (тільки в зумі)
-        Rectangle {
-          visible: root.zoomed
-          implicitWidth: 34
-          implicitHeight: 20
-          radius: 5
-          color: zoomOutMa.containsMouse ? window.palette.bg2 : window.palette.bg1
-          Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
-          Text {
-            anchors.centerIn: parent
-            text: "24h"
-            color: window.palette.fg
-            font.family: window.palette.font
-            font.pixelSize: appConfig.scaled(10)
-          }
-          MouseArea {
-            id: zoomOutMa
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: root.zoomOut()
-          }
         }
       }
     }
