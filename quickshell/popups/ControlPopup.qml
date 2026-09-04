@@ -723,6 +723,8 @@ AnimatedPopup {
               required property var modelData
               width: parent.width
               spacing: 3
+              // Перевикористання делегата з новою моделлю — перерезолв іконки групи
+              onModelDataChanged: groupIconBox._resolveGroupIcon()
 
               // --- Шапка групи: іконка, назва, кількість, очистити групу ---
               RowLayout {
@@ -730,22 +732,27 @@ AnimatedPopup {
                 spacing: 6
 
                 Item {
+                  id: groupIconBox
                   Layout.preferredWidth: 16
                   Layout.preferredHeight: 16
-                  property string _res: {
+                  // Імперативний резолв: resolve() мутує кеш резолвера,
+                  // біндинг з викликом resolve() зациклюється
+                  property string _res: ""
+                  function _resolveGroupIcon() {
                     var r = iconResolver.resolve(modelData.icon)
-                    if (r !== "") return r
+                    if (r !== "") { _res = r; return }
                     // fallback на image першого сповіщення групи (коли appIcon порожній, а image — "telegram")
                     var first = modelData.notifs && modelData.notifs.length > 0 ? modelData.notifs[0] : null
                     if (first && first.image && String(first.image).startsWith("image://icon/")) {
                       var n = String(first.image).substring("image://icon/".length)
                       if (!n.startsWith("/")) {
                         var rr = iconResolver.resolve(n)
-                        if (rr !== "") return rr
+                        if (rr !== "") { _res = rr; return }
                       }
                     }
-                    return r
+                    _res = r
                   }
+                  Component.onCompleted: _resolveGroupIcon()
                   Image {
                     id: grpIconImg
                     anchors.fill: parent
@@ -814,6 +821,11 @@ AnimatedPopup {
                   required property var modelData
                   readonly property var notif: modelData
                   property bool hovered: false
+                  // Перевикористання делегата з новою моделлю — перерезолв іконок
+                  onModelDataChanged: {
+                    rowIconBox._resolveRowIcon()
+                    notifImgBox._resolveNotifImg()
+                  }
 
                   width: notifColumn.width
                   height: notifRow.implicitHeight + 10
@@ -865,20 +877,25 @@ AnimatedPopup {
 
                       // Іконка додатка — файл або тема, з fallback на image (коли appIcon порожній, а image — "telegram")
                       Item {
+                        id: rowIconBox
                         Layout.preferredWidth: 18
                         Layout.preferredHeight: 18
-                        property string _res2: {
+                        // Імперативний резолв: resolve() мутує кеш резолвера,
+                        // біндинг з викликом resolve() зациклюється
+                        property string _res2: ""
+                        function _resolveRowIcon() {
                           var r = iconResolver.resolve(notif.appIcon)
-                          if (r !== "") return r
+                          if (r !== "") { _res2 = r; return }
                           // fallback: якщо appIcon порожній, а image — "image://icon/telegram", спробуємо резолвити image
                           if (notif.image && String(notif.image).startsWith("image://icon/")) {
                             var n = String(notif.image).substring("image://icon/".length)
-                            if (n.startsWith("/")) return "" // файл — large image вже покаже його
+                            if (n.startsWith("/")) { _res2 = ""; return } // файл — large image вже покаже його
                             var rr = iconResolver.resolve(n)
-                            if (rr !== "") return rr
+                            if (rr !== "") { _res2 = rr; return }
                           }
-                          return r
+                          _res2 = r
                         }
+                        Component.onCompleted: _resolveRowIcon()
                         Image {
                           id: rowIconImg
                           anchors.fill: parent
@@ -932,21 +949,30 @@ AnimatedPopup {
                       // Картинка сповіщення — показуємо тільки якщо це валідний файл або існуюча іконка теми
                       // image://icon/telegram з missing іконкою дає checker як Ready, тому перевіряємо через _resolvedIcon
                       Item {
-                        property string _imgResolved: {
-                          if (!notif.image) return ""
+                        id: notifImgBox
+                        // Імперативний резолв: resolve() мутує кеш резолвера,
+                        // біндинг з викликом resolve() зациклюється
+                        property string _imgResolved: ""
+                        function _resolveNotifImg() {
+                          if (!notif.image) { _imgResolved = ""; return }
                           var src = String(notif.image)
                           // quickshell дає image як "image://icon/<name>" або "file://..." або "/path"
                           if (src.startsWith("image://icon/")) {
                             var name = src.substring("image://icon/".length)
-                            if (name === "") return ""
+                            if (name === "") { _imgResolved = ""; return }
                             // якщо це шлях до файлу (починається з /), повертаємо file://
-                            if (name.startsWith("/")) return "file://" + name
-                            return iconResolver.resolve(name)
+                            if (name.startsWith("/")) { _imgResolved = "file://" + name; return }
+                            _imgResolved = iconResolver.resolve(name)
+                            return
                           }
-                          if (src.startsWith("/") || src.startsWith("file://")) return src.startsWith("file://") ? src : "file://" + src
+                          if (src.startsWith("/") || src.startsWith("file://")) {
+                            _imgResolved = src.startsWith("file://") ? src : "file://" + src
+                            return
+                          }
                           // звичайний шлях або іконка
-                          return iconResolver.resolve(src)
+                          _imgResolved = iconResolver.resolve(src)
                         }
+                        Component.onCompleted: _resolveNotifImg()
                         visible: _imgResolved !== ""
                         Layout.preferredWidth: 56
                         Layout.preferredHeight: 56

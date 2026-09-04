@@ -77,18 +77,26 @@ Item {
         Item {
           Layout.preferredWidth: 22
           Layout.preferredHeight: 22
-          property string _res: {
+          // Імперативний резолв: resolve() мутує кеш резолвера,
+          // біндинг з викликом resolve() зациклюється
+          property string _iconName: {
             var icon = root.isPlayback
               ? (streamNode.properties["application.icon-name"] || streamNode.properties["application.name"] || "")
               : (streamNode.properties["application.icon-name"] || "")
-            if (icon !== "") {
-              var r = iconResolver.resolve(icon)
-              if (r !== "") return r
-              var r2 = iconResolver.resolve(icon.toLowerCase())
-              if (r2 !== "") return r2
-            }
-            return ""
+            return icon
           }
+          property string _res: ""
+          function _resolveStreamIcon() {
+            if (_iconName !== "") {
+              var r = iconResolver.resolve(_iconName)
+              if (r !== "") { _res = r; return }
+              var r2 = iconResolver.resolve(_iconName.toLowerCase())
+              if (r2 !== "") { _res = r2; return }
+            }
+            _res = ""
+          }
+          on_IconNameChanged: _resolveStreamIcon()
+          Component.onCompleted: _resolveStreamIcon()
           Image {
             anchors.fill: parent
             source: parent._res

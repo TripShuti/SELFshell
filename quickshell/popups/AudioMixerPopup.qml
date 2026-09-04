@@ -49,7 +49,6 @@ AnimatedPopup {
       root.recenter()
       root.refreshAll()
       pollTimer.running = true
-      Qt.callLater(() => layout.forceLayout())
     } else {
       pollTimer.running = false
     }

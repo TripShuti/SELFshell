@@ -53,7 +53,9 @@ Item {
       readonly property string playerName: (modelData.identity ?? modelData.dbusName ?? "").toLowerCase()
 
       Component.onCompleted: root.findAndSetPlayer()
-      Component.onDestruction: Qt.callLater(function() { if (root) root.findAndSetPlayer() })
+      // onDestruction з Qt.callLater тут був зайвим: QML-скоуп всередині
+      // замикання губиться (ReferenceError в логах), а переобрання плеєра
+      // і так робить 2-секундний поллер нижче
     }
   }
 

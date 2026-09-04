@@ -31,12 +31,14 @@ Rectangle {
     RowLayout {
       Layout.fillWidth: true
       spacing: 6
-      Item {
-        Layout.preferredWidth: 22; Layout.preferredHeight: 22
-        property string _res: {
-          var n = cardData.properties ? cardData.properties["device.icon_name"] : "audio-card-analog-pci"
-          return iconResolver.resolve(n)
-        }
+        Item {
+          Layout.preferredWidth: 22; Layout.preferredHeight: 22
+          // Імперативний резолв: resolve() мутує кеш резолвера,
+          // біндинг з викликом resolve() зациклюється
+          property string _iconName: cardData.properties ? cardData.properties["device.icon_name"] : "audio-card-analog-pci"
+          property string _res: ""
+          on_IconNameChanged: _res = iconResolver.resolve(_iconName)
+          Component.onCompleted: _res = iconResolver.resolve(_iconName)
         Image {
           anchors.fill: parent
           source: parent._res

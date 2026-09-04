@@ -39,7 +39,9 @@ function sinkNameForStream(streamNode, sinkInputsInfo, sinkPortMap, pipewireValu
         for (var j = 0; j < pipewireValues.length; j++) {
           var n = pipewireValues[j]
           if (n.properties["object.serial"] && String(n.properties["object.serial"]) === String(sinkIdx)) return n.name
-          if (n.type === PwNodeType.AudioSink && n.properties["object.id"] && String(n.properties["object.id"]) === String(sinkIdx)) return n.name
+          // Енум PwNodeType недоступний з .js-імпорту (ReferenceError),
+          // той самий сенс дає bool-властивість isSink — так читає і QML-сторона
+          if (n.isSink && n.properties["object.id"] && String(n.properties["object.id"]) === String(sinkIdx)) return n.name
         }
       }
       return ""

@@ -45,11 +45,12 @@ Item {
 
         Item {
           Layout.preferredWidth: 22; Layout.preferredHeight: 22
-          property string _res: {
-            var n = deviceNode.properties["device.icon_name"] || (root.isSink ? "audio-card-analog" : "audio-input-microphone")
-            var r = iconResolver.resolve(n)
-            return r
-          }
+          // Імперативний резолв: resolve() мутує кеш резолвера,
+          // біндинг з викликом resolve() зациклюється
+          property string _iconName: deviceNode.properties["device.icon_name"] || (root.isSink ? "audio-card-analog" : "audio-input-microphone")
+          property string _res: ""
+          on_IconNameChanged: _res = iconResolver.resolve(_iconName)
+          Component.onCompleted: _res = iconResolver.resolve(_iconName)
           Image {
             anchors.fill: parent
             source: parent._res

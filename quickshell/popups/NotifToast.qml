@@ -25,8 +25,17 @@ PopupWindow {
 
   IconResolver { id: iconResolver }
 
-  readonly property string resolvedIcon: iconResolver.resolve(root.toastAppIcon)
-  readonly property string resolvedImage: iconResolver.resolve(root.toastImage)
+  // Імперативний резолв: resolve() мутує кеш резолвера,
+  // біндинг з викликом resolve() зациклюється
+  property string resolvedIcon: ""
+  property string resolvedImage: ""
+  function _resolveIcons() {
+    resolvedIcon = iconResolver.resolve(root.toastAppIcon)
+    resolvedImage = iconResolver.resolve(root.toastImage)
+  }
+  Component.onCompleted: _resolveIcons()
+  onToastAppIconChanged: _resolveIcons()
+  onToastImageChanged: _resolveIcons()
 
   // Є дії, окрім default (default — на клік по тосту)
   readonly property bool hasActions: {
