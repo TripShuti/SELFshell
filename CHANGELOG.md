@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **SelfTrack time-tracking widget** — bar widget + centered popup for the external `selftrack` time tracker (`selftrack export --date/--app` JSON): `monitors/SelfTrackMonitor.qml` (60s poll, lazy page loading, widget counter decoupled from popup date) → `widgets/SelfTrackWidget.qml` (today active time, `selftrackEnabled`, `centerOrder`) → `popups/SelfTrackPopup.qml` (day navigation, day/idle/week/month summary, 00–24 timeline strip with hover details, app list with bars, expandable pages, content-sized height, resets to today on close) + `scripts/SelfTrack.js` (duration formatting, app colors, title cleanup). `Bar.qml` `selftrackComp`/`SelfTrackPopup`/`IpcHandler selftrack toggle` (`qs ipc call selftrack toggle`), `core/AppConfig.qml` `selftrackEnabled`, `popups/settings/BarSection.qml` display name. Icons via shared `IconResolver` (letter fallback, no `image://icon` checker).
 - **IconResolver cache** — `core/IconResolver.qml:8` `property var _cache` + `_resolveUncached` + LRU trim 200→100, `clearCache()`; 6× `Quickshell.iconPath` per `resolve()` тепер кешується для `Repeater` трею/лаунчера.
 
 ### Changed
@@ -20,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **IconResolver binding loops** — `resolve()` reads and writes `_cache`, so QML bindings calling it re-trigger themselves (`Binding loop detected` spam). Converted to imperative resolution (pure name binding + resolve on change/completed): `popups/audio/ConfigCard.qml`, `DeviceCard.qml`, `StreamCard.qml` (`_res`), `popups/NotifToast.qml` (`resolvedIcon`/`resolvedImage`), `popups/ControlPopup.qml` (`_res`/`_res2`/`_imgResolved`).
+- **Dead QML calls** — `popups/AudioMixerPopup.qml` `Qt.callLater(() => layout.forceLayout())` (`forceLayout` does not exist on `ColumnLayout`, threw on every open); `widgets/MprisWidget.qml` `Component.onDestruction: Qt.callLater(function() { if (root) ... })` (`root` out of scope inside the closure, player re-election already covered by the 2s poller).
+- **AudioMixerUtils enum scope** — `scripts/AudioMixerUtils.js` used QML enum `PwNodeType` invisible to `.js` imports (`ReferenceError` in `sinkNameForStream` fallback); replaced with the `isSink` bool the QML side already reads on the same objects.
 - **Security: AudioEq shell injection** — `core/AudioEq.qml:108,322,347,418,360,522` `_shellQuote()` (`'`→`'\''`) для `_savedSink`/`sinkName` у `disable()`/`_getDefaultSinkProc`/`_restore`/`_moveInputsOnProc`/`_relinkProc` (`pactl`/`pw-link`); константа `SELFshell_EQ` теж екранована; `grep` на імена сінків через `grep -F`.
 - **Security: TrackListService injection** — `services/TrackListService.qml:112,190` `sh -c "dbus-monitor ... | grep"` → `["dbus-monitor","--session","type=signal,sender="+bus]` + фільтр `TrackListReplaced/Added/Removed` в `SplitParser onRead`; `bus` з `playerName` більше не парситься шеллом.
 - **IdleManager mediaPlaying** — `core/IdleManager.qml:50` цикл по `playerRepeater.count` не трекав `isPlaying` → ` _playingCount` + `onPlayingChanged/Completed/Destruction → _recalcPlaying()`, `mediaPlaying = _playingCount>0`; екран не лочиться під час відтворення.

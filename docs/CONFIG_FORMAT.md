@@ -14,6 +14,7 @@ Edited through SettingsPopup (UI) or manually.
 | `mprisEnabled` | `boolean` | `true` | MPRIS player |
 | `clockEnabled` | `boolean` | `true` | Clock |
 | `timerEnabled` | `boolean` | `true` | Timer |
+| `selftrackEnabled` | `boolean` | `true` | Time tracking widget (requires `selftrack` daemon) |
 | `genshinEnabled` | `boolean` | `true` | Genshin widget |
 | `keyboardEnabled` | `boolean` | `true` | Keyboard layout |
 | `audioEnabled` | `boolean` | `true` | Audio |

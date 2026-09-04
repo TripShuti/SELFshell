@@ -36,6 +36,7 @@ Item {
       property bool mprisEnabled: true
       property bool clockEnabled: true
       property bool timerEnabled: true
+      property bool selftrackEnabled: true
       property bool genshinEnabled: true
       property bool keyboardEnabled: true
       property bool audioEnabled: true
@@ -160,7 +161,7 @@ Item {
   // Settings-попапом для стабільного порядку рядків (не залежить від
   // того, в якій пігулці зараз лежить віджет).
   readonly property var allWidgetNames: [
-    "launcher", "workspaces", "mpris", "clock", "timer",
+    "launcher", "workspaces", "mpris", "clock", "timer", "selftrack",
     "genshin", "keyboard", "audio", "battery", "control", "clipboard", "bt", "net", "tray", "kcd"
   ]
 
@@ -253,7 +254,7 @@ Item {
   // того, що зараз у файлі.
   readonly property var defaultCfg: ({
     launcherEnabled: true, workspacesEnabled: true, mprisEnabled: true,
-    clockEnabled: true, timerEnabled: true, genshinEnabled: true,
+    clockEnabled: true, timerEnabled: true, selftrackEnabled: true, genshinEnabled: true,
     keyboardEnabled: true, audioEnabled: true, controlEnabled: true,
     clipboardEnabled: false, btEnabled: false, netEnabled: false,
     trayEnabled: true, batteryEnabled: false, kcdEnabled: false, kcdDndEnabled: false, dndEnabled: false,
@@ -275,7 +276,7 @@ Item {
     animationsEnabled: true, animSpeed: 1.0,
     themeMode: "matugen",
     leftOrder: ["launcher", "sep-2", "workspaces", "sep-7", "mpris"],
-    centerOrder: ["clock", "sep-5", "timer", "sep-6", "genshin", "battery"],
+    centerOrder: ["clock", "sep-5", "timer", "selftrack", "sep-6", "genshin", "battery"],
     rightOrder: ["tray", "sep-12", "net", "bt", "kcd", "keyboard", "sep-10", "audio", "sep-11", "control", "clipboard"]
   })
 

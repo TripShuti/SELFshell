@@ -14,7 +14,7 @@ selfshell/                       # git repo root (cloned into ~/.config)
   │   │                          #   AudioEq, VertSlider, ...)
    │   ├── widgets/               # bar widgets
    │   ├── popups/                # popup windows (incl. audio/ — AudioSlider/StreamCard/DeviceCard)
-   │   ├── monitors/              # 2 background monitors (Cava, Genshin)
+   │   ├── monitors/              # 3 background monitors (Cava, Genshin, SelfTrack)
    │   ├── services/              # systemd units and QML services (qs-bt-agent,
    │   │                          #   TrackListService, cava-vis.conf)
    │   ├── scripts/               # selfshell CLI, python/js scripts, .env + EqPresets.js + AudioMixerUtils.js
@@ -264,7 +264,7 @@ Rules of thumb applied throughout:
 
 ### 9.3. Monitors — background data collection
 
-Monitors (CavaMonitor, GenshinMonitor) are QML components that:
+Monitors (CavaMonitor, GenshinMonitor, SelfTrackMonitor) are QML components that:
 - run a background process (cava, python script)
 - constantly update properties (bars, resinText)
 - those properties are bound to widgets through bindings in Bar.qml

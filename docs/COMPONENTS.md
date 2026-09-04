@@ -115,6 +115,7 @@
 | `MprisWidget.qml` | Media player (current track) | Mpris, CavaMonitor |
 | `ClockWidget.qml` | Clock | CalendarPopup |
 | `TimerWidget.qml` | Timer | — |
+| `SelfTrackWidget.qml` | Time tracking (today active time) | SelfTrackMonitor |
 | `GenshinWidget.qml` | Genshin icon + resin | GenshinMonitor |
 | `KeyboardLayoutWidget.qml` | Keyboard layout indicator | — |
 | `AudioWidget.qml` | Volume | AudioMixerPopup, PipeWire |
@@ -134,6 +135,7 @@
 | `CalendarPopup.qml` | Calendar | `scripts/CalendarTasks.js` |
 | `MprisPopup.qml` | Media player (details + cava + EQ 15-band) | CavaMonitor, TrackListService, `EqPresets.js`, `AudioEq`, `VertSlider` |
 | `GenshinPopup.qml` | Genshin details, manual refresh, check-in | GenshinMonitor, `scripts/genshin_stats.py` |
+| `SelfTrackPopup.qml` | Time tracking (day nav, day/week/month summary, 00–24 timeline, apps with bars, expandable pages) | SelfTrackMonitor, `scripts/SelfTrack.js` |
 | `AudioMixerPopup.qml` | Audio mixer — pavucontrol-style 5 tabs (Playback/Recording/Output/Input/Configuration), stream/device volume + port/profile/fallback, single-pass `_filtered` + `ScriptModel` + `sinkNameMap` cache | PipeWire, `AudioMixerUtils.js` |
 | `popups/audio/AudioSlider.qml` | Unified volume row (mute + track + %/dB + lock, `PwNode` direct, `Item` anchors) | PipeWire, `AudioMixerUtils.js` |
 | `popups/audio/StreamCard.qml` | Stream card (icon + `AudioSlider` + device combo + destroy) | PipeWire, `AudioMixerUtils.js` |
@@ -172,6 +174,7 @@
 |------|--------------|---------|
 | `CavaMonitor.qml` | Audio visualization (cava) | `cava -p cava-vis.conf` |
 | `GenshinMonitor.qml` | HoYoLAB API polling, resin calculation | `python3 genshin_stats.py sync` |
+| `SelfTrackMonitor.qml` | Time tracker polling (`export` JSON), widget counter, lazy pages | `selftrack export --date/--app` |
 
 ### Scripts (`scripts/`)
 
@@ -184,6 +187,7 @@
 | `update-palette.sh` | Bash | Wrapper: matugen + update-palette.py + palette IPC update |
 | `update-wallpaper-only.sh` | Bash | Wallpaper-only switch without palette regen (Black theme) |
 | `AudioMixerUtils.js` | JS | Audio mixer pure helpers (`formatPercent/Db`, `sinkNameForStream` `O(1)` cache) |
+| `SelfTrack.js` | JS | Time tracker formatting (durations, app colors, title cleanup, `todayStr`) |
 | `CalendarTasks.js` | JS | Calendar task save/load |
 | `ControlState.js` | JS | Control center state |
 | `LauncherUsage.js` | JS | Application launch frequency |

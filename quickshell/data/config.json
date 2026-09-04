@@ -17,6 +17,7 @@
     "clock",
     "sep-5",
     "timer",
+    "selftrack",
     "sep-6",
     "genshin",
     "battery"
@@ -71,6 +72,7 @@
   "rightPillEnabled": true,
   "separatorGlowOpacity": 0.1,
   "separatorOpacity": 0.65,
+  "selftrackEnabled": true,
   "timerEnabled": true,
   "timerSoundPath": "",
   "themeMode": "matugen",

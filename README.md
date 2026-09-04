@@ -12,9 +12,10 @@ no separate lock/idle daemons.
 ## Features
 
 **Shell & Bar**
-- 14 built-in widgets across three configurable pill sections (left / center / right)
+- 15 built-in widgets across three configurable pill sections (left / center / right)
 - Drag-and-drop widget reordering via a built-in Settings popup
 - System Tray, MPRIS player with cava visualizer, Battery, Bluetooth, Network
+- Time tracking (optional, requires [`selftrack`](https://github.com/TripShuti/SELFtrack) daemon): today's active time in the bar, centered popup with day/week/month summary, 00–24 timeline strip and per-app page breakdown (`qs ipc call selftrack toggle`)
 - Settings popup: keybind rebinding and Hyprland window options (gaps,
   opacity, rounding, borders, dwindle/master layout) — applied live, no
   config file editing required
@@ -195,7 +196,7 @@ kitty/       - terminal config
 quickshell/  - QML panels, core, popups, widgets, monitors, scripts, data, assets, services
              - core/ — shell infrastructure (AppConfig, IdleManager, LockScreen, etc.)
              - monitors/ — background data monitors (Cava, Genshin)
-             - widgets/ — panel widgets (15 total, incl. KdeConnectWidget)
+             - widgets/ — panel widgets (16 total, incl. KdeConnectWidget)
              - popups/ — popup windows (17 total, incl. KdeConnectPopup + settings sections) + audio/ subcomponents (AudioSlider/StreamCard/DeviceCard)
              - scripts/ — helper scripts (palette, Genshin, AudioMixerUtils, etc.)
              - data/ — persisted state (config.json, calendar-tasks, eq.json, etc.)

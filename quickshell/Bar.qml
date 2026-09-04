@@ -46,6 +46,7 @@ PanelWindow {
   readonly property Item launcherWidget: activeWidgets["launcher"] ?? null
   readonly property Item workspacesWidget: activeWidgets["workspaces"] ?? null
   readonly property Item clockWidget: activeWidgets["clock"] ?? null
+  readonly property Item selftrackWidget: activeWidgets["selftrack"] ?? null
   readonly property Item mprisWidget: activeWidgets["mpris"] ?? null
   readonly property Item genshinWidget: activeWidgets["genshin"] ?? null
   readonly property Item keyboardWidget: activeWidgets["keyboard"] ?? null
@@ -110,7 +111,7 @@ PanelWindow {
   // Функція замість масиву: масив forward-id ловить null при ініціалізації QML,
   // тому централізація — через одну функцію _anyPopupOpen() (19 попапів/тостів)
   function _anyPopupOpen(): bool {
-    return calendarPopup.visible || audioPopup.visible || btPopup.visible || netPopup.visible || mprisPopup.visible || workspacesPopup.visible || keyboardPopup.visible || genshinPopup.visible || controlPopup.visible || clipboardPopup.visible || wallpaperPopup.visible || settingsPopup.visible || launcherPopup.visible || trayPopup.visible || pairingPopup.visible || kcdPopup.visible || kcdPairingPopup.visible || notifToast.visible || osdPopup.visible
+    return calendarPopup.visible || audioPopup.visible || btPopup.visible || netPopup.visible || mprisPopup.visible || workspacesPopup.visible || keyboardPopup.visible || genshinPopup.visible || selftrackPopup.visible || controlPopup.visible || clipboardPopup.visible || wallpaperPopup.visible || settingsPopup.visible || launcherPopup.visible || trayPopup.visible || pairingPopup.visible || kcdPopup.visible || kcdPairingPopup.visible || notifToast.visible || osdPopup.visible
   }
   readonly property bool anyPopupOpenState: _anyPopupOpen()
   function _updateAutoHide() {
@@ -167,6 +168,7 @@ PanelWindow {
   Component { id: mprisComp;      MprisWidget { window: root; anchors.fill: parent; cavBars: cavaMonitor.bars } }
   Component { id: clockComp;      ClockWidget { window: root } }
   Component { id: timerComp;      TimerWidget { window: root; anchors.fill: parent; appConfig: root.appConfig } }
+  Component { id: selftrackComp;  SelfTrackWidget { window: root; anchors.fill: parent; todayText: selftrackMonitor.todayText } }
   Component { id: genshinComp;    GenshinWidget { window: root; anchors.fill: parent; resinText: genshinMonitor.resinText; resinClass: genshinMonitor.resinClass } }
   Component { id: keyboardComp;   KeyboardLayoutWidget { window: root; anchors.fill: parent } }
   Component { id: audioComp;      AudioWidget { window: root; anchors.fill: parent } }
@@ -180,7 +182,7 @@ PanelWindow {
 
   readonly property var widgetComponents: ({
     launcher: launcherComp, workspaces: workspacesComp, mpris: mprisComp,
-    clock: clockComp, timer: timerComp, genshin: genshinComp,
+    clock: clockComp, timer: timerComp, selftrack: selftrackComp, genshin: genshinComp,
     keyboard: keyboardComp, audio: audioComp, battery: batteryComp, control: controlComp,
     clipboard: clipboardComp,
     bt: btComp, net: netComp, tray: trayComp, kcd: kcdComp
@@ -194,7 +196,7 @@ PanelWindow {
   function widgetNeedsFillHeight(name) {
     return name === "mpris" || name === "audio"
         || name === "launcher" || name === "control"
-        || name === "genshin" || name === "timer"
+        || name === "genshin" || name === "timer" || name === "selftrack"
     || name === "bt" || name === "net" || name === "tray"
     || name === "keyboard" || name === "battery"
     || name === "clipboard" || name === "kcd"
@@ -387,6 +389,11 @@ PanelWindow {
     appConfig: root.appConfig
   }
 
+  SelfTrackMonitor {
+    id: selftrackMonitor
+    appConfig: root.appConfig
+  }
+
   MprisPopup {
     id: mprisPopup
     window: root
@@ -421,6 +428,27 @@ PanelWindow {
     details: genshinMonitor.tooltip
     refreshStatus: genshinMonitor.refreshStatus
     refreshMessage: genshinMonitor.refreshMessage
+  }
+
+  // Трекер часу (selftrack) — центрований, дані з SelfTrackMonitor
+  SelfTrackPopup {
+    id: selftrackPopup
+    window: root
+    visible: false
+    iconResolver: iconResolver
+    dateStr: selftrackMonitor.dateStr
+    dayActiveMs: selftrackMonitor.dayActiveMs
+    dayIdleMs: selftrackMonitor.dayIdleMs
+    weekMs: selftrackMonitor.weekMs
+    weekLabel: selftrackMonitor.weekLabel
+    monthMs: selftrackMonitor.monthMs
+    monthLabel: selftrackMonitor.monthLabel
+    appsModel: selftrackMonitor.appsModel
+    sessionsModel: selftrackMonitor.sessionsModel
+    pagesModel: selftrackMonitor.pagesModel
+    pageApp: selftrackMonitor.pageApp
+    loading: selftrackMonitor.loading
+    errorText: selftrackMonitor.errorText
   }
 
   // Центр керування (сповіщення, швидкі дії)
@@ -688,6 +716,7 @@ PanelWindow {
   Connections { target: audioWidget; enabled: target !== null; function onClicked() { audioPopup.toggle() } }
   Connections { target: mprisWidget; enabled: target !== null; function onClicked() { mprisPopup.toggle() } }
   Connections { target: genshinWidget; enabled: target !== null; function onClicked() { genshinPopup.toggle() } }
+  Connections { target: selftrackWidget; enabled: target !== null; function onClicked() { selftrackPopup.toggle() } }
   Connections { target: controlWidget; enabled: target !== null; function onClicked() { controlPopup.toggle() } }
   Connections { target: btWidget; enabled: target !== null; function onClicked() { btPopup.toggle() } }
   Connections { target: netWidget; enabled: target !== null; function onClicked() { netPopup.toggle() } }
@@ -704,6 +733,21 @@ PanelWindow {
     }
   }
   Connections { target: genshinPopup;   function onRefreshRequested() { genshinMonitor.refreshNow() } }
+
+  // Трекер часу: сигнали попапу → методи монітора
+  Connections { target: selftrackPopup; function onPrevDay() { selftrackMonitor.shiftDate(-1) } }
+  Connections { target: selftrackPopup; function onNextDay() { selftrackMonitor.shiftDate(1) } }
+  Connections { target: selftrackPopup; function onGoToday() { selftrackMonitor.goToday() } }
+  Connections { target: selftrackPopup; function onRefreshRequested() { selftrackMonitor.refresh() } }
+  Connections { target: selftrackPopup; function onPagesRequested(app) { selftrackMonitor.refreshPages(app) } }
+
+  // IpcHandler для трекера часу (кейбінди з Hyprland)
+  IpcHandler {
+    target: "selftrack"
+    function toggle(): void {
+      selftrackPopup.toggle()
+    }
+  }
   Connections {
     target: trayWidget
     enabled: target !== null

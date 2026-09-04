@@ -19,6 +19,7 @@ Item {
     mpris: "Mpris Player",
     clock: "Clock",
     timer: "Timer",
+    selftrack: "Time Tracking",
     genshin: "Genshin Impact",
     keyboard: "Keyboard Layout",
     audio: "Audio",
