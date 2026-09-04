@@ -51,6 +51,32 @@ AnimatedPopup {
   // Інформація про сегмент під курсором (таймлайн)
   property string hoverInfo: ""
 
+  // Зум таймлайну: -1 огляд доби, 0–23 розгорнута година.
+  // Скидається при зміні дати
+  property int zoomHour: -1
+  onDateStrChanged: zoomHour = -1
+
+  function zoomToHour(h) {
+    root.zoomHour = Math.max(0, Math.min(23, h))
+  }
+  function zoomOut() {
+    root.zoomHour = -1
+  }
+  function stepZoom(d) {
+    if (root.zoomHour >= 0) root.zoomHour = (root.zoomHour + d + 24) % 24
+  }
+  // Година доби (0–23) для epoch-мс відносно вибраної дати
+  function hourOf(ms) {
+    return Math.max(0, Math.min(23, Math.floor((ms - ST.dayStartMs(root.dateStr)) / 3600000)))
+  }
+  // Підписи шкали: доба або чверті розгорнутої години
+  function tickLabels() {
+    if (root.zoomHour < 0) return ["00", "06", "12", "18", "24"]
+    var h1 = String(root.zoomHour).padStart(2, "0")
+    var h2 = String((root.zoomHour + 1) % 24).padStart(2, "0")
+    return [h1 + ":00", h1 + ":15", h1 + ":30", h1 + ":45", h2 + ":00"]
+  }
+
   // Палітра смуги таймлайну та барів (імена полів window.palette)
   readonly property var appColors: ["green", "blue", "yellow", "purple", "orange", "aqua"]
 
@@ -257,7 +283,7 @@ AnimatedPopup {
       Item {
         id: timelineTrack
         Layout.fillWidth: true
-        Layout.preferredHeight: 26
+        Layout.preferredHeight: 34
 
         Rectangle {
           anchors.fill: parent
@@ -265,13 +291,23 @@ AnimatedPopup {
           color: window.palette.bg1
         }
 
+        // Клік по порожньому місцю в огляді доби — розгорнути годину
+        MouseArea {
+          anchors.fill: parent
+          cursorShape: Qt.PointingHandCursor
+          onClicked: (mouse) => {
+            if (root.zoomHour < 0) root.zoomToHour(Math.floor(mouse.x / timelineTrack.width * 24))
+          }
+        }
+
         Repeater {
           model: root.sessionsModel
           delegate: Rectangle {
             required property var modelData
-            readonly property real dayStart: ST.dayStartMs(root.dateStr)
-            readonly property real frac0: Math.max(0, Math.min(1, (modelData.start_ms - dayStart) / 86400000))
-            readonly property real frac1: Math.max(0, Math.min(1, (modelData.end_ms - dayStart) / 86400000))
+            readonly property real winStart: ST.dayStartMs(root.dateStr) + (root.zoomHour < 0 ? 0 : root.zoomHour * 3600000)
+            readonly property real winLen: root.zoomHour < 0 ? 86400000 : 3600000
+            readonly property real frac0: Math.max(0, Math.min(1, (modelData.start_ms - winStart) / winLen))
+            readonly property real frac1: Math.max(0, Math.min(1, (modelData.end_ms - winStart) / winLen))
             x: frac0 * timelineTrack.width
             width: Math.max((frac1 - frac0) * timelineTrack.width, (frac1 > frac0) ? 2 : 0)
             anchors.top: parent.top
@@ -287,6 +323,7 @@ AnimatedPopup {
               id: segMa
               anchors.fill: parent
               hoverEnabled: true
+              cursorShape: Qt.PointingHandCursor
               onEntered: {
                 var t = ST.formatClock(modelData.start_ms) + "–" + ST.formatClock(modelData.end_ms) + "  "
                 if (modelData.idle) {
@@ -297,17 +334,21 @@ AnimatedPopup {
                 }
               }
               onExited: root.hoverInfo = ""
+              // Клік по сегменту в огляді доби — розгорнути його годину
+              onClicked: {
+                if (root.zoomHour < 0) root.zoomToHour(root.hourOf(modelData.start_ms))
+              }
             }
           }
         }
       }
 
-      // Підписи годин
+      // Підписи шкали (доба або чверті години в зумі)
       RowLayout {
         Layout.fillWidth: true
         spacing: 0
         Repeater {
-          model: ["00", "06", "12", "18", "24"]
+          model: root.tickLabels()
           delegate: Text {
             required property var modelData
             required property int index
@@ -321,15 +362,93 @@ AnimatedPopup {
         }
       }
 
-      // Рядок ховера сегмента або підказка
-      Text {
+      // Рядок ховера сегмента + керування зумом
+      RowLayout {
         Layout.fillWidth: true
-        text: root.hoverInfo !== "" ? root.hoverInfo : "Hover a segment for details"
-        color: root.hoverInfo !== "" ? window.palette.fg : window.palette.muted
-        font.family: window.palette.font
-        font.pixelSize: appConfig.scaled(10)
-        elide: Text.ElideRight
-        opacity: 0.9
+        spacing: 4
+
+        Text {
+          Layout.fillWidth: true
+          text: root.hoverInfo !== "" ? root.hoverInfo
+            : (root.zoomHour < 0 ? "Hover a segment for details • Click the strip to zoom an hour" : "Zoomed hour — click ‹ › to move")
+          color: root.hoverInfo !== "" ? window.palette.fg : window.palette.muted
+          font.family: window.palette.font
+          font.pixelSize: appConfig.scaled(10)
+          elide: Text.ElideRight
+          opacity: 0.9
+        }
+
+        // Крок на годину назад (тільки в зумі)
+        Rectangle {
+          visible: root.zoomHour >= 0
+          implicitWidth: 22
+          implicitHeight: 20
+          radius: 5
+          color: zoomPrevMa.containsMouse ? window.palette.bg2 : window.palette.bg1
+          Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
+          Text {
+            anchors.centerIn: parent
+            text: "‹"
+            color: window.palette.fg
+            font.family: window.palette.font
+            font.pixelSize: appConfig.scaled(14)
+          }
+          MouseArea {
+            id: zoomPrevMa
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: root.stepZoom(-1)
+          }
+        }
+
+        // Крок на годину вперед (тільки в зумі)
+        Rectangle {
+          visible: root.zoomHour >= 0
+          implicitWidth: 22
+          implicitHeight: 20
+          radius: 5
+          color: zoomNextMa.containsMouse ? window.palette.bg2 : window.palette.bg1
+          Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
+          Text {
+            anchors.centerIn: parent
+            text: "›"
+            color: window.palette.fg
+            font.family: window.palette.font
+            font.pixelSize: appConfig.scaled(14)
+          }
+          MouseArea {
+            id: zoomNextMa
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: root.stepZoom(1)
+          }
+        }
+
+        // Повернутись до огляду доби (тільки в зумі)
+        Rectangle {
+          visible: root.zoomHour >= 0
+          implicitWidth: 34
+          implicitHeight: 20
+          radius: 5
+          color: zoomOutMa.containsMouse ? window.palette.bg2 : window.palette.bg1
+          Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
+          Text {
+            anchors.centerIn: parent
+            text: "24h"
+            color: window.palette.fg
+            font.family: window.palette.font
+            font.pixelSize: appConfig.scaled(10)
+          }
+          MouseArea {
+            id: zoomOutMa
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: root.zoomOut()
+          }
+        }
       }
     }
 
