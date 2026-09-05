@@ -6,7 +6,9 @@ wallpaper-based theming, and a fully configurable top bar — no external bar,
 no separate lock/idle daemons.
 
 <p align="center">
-  <img src="docs/screenshots/overview.png" alt="SELFshell — settings, media player, launcher and control center" width="900">
+  <img src="docs/screenshots/overview.png" alt="SELFshell — Black static theme" width="440">
+  <img src="docs/screenshots/overview2.png" alt="SELFshell — Matugen dynamic theme" width="440"><br>
+  <em>Black static theme (left) and Matugen wallpaper-based theme (right) — settings, media player, launcher and control center</em>
 </p>
 
 ## Features
