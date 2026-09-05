@@ -124,9 +124,9 @@ Item {
     }
     root.dayActiveMs = obj.day ? obj.day.active_ms : 0
     root.dayIdleMs = obj.day ? obj.day.idle_ms : 0
-    root.weekMs = obj.week ? obj.week.pc_on_ms : 0
+    root.weekMs = obj.week ? obj.week.active_ms : 0
     root.weekLabel = obj.week ? (obj.week.from + " – " + obj.week.to) : ""
-    root.monthMs = obj.month ? obj.month.pc_on_ms : 0
+    root.monthMs = obj.month ? obj.month.active_ms : 0
     root.monthLabel = obj.month ? root.dateStr.substring(0, 7) : ""
     root.appsModel = obj.apps ? obj.apps : []
     root.sessionsModel = obj.sessions ? obj.sessions : []
