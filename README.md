@@ -184,7 +184,7 @@ array in the script for the complete list. Key packages:
 | `uwsm` | User session manager (session start from greetd / fallback autostart) |
 | `python-requests python-dotenv` | Genshin Impact widget (Hoyolab API) |
 | `kcd` ([kcd](https://github.com/bethropolis/kcd), AUR `kcd-bin`) | Phone — KDE Connect without KDE stack (optional, `systemctl --user enable --now kcd`, `sshfs` for SFTP, `zenity`/`kdialog` for Share) |
-| `selftrack` ([SELFtrack](https://github.com/TripShuti/SELFtrack), cargo) | Time tracking widget (optional, `systemctl --user enable --now selftrack-daemon`) |
+| `selftrack` ([SELFtrack](https://github.com/TripShuti/SELFtrack), cargo) | Time tracking widget (optional, `systemctl --user enable --now selftrack-daemon`; the shell uses only `daemon` + `export`, the TUI is a standalone fallback) |
 
 ## Structure
 
