@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-09-05
+
 ### Added
 
 - **Scrolling layout option** — `hypr/modules/general.lua` `scrolling` section (`column_width`, `direction`, `focus_fit_method`, `follow_focus`, `follow_min_visible`, `fullscreen_on_one_column` from new `scroll_*` `visual.json` keys, wiki defaults); Settings → Hyprland → Windows gains `Scrolling` in the Layout picker plus a conditional options block (master-style); `docs/CONFIG_FORMAT.md` documents the keys (`wrap_*`/`explicit_column_widths` stay Hyprland-default, JSON-only).
