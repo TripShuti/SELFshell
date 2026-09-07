@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Disabled widgets still polled** — `PillBar` keeps `Loader`s alive intentionally (no thrash), but `BatteryWidget` (`upower` every 30s), `MprisWidget` (2s player search) and `KeyboardLayoutWidget` (`socat` socket monitor) only checked `visible`, which never reflects the hidden pill ancestor. All three are now gated directly on their `cfg.*Enabled` flag; `KeyboardLayoutWidget` also starts/stops its processes on toggle and resets `initialBuf` on start like `devsBuf`.
 - **xdg-open allowlist prefix** — `KdeConnectPopup._safeOpenPath` and the `Bar.qml` screenshot `Open` action matched `*/Downloads/kcd/*` / `*/Screenshots/*` via `includes`, so `/tmp/Downloads/kcd/...` passed. Now a strict `HOME + "/Downloads/kcd/"` / `HOME + "/Screenshots/"` prefix (keeps the `..` rejection).
 - **Docs/style drift** — `Bar.qml` `_anyPopupOpen` comment `19 → 20` popups, `AGENTS.md` AppConfig location `Bar.qml → shell.qml`, `let`/`const → var` per the QML canon (`ControlPopup`, `NetworkPopup`, `NetWidget`, `WorkspacesWidget`; documented `BluetoothWidget` exception untouched).
+- **VertSlider mouse param** — `onPressed`/`onPositionChanged` use explicit `mouse =>` instead of deprecated undeclared parameter injection (removes Qt 6 `qt.qml.context` warnings).
 
 ## [0.10.0] - 2026-09-05
 

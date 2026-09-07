@@ -108,8 +108,8 @@ Item {
       }
     }
 
-    onPressed: apply(mouse.y)
-    onPositionChanged: if (pressed) apply(mouse.y)
+    onPressed: mouse => apply(mouse.y)
+    onPositionChanged: mouse => { if (pressed) apply(mouse.y) }
     onWheel: wheel => {
       if (wheel.angleDelta.y === 0) return
       var base = root.dragging ? root._dragValue : root.value
