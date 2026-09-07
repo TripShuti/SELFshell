@@ -1119,8 +1119,10 @@ AnimatedPopup {
                 target: audioEq
                 function onBandsChanged() {
                   // після фіксу VertSlider біндинг не рветься, але лишаємо
-                  // імперативний апдейт для сумісності
-                  if (!vs.dragging) vs.value = audioEq.bands[index]
+                  // імперативний апдейт для сумісності; ?? 0 — масив теоретично
+                  // може бути коротшим (старий ручний eq.json), без фолбеку
+                  // "Cannot assign [undefined] to double" на кожен слайдер
+                  if (!vs.dragging) vs.value = audioEq.bands[index] ?? 0
                 }
               }
             }

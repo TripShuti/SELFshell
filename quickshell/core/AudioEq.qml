@@ -145,7 +145,16 @@ Item {
     deletedBuiltins = _deleted.filter(n => n !== "Custom")
     if (d.userPresets && typeof d.userPresets === "object") {
       var _up = {}
-      for (var k in d.userPresets) if (k !== "Custom") _up[k] = d.userPresets[k]
+      // нормалізація до 15 чисел: короткий/довгий масив з ручного eq.json
+      // інакше давав би undefined в слайдерах (див. applyPreset)
+      for (var k in d.userPresets) {
+        if (k === "Custom" || !(d.userPresets[k] instanceof Array)) continue
+        var _nb = []
+        for (var q = 0; q < d.userPresets[k].length && q < bandCount; q++)
+          _nb.push(Math.max(-12, Math.min(12, Number(d.userPresets[k][q]) || 0)))
+        while (_nb.length < bandCount) _nb.push(0)
+        _up[k] = _nb
+      }
       userPresets = _up
     } else {
       userPresets = {}
@@ -214,10 +223,15 @@ Item {
     }
     preset = name
     // кламп у діапазон UI: частина Winamp-пресетів (Full Treble) має
-    // значення понад +12 — неклемповані смуги виїжджали за трек слайдера
-    bands = []
+    // значення понад +12 — неклемповані смуги виїжджали за трек слайдера.
+    // Присвоєння ОДНИМ готовим масивом: bands=[] з наступними push() стріляв
+    // bandsChanged на порожньому масиві і 15 слайдерів читали undefined
+    // ("Cannot assign [undefined] to double" при кожному перемиканні)
+    var nb = []
     for (var j = 0; j < gains.length && j < bandCount; j++)
-      bands.push(Math.max(-12, Math.min(12, gains[j])))
+      nb.push(Math.max(-12, Math.min(12, gains[j])))
+    while (nb.length < bandCount) nb.push(0)
+    bands = nb
     if (enabled && _eqNodeId > 0) _applyAllNow()
     saveState()
   }
