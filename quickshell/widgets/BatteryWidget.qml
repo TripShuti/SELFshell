@@ -66,12 +66,16 @@ Item {
       : window.palette.fg
 
   // sysfs не підтримує inotify, тому раз на 30 с опитуємо upower.
-  // Гейтимо коли батареї нема, але перший запуск завжди — інакше device ніколи не знайдеться
+  // Гейтимо коли батареї нема, але перший запуск завжди — інакше device ніколи не знайдеться.
+  // Плюс гейт по batteryEnabled: вимкнений в Settings віджет не форкає upower
+  // (Loader лишає його живим навмисно — див. PillBar, без thrash; root.visible
+  // власного флага не бачить прихованого предка, тому читаємо cfg напряму)
+  readonly property bool widgetEnabled: window.appConfig.cfg.batteryEnabled
   Timer {
     interval: 30000
     repeat: true
     triggeredOnStart: true
-    running: root.visible || root.device === ""
+    running: (root.visible || root.device === "") && root.widgetEnabled
     onTriggered: {
       if (!root.available && root.device !== "") return
       devsProc.running = true

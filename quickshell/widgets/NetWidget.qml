@@ -16,15 +16,15 @@ HoverItem {
   readonly property var networkDevices: Networking.devices ? Networking.devices.values : []
 
   readonly property var wiredDevice: {
-    for (let i = 0; i < networkDevices.length; i++) {
-      let dev = networkDevices[i];
+    for (var i = 0; i < networkDevices.length; i++) {
+      var dev = networkDevices[i];
       if (dev && dev.type === DeviceType.Wired) return dev;
     }
     return null;
   }
 
   readonly property var wifiDevice: {
-    for (let i = 0; i < networkDevices.length; i++) {
+    for (var i = 0; i < networkDevices.length; i++) {
       if (networkDevices[i] && networkDevices[i].type === DeviceType.Wifi) {
         return networkDevices[i];
       }
@@ -34,8 +34,8 @@ HoverItem {
 
   readonly property var connectedWifi: {
     if (!wifiDevice || !wifiDevice.networks) return null;
-    let nets = wifiDevice.networks.values;
-    for (let i = 0; i < nets.length; i++) {
+    var nets = wifiDevice.networks.values;
+    for (var i = 0; i < nets.length; i++) {
       if (nets[i] && nets[i].connected) return nets[i];
     }
     return null;

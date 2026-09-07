@@ -59,12 +59,15 @@ Item {
     }
   }
 
-  // Періодичний пошук плеєра. Крутиться тільки коли віджет видимий:
+  // Періодичний пошук плеєра. Крутиться тільки коли віджет видимий
+  // І увімкнений в Settings: Loader лишає вимкнений віджет живим навмисно
+  // (PillBar без thrash), а root.visible власного флага не бачить прихованого
+  // предка — тому читаємо cfg напряму. Коли невидимий — не будимо CPU.
   // Mpris-модель наповнюється асинхронно, таймер підхоплює preferredPlayer
-  // щойно той з'явиться. Коли невидимий — не будимо CPU.
+  // щойно той з'явиться.
   Timer {
     interval: 2000
-    running: root.visible
+    running: root.visible && window.appConfig.cfg.mprisEnabled
     repeat: true
     onTriggered: root.findAndSetPlayer()
   }

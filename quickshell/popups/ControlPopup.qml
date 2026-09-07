@@ -115,8 +115,8 @@ AnimatedPopup {
   // без debounce перший click стартує, але його тут же вбиває restart
   // (exit 15), і вибір області «не з'являється».
   function shotDebouncedClick(kind) {
-    let now = (new Date()).getTime()
-    let prev = kind === "full" ? root._lastShotTimeFull : root._lastShotTimeRegion
+    var now = (new Date()).getTime()
+    var prev = kind === "full" ? root._lastShotTimeFull : root._lastShotTimeRegion
     if (now - prev < 350) return true
     if (kind === "full") root._lastShotTimeFull = now
     else root._lastShotTimeRegion = now

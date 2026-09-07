@@ -19,6 +19,11 @@ PanelWindow {
   required property QtObject palette
   required property QtObject appConfig
   required property QtObject kdeConnect
+  // Екранно-незалежні монітори — синглтони з shell.qml (один sync/export на
+  // процес замість N на N моніторів). Імена збігаються зі старими id,
+  // тому всі біндинги нижче працюють без змін.
+  required property QtObject genshinMonitor
+  required property QtObject selftrackMonitor
 
   readonly property real pillHeight: root.implicitHeight - 8
 
@@ -109,7 +114,7 @@ PanelWindow {
   }
   // Централізований список попапів для auto-hide — додаючи новий попап, додай сюди перевірку
   // Функція замість масиву: масив forward-id ловить null при ініціалізації QML,
-  // тому централізація — через одну функцію _anyPopupOpen() (19 попапів/тостів)
+  // тому централізація — через одну функцію _anyPopupOpen() (20 попапів/тостів)
   function _anyPopupOpen(): bool {
     return calendarPopup.visible || audioPopup.visible || btPopup.visible || netPopup.visible || mprisPopup.visible || workspacesPopup.visible || keyboardPopup.visible || genshinPopup.visible || selftrackPopup.visible || controlPopup.visible || clipboardPopup.visible || wallpaperPopup.visible || settingsPopup.visible || launcherPopup.visible || trayPopup.visible || pairingPopup.visible || kcdPopup.visible || kcdPairingPopup.visible || notifToast.visible || osdPopup.visible
   }
@@ -384,16 +389,6 @@ PanelWindow {
     active: mprisPopup.visible || (root.mprisWidget?.player?.isPlaying ?? false)
   }
 
-  GenshinMonitor {
-    id: genshinMonitor
-    appConfig: root.appConfig
-  }
-
-  SelfTrackMonitor {
-    id: selftrackMonitor
-    appConfig: root.appConfig
-  }
-
   MprisPopup {
     id: mprisPopup
     window: root
@@ -522,9 +517,11 @@ PanelWindow {
           invoke: (function() {
             // path — з локального last-shot.txt (grim-пайплайн), але все одно
             // відкриваємо лише абсолютний шлях без .. всередині ~/Screenshots
+            // (строгий префікс HOME, не includes: /tmp/Screenshots/* не проходить)
             var p = String(path ?? "")
             if (p === "" || p[0] !== "/" || p.includes("..")) return
-            if (!p.includes("/Screenshots/")) return
+            var home = String(Quickshell.env("HOME") ?? "")
+            if (home === "" || !p.startsWith(home + "/Screenshots/")) return
             openShotProc.command = ["xdg-open", p]
             openShotProc.running = true
           })

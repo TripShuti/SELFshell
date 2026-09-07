@@ -168,9 +168,16 @@ Item {
     }))
   }
 
+  // Якщо _setParamProc ще виконує попередній запит — зливаємо новий
+  // у прапорець і досилаємо одним _applyAllNow() в onExited (last-writer-wins
+  // замість втрати команди: спільний Process без черги губив проміжні смуги
+  // при швидкому драгу / пресеті під час enable-ланцюга)
+  property bool _bandsDirty: false
+
   // ---------- застосування смуг (live, pw-cli) ----------
   function _applyAllNow() {
     if (_eqNodeId < 0) return
+    if (_setParamProc.running) { root._bandsDirty = true; return }
     var entries = []
     for (var px = 0; px < 2; px++)
       for (var i = 0; i < bandCount; i++)
@@ -186,6 +193,7 @@ Item {
     bands = b
     // preset лишається як був (Techno/Flat) — Custom видалено, зміни live до рестарту
     if (enabled && _eqNodeId > 0) {
+      if (_setParamProc.running) { root._bandsDirty = true; return }
       _setParamProc.command = ["pw-cli", "s", String(_eqNodeId), "2",
         JSON.stringify({ params: [
           "mbeqL:" + portNames[i], b[i],
@@ -447,6 +455,13 @@ Item {
     id: _setParamProc
     onExited: {
       running = false
+      // злитий під час виконання запит — досилаємо повним apply (покриває
+      // і одиночні смуги); _applyingAll лишається до його завершення
+      if (root._bandsDirty) {
+        root._bandsDirty = false
+        root._applyAllNow()
+        return
+      }
       if (root._applyingAll) {
         root._applyingAll = false
         root.enabled = true

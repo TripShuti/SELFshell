@@ -10,6 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Yazi trash shortcut** — `yazi/keymap.toml` `g t` opens the trash bin via `plugin trash`.
 
+### Changed
+
+- **Monitor singletons** — `GenshinMonitor`/`SelfTrackMonitor` moved from `Bar.qml` (one instance per screen) to single instances in `shell.qml`, passed into `Bar` as required properties; N screens no longer means N× HoYoLAB syncs / `selftrack export` polls. `CavaMonitor` and `NotificationServer` stay per-`Bar` by design (screen-bound visualizer/toast).
+
+### Fixed
+
+- **AudioEq param race** — rapid band drags / preset clicks during the enable chain overwrote the shared `_setParamProc` command (last-writer-wins, silent band desync). New `_bandsDirty` coalescing flag flushes one trailing `_applyAllNow()` on exit; EQ sliders and preset chips are disabled while `busy` (same guard the enable toggle already had).
+- **Disabled widgets still polled** — `PillBar` keeps `Loader`s alive intentionally (no thrash), but `BatteryWidget` (`upower` every 30s), `MprisWidget` (2s player search) and `KeyboardLayoutWidget` (`socat` socket monitor) only checked `visible`, which never reflects the hidden pill ancestor. All three are now gated directly on their `cfg.*Enabled` flag; `KeyboardLayoutWidget` also starts/stops its processes on toggle and resets `initialBuf` on start like `devsBuf`.
+- **xdg-open allowlist prefix** — `KdeConnectPopup._safeOpenPath` and the `Bar.qml` screenshot `Open` action matched `*/Downloads/kcd/*` / `*/Screenshots/*` via `includes`, so `/tmp/Downloads/kcd/...` passed. Now a strict `HOME + "/Downloads/kcd/"` / `HOME + "/Screenshots/"` prefix (keeps the `..` rejection).
+- **Docs/style drift** — `Bar.qml` `_anyPopupOpen` comment `19 → 20` popups, `AGENTS.md` AppConfig location `Bar.qml → shell.qml`, `let`/`const → var` per the QML canon (`ControlPopup`, `NetworkPopup`, `NetWidget`, `WorkspacesWidget`; documented `BluetoothWidget` exception untouched).
+
 ## [0.10.0] - 2026-09-05
 
 ### Added

@@ -978,6 +978,9 @@ AnimatedPopup {
           contentHeight: 20
           clip: true
           boundsBehavior: Flickable.StopAtBounds
+          // як і тогл увімкнення вище: поки триває enable-ланцюг, пресет
+          // чекає (applyPreset йде через той самий _setParamProc)
+          enabled: !audioEq.busy
 
           Row {
             id: chipRow
@@ -1088,6 +1091,10 @@ AnimatedPopup {
         RowLayout {
           Layout.alignment: Qt.AlignHCenter
           spacing: 4
+          // слайдери мовчать поки busy (той самий _setParamProc); швидкий
+          // drag поза busy зливається чергою _bandsDirty в AudioEq
+          enabled: !audioEq.busy
+          opacity: audioEq.busy ? 0.5 : 1.0
 
           Repeater {
             model: audioEq.bandCount

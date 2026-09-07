@@ -481,7 +481,7 @@ AnimatedPopup {
       model: ScriptModel {
         values: {
           if (!root.wifiDevice || !root.wifiEnabled || !root.wifiDevice.networks) return [];
-          let list = root.wifiDevice.networks.values || [];
+          var list = root.wifiDevice.networks.values || [];
           // Сортування: підключена → збережена → за сигналом
           return list.filter(n => n !== null && n !== undefined).sort((a, b) => {
             if (a.connected && !b.connected) return -1;

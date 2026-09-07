@@ -106,7 +106,7 @@ Item {
           onWheel: wheel => {
             // Lua-синтаксис Hyprland 0.56+: класичні dispatch-команди
             // оцінюються як lua-вираз в обгортці hl.dispatch(...)
-            const dir = wheel.angleDelta.y > 0 ? "+1" : "-1"
+            var dir = wheel.angleDelta.y > 0 ? "+1" : "-1"
             Hyprland.dispatch("hl.dsp.focus({ workspace = \"" + dir + "\" })")
           }
         }

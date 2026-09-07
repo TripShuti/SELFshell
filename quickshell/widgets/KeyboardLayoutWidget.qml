@@ -40,10 +40,19 @@ Item {
   implicitWidth: txt.implicitWidth
   implicitHeight: parent?.height ?? 36
 
+  // Вимкнений в Settings віджет лишається живим в Loader-і навмисно
+  // (PillBar без thrash) — сокет і hyprctl гейтимо по cfg напряму,
+  // а не по visible (власний флаг не бачить прихованого предка)
+  readonly property bool widgetEnabled: window.appConfig.cfg.keyboardEnabled
+
   // Отримує поточну розкладку при старті
   Process {
     id: initialProc
     command: ["hyprctl", "devices", "-j"]
+
+    // як у devsProc нижче: чистий буфер на старті, інакше хвостовий чанк
+    // попереднього виводу клеїться до нового JSON і парс вмирає назавжди
+    onStarted: root.initialBuf = ""
 
     stdout: SplitParser {
       splitMarker: "\n"
@@ -161,8 +170,19 @@ Item {
   }
 
   Component.onCompleted: {
-    initialProc.running = true
-    socketProc.running = true
+    if (root.widgetEnabled) {
+      initialProc.running = true
+      socketProc.running = true
+    }
+  }
+  onWidgetEnabledChanged: {
+    if (root.widgetEnabled) {
+      initialProc.running = true
+      socketProc.running = true
+    } else {
+      initialProc.running = false
+      socketProc.running = false
+    }
   }
   Component.onDestruction: socketProc.running = false
 }

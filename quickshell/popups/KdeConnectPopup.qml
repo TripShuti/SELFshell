@@ -58,11 +58,14 @@ AnimatedPopup {
 
   // --- Дії: ping / ring / share / clipboard / sftp ---
   // Шлях від телефону (share.complete/sftp) відкриваємо лише всередині
-  // теки завантажень kcd — спарений пристрій у LAN не має диктувати довільний open
+  // теки завантажень kcd — спарений пристрій у LAN не має диктувати довільний open.
+  // Строгий префікс HOME/Downloads/kcd (не includes: /tmp/Downloads/kcd/* не проходить),
+  // симлінк-назовні не резолвимо — xdg-open йде за лінком, тому allowlist тримаємо вузьким
   function _safeOpenPath(path) {
     var p = String(path ?? "")
     if (p === "" || p[0] !== "/" || p.includes("..")) return
-    if (!p.includes("/Downloads/kcd/")) return
+    var home = String(Quickshell.env("HOME") ?? "")
+    if (home === "" || !p.startsWith(home + "/Downloads/kcd/")) return
     openShareProc.command = ["xdg-open", p]
     openShareProc.running = true
   }

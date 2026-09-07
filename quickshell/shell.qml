@@ -7,6 +7,7 @@ import Quickshell.Io
 import Quickshell.Wayland
 import "core"
 import "services"
+import "monitors"
 import QtQuick
 
 ShellRoot {
@@ -19,6 +20,16 @@ ShellRoot {
   AppConfig { id: rootAppConfig }
 
   KdeConnectService { id: kdeConnectService; enabled: rootAppConfig.cfg.kcdEnabled; dnd: rootAppConfig.cfg.kcdDndEnabled }
+
+  // Екранно-незалежні монітори даних — один інстанс на процес (раніше жили
+  // в Bar і множились на кількість моніторів: N× genshin sync ризикував
+  // HoYoLAB rate-limit, N× selftrack export. Імена з Svc-суфіксом навмисно:
+  // в делегаті Variants нижче Bar має однойменні required-властивості, і
+  // `genshinMonitor: genshinMonitor` замкнулось би саме на себе (binding loop).
+  // CavaMonitor і NotificationServer лишаються в Bar свідомо — вони
+  // прив'язані до екрана (візуалізатор/тост)).
+  GenshinMonitor { id: genshinMonitorSvc; appConfig: rootAppConfig }
+  SelfTrackMonitor { id: selftrackMonitorSvc; appConfig: rootAppConfig }
 
   LockContext { id: lockContext }
 
@@ -135,6 +146,12 @@ ShellRoot {
 
   Variants {
     model: Quickshell.screens
-    Bar { palette: paletteService; appConfig: rootAppConfig; kdeConnect: kdeConnectService }
+    Bar {
+      palette: paletteService
+      appConfig: rootAppConfig
+      kdeConnect: kdeConnectService
+      genshinMonitor: genshinMonitorSvc
+      selftrackMonitor: selftrackMonitorSvc
+    }
   }
 }
