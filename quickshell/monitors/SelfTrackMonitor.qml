@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Io
 import "../scripts/SelfTrack.js" as ST
 import QtQuick
+import QtCore
 
 Item {
   id: root
@@ -39,6 +40,19 @@ Item {
     }
   }
   property string errorText: ""
+
+  // Резолв бінарника без залежності від PATH сесії: GUI-додатки
+  // стартують з мінімальним PATH і bare "selftrack" там не знаходиться.
+  // Системні шляхи покриває findExecutable, cargo-дефолт — fallback
+  // (туди кладе install.sh, див. Крок 4.7). StandardPaths у QML
+  // віддає QUrl-рядки (file://...), тому префікс зрізаємо явно.
+  readonly property string selftrackBin: {
+    var fromPath = String(StandardPaths.findExecutable("selftrack") ?? "").replace(/^file:\/\//, "");
+    if (fromPath !== "") return fromPath;
+    var home = String(Quickshell.env("HOME") ?? "").replace(/^file:\/\//, "");
+    if (home !== "") return home + "/.cargo/bin/selftrack";
+    return "selftrack";
+  }
 
   // Активний час СЬОГОДНІ — незалежний від вибраної в попапі дати,
   // щоб віджет завжди показував поточний день
@@ -82,7 +96,7 @@ Item {
     root._refreshStartMs = Date.now()
     loadingMinTimer.stop()
     fetchProc._todayOnly = false
-    fetchProc.command = ["selftrack", "export", "--date", root.dateStr]
+    fetchProc.command = [root.selftrackBin, "export", "--date", root.dateStr]
     fetchProc.running = true
   }
 
@@ -92,7 +106,7 @@ Item {
     if (!root.monitorEnabled) return
     if (fetchProc.running) return
     fetchProc._todayOnly = true
-    fetchProc.command = ["selftrack", "export", "--date", root._todayStr()]
+    fetchProc.command = [root.selftrackBin, "export", "--date", root._todayStr()]
     fetchProc.running = true
   }
 
@@ -105,7 +119,7 @@ Item {
       root.pagesModel = []
       return
     }
-    fetchPagesProc.command = ["selftrack", "export", "--date", root.dateStr, "--app", app]
+    fetchPagesProc.command = [root.selftrackBin, "export", "--date", root.dateStr, "--app", app]
     fetchPagesProc._wantApp = app
     fetchPagesProc.running = true
   }
