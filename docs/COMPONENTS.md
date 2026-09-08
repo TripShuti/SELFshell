@@ -156,7 +156,7 @@
 | `settings/AppearanceSection.qml` | Settings: scale (`uiScale`) + animations | AppConfig |
 | `settings/WallpaperSection.qml` | Settings: wallpaper picker | PaletteService |
 | `settings/BehaviorSection.qml` | Settings: DND, idle timeouts, wheel steps | AppConfig |
-| `settings/SystemSection.qml` | Settings: power profile selector (power-profiles-daemon) + auto power-saver | PowerProfileService, AppConfig |
+| `settings/SystemSection.qml` | Settings: power profile selector (power-profiles-daemon) + auto power-saver + mini-monitoring | PowerProfileService, `sysinfo.py`, AppConfig |
 | `settings/BindsSection.qml` | Settings: rebindable shortcuts | Quickshell.Io |
 | `settings/AboutSection.qml` | Settings: versions, machine info, project link | Quickshell.Io |
 | `KeyboardLayoutPopup.qml` | Keyboard layout list | — |
@@ -189,6 +189,7 @@
 | `update-wallpaper-only.sh` | Bash | Wallpaper-only switch without palette regen (Black theme) |
 | `AudioMixerUtils.js` | JS | Audio mixer pure helpers (`formatPercent/Db`, `sinkNameForStream` `O(1)` cache) |
 | `SelfTrack.js` | JS | Time tracker formatting (durations, app colors, title cleanup, `todayStr`) |
+| `sysinfo.py` | Python | Mini-monitoring for Settings → System (`cpu_temp_c`, `cpu_mhz`, mem, disks as one JSON line; nulls when a sensor is missing) |
 | `CalendarTasks.js` | JS | Calendar task save/load |
 | `ControlState.js` | JS | Control center state |
 | `LauncherUsage.js` | JS | Application launch frequency |

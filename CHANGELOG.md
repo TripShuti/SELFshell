@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Yazi trash shortcut** — `yazi/keymap.toml` `g t` opens the trash bin via `plugin trash`.
-- **System settings section with power profiles** — new Settings → System section: power profile selector (`Performance`/`Balanced`/`Power saver` via `powerprofilesctl`, no root needed, works on both `amd_pstate` and `intel_pstate`) with live status (active profile, governor/EPP readout) plus an `Auto power-saver on battery` toggle (`autoPowerSaver` in `config.json`): drops to `power-saver` at low battery (≤15%, same hysteresis as the low-battery toast) and restores the manual profile on charge. New `services/PowerProfileService.qml` singleton owns the state; `install.sh` installs/enables `power-profiles-daemon`, `selfshell doctor` checks it.
+- **System settings section with power profiles** — new Settings → System section: power profile selector (`Performance`/`Balanced`/`Power saver` via `powerprofilesctl`, no root needed, works on both `amd_pstate` and `intel_pstate`) with live status (active profile, governor/EPP readout) plus an `Auto power-saver on battery` toggle (`autoPowerSaver` in `config.json`): drops to `power-saver` at low battery (≤15%, same hysteresis as the low-battery toast) and restores the manual profile on charge. New `services/PowerProfileService.qml` singleton owns the state; `install.sh` installs/enables `power-profiles-daemon`, `selfshell doctor` checks it. A `Monitoring` card shows CPU temp/frequency, memory and disk usage from the new `scripts/sysinfo.py` (read-only `/sys`+`/proc`, refreshed every 5s while Settings is open).
 
 ### Changed
 
