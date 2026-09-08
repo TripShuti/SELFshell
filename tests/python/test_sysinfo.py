@@ -33,6 +33,15 @@ class PickTempTest(unittest.TestCase):
             _chip(hw, "k10temp", {"temp1_input": 35375})
             self.assertAlmostEqual(si.pick_cpu_temp(hw), 35.375)
 
+    def test_coretemp_package_intel(self):
+        # Intel-шлях без інтел-заліза: coretemp temp1_input = Package id 0
+        with tempfile.TemporaryDirectory() as tmp:
+            hw = os.path.join(tmp, "hw")
+            _chip(hw, "coretemp", {"temp1_input": 62000,
+                                   "temp2_input": 59000})
+            _chip(hw, "nct6798", {"temp3_input": 84000})
+            self.assertAlmostEqual(si.pick_cpu_temp(hw), 62.0)
+
     def test_skips_implausible_and_missing(self):
         with tempfile.TemporaryDirectory() as tmp:
             hw = os.path.join(tmp, "hw")
