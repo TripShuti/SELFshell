@@ -1,5 +1,5 @@
 // ============================================================
-// quickshell/popups/SettingsPopup.qml — налаштування: Bar (з Layout всередині), Popups, Hyprland, Appearance, Wallpaper, Behavior, Binds, About.
+// quickshell/popups/SettingsPopup.qml — налаштування: Bar (з Layout всередині), Popups, Hyprland, Appearance, Wallpaper, Behavior, System, Binds, About.
 // ============================================================
 import QtQuick
 import QtQuick.Layouts
@@ -28,7 +28,7 @@ AnimatedPopup {
   readonly property var cfg: window.appConfig.cfg
   readonly property var ac: window.appConfig
 
-  // Розділи: Bar (з Layout всередині), Popups, Hyprland, Appearance (Scale/Animations), решта — без змін
+  // Розділи: Bar (з Layout всередині), Popups, Hyprland, Appearance (Scale/Animations), System, решта — без змін
   readonly property var sections: [
     { title: "Bar", page: "settings/BarSection.qml" },
     { title: "Popups", page: "settings/PopupsSection.qml" },
@@ -36,6 +36,7 @@ AnimatedPopup {
     { title: "Appearance", page: "settings/AppearanceSection.qml" },
     { title: "Wallpaper", page: "settings/WallpaperSection.qml" },
     { title: "Behavior", page: "settings/BehaviorSection.qml" },
+    { title: "System", page: "settings/SystemSection.qml" },
     { title: "Binds", page: "settings/BindsSection.qml" },
     { title: "About", page: "settings/AboutSection.qml" }
   ]

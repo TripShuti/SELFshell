@@ -182,6 +182,7 @@ array in the script for the complete list. Key packages:
 | `grim slurp wl-clipboard` | Screenshots & clipboard |
 | `ddcutil` | Monitor brightness control |
 | `upower` | Battery widget |
+| `power-profiles-daemon` | Power profiles (Settings → System, auto power-saver) |
 | `qt6-5compat` | `Qt5Compat.GraphicalEffects` — lock screen blur (required, shell won't start without it) |
 | `greetd greetd-tuigreet` | TUI login screen (starts Hyprland via uwsm) |
 | `uwsm` | User session manager (session start from greetd / fallback autostart) |

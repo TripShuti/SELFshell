@@ -529,7 +529,7 @@ status_cmd() {
 }
 
 services_cmd() {
-  for svc in NetworkManager bluetooth "qs-bt-agent --user" "kcd --user" "selftrack-daemon --user" "pipewire --user" "wireplumber --user"; do
+  for svc in NetworkManager bluetooth power-profiles-daemon "qs-bt-agent --user" "kcd --user" "selftrack-daemon --user" "pipewire --user" "wireplumber --user"; do
     local is_user=false
     [[ "$svc" == *"--user"* ]] && is_user=true
     local name="${svc%% *}"
@@ -855,6 +855,11 @@ PY
   fi
   if command -v upower &>/dev/null; then
     if upower -e 2>/dev/null | grep -q battery; then ok "upower: battery found"; else info "upower: no battery (desktop)"; fi
+  fi
+  if command -v powerprofilesctl &>/dev/null; then
+    if systemctl is-active --quiet power-profiles-daemon 2>/dev/null; then ok "power-profiles-daemon active ($(powerprofilesctl get 2>/dev/null))"; else warn "power-profiles-daemon not active — power profiles unavailable (systemctl enable --now power-profiles-daemon)"; fi
+  else
+    warn "powerprofilesctl not found — power profiles unavailable (pacman -S power-profiles-daemon)"
   fi
   if command -v hyprsunset &>/dev/null; then ok "hyprsunset found"; else warn "hyprsunset not found — night light unavailable"; fi
 

@@ -32,13 +32,22 @@ Item {
   // Сповіщення про низький заряд: один раз за цикл розряду (не спамимо
   // кожні 30 с опитування), скидається при зарядці або > 15%.
   // DND поважається — тост не показується, коли dndEnabled.
+  // Гістерезис re-arm і авто-профіль живлення — ті самі пороги.
   property bool lowNotified: false
+  readonly property var powerSvc: window.powerProfiles ?? null
   onLowChanged: {
     // Гістерезис: re-arm лише при зарядці або >= 20% — без нього заряд,
-    // що коливається біля 15%, спамив би тостом на кожному пересіченні
-    if (root.percent >= 20 || root.charging) { root.lowNotified = false; return }
+    // що коливається біля 15%, спамив би тостом на кожному пересіченні.
+    // Тут же повертаємо ручний профіль живлення після авто power-saver.
+    if (root.percent >= 20 || root.charging) {
+      root.lowNotified = false
+      if (root.powerSvc && window.appConfig.cfg.autoPowerSaver) root.powerSvc.restoreManual()
+      return
+    }
     if (!root.low || root.lowNotified) return
     root.lowNotified = true
+    // Авто power-saver — до тоста, щоб профіль встиг перемкнутись навіть у DND
+    if (root.powerSvc && window.appConfig.cfg.autoPowerSaver) root.powerSvc.setProfile("power-saver", true)
     if (window.appConfig.cfg.dndEnabled) return
     window.toast.showNotif({
       appName: "Battery",

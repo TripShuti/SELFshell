@@ -27,6 +27,7 @@ Edited through SettingsPopup (UI) or manually.
 | `kcdEnabled` | `boolean` | `false` | Phone (kcd/KDE Connect) — battery, ping/ring, share, clipboard, SFTP, notifications |
 | `kcdDndEnabled` | `boolean` | `false` | Phone DND — only popup history, no toasts/sound/ControlCenter (kcd only) |
 | `dndEnabled` | `boolean` | `false` | Do-not-disturb — hides all notifications |
+| `autoPowerSaver` | `boolean` | `true` | Auto power-saver — drop to the `power-saver` power profile at low battery (≤15%), restore the manual profile on charge (Settings → System) |
 | `timerSoundPath` | `string` | `""` | Custom timer sound (`""` = from assets/) |
 | `idleLockTimeout` | `number` | `300` | Idle time before the screen locks, seconds (`0` = never) |
 | `idleDpmsTimeout` | `number` | `360` | Idle time before the screen turns off (DPMS off), seconds (`0` = never) |

@@ -569,6 +569,10 @@ prompt is missed, the connect fails after the 55 s timeout.
 * **Auto-relink:** `Timer _linkCheckTimer` (3s, `enabled && !busy && _eqNodeId>=0`) + `Process _relinkProc` (`pw-link -o | grep output.filter-chain` → bluetooth sink exclusive when present, otherwise all hardware sinks) keeps `filter-chain` output on correct hardware after headphone/BT hotplug. All sink names in shell snippets go through `_shellQuote()`; `grep` on sink names uses `grep -F`. Triggered also on `onEnabledChanged` / `_findNodeProc` / `_loadState` re-apply.
 * **UI:** `popups/MprisPopup.qml` — collapsible EQ section (`eqOpen`/`eqHeight`/`eqTarget:216`, `VertSlider` 15× `20x130`, `Flickable` chip row `pinned→builtins→user`, `+` `createPreset`, `ToggleSwitch` `enable`/`disable`, context menu `pin/rename/save/delete` + `Rename` `TextInput`).
 
+### 9.11. Power profiles — PPD
+
+`services/PowerProfileService.qml` — single instance in `shell.qml`, passed into `Bar` as `powerProfiles`. Wraps `powerprofilesctl get/set` (fixed enum, no root, works on `amd_pstate` and `intel_pstate` alike); tracks `lastManualProfile` + `autoActive` so the battery auto-switch can restore. `popups/settings/SystemSection.qml` — selector + status (governor/EPP read-only from sysfs) + `autoPowerSaver` toggle (`config.json`). `widgets/BatteryWidget.qml` drives the auto-switch on its existing low/re-arm hysteresis (≤15% → `power-saver`, charge/≥20% → restore); manual picks always win.
+
 ---
 
 ## 10. The `selfshell` CLI

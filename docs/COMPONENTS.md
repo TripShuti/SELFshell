@@ -156,6 +156,7 @@
 | `settings/AppearanceSection.qml` | Settings: scale (`uiScale`) + animations | AppConfig |
 | `settings/WallpaperSection.qml` | Settings: wallpaper picker | PaletteService |
 | `settings/BehaviorSection.qml` | Settings: DND, idle timeouts, wheel steps | AppConfig |
+| `settings/SystemSection.qml` | Settings: power profile selector (power-profiles-daemon) + auto power-saver | PowerProfileService, AppConfig |
 | `settings/BindsSection.qml` | Settings: rebindable shortcuts | Quickshell.Io |
 | `settings/AboutSection.qml` | Settings: versions, machine info, project link | Quickshell.Io |
 | `KeyboardLayoutPopup.qml` | Keyboard layout list | — |
@@ -202,6 +203,7 @@
 | `qs-bt-agent.service` | systemd | Unit for qs-bt-agent |
 | `cava-vis.conf` | config | cava config |
 | `TrackListService.qml` | QML | MPRIS TrackList service (dbus-monitor + live queue) |
+| `PowerProfileService.qml` | QML | Power profiles via `powerprofilesctl` (active/set, manual restore after auto) |
 | `KdeConnectService.qml` | QML | Phone service (kcd watch + devices poll, battery/clipboard/sftp) |
 
 ### `data/` — persisted state

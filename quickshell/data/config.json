@@ -28,6 +28,7 @@
   "contentSpacing": 4,
   "controlEnabled": true,
   "dndEnabled": false,
+  "autoPowerSaver": true,
   "edgeMargin": 8,
   "genshinEnabled": true,
   "idleDpmsTimeout": 360,

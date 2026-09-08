@@ -24,6 +24,8 @@ PanelWindow {
   // тому всі біндинги нижче працюють без змін.
   required property QtObject genshinMonitor
   required property QtObject selftrackMonitor
+  // сервіс профілів живлення (синглтон з shell.qml) — читають SystemSection і BatteryWidget
+  required property QtObject powerProfiles
 
   readonly property real pillHeight: root.implicitHeight - 8
 

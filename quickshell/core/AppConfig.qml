@@ -54,6 +54,10 @@ Item {
       // DND — повністю ховає сповіщення (тост, список, звук)
       property bool dndEnabled: false
 
+      // Авто power-saver: на низькому заряді (≤15%) перемикає профіль живлення
+      // на power-saver, на зарядці/≥20% повертає ручний (див. PowerProfileService)
+      property bool autoPowerSaver: true
+
       // Кастомний шлях до звуку завершення таймера ("" = звук з assets/)
       property string timerSoundPath: ""
 
@@ -258,6 +262,7 @@ Item {
     keyboardEnabled: true, audioEnabled: true, controlEnabled: true,
     clipboardEnabled: false, btEnabled: false, netEnabled: false,
     trayEnabled: true, batteryEnabled: false, kcdEnabled: false, kcdDndEnabled: false, dndEnabled: false,
+    autoPowerSaver: true,
     timerSoundPath: "",
     preferredPlayer: "selfsonic",
     idleLockTimeout: 300, idleDpmsTimeout: 360, idleSuspendTimeout: 900,

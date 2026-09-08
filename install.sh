@@ -89,6 +89,7 @@ PACMAN_DEPS=(
   xdg-desktop-portal-hyprland
   ddcutil
   upower
+  power-profiles-daemon
   lxqt-policykit
 
   # qt6-5compat — Qt5Compat.GraphicalEffects (блюр на екрані блокування);
@@ -231,6 +232,7 @@ fi
 
 svc_start NetworkManager.service
 svc_start bluetooth.service
+svc_start power-profiles-daemon.service
 
 sudo usermod -aG lp "$USER" 2>/dev/null || true
 rfkill unblock bluetooth 2>/dev/null || true

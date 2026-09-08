@@ -31,6 +31,8 @@ ShellRoot {
   GenshinMonitor { id: genshinMonitorSvc; appConfig: rootAppConfig }
   SelfTrackMonitor { id: selftrackMonitorSvc; appConfig: rootAppConfig }
 
+  PowerProfileService { id: powerProfileService }
+
   LockContext { id: lockContext }
 
   WlSessionLock {
@@ -152,6 +154,7 @@ ShellRoot {
       kdeConnect: kdeConnectService
       genshinMonitor: genshinMonitorSvc
       selftrackMonitor: selftrackMonitorSvc
+      powerProfiles: powerProfileService
     }
   }
 }
