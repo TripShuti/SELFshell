@@ -13,7 +13,9 @@ Item {
   id: root
   visible: false
 
-  readonly property var profiles: ["performance", "balanced", "power-saver"]
+  // канон усіх трьох (порядок сегмента); profiles — фактично доступні тут
+  readonly property var allProfiles: ["performance", "balanced", "power-saver"]
+  property var profiles: ["performance", "balanced", "power-saver"]
   // активний профіль ("" = невідомо/демон недоступний)
   property string profile: ""
   property bool available: false
@@ -32,7 +34,7 @@ Item {
 
   // isAuto=true — виклик від автоматики (батарея), не чіпає lastManual
   function setProfile(name, isAuto) {
-    if (profiles.indexOf(name) === -1) return
+    if (root.allProfiles.indexOf(name) === -1) return
     if (setProc.running) return
     root.error = ""
     root.busy = true
@@ -79,6 +81,8 @@ Item {
       root.busy = false
       if (code !== 0) {
         root.error = "powerprofilesctl set failed (" + code + ")"
+        // профіль міг зникнути (зміна драйверів) — перечитуємо список
+        root.refreshProfiles()
         return
       }
       root.profile = setProc._want
@@ -92,5 +96,45 @@ Item {
     }
   }
 
-  Component.onCompleted: root.refresh()
+  // Список доступних профілів — один раз при старті (міняється лише при
+  // зміні драйверів) + при помилці set. resync секції його НЕ чіпає —
+  // при кожному відкритті їде тільки дешевий `get`.
+  function refreshProfiles() {
+    if (listProc.running) return
+    listProc.command = ["powerprofilesctl", "list"]
+    listProc.running = true
+  }
+
+  // "  performance:" / "* balanced:" → ["performance", ...] в канон-порядку;
+  // вайтлист allProfiles + вимога порожнього хвоста після ":" відсікають
+  // рядки драйверів ("    CpuDriver:\tamd_pstate"); порожній результат ігноруємо
+  function _parseProfiles(text) {
+    var found = []
+    var lines = String(text ?? "").split("\n")
+    for (var i = 0; i < lines.length; i++) {
+      var m = lines[i].match(/^(?:  |\*)\s*([a-z-]+):\s*$/)
+      if (m && root.allProfiles.indexOf(m[1]) !== -1 && found.indexOf(m[1]) === -1)
+        found.push(m[1])
+    }
+    if (!found.length) return
+    var ordered = []
+    for (var k = 0; k < root.allProfiles.length; k++)
+      if (found.indexOf(root.allProfiles[k]) !== -1) ordered.push(root.allProfiles[k])
+    root.profiles = ordered
+  }
+
+  Process {
+    id: listProc
+    stdout: StdioCollector {
+      id: listOut
+      waitForEnd: true
+      onStreamFinished: root._parseProfiles(listOut.text)
+    }
+    onExited: running = false
+  }
+
+  Component.onCompleted: {
+    root.refresh()
+    root.refreshProfiles()
+  }
 }

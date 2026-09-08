@@ -116,11 +116,16 @@ Item {
       SetSelect {
         sys: root.sys
         label: "Power profile"
-        options: [
-          { id: "performance", text: "Performance" },
-          { id: "balanced", text: "Balanced" },
-          { id: "power-saver", text: "Power saver" }
-        ]
+        // опції з фактично доступних тут (парс `powerprofilesctl list` при
+        // старті сервісу); тексти фіксовані — id з вайтлиста, ін'єкції нема
+        options: {
+          var names = root.powerSvc ? root.powerSvc.profiles : []
+          var titles = { performance: "Performance", balanced: "Balanced", "power-saver": "Power saver" }
+          var out = []
+          for (var i = 0; i < names.length; i++)
+            if (titles[names[i]] !== undefined) out.push({ id: names[i], text: titles[names[i]] })
+          return out
+        }
         value: root.powerSvc ? root.powerSvc.profile : ""
         enabled: root.powerSvc && root.powerSvc.available && !root.powerSvc.busy
         onPicked: id => { if (root.powerSvc) root.powerSvc.setProfile(id, false) }
