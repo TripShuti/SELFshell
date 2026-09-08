@@ -69,6 +69,18 @@ class MeminfoTest(unittest.TestCase):
         self.assertIsNone(si.parse_meminfo("garbage"))
 
 
+class DiskTest(unittest.TestCase):
+    def test_tmpfs_shape(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            info = si.disk_info(tmp)
+            self.assertIsNotNone(info)
+            pct, total, free = info
+            self.assertTrue(0 <= pct <= 100)
+            self.assertGreater(total, 0)
+            self.assertGreaterEqual(free, 0)
+            self.assertIsNone(si.disk_info(os.path.join(tmp, "nope")))
+
+
 class MainTest(unittest.TestCase):
     def test_prints_valid_json(self):
         out = subprocess.run(

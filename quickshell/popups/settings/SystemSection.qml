@@ -166,7 +166,7 @@ Item {
         delegate: MonitorRow {
           required property var modelData
           label: "Disk " + modelData.mount
-          value: modelData.used_pct + "%"
+          value: modelData.free_gb + " / " + modelData.total_gb + " GB free (" + modelData.used_pct + "%)"
           frac: modelData.used_pct / 100
         }
       }

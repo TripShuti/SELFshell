@@ -90,15 +90,19 @@ def parse_meminfo(text):
             round(used_kb / 1024 / 1024, 1))
 
 
-def disk_used_pct(path):
-    """Відсоток зайнятого місця на ФС, що містить path, або None."""
+def disk_info(path):
+    """(used_pct, total_gb, free_gb) для ФС, що містить path, або None."""
     try:
         st = os.statvfs(path)
     except OSError:
         return None
     if not st.f_blocks:
         return None
-    return round((st.f_blocks - st.f_bavail) / st.f_blocks * 100)
+    total = st.f_blocks * st.f_frsize
+    free = st.f_bavail * st.f_frsize
+    used_pct = round((st.f_blocks - st.f_bavail) / st.f_blocks * 100)
+    gb = 1024 ** 3
+    return (used_pct, round(total / gb, 1), round(free / gb, 1))
 
 
 def collect():
@@ -118,9 +122,10 @@ def collect():
         if dev in seen_devs:
             continue
         seen_devs.add(dev)
-        pct = disk_used_pct(mount)
-        if pct is not None:
-            disks.append({"mount": mount, "used_pct": pct})
+        info = disk_info(mount)
+        if info is not None:
+            disks.append({"mount": mount, "used_pct": info[0],
+                          "total_gb": info[1], "free_gb": info[2]})
     return {
         "cpu_temp_c": pick_cpu_temp(),
         "cpu_mhz": avg_freq_mhz(),
