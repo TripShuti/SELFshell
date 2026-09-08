@@ -174,9 +174,10 @@ AnimatedPopup {
       readonly property string playerName: (modelData.identity ?? modelData.dbusName ?? "").toLowerCase()
 
       Component.onCompleted: root.findAndSetPlayer()
-      // guard як у _scrollPlaylistToCurrent: callLater може виконатись
-      // вже після знищення root
-      Component.onDestruction: Qt.callLater(function() { if (root) root.findAndSetPlayer() })
+      // onDestruction з Qt.callLater тут був зайвим: гард if (root) не рятує —
+      // сам ідентифікатор root не резолвиться в знищеному скоупі
+      // (ReferenceError during delayed evaluation), а переобрання плеєра
+      // і так робить 2-секундний поллер вище (той самий патерн що в MprisWidget)
     }
   }
 

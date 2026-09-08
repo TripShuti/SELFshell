@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Docs/style drift** — `Bar.qml` `_anyPopupOpen` comment `19 → 20` popups, `AGENTS.md` AppConfig location `Bar.qml → shell.qml`, `let`/`const → var` per the QML canon (`ControlPopup`, `NetworkPopup`, `NetWidget`, `WorkspacesWidget`; documented `BluetoothWidget` exception untouched).
 - **VertSlider mouse param** — `onPressed`/`onPositionChanged` use explicit `mouse =>` instead of deprecated undeclared parameter injection (removes Qt 6 `qt.qml.context` warnings).
 - **EQ preset switch warnings** — `applyPreset` assigned `bands = []` then pushed, firing `bandsChanged` on an empty array so all 15 sliders read `undefined` (`Cannot assign [undefined] to double`). Now builds the array locally and assigns once (short arrays padded), the imperative slider sync has a `?? 0` fallback, user presets are normalized to 15 bands on load.
+- **MprisPopup destruction warning** — `Component.onDestruction: Qt.callLater(function() { if (root) ... })` threw `ReferenceError: root is not defined` (the guard can't help: the identifier itself doesn't resolve in a destroyed scope). Removed like the identical case in `MprisWidget`; the 2s poller already covers player re-election.
 
 ## [0.10.0] - 2026-09-05
 
