@@ -156,7 +156,7 @@
 | `settings/AppearanceSection.qml` | Settings: scale (`uiScale`) + animations | AppConfig |
 | `settings/WallpaperSection.qml` | Settings: wallpaper picker | PaletteService |
 | `settings/BehaviorSection.qml` | Settings: DND, idle timeouts, wheel steps | AppConfig |
-| `settings/SystemSection.qml` | Settings: power profile selector (power-profiles-daemon) + auto power-saver + mini-monitoring | PowerProfileService, `sysinfo.py`, AppConfig |
+| `settings/SystemSection.qml` | Settings: power profile selector (power-profiles-daemon) + auto power-saver + pacman/AUR updates + mini-monitoring | PowerProfileService, PacmanService, `sysinfo.py`, AppConfig |
 | `settings/BindsSection.qml` | Settings: rebindable shortcuts | Quickshell.Io |
 | `settings/AboutSection.qml` | Settings: versions, machine info, project link | Quickshell.Io |
 | `KeyboardLayoutPopup.qml` | Keyboard layout list | — |
@@ -190,6 +190,8 @@
 | `AudioMixerUtils.js` | JS | Audio mixer pure helpers (`formatPercent/Db`, `sinkNameForStream` `O(1)` cache) |
 | `SelfTrack.js` | JS | Time tracker formatting (durations, app colors, title cleanup, `todayStr`) |
 | `sysinfo.py` | Python | Mini-monitoring for Settings → System (`cpu_temp_c`, `cpu_mhz`, mem, disks as one JSON line; nulls when a sensor is missing) |
+| `pacman_updates.py` | Python | Update check for Settings → System (official via `checkupdates`, AUR via `yay/paru -Qua`, one JSON line; exit-2 = up to date) |
+| `pacman_upgrade.sh` | Bash | Full upgrade in a terminal (`yay -Syu` or `sudo pacman -Syu`) + exit code to a sentinel file for auto re-check |
 | `CalendarTasks.js` | JS | Calendar task save/load |
 | `ControlState.js` | JS | Control center state |
 | `LauncherUsage.js` | JS | Application launch frequency |
@@ -205,6 +207,7 @@
 | `cava-vis.conf` | config | cava config |
 | `TrackListService.qml` | QML | MPRIS TrackList service (dbus-monitor + live queue) |
 | `PowerProfileService.qml` | QML | Power profiles via `powerprofilesctl` (active/set, manual restore after auto) |
+| `PacmanService.qml` | QML | Pacman/AUR updates (cached `checkupdates` + `yay/paru -Qua`, 24h auto-check, upgrade state via sentinel file, `data/updates.json` cache) |
 | `KdeConnectService.qml` | QML | Phone service (kcd watch + devices poll, battery/clipboard/sftp) |
 
 ### `data/` — persisted state

@@ -34,6 +34,17 @@ hl.window_rule({
     no_focus = true
 })
 
+-- Термінал оновлення системи: PacmanService запускає kitty з title
+-- "SELFshell Update" — тільки це вікно пливе по центру фіксованим
+-- розміром, решта kitty-вікон лишаються в тайлі як були
+hl.window_rule({
+    name   = "selfshell-upgrade-float",
+    match  = { class = "^kitty$", title = "^SELFshell Update$" },
+    float  = true,
+    center = true,
+    size   = "900 600"
+})
+
 -- Правила для конкретних програм — з hypr/env.json (windowRules).
 for _, rule in ipairs(s.windowRules) do
     hl.window_rule(rule)

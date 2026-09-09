@@ -439,7 +439,7 @@ AnimatedPopup {
         Text {
           text: root.player?.trackArtist ?? ""
           color: window.palette.fg
-          font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
+          font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
           elide: Text.ElideRight
           Layout.fillWidth: true
           visible: root.player != null && root.player.trackArtist !== ""
@@ -859,7 +859,7 @@ AnimatedPopup {
                   Text {
                     text: modelData?.title ?? "Unknown"
                     color: isCurrent ? window.palette.green : window.palette.fg
-                    font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
+                    font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
                     font.bold: isCurrent
                     elide: Text.ElideRight
                     Layout.fillWidth: true
@@ -869,7 +869,7 @@ AnimatedPopup {
                     text: modelData?.artist ?? ""
                     visible: (modelData?.artist ?? "") !== ""
                     color: window.palette.gray
-                    font.family: window.palette.font; font.pixelSize: appConfig.scaled(9)
+                    font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
                     elide: Text.ElideRight
                     Layout.fillWidth: true
                   }
@@ -878,7 +878,7 @@ AnimatedPopup {
                 Text {
                   text: root.formatTime((modelData?.length ?? 0) / 1000000)
                   color: window.palette.gray
-                  font.family: window.palette.font; font.pixelSize: appConfig.scaled(9)
+                  font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
                 }
               }
 
@@ -1034,7 +1034,7 @@ AnimatedPopup {
                     visible: chip.pinnedChip
                     text: "\uF08D"
                     color: chip.active ? window.palette.bg0H : window.palette.accent
-                    font.family: window.palette.font; font.pixelSize: appConfig.scaled(8)
+                    font.family: window.palette.font; font.pixelSize: appConfig.scaled(9)
                   }
 
                   Text {
@@ -1206,7 +1206,7 @@ AnimatedPopup {
                   text: parent.modelData.label
                   color: parent.modelData.danger && parent.hovered
                          ? window.palette.danger : window.palette.fg
-                  font.family: window.palette.font; font.pixelSize: appConfig.scaled(9)
+                  font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
                 }
 
                 MouseArea {

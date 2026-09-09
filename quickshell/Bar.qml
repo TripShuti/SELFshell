@@ -26,6 +26,8 @@ PanelWindow {
   required property QtObject selftrackMonitor
   // сервіс профілів живлення (синглтон з shell.qml) — читають SystemSection і BatteryWidget
   required property QtObject powerProfiles
+  // сервіс оновлень пакетів (синглтон з shell.qml) — читає SystemSection
+  required property QtObject pacmanUpdates
 
   readonly property real pillHeight: root.implicitHeight - 8
 

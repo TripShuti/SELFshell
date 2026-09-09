@@ -9,14 +9,17 @@ Rectangle {
 
   required property QtObject sys
   property string text: ""
+  // задизейблена кнопка: тьмяна, кліки ігноруються (дефолт лишає старі місця без змін)
+  property bool disabled: false
   signal clicked()
 
   Layout.fillWidth: true
   Layout.preferredHeight: 28
   radius: 5
-  color: btnArea.pressed
+  opacity: btn.disabled ? 0.45 : 1.0
+  color: btnArea.pressed && !btn.disabled
        ? Qt.darker(btn.sys.palette.bg2, 1.2)
-       : (btnArea.containsMouse ? btn.sys.palette.bg2 : btn.sys.palette.bgAlpha)
+       : (btnArea.containsMouse && !btn.disabled ? btn.sys.palette.bg2 : btn.sys.palette.bgAlpha)
   border.width: 1
   border.color: btn.sys.palette.bg2
   Behavior on color { ColorAnimation { duration: btn.sys.ac.anim(120) } }
@@ -33,7 +36,7 @@ Rectangle {
     id: btnArea
     anchors.fill: parent
     hoverEnabled: true
-    cursorShape: Qt.PointingHandCursor
-    onClicked: btn.clicked()
+    cursorShape: btn.disabled ? Qt.ArrowCursor : Qt.PointingHandCursor
+    onClicked: if (!btn.disabled) btn.clicked()
   }
 }

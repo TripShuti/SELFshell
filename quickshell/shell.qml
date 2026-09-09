@@ -33,6 +33,8 @@ ShellRoot {
 
   PowerProfileService { id: powerProfileService }
 
+  PacmanService { id: pacmanService }
+
   LockContext { id: lockContext }
 
   WlSessionLock {
@@ -155,6 +157,7 @@ ShellRoot {
       genshinMonitor: genshinMonitorSvc
       selftrackMonitor: selftrackMonitorSvc
       powerProfiles: powerProfileService
+      pacmanUpdates: pacmanService
     }
   }
 }

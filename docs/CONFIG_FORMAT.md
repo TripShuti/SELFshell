@@ -275,6 +275,34 @@ Notes:
 
 ---
 
+## Quickshell: data/updates.json
+
+`quickshell/data/updates.json` — cache of the last pacman/AUR update check,
+written by `services/PacmanService.qml` (`FileView` at `../data/updates.json`).
+Created on the first successful check; a missing file means "never checked".
+
+```json
+{
+  "lastCheck": 1757328000,
+  "packages": [{ "name": "fish", "old": "4.9.1-1", "new": "4.9.2-1",
+                 "repo": "extra", "desc": "...", "download": "3.60 MiB" }],
+  "repoCount": 20,
+  "aurCount": 0,
+  "helper": "yay",
+  "totalDownload": "82.2 MiB"
+}
+```
+
+| Field | Type | Purpose |
+|-------|------|---------|
+| `lastCheck` | `number` | Unix time of the last successful check (stale after 24 h → auto re-check) |
+| `packages` | `array` | `{name, old, new, repo, desc, download}` — `repo` is `core`/`extra`/… or `aur` (AUR rows carry no desc/download) |
+| `repoCount`/`aurCount` | `number` | Split counts for the status line |
+| `helper` | `string` | Detected AUR helper (`yay`/`paru`, `""` = none → repo packages only) |
+| `totalDownload` | `string` | Summed `Download Size` of repo packages (human-readable, `""` when unknown) |
+
+---
+
 ## Hyprland: binds.json
 
 Optional keybinding overrides read by `modules/binds.lua`. Managed by

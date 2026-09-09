@@ -90,6 +90,7 @@ PACMAN_DEPS=(
   ddcutil
   upower
   power-profiles-daemon
+  pacman-contrib
   lxqt-policykit
 
   # qt6-5compat — Qt5Compat.GraphicalEffects (блюр на екрані блокування);

@@ -1,5 +1,5 @@
 // ============================================================
-// quickshell/popups/settings/SystemSection.qml — розділ System: профіль живлення (power-profiles-daemon) та авто power-saver
+// quickshell/popups/settings/SystemSection.qml — розділ System: профіль живлення (power-profiles-daemon), авто power-saver та оновлення пакетів
 // ============================================================
 import Quickshell
 import Quickshell.Io
@@ -15,6 +15,7 @@ Item {
   readonly property var ac: sys.ac
   readonly property var window: sys.window
   readonly property var powerSvc: window.powerProfiles ?? null
+  readonly property var pacmanSvc: window.pacmanUpdates ?? null
 
   implicitWidth: parent?.width ?? 0
   implicitHeight: col.implicitHeight
@@ -103,6 +104,33 @@ Item {
     return "Active: " + p + auto
   }
 
+  // --- Оновлення пакетів: весь стан живе в PacmanService-синглтоні, секція
+  // лише відображає (чек тут НЕ запускається — ні при відкритті, ні в resync) ---
+  readonly property string updatesStatus: {
+    var s = root.pacmanSvc
+    if (!s) return ""
+    if (!s.available) return s.error !== "" ? s.error : "Update service unavailable"
+    if (s.upgrading) return "Upgrading in terminal… the list refreshes when done."
+    if (s.checking) return "Checking for updates…"
+    if (s.error !== "") return s.error
+    if (s.count === 0) return "Up to date · checked " + s.lastCheckText()
+    // розбивку repo/AUR показуємо лише коли є AUR — інакше "20 updates (20 repo)" тавтологія
+    var parts = s.count + " updates"
+    if (s.aurCount > 0) parts += " (" + s.repoCount + " official + " + s.aurCount + " AUR)"
+    if (s.totalDownload !== "") parts += " · ↓ " + s.totalDownload
+    return parts + " · checked " + s.lastCheckText()
+  }
+  readonly property var visiblePkgs: {
+    var s = root.pacmanSvc
+    if (!s || !s.available) return []
+    return s.packages.slice(0, 30)
+  }
+  readonly property int hiddenPkgCount: {
+    var s = root.pacmanSvc
+    if (!s || !s.available) return 0
+    return Math.max(0, s.count - 30)
+  }
+
   ColumnLayout {
     id: col
     anchors.left: parent.left
@@ -159,6 +187,67 @@ Item {
 
     SetCard {
       sys: root.sys
+      SetLabel { sys: root.sys; text: "Updates" }
+      Text {
+        text: root.updatesStatus
+        color: window.palette.mutedAlt
+        font.family: window.palette.font
+        font.pixelSize: window.appConfig.scaled(10)
+        Layout.fillWidth: true
+        wrapMode: Text.WordWrap
+      }
+      RowLayout {
+        Layout.fillWidth: true
+        spacing: 8
+        SetButton {
+          sys: root.sys
+          text: (root.pacmanSvc && root.pacmanSvc.checking) ? "Checking…" : "Check for updates"
+          disabled: !root.pacmanSvc || root.pacmanSvc.checking || root.pacmanSvc.upgrading
+          onClicked: if (root.pacmanSvc) root.pacmanSvc.refresh()
+        }
+        SetButton {
+          sys: root.sys
+          text: (root.pacmanSvc && root.pacmanSvc.upgrading) ? "Updating…" : "Update all"
+          disabled: !root.pacmanSvc || !root.pacmanSvc.available || root.pacmanSvc.checking || root.pacmanSvc.upgrading || root.pacmanSvc.count === 0
+          onClicked: {
+            if (!root.pacmanSvc) return
+            root.pacmanSvc.startUpgrade()
+            // термінал вже летить — гасимо налаштування з анімацією,
+            // щоб перехід виглядав безшовно (стан апгрейда живе в сервісі)
+            root.sys.close()
+          }
+        }
+      }
+      // без хелпера AUR-рядків не буде взагалі — чесно показуємо межу скоупу
+      Text {
+        visible: root.pacmanSvc && root.pacmanSvc.available && root.pacmanSvc.helper === ""
+        text: "No AUR helper (yay/paru) — repo packages only."
+        color: window.palette.mutedAlt
+        font.family: window.palette.font
+        font.pixelSize: window.appConfig.scaled(10)
+        Layout.fillWidth: true
+        wrapMode: Text.WordWrap
+      }
+      Repeater {
+        model: root.visiblePkgs
+        delegate: UpdateRow {
+          required property var modelData
+          pkgName: modelData.name ?? ""
+          verText: (modelData.old ?? "") + " → " + (modelData.new ?? "")
+          repoText: modelData.repo ?? ""
+        }
+      }
+      Text {
+        visible: root.hiddenPkgCount > 0
+        text: "+" + root.hiddenPkgCount + " more"
+        color: window.palette.mutedAlt
+        font.family: window.palette.font
+        font.pixelSize: window.appConfig.scaled(10)
+      }
+    }
+
+    SetCard {
+      sys: root.sys
       SetLabel { sys: root.sys; text: "Monitoring" }
       MonitorRow { label: "CPU"; value: root.fmtCpu(); frac: -1 }
       MonitorRow {
@@ -175,6 +264,38 @@ Item {
           frac: modelData.used_pct / 100
         }
       }
+    }
+  }
+
+  // Рядок списку оновлень: ім'я + перехід версій + тег репозиторію
+  component UpdateRow: RowLayout {
+    id: urow
+    property string pkgName: ""
+    property string verText: ""
+    property string repoText: ""
+    Layout.fillWidth: true
+    spacing: 8
+    Text {
+      text: urow.pkgName
+      color: window.palette.fg
+      font.family: window.palette.font
+      font.pixelSize: window.appConfig.scaled(10)
+      Layout.fillWidth: true
+      elide: Text.ElideRight
+    }
+    Text {
+      visible: urow.repoText !== ""
+      text: urow.repoText
+      color: window.palette.accent
+      font.family: window.palette.font
+      font.pixelSize: window.appConfig.scaled(9)
+    }
+    Text {
+      text: urow.verText
+      color: window.palette.mutedAlt
+      font.family: window.palette.font
+      font.pixelSize: window.appConfig.scaled(10)
+      elide: Text.ElideRight
     }
   }
 

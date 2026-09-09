@@ -250,6 +250,7 @@ LOCAL_FILES=(
   data/calendar-tasks.json  # задачі календаря
   data/control-state.json   # стан центру керування
   data/launcher-usage.json  # статистика лаунчера
+  data/updates.json         # кеш списку оновлень (Settings → System)
   data/last-shot.txt        # скріншоти
   scripts/.env              # секрети (HoYoLAB)
   scripts/.genshin_state.json
@@ -861,6 +862,9 @@ PY
   else
     warn "powerprofilesctl not found — power profiles unavailable (pacman -S power-profiles-daemon)"
   fi
+  if command -v checkupdates &>/dev/null; then ok "checkupdates found"; else warn "checkupdates not found — pacman updates unavailable (pacman -S pacman-contrib)"; fi
+  if command -v fakeroot &>/dev/null; then ok "fakeroot found"; else warn "fakeroot not found — checkupdates cannot run (pacman -S fakeroot)"; fi
+  if command -v yay &>/dev/null; then ok "AUR helper: yay"; elif command -v paru &>/dev/null; then ok "AUR helper: paru"; else info "no AUR helper (yay/paru) — AUR updates skipped"; fi
   if command -v hyprsunset &>/dev/null; then ok "hyprsunset found"; else warn "hyprsunset not found — night light unavailable"; fi
 
   echo

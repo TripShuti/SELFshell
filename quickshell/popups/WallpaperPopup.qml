@@ -111,7 +111,7 @@ AnimatedPopup {
     height: parent.height - 20
     spacing: 6
 
-    // Заголовок + кнопка закриття
+    // Заголовок 
     RowLayout {
       Layout.fillWidth: true
       spacing: 6
@@ -124,26 +124,6 @@ AnimatedPopup {
         Layout.fillWidth: true
       }
 
-      Rectangle {
-        implicitWidth: 22; implicitHeight: 22; radius: 4
-        color: closeArea.containsMouse ? window.palette.bg2 : window.palette.bg1
-        Behavior on color { ColorAnimation { duration: appConfig.anim(100) } }
-
-        Text {
-          anchors.centerIn: parent
-          text: "\uF00D"
-          color: closeArea.containsMouse ? window.palette.fg : window.palette.gray
-          Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
-          font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
-        }
-
-        MouseArea {
-          id: closeArea
-          anchors.fill: parent
-          hoverEnabled: true
-          onClicked: root.close()
-        }
-      }
     }
 
     // Роздільник
