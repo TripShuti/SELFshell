@@ -281,6 +281,7 @@ AnimatedPopup {
 
     // Інформація про трек + обкладинка
     TrackHeader {
+      id: trackHeader
       window: root
       player: root.player
       artUrl: root._artUrl
@@ -356,8 +357,9 @@ AnimatedPopup {
     border.color: window.palette.bg2
     clip: true
     // пігулка всередині layout (x:8,y:8), мапимо відносно layout і додаємо зсув layout
-    x: layout.x + playerPill.mapToItem(layout, 0, 0).x
-    y: layout.y + playerPill.mapToItem(layout, 0, playerPill.height + 4).y
+    // (сама пігулка — в TrackHeader, сюди дістаємо аліасом trackHeader.pill)
+    x: layout.x + trackHeader.pill.mapToItem(layout, 0, 0).x
+    y: layout.y + trackHeader.pill.mapToItem(layout, 0, trackHeader.pill.height + 4).y
 
     ColumnLayout {
       anchors.fill: parent

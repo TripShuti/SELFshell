@@ -18,6 +18,9 @@ RowLayout {
   signal togglePlayerSel()
 
   property bool artError: false
+  // Пігулка для позиціонування оверлея дропдауна в корені (id всередину
+  // компонента ззовні не видно, тому віддаємо аліас)
+  property alias pill: playerPill
   Layout.fillWidth: true
   spacing: 8
   visible: player != null
