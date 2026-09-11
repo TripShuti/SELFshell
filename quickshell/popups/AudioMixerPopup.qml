@@ -414,7 +414,7 @@ AnimatedPopup {
                 appConfig: window.appConfig
                 checkedColor: window.palette.green
                 trackWidth: 28; trackHeight: 16; knobSize: 12
-                onToggled: v => root.showVirtual = v
+                onToggled: function(v) root.showVirtual = v
               }
             }
 
@@ -492,7 +492,7 @@ AnimatedPopup {
                 appConfig: window.appConfig
                 checkedColor: window.palette.green
                 trackWidth: 28; trackHeight: 16; knobSize: 12
-                onToggled: v => root.showVirtual = v
+                onToggled: function(v) root.showVirtual = v
               }
             }
 

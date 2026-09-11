@@ -203,7 +203,7 @@ Item {
         label: "Enable animations"
         sub: "Disables all transitions: changes apply instantly."
         on: root.cfg.animationsEnabled
-        onToggled: v => { root.cfg.animationsEnabled = v; root.ac.saveToFile() }
+        onToggled: function(v) { root.cfg.animationsEnabled = v; root.ac.saveToFile() }
       }
       SetSlider {
         sys: root.sys

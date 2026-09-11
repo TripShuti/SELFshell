@@ -153,13 +153,13 @@ Item {
     }
   }
 
-  // Таймер високої смоли: автоматичний синк кожні 8 хв (180+)
+  // Таймер високої смоли: автоматичний синк кожні 8 хв (198+)
   Timer {
     id: highResinTimer
     interval: 480000
     running: false
     repeat: true
-    onTriggered: { if (!syncProc.running) syncProc.running = true }
+    onTriggered: root._doSync()
   }
 
   // Єдиний процес синку (фоновий і ручний рефреш):

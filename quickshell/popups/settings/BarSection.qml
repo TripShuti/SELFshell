@@ -176,7 +176,7 @@ Item {
         label: "Auto-hide"
         sub: "The bar slides behind the screen edge and returns on hover of the thin edge strip. While hidden, windows get the full screen."
         on: root.cfg.barAutoHide
-        onToggled: v => { root.cfg.barAutoHide = v; root.ac.saveToFile() }
+        onToggled: function(v) { root.cfg.barAutoHide = v; root.ac.saveToFile() }
       }
     }
 
@@ -188,21 +188,21 @@ Item {
         label: "Left pill"
         sub: "Hide the whole pill. Its widgets stay configured in Layout and come back when shown again."
         on: root.cfg.leftPillEnabled
-        onToggled: v => { root.cfg.leftPillEnabled = v; root.ac.saveToFile() }
+        onToggled: function(v) { root.cfg.leftPillEnabled = v; root.ac.saveToFile() }
       }
       SetToggle {
         sys: root.sys
         label: "Center pill"
         sub: "Hide the whole pill. Its widgets stay configured in Layout and come back when shown again."
         on: root.cfg.centerPillEnabled
-        onToggled: v => { root.cfg.centerPillEnabled = v; root.ac.saveToFile() }
+        onToggled: function(v) { root.cfg.centerPillEnabled = v; root.ac.saveToFile() }
       }
       SetToggle {
         sys: root.sys
         label: "Right pill"
         sub: "Hide the whole pill. Its widgets stay configured in Layout and come back when shown again."
         on: root.cfg.rightPillEnabled
-        onToggled: v => { root.cfg.rightPillEnabled = v; root.ac.saveToFile() }
+        onToggled: function(v) { root.cfg.rightPillEnabled = v; root.ac.saveToFile() }
       }
     }
 

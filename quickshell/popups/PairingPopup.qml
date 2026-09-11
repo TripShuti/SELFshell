@@ -253,7 +253,7 @@ AnimatedPopup {
         checkedColor: window.palette.widgetFg
         trackWidth: 28; trackHeight: 16; knobSize: 12
         Layout.alignment: Qt.AlignVCenter
-        onToggled: value => { root.trustDevice = value }
+        onToggled: function(value) { root.trustDevice = value }
       }
     }
 

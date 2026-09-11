@@ -176,7 +176,7 @@ Item {
         label: "Auto power-saver on battery"
         sub: "Drops to power-saver at low battery (≤15%), restores your profile on charge."
         on: root.cfg.autoPowerSaver
-        onToggled: v => {
+        onToggled: function(v) {
           root.cfg.autoPowerSaver = v
           root.ac.saveToFile()
           // вимкнення автоматики повертає ручний профіль одразу

@@ -86,7 +86,6 @@ Item {
     triggeredOnStart: true
     running: (root.visible || root.device === "") && root.widgetEnabled
     onTriggered: {
-      if (!root.available && root.device !== "") return
       devsProc.running = true
     }
   }

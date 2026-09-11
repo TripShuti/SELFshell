@@ -581,13 +581,13 @@ AnimatedPopup {
       Rectangle {
         property bool hovered: false
         width: 48; height: 20; radius: 4
-        color: hovered ? window.palette.hoverOverlay : window.palette.bg1
+        color: hovered ? window.palette.accent : window.palette.bg1
         border.width: 1; border.color: window.palette.bg2
         visible: svc && svc.recentNotifications.length > 0
         Text {
           anchors.centerIn: parent
           text: "Clear"
-          color: window.palette.mutedAlt
+          color: parent.hovered ? window.palette.bg0H : window.palette.mutedAlt
           font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
         }
         MouseArea {

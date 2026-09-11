@@ -309,9 +309,9 @@ AnimatedPopup {
   }
 
   // Перемикає автопідключення для цього конкретного профілю з'єднання
-  function toggleAutoconnect() {
+  function toggleAutoconnect(v) {
     if (autoconnectPending || connectionName.length === 0) return;
-    autoconnect = !autoconnect;
+    autoconnect = (v !== undefined) ? v : !autoconnect;
     autoconnectPending = true;
     statusMessage = "Applying...";
     statusIsError = false;
@@ -435,7 +435,7 @@ AnimatedPopup {
         Behavior on opacity { NumberAnimation { duration: appConfig.anim(150); easing.type: Easing.OutCubic } }
         enabled: !root.autoconnectPending
         Layout.alignment: Qt.AlignVCenter
-        onToggled: root.toggleAutoconnect()
+        onToggled: function(v) { root.toggleAutoconnect(v) }
       }
     }
 

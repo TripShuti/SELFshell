@@ -100,7 +100,7 @@ AnimatedPopup {
         appConfig: window.appConfig
         checkedColor: window.palette.widgetFg
         Layout.alignment: Qt.AlignVCenter
-        onToggled: value => { if (adapter) adapter.enabled = value }
+        onToggled: function(value) { if (adapter) adapter.enabled = value }
       }
     }
 
@@ -168,7 +168,7 @@ AnimatedPopup {
         checkedColor: window.palette.widgetFg
         trackWidth: 32; trackHeight: 18; knobSize: 14
         Layout.alignment: Qt.AlignVCenter
-        onToggled: value => {
+        onToggled: function(value) {
           if (!adapter) return
           adapter.discoverable = value
           // pairable слідує за discoverable: тумблер = "режим парингу"

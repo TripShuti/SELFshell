@@ -31,7 +31,7 @@ Item {
         label: "Do not disturb"
         sub: "Hides all notifications (toast, list, sound)."
         on: root.cfg.dndEnabled
-        onToggled: v => { root.cfg.dndEnabled = v; root.ac.saveToFile() }
+        onToggled: function(v) { root.cfg.dndEnabled = v; root.ac.saveToFile() }
       }
     }
 
