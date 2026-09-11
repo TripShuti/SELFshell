@@ -73,7 +73,7 @@ Item {
           label: "Keep master position"
           sub: "Master tile stays in place even when smaller than slaves."
           on: root.vis.always_keep_position
-          onToggled: function(v) root.setVal("always_keep_position", v)
+          onToggled: function(v) { root.setVal("always_keep_position", v) }
         }
       }
       ColumnLayout {
@@ -111,7 +111,7 @@ Item {
           label: "Follow focus"
           sub: "Auto-scroll the tape to the focused window."
           on: root.vis.scroll_follow_focus
-          onToggled: function(v) root.setVal("scroll_follow_focus", v)
+          onToggled: function(v) { root.setVal("scroll_follow_focus", v) }
         }
         SetSlider {
           visible: root.vis.scroll_follow_focus
@@ -126,7 +126,7 @@ Item {
           label: "Fullscreen single column"
           sub: "A lone column on a workspace spans the whole screen."
           on: root.vis.scroll_fullscreen_on_one_column
-          onToggled: function(v) root.setVal("scroll_fullscreen_on_one_column", v)
+          onToggled: function(v) { root.setVal("scroll_fullscreen_on_one_column", v) }
         }
       }
       SetSlider {
@@ -170,7 +170,7 @@ Item {
         sys: root.sys
         label: "Dim inactive window"
         on: root.vis.dim_inactive
-        onToggled: function(v) root.setVal("dim_inactive", v)
+        onToggled: function(v) { root.setVal("dim_inactive", v) }
       }
       SetSlider {
         visible: root.vis.dim_inactive
@@ -183,14 +183,14 @@ Item {
         sys: root.sys
         label: "Window shadows"
         on: root.vis.shadows
-        onToggled: function(v) root.setVal("shadows", v)
+        onToggled: function(v) { root.setVal("shadows", v) }
       }
       SetToggle {
         sys: root.sys
         label: "Resize by border"
         sub: "Drag the window edge to resize (needs border width > 0)."
         on: root.vis.resize_on_border
-        onToggled: function(v) root.setVal("resize_on_border", v)
+        onToggled: function(v) { root.setVal("resize_on_border", v) }
       }
       SetSlider {
         sys: root.sys
@@ -303,7 +303,7 @@ Item {
         label: "Blur enabled"
         sub: "Global Hyprland blur. Disabling restores performance."
         on: root.vis.blur_enabled
-        onToggled: function(v) root.setVal("blur_enabled", v)
+        onToggled: function(v) { root.setVal("blur_enabled", v) }
       }
       SetSlider {
         sys: root.sys
@@ -334,21 +334,21 @@ Item {
         label: "Xray (decoration)"
         sub: "Blur behind windows, not only wallpaper. Needed for xray layers as well."
         on: root.vis.blur_xray
-        onToggled: function(v) root.setVal("blur_xray", v)
+        onToggled: function(v) { root.setVal("blur_xray", v) }
       }
       SetToggle {
         sys: root.sys
         label: "Ignore opacity"
         sub: "If true, semi-transparent windows are treated as opaque for blur."
         on: root.vis.blur_ignore_opacity
-        onToggled: function(v) root.setVal("blur_ignore_opacity", v)
+        onToggled: function(v) { root.setVal("blur_ignore_opacity", v) }
       }
       SetToggle {
         sys: root.sys
         label: "Blur popups (decorations)"
         sub: "Also blur behind xdg-popups from apps."
         on: root.vis.blur_popups
-        onToggled: function(v) root.setVal("blur_popups", v)
+        onToggled: function(v) { root.setVal("blur_popups", v) }
       }
       SetSlider {
         sys: root.sys
@@ -376,7 +376,7 @@ Item {
         label: "Layer Xray"
         sub: "Blur behind windows for both bar and popups. Disable to blur only wallpaper."
         on: root.vis.layer_xray
-        onToggled: function(v) root.setVal("layer_xray", v)
+        onToggled: function(v) { root.setVal("layer_xray", v) }
       }
     }
   }

@@ -965,7 +965,7 @@ AnimatedPopup {
             checkedColor: window.palette.green
             trackWidth: 28; trackHeight: 16; knobSize: 12
             Layout.alignment: Qt.AlignVCenter
-            onToggled: function(v) v ? audioEq.enable() : audioEq.disable()
+            onToggled: function(v) { v ? audioEq.enable() : audioEq.disable() }
           }
         }
 
