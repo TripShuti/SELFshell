@@ -67,15 +67,6 @@ AnimatedPopup {
   // (IdleManager підхоплює зміну через refreshCaffeine() після збереження)
   property bool caffeineEnabled: false
 
-  // --- Яскравість ---
-  property int brightness: -1
-  property int prevBrightness: 50
-  property int _pendingBrightness: -1
-
-  // --- Режим читання ---
-  property int readingTemp: 6500
-  // 3500 = макс. тепло, 6500 = вимкнено (≈identity)
-
   // Виконує дію живлення: shutdown, reboot, suspend, logout, lock
   function runPowerAction(action) {
     var cmd = []
@@ -176,152 +167,6 @@ AnimatedPopup {
     }
   }
 
-  // --- Яскравість (ddcutil) ---
-  function refreshBrightness() {
-    getBrightnessProc.running = true
-  }
-
-  function setBrightness(val) {
-    root.brightness = Math.max(0, Math.min(100, val))
-    if (!setBrightnessProc.running) root._advanceSubStep()
-    State.setBrightness(root.brightness)
-    saveStateTimer.restart()
-  }
-
-  function toggleBrightness() {
-    if (root.brightness <= 10) {
-      root.setBrightness(root.prevBrightness)
-    } else {
-      root.prevBrightness = root.brightness
-      root.setBrightness(10)
-    }
-  }
-
-  function _advanceSubStep() {
-    var target = root.brightness
-    if (root._pendingBrightness < 0) {
-      root._pendingBrightness = target
-      root._doSetDdcutil(target)
-      return
-    }
-    var diff = target - root._pendingBrightness
-    if (Math.abs(diff) <= 15) {
-      root._pendingBrightness = target
-      root._doSetDdcutil(target)
-    } else {
-      root._pendingBrightness += diff > 0 ? 15 : -15
-      root._doSetDdcutil(root._pendingBrightness)
-    }
-  }
-
-  function _doSetDdcutil(val) {
-    setBrightnessProc.command = ["ddcutil", "setvcp", "10", String(val)]
-    setBrightnessProc.running = true
-  }
-
-  // --- Режим читання (hyprsunset) ---
-  function setReadingTemp(val) {
-    root.readingTemp = Math.max(3500, Math.min(6500, val))
-    hyprsunsetDebounce.restart()
-    State.setReadingTemp(root.readingTemp)
-    saveStateTimer.restart()
-  }
-
-  function ensureHyprsunset() {
-    hyprsunsetEnsureProc.command = ["sh", "-c",
-      'SOCK="$XDG_RUNTIME_DIR/hypr/$HYPRLAND_INSTANCE_SIGNATURE/.hyprsunset.sock"; ' +
-      'if echo "temperature 6500" | socat - UNIX-CONNECT:"$SOCK" 2>/dev/null; then exit 0; fi; ' +
-      'killall hyprsunset 2>/dev/null; ' +
-      'rm -f "$SOCK" 2>/dev/null; ' +
-      'sleep 0.5; ' +
-      'nohup hyprsunset --temperature 6500 >/dev/null 2>&1 &']
-    hyprsunsetEnsureProc.running = true
-  }
-
-  function _doSetHyprsunset() {
-    hyprsunsetRetry.stop()
-    var temp = root.readingTemp
-    hyprsunsetSocat.command = ["sh", "-c",
-      'SOCK="$XDG_RUNTIME_DIR/hypr/$HYPRLAND_INSTANCE_SIGNATURE/.hyprsunset.sock"; ' +
-      'if echo "temperature ' + temp + '" | socat - UNIX-CONNECT:"$SOCK" 2>/dev/null; then exit 0; fi; ' +
-      'exit 1']
-    hyprsunsetSocat.running = true
-  }
-
-  StdioCollector {
-    id: brightnessCollector
-    waitForEnd: true
-    onDataChanged: {
-      if (brightnessCollector.text) {
-        var text = brightnessCollector.text.trim()
-        var match = text.match(/current value = +(\d+).+max value = +(\d+)/)
-        if (match) { root.brightness = parseInt(match[1]); root._pendingBrightness = root.brightness }
-      }
-    }
-  }
-
-  Process {
-    id: getBrightnessProc
-    command: ["ddcutil", "getvcp", "10"]
-    stdout: brightnessCollector
-  }
-
-  Process {
-    id: setBrightnessProc
-    onExited: {
-      running = false
-      if (root._pendingBrightness !== root.brightness) root._advanceSubStep()
-    }
-  }
-
-  Timer {
-    id: brightnessPollTimer
-    interval: 5000
-    // Опитуємо ddcutil тільки поки попап відкритий — старт/стоп в
-    // onVisibleChanged. Раніше таймер крутився вічно з моменту старту шела
-    running: false
-    repeat: true
-    onTriggered: root.refreshBrightness()
-  }
-
-  Process {
-    id: hyprsunsetEnsureProc
-    onExited: running = false
-  }
-
-  // socat для зміни температури через сокет (одноразовий).
-  // Обмежена кількість ретраїв — якщо hyprsunset зламаний/відсутній,
-  // не спамимо socat-процесами вічно
-  property int _hyprsunsetRetries: 0
-  readonly property int _hyprsunsetMaxRetries: 6
-
-  Process {
-    id: hyprsunsetSocat
-    onExited: (exitCode) => {
-      running = false
-      if (exitCode === 0) {
-        root._hyprsunsetRetries = 0
-      } else if (root.readingTemp < 6500 && root._hyprsunsetRetries < root._hyprsunsetMaxRetries) {
-        root._hyprsunsetRetries++
-        hyprsunsetRetry.start()
-      } else {
-        root._hyprsunsetRetries = 0
-      }
-    }
-  }
-
-  Timer {
-    id: hyprsunsetDebounce
-    interval: 80
-    onTriggered: root._doSetHyprsunset()
-  }
-
-  Timer {
-    id: hyprsunsetRetry
-    interval: 500
-    onTriggered: root._doSetHyprsunset()
-  }
-
   // Файл персистентності стану (яскравість, температура, muted)
   // — читається при старті, пишеться через 500ms після зміни
   FileView {
@@ -373,8 +218,8 @@ AnimatedPopup {
     var savedBright = State.getBrightness()
     var savedTemp = State.getReadingTemp()
     var savedMuted = State.getMuted()
-    if (savedBright >= 0) root.setBrightness(savedBright)
-    if (savedTemp < 6500) root.setReadingTemp(savedTemp)
+    if (savedBright >= 0) brightSection.setBrightness(savedBright)
+    if (savedTemp < 6500) tempSection.setReadingTemp(savedTemp)
     root.muted = savedMuted
     root.caffeineEnabled = State.getCaffeine()
   }
@@ -382,7 +227,7 @@ AnimatedPopup {
   popupWindow: window
   anchorTarget: anchorItem
 
-  Component.onCompleted: { anchor.window = window; root.refreshBrightness(); root.ensureHyprsunset(); loadSavedState(); root.rebuildGroups() }
+  Component.onCompleted: { anchor.window = window; brightSection.refreshBrightness(); tempSection.ensureHyprsunset(); loadSavedState(); root.rebuildGroups() }
 
   onVisibleChanged: {
     if (visible) {
@@ -390,11 +235,10 @@ AnimatedPopup {
       // зробленими в попапі іншого монітора.
       root.caffeineEnabled = State.getCaffeine()
       root.positionUnderAnchor()
-      root.refreshBrightness()
-      brightnessPollTimer.running = true
+      brightSection.setPolling(true)
     } else {
-      brightnessPollTimer.running = false
-      hyprsunsetRetry.stop()
+      brightSection.setPolling(false)
+      tempSection.stopRetry()
     }
   }
 
@@ -405,158 +249,15 @@ AnimatedPopup {
     spacing: 8
 
     // Ряд швидких дій: мережа, Bluetooth, шпалери
-    RowLayout {
-      Layout.fillWidth: true
-      spacing: 8
-
-      // Кнопка мережі
-      Rectangle {
-        Layout.fillWidth: true
-        implicitHeight: 24
-        radius: 6
-        color: netArea.containsMouse ? window.palette.bg2 : window.palette.bg1
-        Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
-
-        Text {
-          anchors.centerIn: parent
-          text: "󰖩"
-          color: netArea.containsMouse ? window.palette.green : window.palette.gray
-          Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
-          font.family: window.palette.font; font.pixelSize: appConfig.scaled(13)
-        }
-
-        MouseArea {
-          id: netArea
-          anchors.fill: parent
-          hoverEnabled: true
-          onClicked: root.openNetManager()
-        }
-      }
-
-      // Кнопка Bluetooth
-      Rectangle {
-        Layout.fillWidth: true
-        implicitHeight: 24
-        radius: 6
-        color: btArea.containsMouse ? window.palette.bg2 : window.palette.bg1
-        Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
-
-        Text {
-          anchors.centerIn: parent
-          text: ""
-          color: btArea.containsMouse ? window.palette.green : window.palette.gray
-          Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
-          font.family: window.palette.font; font.pixelSize: appConfig.scaled(13)
-        }
-
-        MouseArea {
-          id: btArea
-          anchors.fill: parent
-          hoverEnabled: true
-          onClicked: root.openBtManager()
-        }
-      }
-
-      // Кнопка шпалер
-      Rectangle {
-        Layout.fillWidth: true
-        implicitHeight: 24
-        radius: 6
-        color: wallArea.containsMouse ? window.palette.bg2 : window.palette.bg1
-        Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
-
-        Text {
-          anchors.centerIn: parent
-          text: "\uF03E"
-          color: wallArea.containsMouse ? window.palette.green : window.palette.gray
-          Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
-          font.family: window.palette.font; font.pixelSize: appConfig.scaled(13)
-        }
-
-        MouseArea {
-          id: wallArea
-          anchors.fill: parent
-          hoverEnabled: true
-          onClicked: root.openWallpaperPopup()
-        }
-      }
-
-      // Кнопка налаштувань
-      Rectangle {
-        Layout.fillWidth: true
-        implicitHeight: 24
-        radius: 6
-        color: settingsArea.containsMouse ? window.palette.bg2 : window.palette.bg1
-        Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
-
-        Text {
-          anchors.centerIn: parent
-          text: ""
-          color: settingsArea.containsMouse ? window.palette.green : window.palette.gray
-          Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
-          font.family: window.palette.font; font.pixelSize: appConfig.scaled(13)
-        }
-
-        MouseArea {
-          id: settingsArea
-          anchors.fill: parent
-          hoverEnabled: true
-          onClicked: root.openSettingsPopup()
-        }
-      }
-
-      // Кнопка скріншота всього екрану
-      Rectangle {
-        Layout.fillWidth: true
-        implicitHeight: 24
-        radius: 6
-        color: fullArea.containsMouse ? window.palette.bg2 : window.palette.bg1
-        Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
-
-        Text {
-          anchors.centerIn: parent
-          text: "\uF030"
-          color: fullArea.containsMouse ? window.palette.green : window.palette.gray
-          Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
-          font.family: window.palette.font; font.pixelSize: appConfig.scaled(13)
-        }
-
-        MouseArea {
-          id: fullArea
-          anchors.fill: parent
-          hoverEnabled: true
-          onClicked: {
-            if (root.shotDebouncedClick("full")) return
-            root.takeScreenshot("full")
-          }
-        }
-      }
-
-      // Кнопка скріншота області (slurp)
-      Rectangle {
-        Layout.fillWidth: true
-        implicitHeight: 24
-        radius: 6
-        color: regionArea.containsMouse ? window.palette.bg2 : window.palette.bg1
-        Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
-
-        Text {
-          anchors.centerIn: parent
-          text: "\uF125"
-          color: regionArea.containsMouse ? window.palette.green : window.palette.gray
-          Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
-          font.family: window.palette.font; font.pixelSize: appConfig.scaled(13)
-        }
-
-        MouseArea {
-          id: regionArea
-          anchors.fill: parent
-          hoverEnabled: true
-          onClicked: {
-            if (root.shotDebouncedClick("region")) return
-            root.takeScreenshot("region")
-          }
-        }
+    QuickToggles {
+      window: root
+      onOpenNetManager: root.openNetManager()
+      onOpenBtManager: root.openBtManager()
+      onOpenWallpaperPopup: root.openWallpaperPopup()
+      onOpenSettingsPopup: root.openSettingsPopup()
+      onTakeShot: (kind) => {
+        if (root.shotDebouncedClick(kind)) return
+        root.takeScreenshot(kind)
       }
     }
 
@@ -564,529 +265,27 @@ AnimatedPopup {
     GradientSeparator { midColor: window.palette.bg2 }
 
     // --- Повзунок яскравості (ddcutil) ---
-    RowLayout {
-      Layout.fillWidth: true
-      spacing: 8
-      visible: root.brightness >= 0
-
-      Text {
-        text: "\uF185"
-        color: window.palette.yellow
-        font.family: window.palette.font
-        font.pixelSize: appConfig.scaled(14)
-        Layout.alignment: Qt.AlignVCenter
-      }
-
-      Item {
-        Layout.fillWidth: true
-        implicitHeight: 24
-
-        Rectangle {
-          anchors.verticalCenter: parent.verticalCenter
-          anchors.left: parent.left
-          anchors.right: parent.right
-          height: 6
-          radius: 3
-          color: window.palette.bgAlpha
-
-          Rectangle {
-            width: parent.width * (Math.max(0, Math.min(root.brightness, 100)) / 100)
-            height: parent.height
-            radius: 3
-            color: window.palette.yellow
-            Behavior on width { NumberAnimation { duration: appConfig.anim(350); easing.type: Easing.OutSine } }
-          }
-        }
-
-        MouseArea {
-          anchors.fill: parent
-          cursorShape: Qt.PointingHandCursor
-          onPressed: mouse => { if (mouse.button === Qt.LeftButton) root.setBrightness(Math.round(mouse.x / width * 100)) }
-          onPositionChanged: mouse => { if (pressedButtons & Qt.LeftButton) root.setBrightness(Math.round(mouse.x / width * 100)) }
-          onClicked: mouse => {
-            if (mouse.button === Qt.MiddleButton) root.toggleBrightness()
-            else if (mouse.button === Qt.RightButton) root.setBrightness(100)
-          }
-          onWheel: wheel => {
-            var step = wheel.angleDelta.y > 0 ? window.appConfig.cfg.brightnessStep : -window.appConfig.cfg.brightnessStep
-            root.setBrightness(root.brightness + step)
-          }
-        }
-      }
-
-      Text {
-        id: pctText
-        text: root.brightness + "%"
-        color: window.palette.textLight
-        font.family: window.palette.font
-        font.pixelSize: appConfig.scaled(11)
-        Layout.preferredWidth: 32
-        horizontalAlignment: Text.AlignRight
-        Layout.alignment: Qt.AlignVCenter
-      }
+    BrightnessSection {
+      id: brightSection
+      window: root
+      onStateDirty: saveStateTimer.restart()
     }
 
-  // --- Режим читання (hyprsunset) ---
-    RowLayout {
-      Layout.fillWidth: true
-      spacing: 8
-
-      Text {
-        text: "\uF186"
-        color: root.readingTemp < 6400 ? window.palette.orange : window.palette.gray
-        font.family: window.palette.font
-        font.pixelSize: appConfig.scaled(14)
-        Layout.alignment: Qt.AlignVCenter
-      }
-
-      Item {
-        Layout.fillWidth: true
-        implicitHeight: 24
-
-        Rectangle {
-          anchors.verticalCenter: parent.verticalCenter
-          anchors.left: parent.left
-          anchors.right: parent.right
-          height: 6
-          radius: 3
-          color: window.palette.bgAlpha
-
-          Rectangle {
-            readonly property real fill: Math.max(0, Math.min(1, (6500 - root.readingTemp) / 3000))
-            width: parent.width * fill
-            height: parent.height
-            radius: 3
-            color: window.palette.orange
-            Behavior on width { NumberAnimation { duration: appConfig.anim(250); easing.type: Easing.OutSine } }
-          }
-        }
-
-        MouseArea {
-          anchors.fill: parent
-          cursorShape: Qt.PointingHandCursor
-          onPressed: mouse => { if (mouse.button === Qt.LeftButton) root.setReadingTemp(6500 - Math.round(mouse.x / width * 3000)) }
-          onPositionChanged: mouse => { if (pressedButtons & Qt.LeftButton) root.setReadingTemp(6500 - Math.round(mouse.x / width * 3000)) }
-          onClicked: mouse => {
-            if (mouse.button === Qt.MiddleButton) root.setReadingTemp(root.readingTemp < 6400 ? 6500 : 4500)
-            else if (mouse.button === Qt.RightButton) root.setReadingTemp(6500)
-          }
-          onWheel: wheel => {
-            var step = wheel.angleDelta.y > 0 ? -150 : 150
-            root.setReadingTemp(root.readingTemp + step)
-          }
-        }
-      }
-
-      Text {
-        text: root.readingTemp >= 6500 ? "OFF" : root.readingTemp + "K"
-        color: root.readingTemp < 6400 ? window.palette.orange : window.palette.textLight
-        font.family: window.palette.font
-        font.pixelSize: appConfig.scaled(11)
-        Layout.preferredWidth: 36
-        horizontalAlignment: Text.AlignRight
-        Layout.alignment: Qt.AlignVCenter
-      }
+    // --- Режим читання (hyprsunset) ---
+    ReadingTempSection {
+      id: tempSection
+      window: root
+      onStateDirty: saveStateTimer.restart()
     }
 
     // Роздільник
     GradientSeparator { midColor: window.palette.bg2 }
 
     // Список сповіщень, згрупованих по додатках
-    Item {
-      Layout.fillWidth: true
-      Layout.fillHeight: true
-      // implicitHeight за замовчуванням 0 (діти заякорені), а секція
-      // входить в implicitHeight попапа — без явної висоти список
-      // сповіщень схлопнувся б. Зі сповіщеннями — до висоти списку
-      // (з обмеженням, далі скрол), без — висота порожнього стану.
-      readonly property real notifMaxHeight: 240
-      implicitHeight: root.unread > 0
-        ? Math.min(notifColumn.implicitHeight, notifMaxHeight)
-        : 46
-      Behavior on implicitHeight {
-        NumberAnimation { duration: appConfig.anim(260); easing.type: Easing.OutCubic }
-      }
-      clip: true
-
-      Flickable {
-        id: notifFlick
-        anchors.fill: parent
-        visible: root.unread > 0
-        contentWidth: width
-        contentHeight: notifColumn.implicitHeight
-        boundsBehavior: Flickable.StopAtBounds
-        interactive: contentHeight > height
-
-        Column {
-          id: notifColumn
-          width: parent.width
-          spacing: 8
-
-          Repeater {
-            model: root.groupedModel
-
-            delegate: Column {
-              required property var modelData
-              width: parent.width
-              spacing: 3
-              // Перевикористання делегата з новою моделлю — перерезолв іконки групи
-              onModelDataChanged: groupIconBox._resolveGroupIcon()
-
-              // --- Шапка групи: іконка, назва, кількість, очистити групу ---
-              RowLayout {
-                width: parent.width
-                spacing: 6
-
-                Item {
-                  id: groupIconBox
-                  Layout.preferredWidth: 16
-                  Layout.preferredHeight: 16
-                  // Імперативний резолв: resolve() мутує кеш резолвера,
-                  // біндинг з викликом resolve() зациклюється
-                  property string _res: ""
-                  function _resolveGroupIcon() {
-                    var r = iconResolver.resolve(modelData.icon)
-                    if (r !== "") { _res = r; return }
-                    // fallback на image першого сповіщення групи (коли appIcon порожній, а image — "telegram")
-                    var first = modelData.notifs && modelData.notifs.length > 0 ? modelData.notifs[0] : null
-                    if (first && first.image && String(first.image).startsWith("image://icon/")) {
-                      var n = String(first.image).substring("image://icon/".length)
-                      if (!n.startsWith("/")) {
-                        var rr = iconResolver.resolve(n)
-                        if (rr !== "") { _res = rr; return }
-                      }
-                    }
-                    _res = r
-                  }
-                  Component.onCompleted: _resolveGroupIcon()
-                  Image {
-                    id: grpIconImg
-                    anchors.fill: parent
-                    source: parent._res
-                    fillMode: Image.PreserveAspectFit
-                    asynchronous: true
-                    visible: status === Image.Ready
-                  }
-                  Text {
-                    anchors.fill: parent
-                    visible: grpIconImg.status !== Image.Ready
-                    text: {
-                      if (modelData.icon === "camera-photo") return "\uF030"
-                      if (modelData.icon === "dialog-information") return "\uF05A"
-                      return "•"
-                    }
-                    color: window.palette.green
-                    font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                  }
-                }
-
-                Text {
-                  text: modelData.appName
-                  color: window.palette.green
-                  font.family: window.palette.font; font.pixelSize: appConfig.scaled(11); font.bold: true
-                  elide: Text.ElideRight
-                  Layout.fillWidth: true
-                }
-
-                Text {
-                  text: modelData.notifs.length
-                  color: window.palette.gray
-                  font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
-                }
-
-                Rectangle {
-                  implicitWidth: 16; implicitHeight: 16; radius: 8
-                  color: groupClearArea.containsMouse ? window.palette.red : window.palette.bg1
-                  Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
-                  Text {
-                    anchors.centerIn: parent
-                    text: "\uF00D"
-                    color: groupClearArea.containsMouse ? window.palette.bg0H : window.palette.gray
-                    font.family: window.palette.font; font.pixelSize: appConfig.scaled(8)
-                  }
-                  MouseArea {
-                    id: groupClearArea
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    onClicked: {
-                      for (var i = 0; i < modelData.notifs.length; ++i) {
-                        if (modelData.notifs[i]) modelData.notifs[i].dismiss()
-                      }
-                    }
-                  }
-                }
-              }
-
-              // --- Сповіщення групи ---
-              Repeater {
-                model: modelData.notifs
-
-                delegate: Rectangle {
-                  required property var modelData
-                  readonly property var notif: modelData
-                  property bool hovered: false
-                  // Перевикористання делегата з новою моделлю — перерезолв іконок
-                  onModelDataChanged: {
-                    rowIconBox._resolveRowIcon()
-                    notifImgBox._resolveNotifImg()
-                  }
-
-                  width: notifColumn.width
-                  height: notifRow.implicitHeight + 10
-                  radius: 6
-                  color: hovered ? window.palette.bg2 : window.palette.bg1
-                  Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
-
-                  HoverHandler { onHoveredChanged: parent.hovered = hovered }
-
-                  // Акцентна смужка ліворуч
-                  Rectangle {
-                    width: 3
-                    height: parent.height - 8
-                    anchors.verticalCenter: parent.verticalCenter
-                    anchors.left: parent.left
-                    anchors.leftMargin: 2
-                    radius: 2
-                    color: window.palette.yellow
-                  }
-
-                  // Клік по рядку — default-дія сповіщення.
-                  // MouseArea під контентом, щоб кнопки дій приймали кліки
-                  MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                      var actions = notif.actions
-                      var invoked = false
-                      for (var i = 0; i < actions.length; ++i) {
-                        if (actions[i].identifier === "default") {
-                          actions[i].invoke()
-                          invoked = true
-                          break
-                        }
-                      }
-                      if (!invoked) notif.dismiss()
-                    }
-                  }
-
-                  ColumnLayout {
-                    id: notifRow
-                    x: 12; y: 5
-                    width: parent.width - 24
-                    spacing: 4
-
-                    RowLayout {
-                      Layout.fillWidth: true
-                      spacing: 8
-
-                      // Іконка додатка — файл або тема, з fallback на image (коли appIcon порожній, а image — "telegram")
-                      Item {
-                        id: rowIconBox
-                        Layout.preferredWidth: 18
-                        Layout.preferredHeight: 18
-                        // Імперативний резолв: resolve() мутує кеш резолвера,
-                        // біндинг з викликом resolve() зациклюється
-                        property string _res2: ""
-                        function _resolveRowIcon() {
-                          var r = iconResolver.resolve(notif.appIcon)
-                          if (r !== "") { _res2 = r; return }
-                          // fallback: якщо appIcon порожній, а image — "image://icon/telegram", спробуємо резолвити image
-                          if (notif.image && String(notif.image).startsWith("image://icon/")) {
-                            var n = String(notif.image).substring("image://icon/".length)
-                            if (n.startsWith("/")) { _res2 = ""; return } // файл — large image вже покаже його
-                            var rr = iconResolver.resolve(n)
-                            if (rr !== "") { _res2 = rr; return }
-                          }
-                          _res2 = r
-                        }
-                        Component.onCompleted: _resolveRowIcon()
-                        Image {
-                          id: rowIconImg
-                          anchors.fill: parent
-                          source: parent._res2
-                          fillMode: Image.PreserveAspectFit
-                          asynchronous: true
-                          visible: status === Image.Ready
-                        }
-                        Text {
-                          anchors.fill: parent
-                          visible: rowIconImg.status !== Image.Ready
-                          text: {
-                            if (notif.appIcon === "camera-photo") return "\uF030"
-                            if (notif.appIcon === "dialog-information") return "\uF05A"
-                            // якщо image був telegram, покажемо phone glyph як fallback, але _res2 вже спробував org.telegram.desktop
-                            return "•"
-                          }
-                          color: window.palette.green
-                          font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
-                          horizontalAlignment: Text.AlignHCenter
-                          verticalAlignment: Text.AlignVCenter
-                        }
-                      }
-
-                      ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: 1
-
-                        Text {
-                          text: notif.summary
-                          color: window.palette.fg
-                          font.family: window.palette.font; font.pixelSize: appConfig.scaled(12); font.bold: true
-                          wrapMode: Text.WordWrap
-                          Layout.fillWidth: true
-                          maximumLineCount: 2
-                          elide: Text.ElideRight
-                        }
-
-                        Text {
-                          text: notif.body
-                          color: window.palette.gray
-                          font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
-                          wrapMode: Text.WordWrap
-                          Layout.fillWidth: true
-                          maximumLineCount: 2
-                          elide: Text.ElideRight
-                          visible: notif.body !== ""
-                        }
-                      }
-
-                      // Картинка сповіщення — показуємо тільки якщо це валідний файл або існуюча іконка теми
-                      // image://icon/telegram з missing іконкою дає checker як Ready, тому перевіряємо через _resolvedIcon
-                      Item {
-                        id: notifImgBox
-                        // Імперативний резолв: resolve() мутує кеш резолвера,
-                        // біндинг з викликом resolve() зациклюється
-                        property string _imgResolved: ""
-                        function _resolveNotifImg() {
-                          if (!notif.image) { _imgResolved = ""; return }
-                          var src = String(notif.image)
-                          // quickshell дає image як "image://icon/<name>" або "file://..." або "/path"
-                          if (src.startsWith("image://icon/")) {
-                            var name = src.substring("image://icon/".length)
-                            if (name === "") { _imgResolved = ""; return }
-                            // якщо це шлях до файлу (починається з /), повертаємо file://
-                            if (name.startsWith("/")) { _imgResolved = "file://" + name; return }
-                            _imgResolved = iconResolver.resolve(name)
-                            return
-                          }
-                          if (src.startsWith("/") || src.startsWith("file://")) {
-                            _imgResolved = src.startsWith("file://") ? src : "file://" + src
-                            return
-                          }
-                          // звичайний шлях або іконка
-                          _imgResolved = iconResolver.resolve(src)
-                        }
-                        Component.onCompleted: _resolveNotifImg()
-                        visible: _imgResolved !== ""
-                        Layout.preferredWidth: 56
-                        Layout.preferredHeight: 56
-                        Image {
-                          id: notifImg
-                          anchors.fill: parent
-                          source: parent._imgResolved
-                          fillMode: Image.PreserveAspectFit
-                          asynchronous: true
-                          visible: status === Image.Ready
-                          clip: true
-                          onStatusChanged: if (status === Image.Error) console.warn("[ControlPopup] image load failed:", notif.image, "resolved:", parent._imgResolved, "appIcon:", notif.appIcon)
-                        }
-                      }
-
-                      // Кнопка закриття сповіщення
-                      Rectangle {
-                        implicitWidth: 18; implicitHeight: 18; radius: 9
-                        color: closeArea.containsMouse ? window.palette.red : window.palette.bg1
-                        Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
-
-                        Text {
-                          anchors.centerIn: parent
-                          text: "\uF00D"
-                          color: closeArea.containsMouse ? window.palette.bg0H : window.palette.gray
-                          font.family: window.palette.font; font.pixelSize: appConfig.scaled(9)
-                        }
-
-                        MouseArea {
-                          id: closeArea
-                          anchors.fill: parent
-                          hoverEnabled: true
-                          onClicked: notif.dismiss()
-                        }
-                      }
-                    }
-
-                    // --- Кнопки дій сповіщення (без "default" — він на клік по рядку) ---
-                    Row {
-                      Layout.fillWidth: true
-                      spacing: 4
-                      visible: {
-                        var actions = notif.actions
-                        for (var i = 0; i < actions.length; ++i)
-                          if (actions[i].identifier !== "default") return true
-                        return false
-                      }
-
-                      Repeater {
-                        model: notif.actions
-
-                        delegate: Rectangle {
-                          required property var modelData
-                          readonly property var action: modelData
-                          visible: action.identifier !== "default"
-
-                          implicitWidth: actionText.implicitWidth + 12
-                          height: 20
-                          radius: 4
-                          color: actionArea.containsMouse ? window.palette.bgAlpha : window.palette.bg2
-                          Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
-
-                          Text {
-                            id: actionText
-                            anchors.centerIn: parent
-                            text: action.text
-                            color: window.palette.light
-                            font.family: window.palette.font; font.pixelSize: appConfig.scaled(9)
-                          }
-
-                          MouseArea {
-                            id: actionArea
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: action.invoke()
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-
-      // Порожній стан — немає сповіщень
-      ColumnLayout {
-        anchors.centerIn: parent
-        visible: root.unread === 0
-        spacing: 4
-
-        Text {
-          Layout.alignment: Qt.AlignHCenter
-          text: "\uF0F3"
-          color: window.palette.gray
-          font.family: window.palette.font; font.pixelSize: appConfig.scaled(22)
-        }
-
-        Text {
-          Layout.alignment: Qt.AlignHCenter
-          text: "No notifications"
-          color: window.palette.gray
-          font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
-        }
-      }
+    NotificationList {
+      window: root
+      groupedModel: root.groupedModel
+      unread: root.unread
     }
 
     // Кнопка "очистити все"
@@ -1234,7 +433,6 @@ AnimatedPopup {
             onExited: parent.hovered = false
             onClicked: root.runPowerAction(act.action)
           }
-
 
         }
       }

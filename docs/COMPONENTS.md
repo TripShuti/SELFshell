@@ -133,7 +133,11 @@
 |------|--------------|------|
 | `LauncherPopup.qml` | Application launcher | LauncherUsage.js |
 | `CalendarPopup.qml` | Calendar | `scripts/CalendarTasks.js` |
-| `MprisPopup.qml` | Media player (details + cava + EQ 15-band) | CavaMonitor, TrackListService, `EqPresets.js`, `AudioEq`, `VertSlider` |
+| `MprisPopup.qml` | Media player shell (player election, section heights, dropdown overlay, cava strip) | CavaMonitor, TrackListService, `mpris/*` sections below |
+| `popups/mpris/TrackHeader.qml` | Cover + player pill + track meta (`playerSelOpen` toggled via signal, overlay stays in root) | Mpris (players) |
+| `popups/mpris/PlaybackControls.qml` | Prev/play/next, volume drag, shuffle/loop, section toggles, progress seek | Mpris (`MprisLoopState`) |
+| `popups/mpris/PlaylistSection.qml` | Track queue around current (`_scrollPlaylistToCurrent` local, `playlistTarget` computed in root) | TrackListService |
+| `popups/mpris/EqSection.qml` | System EQ section (status, preset chips + rename, 15 sliders, ctx menu with `z:50`) | `AudioEq`, `EqPresets.js`, `VertSlider` |
 | `GenshinPopup.qml` | Genshin details, manual refresh, check-in | GenshinMonitor, `scripts/genshin_stats.py` |
 | `SelfTrackPopup.qml` | Time tracking (day nav, day/week/month summary, 00–24 timeline, apps with bars, expandable pages) | SelfTrackMonitor, `scripts/SelfTrack.js` |
 | `AudioMixerPopup.qml` | Audio mixer — pavucontrol-style 5 tabs (Playback/Recording/Output/Input/Configuration), stream/device volume + port/profile/fallback, single-pass `_filtered` + `ScriptModel` + `sinkNameMap` cache | PipeWire, `AudioMixerUtils.js` |
@@ -147,7 +151,11 @@
 | `BluetoothPopup.qml` | Bluetooth management | bluez |
 | `NetworkPopup.qml` | Network management | NetworkManager |
 | `NetworkConnectionSettingsPopup.qml` | Details of a specific Wi-Fi/connection | NetworkPopup |
-| `ControlPopup.qml` | Notifications + quick actions | NotificationServer |
+| `ControlPopup.qml` | Control center shell (state, screenshots, power, footer; sections push `stateDirty`, `IdleManager` refreshes caffeine explicitly — no file watcher) | NotificationServer, `control/*` sections below, `IdleManager` |
+| `popups/control/QuickToggles.qml` | 6-button top row (stateless, signals only; `open*` re-emitted so `Bar` wiring is unchanged) | — |
+| `popups/control/BrightnessSection.qml` | ddcutil slider with sub-stepping (`setPolling` from root `onVisibleChanged`) | ddcutil |
+| `popups/control/ReadingTempSection.qml` | hyprsunset slider (debounce, one-shot retries, daemon ensure) | hyprsunset |
+| `popups/control/NotificationList.qml` | Grouped notification list (reads `groupedModel`/`unread` only; card actions are model methods) | NotificationServer |
 | `OsdPopup.qml` | Volume/brightness overlay for media keys | PipeWire, ddcutil |
 | `SettingsPopup.qml` | Bar settings (8 sections, drag-and-drop) | AppConfig |
 | `settings/BarSection.qml` | Settings: bar geometry, auto-hide, layout drag-and-drop, pills appearance, separators | AppConfig |
