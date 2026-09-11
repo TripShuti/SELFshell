@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-09-11
+
 ### Added
 
 - **Yazi trash shortcut** — `yazi/keymap.toml` `g t` opens the trash bin via `plugin trash`.
