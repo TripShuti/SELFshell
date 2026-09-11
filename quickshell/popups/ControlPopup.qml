@@ -14,6 +14,10 @@ AnimatedPopup {
 
   required property QtObject anchorItem
   required property QtObject window
+  // Менеджер бездіяльності (синглтон з shell.qml через Bar) — після кожного
+  // збереження стану штовхаємо йому перечитування caffeine (вотчер вимкнено
+  // через UAF Quickshell 0.3.0, див. IdleManager)
+  required property QtObject idleManager
   palette: window.palette
   appConfig: window.appConfig
 
@@ -60,7 +64,7 @@ AnimatedPopup {
   readonly property bool dndEnabled: window.appConfig.cfg.dndEnabled
 
   // Caffeine mode: вимикає автоблокування/гаснення екрану/suspend по idle
-  // (idle-монітори в IdleManager реагують на зміну файлу control-state.json)
+  // (IdleManager підхоплює зміну через refreshCaffeine() після збереження)
   property bool caffeineEnabled: false
 
   // --- Яскравість ---
@@ -329,6 +333,8 @@ AnimatedPopup {
   // --- Збереження стану ---
   function saveState() {
     stateFile.setText(State.serialize())
+    // Caffeine застосовується одразу, не чекаючи вотчера (його нема — UAF)
+    root.idleManager.refreshCaffeine()
   }
 
   function toggleMuted() {

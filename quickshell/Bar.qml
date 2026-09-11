@@ -28,6 +28,9 @@ PanelWindow {
   required property QtObject powerProfiles
   // сервіс оновлень пакетів (синглтон з shell.qml) — читає SystemSection
   required property QtObject pacmanUpdates
+  // менеджер бездіяльності (синглтон з shell.qml) — прокидається в ControlPopup
+  // для подієвого оновлення caffeine (без вотчера control-state.json через UAF)
+  required property QtObject idleManager
 
   readonly property real pillHeight: root.implicitHeight - 8
 
@@ -457,6 +460,7 @@ PanelWindow {
     anchorItem: root.controlWidget
     visible: false
     notificationsModel: notifServer.trackedNotifications
+    idleManager: root.idleManager
   }
 
   // Історія буфера обміну (SUPER+SHIFT+V). Коли віджет присутній у барі,

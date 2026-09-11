@@ -58,13 +58,15 @@ ShellRoot {
     }
   }
 
+  // Ім'я з Svc-суфіксом навмисно — та сама причина, що в моніторів вище:
+  // `idleManager: idleManager` замкнулось би саме на себе (binding loop).
   IdleManager {
-    id: idleManager
+    id: idleManagerSvc
     appConfig: rootAppConfig
   }
 
   Connections {
-    target: idleManager
+    target: idleManagerSvc
     function onLockRequested() {
       lockContext.locked = true
     }
@@ -158,6 +160,7 @@ ShellRoot {
       selftrackMonitor: selftrackMonitorSvc
       powerProfiles: powerProfileService
       pacmanUpdates: pacmanService
+      idleManager: idleManagerSvc
     }
   }
 }

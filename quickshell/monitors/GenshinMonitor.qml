@@ -97,9 +97,7 @@ Item {
       }
     }
 
-    // Таймери працюють тільки поки монітор увімкнений — вимкнення під час
-    // активного синку не повинно запустити їх заднім числом
-    if (!mainTimer.running && root.monitorEnabled) mainTimer.running = true
+    root._ensureMainTimer()
   }
 
   function _doSync() {
@@ -108,6 +106,14 @@ Item {
     root._syncManual = false
     console.log("[Genshin] Starting sync at", new Date().toISOString())
     syncProc.running = true
+  }
+
+  // Гарантує роботу головного таймера: фоновий провал синку (порожня
+  // відповідь, помилка парсингу) не повинен зупиняти локальний обрахунок
+  // назавжди. Таймери стартують тільки поки монітор увімкнений — вимкнення
+  // під час активного синку не повинно запустити їх заднім числом.
+  function _ensureMainTimer() {
+    if (!mainTimer.running && root.monitorEnabled) mainTimer.running = true
   }
 
   // Мінімальний інтервал між ручними рефрешами (сек), захист від спам-кліків
@@ -208,12 +214,18 @@ Item {
         return
       }
 
-      if (text === "") return
+      if (text === "") {
+        root._ensureMainTimer()
+        return
+      }
       try {
         root._parseSyncResult(JSON.parse(text))
         console.log("[Genshin] Sync done, resin:", root._lastSyncResin, "/", root._lastSyncMaxResin)
       }
-      catch (e) { console.error("Sync error:", e) }
+      catch (e) {
+        console.error("Sync error:", e)
+        root._ensureMainTimer()
+      }
     }
   }
 

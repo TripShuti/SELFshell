@@ -32,7 +32,7 @@ def load(path):
 # --- config.json ---
 BOOL_FIELDS = [
     "launcherEnabled", "workspacesEnabled", "mprisEnabled", "clockEnabled",
-    "timerEnabled", "genshinEnabled", "keyboardEnabled", "audioEnabled",
+    "timerEnabled", "selftrackEnabled", "genshinEnabled", "keyboardEnabled", "audioEnabled",
     "controlEnabled", "clipboardEnabled", "btEnabled", "netEnabled", "trayEnabled",
     "batteryEnabled", "kcdEnabled", "kcdDndEnabled", "dndEnabled", "autoPowerSaver", "barAutoHide",
     "leftPillEnabled", "centerPillEnabled", "rightPillEnabled",

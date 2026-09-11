@@ -23,10 +23,12 @@ Item {
   signal suspendRequested()
 
   // Caffeine mode: стан з control-state.json (пишеться кнопкою в ControlPopup).
-  // Стежимо за змінами файлу на диску (watchChanges → reload) і перечитуємо
-  // значення імперативно в onDataChanged — так само, як PaletteService.
-  // Прямий біндинг на text() ненадійний, бо виклик функції не створює
-  // залежності bindings QML.
+  // Вотчер навмисно ВИМКНЕНО (той самий UAF Quickshell 0.3.0, що в AppConfig:
+  // атомарний запис через setText крашить шел, коли файл відстежується).
+  // Замість цього ControlPopup після кожного збереження кличе
+  // refreshCaffeine() напряму (прокинуто shell.qml → Bar → ControlPopup),
+  // а onDataChanged спрацьовує на старті та на кожному явному reload —
+  // так само, як PaletteService.
   property bool caffeineEnabled: false
 
   function _parseCaffeine(text) {
@@ -39,11 +41,17 @@ Item {
     }
   }
 
+  // Явне перечитування після запису з ControlPopup (див. коментар вище).
+  // Прямий біндинг на text() ненадійний, бо виклик функції не створює
+  // залежності bindings QML.
+  function refreshCaffeine() {
+    caffeineFile.reload()
+  }
+
   FileView {
     id: caffeineFile
     path: Qt.resolvedUrl("../data/control-state.json")
-    watchChanges: true
-    onFileChanged: this.reload()
+    watchChanges: false
     onDataChanged: root._parseCaffeine(caffeineFile.text())
   }
 
