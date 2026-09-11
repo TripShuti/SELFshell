@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **Monitor singletons** — `GenshinMonitor`/`SelfTrackMonitor` moved from `Bar.qml` (one instance per screen) to single instances in `shell.qml`, passed into `Bar` as required properties; N screens no longer means N× HoYoLAB syncs / `selftrack export` polls. `CavaMonitor` and `NotificationServer` stay per-`Bar` by design (screen-bound visualizer/toast).
+- **Popup section split** — `MprisPopup.qml` (`1366→445` LOC) split into `popups/mpris/` (`TrackHeader`, `PlaybackControls`, `PlaylistSection`, `EqSection`) and `ControlPopup.qml` (`1243→441` LOC) into `popups/control/` (`QuickToggles`, `BrightnessSection`, `ReadingTempSection`, `NotificationList`), same pattern as the earlier `AudioMixerPopup → popups/audio/` split. State stays in the popup roots, sections get `required` properties in and signals out (`playerSelOpen`/`playlistOpen`/`eqOpen` toggles, `stateDirty` for `control-state.json` persistence, `takeShot`); the player dropdown overlay and section-height animations stay in the roots (`z`/layout constraints), the pill exposes a `property alias` for dropdown positioning. No behavior change.
 
 ### Fixed
 
