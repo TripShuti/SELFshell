@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Player sliders hard to grab** — the volume (84×4px) and progress (full-width×6px) tracks in the player popup had hit areas exactly the size of the visuals. Both now sit in taller transparent wrappers (22px/20px, same width/origin, visuals pixel-identical) so mouse coordinates and drag logic are unchanged; volume additionally gets mouse-wheel support (`audioStep` from Behavior settings, like the bar) and a pointer cursor. No wheel on progress by design (an accidental scroll would seek the track).
+
 ## [0.11.0] - 2026-09-11
 
 ### Added
