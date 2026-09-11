@@ -134,39 +134,56 @@ ColumnLayout {
         font.family: window.palette.font; font.pixelSize: window.appConfig.scaled(9)
       }
 
-      // Тонкий трек з круглою ручкою, як у типових плеєрах
-      Rectangle {
-        id: volTrack
+      // Тонкий трек з круглою ручкою, як у типових плеєрах.
+      // Хіт-зона (22px) вища за візуал (4px): вузький трек важко вхопити.
+      // Ширина та x-початок зони збігаються з треком, тому координати миші
+      // ті самі і _setVolumeFrom працює без змін.
+      Item {
         Layout.preferredWidth: 84
-        height: 4
-        radius: 1.5
-        color: window.palette.bgAlpha
+        Layout.preferredHeight: 22
         Layout.alignment: Qt.AlignVCenter
 
         Rectangle {
-          width: parent.width * Math.min(player?.volume ?? 0, 1)
-          height: parent.height
+          id: volTrack
+          width: parent.width
+          anchors.verticalCenter: parent.verticalCenter
+          height: 4
           radius: 1.5
-          color: window.palette.green
-          Behavior on width { enabled: !maVol.pressed; NumberAnimation { duration: window.appConfig.anim(120); easing.type: Easing.OutCubic } }
+          color: window.palette.bgAlpha
+
+          Rectangle {
+            width: parent.width * Math.min(player?.volume ?? 0, 1)
+            height: parent.height
+            radius: 1.5
+            color: window.palette.green
+            Behavior on width { enabled: !maVol.pressed; NumberAnimation { duration: window.appConfig.anim(120); easing.type: Easing.OutCubic } }
+          }
+
+          // Ручка — круглий індикатор поточної гучності
+          Rectangle {
+            width: 8; height: 8; radius: 4
+            color: window.palette.fg
+            x: Math.min(Math.max(parent.width * Math.min(player?.volume ?? 0, 1) - width / 2, 0), parent.width - width)
+            y: (parent.height - height) / 2
+            Behavior on x { enabled: !maVol.pressed; NumberAnimation { duration: window.appConfig.anim(120); easing.type: Easing.OutCubic } }
+          }
         }
 
-        // Ручка — круглий індикатор поточної гучності
-        Rectangle {
-          width: 8; height: 8; radius: 4
-          color: window.palette.fg
-          x: Math.min(Math.max(parent.width * Math.min(player?.volume ?? 0, 1) - width / 2, 0), parent.width - width)
-          y: (parent.height - height) / 2
-          Behavior on x { enabled: !maVol.pressed; NumberAnimation { duration: window.appConfig.anim(120); easing.type: Easing.OutCubic } }
-        }
-
-        // Drag: ведення миші після натискання змінює гучність плавно
+        // Drag + колесо миші (крок — audioStep з Behavior, як у бара)
         MouseArea {
           id: maVol
           anchors.fill: parent
+          hoverEnabled: true
+          cursorShape: Qt.PointingHandCursor
           onPressed: mouse => _setVolumeFrom(volTrack, mouse)
           onPositionChanged: mouse => {
             if (pressed) _setVolumeFrom(volTrack, mouse)
+          }
+          onWheel: (wheel) => {
+            if (!player) return
+            var step = window.appConfig.cfg.audioStep
+            if (wheel.angleDelta.y < 0) step = -step
+            player.volume = Math.max(0, Math.min(1, (player.volume ?? 0) + step))
           }
         }
       }
@@ -285,32 +302,44 @@ ColumnLayout {
       font.family: window.palette.font; font.pixelSize: window.appConfig.scaled(9)
     }
 
-    // Трек прогресу
-    Rectangle {
-      id: progTrack
+    // Трек прогресу: хіт-зона (20px) вища за візуал (6px) — та сама
+    // рецептура що в гучності. Ширина та x-початок зони збігаються
+    // з треком, тому mouseX і _seekFrom працюють без змін.
+    // Колеса тут свідомо нема (на відміну від гучності): випадковий
+    // скрол над баром на всю ширину мотав би трек — це навігація,
+    // а не видимий стан, сюрприз коштує дорожче.
+    Item {
       Layout.fillWidth: true
-      height: 6; radius: 2.5
-      color: window.palette.bg1
+      Layout.preferredHeight: 20
       Layout.alignment: Qt.AlignVCenter
 
-      // Заповнення; позиція Quickshell інтерполюється і може вийти за межі
-      // довжини — клемпимо ratio, щоб бар ніколи не був "повний" через дрейф
       Rectangle {
-        readonly property real _ratio: Math.min(Math.max((player?.position ?? 0) / (player?.length ?? 1), 0), 1)
-        width: parent.width * _ratio
-        color: player?.isPlaying ? window.palette.green : window.palette.gray
-        height: parent.height; radius: 2.5
-        Behavior on width { NumberAnimation { duration: window.appConfig.anim(300); easing.type: Easing.Linear } }
-      }
-
-      // Повзунок при наведенні (fade замість visible)
-      Rectangle {
-        opacity: progArea.containsMouse ? 1 : 0
-        width: 10; height: 10; radius: 5
-        color: window.palette.yellow
+        id: progTrack
+        anchors.left: parent.left
+        anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
-        x: Math.min(Math.max(progArea.mouseX - 5, 0), parent.width - 10)
-        Behavior on opacity { NumberAnimation { duration: window.appConfig.anim(120); easing.type: Easing.OutCubic } }
+        height: 6; radius: 2.5
+        color: window.palette.bg1
+
+        // Заповнення; позиція Quickshell інтерполюється і може вийти за межі
+        // довжини — клемпимо ratio, щоб бар ніколи не був "повний" через дрейф
+        Rectangle {
+          readonly property real _ratio: Math.min(Math.max((player?.position ?? 0) / (player?.length ?? 1), 0), 1)
+          width: parent.width * _ratio
+          color: player?.isPlaying ? window.palette.green : window.palette.gray
+          height: parent.height; radius: 2.5
+          Behavior on width { NumberAnimation { duration: window.appConfig.anim(300); easing.type: Easing.Linear } }
+        }
+
+        // Повзунок при наведенні (fade замість visible)
+        Rectangle {
+          opacity: progArea.containsMouse ? 1 : 0
+          width: 10; height: 10; radius: 5
+          color: window.palette.yellow
+          anchors.verticalCenter: parent.verticalCenter
+          x: Math.min(Math.max(progArea.mouseX - 5, 0), parent.width - 10)
+          Behavior on opacity { NumberAnimation { duration: window.appConfig.anim(120); easing.type: Easing.OutCubic } }
+        }
       }
 
       // Drag: ведення миші після натискання перемотує трек плавно
@@ -318,6 +347,7 @@ ColumnLayout {
         id: progArea
         anchors.fill: parent
         hoverEnabled: true
+        cursorShape: Qt.PointingHandCursor
         onPressed: mouse => _seekFrom(progTrack, mouse)
         onPositionChanged: mouse => {
           if (pressed) _seekFrom(progTrack, mouse)
