@@ -7,6 +7,7 @@ import Quickshell
 import Quickshell.Io
 import "../core"
 import "../scripts/ControlState.js" as State
+import "control"
 
 // Центр керування — сповіщення, швидкі перемикачі та кнопки живлення
 AnimatedPopup {
