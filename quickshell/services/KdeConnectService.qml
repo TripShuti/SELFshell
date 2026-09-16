@@ -39,7 +39,11 @@ Item {
 
   Timer {
     id: _pairTimeout
-    interval: 65000
+    // Демон відхиляє запит за [pairing] timeout_secs (30s за замовчуванням):
+    // тримати pending довше небезпечно — пізній Accept вже не прийме запит,
+    // а надішле НОВИЙ (kcd 1.18+ додзвонюється on-demand). Невеликий запас
+    // 5s на рендер/клік.
+    interval: 35000
     repeat: false
     onTriggered: {
       if (root.pendingPairRequest) {
@@ -53,6 +57,17 @@ Item {
     else _pairTimeout.stop()
   }
 
+  // Локальні теки kcd — читаємо з kcd.toml, без хардкоду.
+  // Локальний toml — чия власність: шлях може змінити хто завгодно, тому
+  // і allowlist відкриття (_safeOpenPath в попапі), і фолбеки будуються
+  // від цих значень, а не від ~/Downloads/kcd.
+  property string downloadDir: ""
+  property string downloadDirDisplay: {
+    if (downloadDir === "") return "~/Downloads/kcd"
+    var home = String(Quickshell.env("HOME") ?? "")
+    if (home && downloadDir.startsWith(home)) return "~" + downloadDir.substring(home.length)
+    return downloadDir
+  }
   // SFTP mount dir — читаємо з kcd.toml, без хардкоду ~/Downloads/kcd/mnt
   property string sftpMountDir: ""
   property string sftpMountDirDisplay: {
@@ -73,24 +88,22 @@ Item {
   }
   function _parseSftpMountDir() {
     var txt = String(kcdConfigFile.text() ?? "")
-    var m = txt.match(/\[sftp\][\s\S]*?mount_dir\s*=\s*["']([^"']+)["']/)
     var home = String(Quickshell.env("HOME") ?? "/home/trip")
-    if (m && m[1]) {
-      var dir = String(m[1]).trim()
+    function _expand(dir) {
+      dir = String(dir).trim()
       if (dir.startsWith("~/")) dir = home + dir.substring(1)
       else if (dir.startsWith("$HOME")) dir = dir.replace("$HOME", home)
       else if (!dir.startsWith("/")) dir = home + "/" + dir
-      root.sftpMountDir = dir
-      return
+      return dir
     }
     var dm = txt.match(/download_dir\s*=\s*["']([^"']+)["']/)
-    if (dm && dm[1]) {
-      var d = String(dm[1]).trim()
-      if (d.startsWith("~/")) d = home + d.substring(1)
-      root.sftpMountDir = d.replace(/\/$/, "") + "/mnt"
+    root.downloadDir = (dm && dm[1]) ? _expand(dm[1]) : home + "/Downloads/kcd"
+    var m = txt.match(/\[sftp\][\s\S]*?mount_dir\s*=\s*["']([^"']+)["']/)
+    if (m && m[1]) {
+      root.sftpMountDir = _expand(m[1])
       return
     }
-    root.sftpMountDir = home + "/Downloads/kcd/mnt"
+    root.sftpMountDir = root.downloadDir.replace(/\/$/, "") + "/mnt"
   }
 
   // Обмеження історії сповіщень (не роздувати пам'ять)

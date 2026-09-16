@@ -173,7 +173,7 @@
 | `WallpaperPopup.qml` | Wallpaper picker | `scripts/update-palette.sh` |
 | `TrayMenuPopup.qml` | System tray menu (QML rendering via QsMenuOpener) | TrayWidget |
 | `PairingPopup.qml` | Bluetooth pairing confirmation (passkey/PIN/authorization, 55s countdown) | `PairingAgent.qml` |
-| `KdeConnectPairingPopup.qml` | Phone pairing request (accept/decline, 65s timeout) | KdeConnectService |
+| `KdeConnectPairingPopup.qml` | Phone pairing request (accept/decline, 35s timeout vs daemon 30s) | KdeConnectService |
 | `NotifToast.qml` | Popup notification (toast) | NotificationServer |
 | `KdeConnectPopup.qml` | Phone (kcd) — battery, ping/ring, share, clipboard, SFTP | KdeConnectService |
 

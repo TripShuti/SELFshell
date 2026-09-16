@@ -58,14 +58,20 @@ AnimatedPopup {
 
   // --- Дії: ping / ring / share / clipboard / sftp ---
   // Шлях від телефону (share.complete/sftp) відкриваємо лише всередині
-  // теки завантажень kcd — спарений пристрій у LAN не має диктувати довільний open.
-  // Строгий префікс HOME/Downloads/kcd (не includes: /tmp/Downloads/kcd/* не проходить),
-  // симлінк-назовні не резолвимо — xdg-open йде за лінком, тому allowlist тримаємо вузьким
+  // ЛОКАЛЬНИХ тек kcd — спарений пристрій у LAN не має диктувати довільний open.
+  // Дозволено: піддерево download_dir + сам sftpMountDir / його піддерево
+  // (обидва — з локального kcd.toml через сервіс, не з payload телефону;
+  // локальний toml — чия власність, шлях може змінити хто завгодно).
+  // Строгий префікс (не includes: /tmp/Downloads/kcd/* не проходить),
+  // симлінк-назовні не резолвимо — xdg-open йде за лінком, тому allowlist вузький
   function _safeOpenPath(path) {
     var p = String(path ?? "")
     if (p === "" || p[0] !== "/" || p.includes("..")) return
-    var home = String(Quickshell.env("HOME") ?? "")
-    if (home === "" || !p.startsWith(home + "/Downloads/kcd/")) return
+    var dl = svc ? String(svc.downloadDir ?? "") : ""
+    var mnt = svc ? String(svc.sftpMountDir ?? "") : ""
+    var ok = (dl !== "" && (p === dl || p.startsWith(dl.replace(/\/$/, "") + "/")))
+        || (mnt !== "" && (p === mnt || p.startsWith(mnt.replace(/\/$/, "") + "/")))
+    if (!ok) return
     openShareProc.command = ["xdg-open", p]
     openShareProc.running = true
   }

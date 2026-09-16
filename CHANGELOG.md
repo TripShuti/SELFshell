@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **Player sliders hard to grab** — the volume (84×4px) and progress (full-width×6px) tracks in the player popup had hit areas exactly the size of the visuals. Both now sit in taller transparent wrappers (22px/20px, same width/origin, visuals pixel-identical) so mouse coordinates and drag logic are unchanged; volume additionally gets mouse-wheel support (`audioStep` from Behavior settings, like the bar) and a pointer cursor. No wheel on progress by design (an accidental scroll would seek the track).
+- **kcd open-allowlist vs custom paths** — `KdeConnectPopup._safeOpenPath` only allowed `~/Downloads/kcd/`, so with a custom `sftp.mount_dir` (e.g. `~/kcd`) clicking the mount row silently did nothing. The allowlist is now built from the local `kcd.toml`: `download_dir` subtree + `sftp.mount_dir` itself/subtree (both service-parsed, never from phone payload); strict prefix + `..` rejection kept.
+- **kcd pair timeout vs daemon** — service held `pendingPairRequest` 65s while the daemon kills the request at `[pairing] timeout_secs` (30s): a late Accept would send a *new* outbound request on kcd 1.18+ instead of accepting. Timeout cut to 35s (30s + click grace).
+
+### Removed
+
+- **kcd Devices section** — the popup's manual device list (Refresh/Pair/Unpair/Connect by IP) is gone: pairing is phone-initiated only, the popup reacts to `pair.requested`. Terminal flow (`kcd pair`, `kcd connect`) unchanged, see TROUBLESHOOTING.
 
 ## [0.11.0] - 2026-09-11
 

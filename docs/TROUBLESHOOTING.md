@@ -137,11 +137,17 @@ kcd pair   # accept on phone, same Wi-Fi
 kcd connect <pc-ip>   # phone: KDE Connect → Add device by IP
 ```
 
-**SFTP mount shows `/storage/emulated/0` but folder in `~/Downloads/kcd/mnt`**
+**SFTP mount shows `/storage/emulated/0` but folder elsewhere**
 
-**Cause:** `Mount: /storage/emulated/0` is the phone's storage path. Local mount is `sftp.mount_dir` from `~/.config/kcd/kcd.toml` (`~/Downloads/kcd/mnt` default) via `sshfs`. Popup now shows `Local: ~/Downloads/kcd/mnt → Phone: /storage/emulated/0`.
+**Cause:** `Mount: /storage/emulated/0` is the phone's storage path. Local mount is `sftp.mount_dir` from `~/.config/kcd/kcd.toml` (read live by the popup — no hardcoded default) via `sshfs`. Popup shows `Local: <mount_dir> → Phone: /storage/emulated/0`.
 
 **Fix:** `kcd sftp browse <id>` opens local mount via `xdg-open`. Check `mount | grep kcd` and `kcd sftp info <id>`. Needs `sshfs` (`sudo pacman -S sshfs`).
+
+**SFTP browse hangs then times out (`timed out ... waiting for SFTP response`)**
+
+**Cause:** the daemon asked the phone for SFTP credentials and the phone never answered — the phone-side SFTP plugin is off, the app is battery-restricted, or an approval prompt on the phone was missed. Nothing on the PC side can fix this; the shell only surfaces the timeout.
+
+**Fix:** on the phone, in KDE Connect: enable the SFTP/filesystem plugin, exempt the app from battery optimization, retry Browse and accept any prompt. Verify with `kcd sftp info <id>` (should print IP/user/volumes instead of `no credentials cached`).
 
 **Clipboard push does nothing**
 

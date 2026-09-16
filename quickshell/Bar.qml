@@ -624,8 +624,9 @@ PanelWindow {
       if (root.appConfig.cfg.kcdDndEnabled) return
       notif.tracked = true
       var phoneApp = notif.appName ? "Phone • " + notif.appName : "Phone"
-      // іконка додатку: payload.icon (файл з kcd fetch_icons) або підбір за ім'ям
-      var iconSrc = notif.icon ?? ""
+      // іконка додатку: payload.icon (файл з kcd fetch_icons), appIcon (внутрішні
+      // тости сервісу: clipboard/share) або підбір за ім'ям
+      var iconSrc = notif.icon ?? notif.appIcon ?? ""
       if (!iconSrc) {
         var base = String(notif.appName ?? "").toLowerCase().replace(/\s+/g, "-")
         var cands = [base, "org." + base + ".desktop", base + "-desktop", base.replace(/^org\./, "")]
