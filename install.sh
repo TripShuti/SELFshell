@@ -23,7 +23,7 @@
 #     оновлює його через git pull замість перезапису (зберігаються
 #     налаштування, .env та git-workflow із README).
 # ============================================================
-set -euo pipefail
+set -Euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 QS_CONFIG_DIR="$HOME/.config/quickshell"
@@ -91,6 +91,7 @@ PACMAN_DEPS=(
   upower
   power-profiles-daemon
   pacman-contrib
+  fakeroot
   lxqt-policykit
 
   # qt6-5compat — Qt5Compat.GraphicalEffects (блюр на екрані блокування);
@@ -231,11 +232,19 @@ if systemd-detect-virt -q -c; then
   }
 fi
 
-svc_start NetworkManager.service
-svc_start bluetooth.service
-svc_start power-profiles-daemon.service
+# --no означає огляд без змін: enable/start сервісів пропускаємо
+if [ "$ASSUME_YES" != "n" ]; then
+  svc_start NetworkManager.service
+  svc_start bluetooth.service
+  svc_start power-profiles-daemon.service
+else
+  info "--no: skipping service enable (review mode)."
+fi
 
-sudo usermod -aG lp "$USER" 2>/dev/null || true
+# --no означає огляд без змін: сервіси і групи не чіпаємо
+if [ "$ASSUME_YES" != "n" ]; then
+  sudo usermod -aG lp "$USER" 2>/dev/null || true
+fi
 rfkill unblock bluetooth 2>/dev/null || true
 if command -v bluetoothctl &>/dev/null; then
   if ! timeout 5 bluetoothctl list 2>/dev/null | grep -q .; then
@@ -283,6 +292,8 @@ fi
 
 if [ ! -f "$QS_CONFIG_DIR/scripts/.env" ] && [ -f "$QS_CONFIG_DIR/scripts/.env.example" ]; then
   cp "$QS_CONFIG_DIR/scripts/.env.example" "$QS_CONFIG_DIR/scripts/.env"
+  # Секрети HoYoLAB — тільки власнику, інакше читабельні всім юзерам (644)
+  chmod 600 "$QS_CONFIG_DIR/scripts/.env"
   warn "Created scripts/.env from .env.example — fill in your HoYoLAB data if you need the Genshin widget"
   warn "(or disable the Genshin widget in Settings → Widgets)"
 fi
@@ -342,10 +353,12 @@ for h in yay paru; do
 done
 
 install_yay() {
-  # builddir зачищається навіть при аварії (RETURN trap функції)
-  local builddir="/tmp/yay-build"
+  # builddir зачищається навіть при аварії (RETURN trap функції).
+  # mktemp замість фіксованого /tmp/yay-build: передбачуваний шлях —
+  # symlink/TOCTOU, два паралельні запуски ділили б теку
+  local builddir
+  builddir="$(mktemp -d /tmp/yay-build-XXXXXX)"
   trap 'rm -rf "$builddir"' RETURN
-  rm -rf "$builddir"
   if ! run_retry 3 git clone https://aur.archlinux.org/yay.git "$builddir"; then
     error "Failed to clone yay from AUR."
     return 1
@@ -380,6 +393,10 @@ if confirm "Install Breeze cursor theme ($CURSOR_THEME, extra)?" n; then
   fi
   if [ -d /usr/share/icons/"$CURSOR_THEME" ]; then
     sudo mkdir -p /usr/share/icons/default
+    # Бекап системного файла перед перезаписом (rollback його не знає)
+    if [ -f /usr/share/icons/default/index.theme ]; then
+      sudo cp -n /usr/share/icons/default/index.theme "/usr/share/icons/default/index.theme.bak-$ts" 2>/dev/null || true
+    fi
     printf '[Icon Theme]\nInherits=%s\n' "$CURSOR_THEME" | sudo tee /usr/share/icons/default/index.theme >/dev/null
     if command -v gsettings &>/dev/null; then
       gsettings set org.gnome.desktop.interface cursor-theme "$CURSOR_THEME" 2>/dev/null || true
@@ -486,6 +503,10 @@ if confirm "Install greetd with the tuigreet login (TUI, starts Hyprland via uws
   # команду сесії. mkdir -p обов'язковий: теки може не бути на свіжих
   # системах, а запис без неї вбив би скрипт через set -e
   sudo mkdir -p /etc/greetd
+  # Бекап системного конфіга перед перезаписом (rollback його не знає)
+  if [ -f /etc/greetd/config.toml ]; then
+    sudo cp -n /etc/greetd/config.toml "/etc/greetd/config.toml.bak-$ts" 2>/dev/null || true
+  fi
   printf '[terminal]\nvt = 1\n\n[default_session]\ncommand = "tuigreet --time --remember --cmd '\''/usr/bin/uwsm start hyprland.desktop'\''"\nuser = "greeter"\n' | sudo tee /etc/greetd/config.toml >/dev/null
   if ! sudo test -f /etc/greetd/config.toml; then
     error "Failed to write /etc/greetd/config.toml — manual steps:"
@@ -505,15 +526,18 @@ if confirm "Install greetd with the tuigreet login (TUI, starts Hyprland via uws
 else
   info "No greetd: adding Hyprland autostart via uwsm (fish login)."
   fish_config="$HOME/.config/fish/config.fish"
-  if [ -f "$fish_config" ] && ! grep -q "uwsm start" "$fish_config"; then
+  # Маркери замість голого grep "uwsm start": повторний прогін після
+  # відкату не задвоює блок, чужий рядок з uwsm не блокує вставку
+  if [ -f "$fish_config" ] && ! grep -q "SELFshell-uwsm-begin" "$fish_config"; then
     cat >> "$fish_config" << 'FISHEOF'
 
-# Autostart Hyprland session via uwsm (no display manager)
+# SELFshell-uwsm-begin: autostart Hyprland session via uwsm (no display manager)
 if status is-login
     and test -z "$WAYLAND_DISPLAY"
     and test (tty) = /dev/tty1
     exec uwsm start hyprland.desktop
 end
+# SELFshell-uwsm-end
 FISHEOF
     info "Added uwsm Hyprland autostart to $fish_config"
   else

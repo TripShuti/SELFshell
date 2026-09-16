@@ -27,7 +27,9 @@ else
   sudo pacman -Syu || code=$?
 fi
 
-printf '%s\n' "$code" > "$sentinel"
+# Атомарний запис: сервіс опитує файл кожні 3с і міг би прочитати напівзапис
+printf '%s\n' "$code" > "$sentinel.tmp"
+mv -f "$sentinel.tmp" "$sentinel"
 
 echo
 read -rp "Done (exit $code). Press Enter to close... " _ || true

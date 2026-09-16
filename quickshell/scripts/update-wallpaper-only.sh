@@ -18,6 +18,13 @@ EXT="${EXT,,}"
 [ "$EXT" = "jpeg" ] && EXT="jpg"
 WP_DIR="$HOME/.config/quickshell/wp"
 mkdir -p "$WP_DIR"
+# Той самий lockdir що в update-palette.sh: обидва скрипти пишуть current.*
+LOCKDIR="$WP_DIR/.wallpaper.lock"
+if ! mkdir "$LOCKDIR" 2>/dev/null; then
+  echo "error: another wallpaper switch is in progress" >&2
+  exit 1
+fi
+trap 'rmdir "$LOCKDIR" 2>/dev/null || true' EXIT
 CURRENT="$WP_DIR/current.$EXT"
 LOCK_FRAME="$WP_DIR/current-lock.jpg"
 
@@ -26,7 +33,8 @@ awww img "$WALLPAPER"
 sleep 0.35
 hyprctl reload >/dev/null 2>&1 || true
 
-cp "$WALLPAPER" "$CURRENT"
+cp "$WALLPAPER" "$CURRENT.tmp"
+mv -f "$CURRENT.tmp" "$CURRENT"
 
 if command -v magick >/dev/null 2>&1; then
   magick "${CURRENT}[0]" -quality 85 "$LOCK_FRAME" || true

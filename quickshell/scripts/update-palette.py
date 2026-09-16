@@ -6,6 +6,7 @@
 # та qt6ct color scheme на основі поточних шпалер через matugen
 
 import sys, json, subprocess, re, os, tempfile
+import fcntl
 
 QS_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WP_DIR = os.path.expanduser("~/.config/quickshell/wp")
@@ -349,11 +350,15 @@ def _build_and_write_palette(fg, gray, green, red, bg0H, bg1, bg2, muted, light,
     foot_ini_path = os.path.join(FOOT_DIR, "foot.ini")
     include_line = "include=~/.config/foot/colors.ini"
     if os.path.isfile(foot_ini_path):
-        with open(foot_ini_path, "r") as f:
-            foot_ini = f.read()
-        if "colors.ini" not in foot_ini:
-            with open(foot_ini_path, "a") as f:
-                f.write(f"\n{include_line}\n")
+        # flock: паралельні запуски не задвоюють include-рядок
+        with open(foot_ini_path, "r+") as f:
+            fcntl.flock(f, fcntl.LOCK_EX)
+            try:
+                foot_ini = f.read()
+                if "colors.ini" not in foot_ini:
+                    f.write(f"\n{include_line}\n")
+            finally:
+                fcntl.flock(f, fcntl.LOCK_UN)
     else:
         atomic_write(foot_ini_path, f"# Згенеровано update-palette.py\n{include_line}\n")
 
@@ -629,7 +634,7 @@ def main():
         sepBg      = alpha(col("primary"), 0.6)
         outlineVariant = alpha(bg2, 0.4)
         on_primary = col("on_primary")
-    except (KeyError, TypeError) as e:
+    except (KeyError, TypeError, ValueError) as e:
         print(f"error: unexpected matugen schema: {e}", file=sys.stderr)
         return 1
 

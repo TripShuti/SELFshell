@@ -23,7 +23,12 @@ def _player_bus_name(name: str) -> str:
         names = bus.list_names()
         if full in names:
             return full
-        # identity може не збігатись з well-known ім'ям (напр. chromium.instance1172)
+        # identity може не збігатись з well-known ім'ям (напр. chromium.instance1172):
+        # спершу точна відповідність суфікса, голий підрядок — останній шанс
+        # (інакше "fire" матчить "firefox.instance1234")
+        for n in names:
+            if n.startswith(MPRIS_IFACE + ".") and n.rsplit(".", 1)[-1].lower() == name.lower():
+                return n
         for n in names:
             if n.startswith(MPRIS_IFACE + ".") and name.lower() in n.lower():
                 return n
@@ -70,13 +75,20 @@ def cmd_metadata(player: str, track_ids: list[str]):
 
     # Спека: a{oa{sv}} (dict {path: metadata}), але деякі плеєри (mpris-server)
     # повертають масив a{sv} у порядку запиту — обробляємо обидва варіанти.
+    # Розсинхрон довжин масивної відповіді не ріжемо мовчки через zip —
+    # діагностика в stderr, відсутні треки стають None
     meta_by_id = {}
     if isinstance(result, dict):
         for track_id, meta in result.items():
             meta_by_id[str(track_id)] = _clean_metadata(meta)
     else:
+        if len(result) != len(track_ids):
+            print(f"tracklist: metadata count mismatch "
+                  f"({len(result)} for {len(track_ids)})", file=sys.stderr)
         for tid, meta in zip(track_ids, result):
             meta_by_id[tid] = _clean_metadata(meta)
+        for tid in track_ids[len(result):]:
+            meta_by_id[tid] = None
     tracks = [meta_by_id.get(tid) for tid in track_ids]
     # index у blacklist-віждетах quickshell — позиція в черзі
     for i, t in enumerate(tracks):
@@ -179,7 +191,9 @@ def main():
         elif args.command == "canedit":
             cmd_canedit(args.player)
     except dbus.exceptions.DBusException as e:
-        # Плеєр не існує або не підтримує TrackList — мовчки виходимо
+        # Плеєр не існує або не підтримує TrackList — код 1 + причина
+        # в stderr, щоб у qs log було видно що саме (а не тихий провал)
+        print(f"tracklist: {e}", file=sys.stderr)
         sys.exit(1)
 
 

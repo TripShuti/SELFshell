@@ -12,9 +12,12 @@ import sys
 
 
 def pick_cpu_temp(hwmon_root="/sys/class/hwmon"):
-    """Температура CPU в °C. Пріоритет: k10temp/Tctl (AMD), coretemp/Package
-    (Intel), далі перший правдоподібний temp1_input (10–115°C відсікає сміття
-    на кшталт AUXTIN). Повертає float або None."""
+    """Температура CPU в °C. Пріоритет: мітка Package/Tctl/Tdie (k10temp Tctl,
+    coretemp Package id 0 — вони живуть на tempN>1, а не лише temp1),
+    далі перший правдоподібний сенсор відомого чипа (k10temp/coretemp/
+    zenpower/k8temp), далі перший правдоподібний temp1_input будь-де
+    (10–115°C відсікає сміття на кшталт AUXTIN). Повертає float або None."""
+    known_chips = ("k10temp", "coretemp", "zenpower", "k8temp")
     try:
         chips = sorted(os.listdir(hwmon_root))
     except OSError:
@@ -27,18 +30,30 @@ def pick_cpu_temp(hwmon_root="/sys/class/hwmon"):
                 name = f.read().strip()
         except OSError:
             continue
-        for sensor in ("temp1_input",):
+        chip_best = None
+        for n in range(1, 9):
             try:
-                with open(os.path.join(base, sensor)) as f:
+                with open(os.path.join(base, "temp%d_input" % n)) as f:
                     val = int(f.read().strip()) / 1000.0
             except (OSError, ValueError):
                 continue
             if not 10.0 <= val <= 115.0:
                 continue
-            if name in ("k10temp", "coretemp", "zenpower", "k8temp"):
+            try:
+                with open(os.path.join(base, "temp%d_label" % n)) as f:
+                    label = f.read().strip()
+            except OSError:
+                label = ""
+            if label in ("Tctl", "Tdie", "Package id 0") or label.startswith("Package"):
                 return val
-            if fallback is None:
-                fallback = val
+            if chip_best is None:
+                chip_best = val
+        if chip_best is None:
+            continue
+        if name in known_chips:
+            return chip_best
+        if fallback is None:
+            fallback = chip_best
     return fallback
 
 
@@ -84,6 +99,10 @@ def parse_meminfo(text):
     avail = mem.get("MemAvailable", 0)
     if not total:
         return None
+    if not avail:
+        # Старі ядра/контейнери без MemAvailable: груба оцінка через
+        # MemFree+Buffers+Cached, інакше було б хибних 100%
+        avail = mem.get("MemFree", 0) + mem.get("Buffers", 0) + mem.get("Cached", 0)
     used_kb = total - avail
     return (round(used_kb / total * 100),
             round(total / 1024 / 1024, 1),

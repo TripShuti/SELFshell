@@ -51,9 +51,10 @@ def load_state():
 def save_state(state):
     # Атомарний запис (tmp + os.replace, як в update-palette.py):
     # читач, що потрапив на наполовину записаний файл, отримав би
-    # JSONDecodeError і скинув стан у {}
+    # JSONDecodeError і скинув стан у {}. Суфікс з pid — паралельні
+    # sync (QML-таймер + ручний рефреш) не ділять один .tmp
     try:
-        tmp = STATE_FILE + ".tmp"
+        tmp = "%s.%d.tmp" % (STATE_FILE, os.getpid())
         with open(tmp, "w") as f:
             json.dump(state, f)
         os.replace(tmp, STATE_FILE)

@@ -16,6 +16,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 
 ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
 # необов'язковий префікс `repo/` (yay/paru іноді його додають), далі
@@ -61,7 +62,9 @@ def parse_si_block(block):
 
 def size_to_bytes(text):
     """`3.60 MiB` -> байти, None — нерозпізнаний формат."""
-    m = SIZE_RE.match((text or "").strip().upper())
+    # Локалі з комою (`3,60 MiB`) нормалізуємо, інакше сума занижується мовчки
+    norm = re.sub(r"(?<=\d),(?=\d)", ".", (text or "").strip().upper())
+    m = SIZE_RE.match(norm)
     if not m:
         return None
     mult = UNIT_MULT.get(m.group(2))
@@ -88,8 +91,13 @@ def run(cmd, timeout):
     if shutil.which(cmd[0]) is None:
         return (127, "")
     try:
+        # Англійська локаль: `pacman -Si` парситься за англійськими ключами
+        # (Name/Repository/Download Size) — при іншій локалі enrich був би
+        # порожнім, а суми/описи зникали б мовчки
+        env = dict(os.environ)
+        env["LC_ALL"] = "C"
         proc = subprocess.run(cmd, capture_output=True, text=True,
-                              timeout=timeout)
+                              timeout=timeout, env=env)
     except (OSError, subprocess.TimeoutExpired):
         return (1, "")
     return (proc.returncode, proc.stdout or "")
@@ -152,8 +160,16 @@ def enrich_official(names):
     dbpath = default_dbpath()
     if not os.path.isdir(os.path.join(dbpath, "sync")):
         return {}
-    rc, out = run(["pacman", "--dbpath", dbpath, "-Si", "--"] + names,
-                  timeout=60)
+    for attempt in (0, 1):
+        rc, out = run(["pacman", "--dbpath", dbpath, "-Si", "--"] + names,
+                      timeout=60)
+        if rc == 0:
+            break
+        # Паралельний checkupdates міг саме синхронізувати базу —
+        # одна повторна спроба замість мовчазного {}
+        time.sleep(2)
+    else:
+        return {}
     if rc != 0:
         return {}
     info = {}
