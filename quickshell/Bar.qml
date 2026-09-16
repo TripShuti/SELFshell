@@ -625,8 +625,11 @@ PanelWindow {
       notif.tracked = true
       var phoneApp = notif.appName ? "Phone • " + notif.appName : "Phone"
       // іконка додатку: payload.icon (файл з kcd fetch_icons), appIcon (внутрішні
-      // тости сервісу: clipboard/share) або підбір за ім'ям
+      // тости сервісу: clipboard/share) або підбір за ім'ям.
+      // Другий рубіж allowlist (перший — у сервісі): абсолютний шлях
+      // з телефона поза теками kcd не йде в тост
       var iconSrc = notif.icon ?? notif.appIcon ?? ""
+      if (iconSrc !== "" && String(iconSrc)[0] === "/" && !kdeConnect.allowedIconPath(iconSrc)) iconSrc = ""
       if (!iconSrc) {
         var base = String(notif.appName ?? "").toLowerCase().replace(/\s+/g, "-")
         var cands = [base, "org." + base + ".desktop", base + "-desktop", base.replace(/^org\./, "")]

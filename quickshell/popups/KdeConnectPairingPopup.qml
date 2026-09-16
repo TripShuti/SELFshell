@@ -57,8 +57,13 @@ AnimatedPopup {
       pairAcceptProc.command = ["kcd", "pair", deviceId]
       pairAcceptProc.running = true
     } else {
-      // Відхилити: просто закриваємо попап, kcd pair timeout 30s сам відхилить
-      // Альтернативно можна спробувати kcd unpair, але для непарованого це не потрібно
+      // Відхилити: пробуємо kcd unpair best-effort (для ще не спареного
+      // може не мати ефекту — тоді демон сам відхилить по timeout 30s),
+      // попап закриваємо одразу щоб телефон не висів у очікуванні в UI
+      if (deviceId !== "") {
+        pairRejectProc.command = ["kcd", "unpair", deviceId]
+        pairRejectProc.running = true
+      }
       if (svc) svc.pendingPairRequest = null
     }
     close()

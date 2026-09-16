@@ -75,19 +75,19 @@ AnimatedPopup {
     openShareProc.command = ["xdg-open", p]
     openShareProc.running = true
   }
-  Process { id: pingProc; onExited: running = false }
-  Process { id: ringProc; onExited: running = false }
+  Process { id: pingProc; onExited: (code) => { running = false; root._actionDone("Ping", code) } }
+  Process { id: ringProc; onExited: (code) => { running = false; root._actionDone("Ring", code) } }
   Process {
     id: shareProc
-    onExited: (code) => { running = false; if (code !== 0) console.warn("[kcd] share failed", code) }
+    onExited: (code) => { running = false; root._actionDone("Share", code) }
   }
+  Process { id: clipboardPushProc; onExited: (code) => { running = false; root._actionDone("Clipboard", code) } }
+  Process { id: sftpMountProc; onExited: (code) => { running = false; root._actionDone("Files", code) } }
+  Process { id: sftpUnmountProc; onExited: (code) => { running = false; root._actionDone("Unmount", code) } }
   Process {
     id: openShareProc
     onExited: running = false
   }
-  Process { id: clipboardPushProc; onExited: (code) => { running = false; if (code !== 0) console.warn("[kcd] clipboard push failed", code) } }
-  Process { id: sftpMountProc; onExited: running = false }
-  Process { id: sftpUnmountProc; onExited: running = false }
   // Вибір файлу для share — через zenity/kdialog (FileDialog крашить quickshell)
   Process {
     id: sharePickerProc
@@ -109,39 +109,57 @@ AnimatedPopup {
     onExited: (code) => { running = false }
   }
 
+  // Інлайн-статус дій: успіх/помилка йшли лише в console.warn,
+  // клік по «мертвій» кнопці (reachable застарів на 30с) мовчав
+  property string actionStatus: ""
+  Timer {
+    id: actionStatusTimer
+    interval: 4000
+    onTriggered: root.actionStatus = ""
+  }
+  function _actionDone(label, code) {
+    if (code !== 0) {
+      root.actionStatus = label + " failed (code " + code + ")"
+      actionStatusTimer.restart()
+    } else {
+      root.actionStatus = ""
+      actionStatusTimer.stop()
+    }
+  }
+
   function doPing() {
-    if (!root.devId) return
+    if (!root.devId || pingProc.running) return
     pingProc.command = ["kcd", "ping", root.devId]
     pingProc.running = true
   }
   function doRing() {
-    if (!root.devId) return
+    if (!root.devId || ringProc.running) return
     ringProc.command = ["kcd", "findmyphone", root.devId]
     ringProc.running = true
   }
   function doSharePick() {
-    if (!root.devId) return
+    if (!root.devId || sharePickerProc.running || shareProc.running) return
     // пробуємо zenity → kdialog → yad, тихо якщо нічого нема
     sharePickerProc.command = ["sh", "-c", "zenity --file-selection 2>/dev/null || kdialog --getopenfilename \"$HOME\" 2>/dev/null || yad --file-selection 2>/dev/null || true"]
     sharePickerProc.running = true
   }
   function doClipboardPush() {
-    if (!root.devId) return
+    if (!root.devId || clipboardPushProc.running) return
     clipboardPushProc.command = ["kcd", "clipboard", root.devId]
     clipboardPushProc.running = true
   }
   function doSftpMount() {
-    if (!root.devId) return
+    if (!root.devId || sftpMountProc.running) return
     sftpMountProc.command = ["kcd", "sftp", "mount", root.devId]
     sftpMountProc.running = true
   }
   function doSftpUnmount() {
-    if (!root.devId) return
+    if (!root.devId || sftpUnmountProc.running) return
     sftpUnmountProc.command = ["kcd", "sftp", "unmount", root.devId]
     sftpUnmountProc.running = true
   }
   function doSftpBrowse() {
-    if (!root.devId) return
+    if (!root.devId || sftpMountProc.running) return
     sftpMountProc.command = ["kcd", "sftp", "browse", root.devId]
     sftpMountProc.running = true
   }
@@ -200,6 +218,16 @@ AnimatedPopup {
           }
         }
       }
+    }
+
+    // Інлайн-статус останньої дії (помилки Ping/Ring/Share/Clipboard/SFTP)
+    Text {
+      visible: root.actionStatus !== ""
+      text: root.actionStatus
+      color: window.palette.danger
+      font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
+      wrapMode: Text.WordWrap
+      Layout.fillWidth: true
     }
 
 
@@ -601,7 +629,7 @@ AnimatedPopup {
           hoverEnabled: true
           onEntered: parent.hovered = true
           onExited: parent.hovered = false
-          onClicked: svc.recentNotifications = []
+          onClicked: svc.clearNotifications()
         }
       }
     }

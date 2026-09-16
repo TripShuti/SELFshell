@@ -61,6 +61,21 @@ Item {
   // Локальний toml — чия власність: шлях може змінити хто завгодно, тому
   // і allowlist відкриття (_safeOpenPath в попапі), і фолбеки будуються
   // від цих значень, а не від ~/Downloads/kcd.
+  // Абсолютні шляхи іконок з телефона приймаємо лише всередині цих тек
+  // (або кешу ~/.cache/kcd): інакше оракул існування файлів через
+  // Image.status + парсинг чужого файлу Qt-декодером
+  function allowedIconPath(p) {
+    var s = String(p ?? "")
+    if (s === "" || s[0] !== "/") return false
+    var home = String(Quickshell.env("HOME") ?? "")
+    var dirs = [root.downloadDir, root.sftpMountDir]
+    if (home !== "") dirs.push(home + "/.cache/kcd")
+    for (var i = 0; i < dirs.length; i++) {
+      var d = String(dirs[i] ?? "").replace(/\/$/, "")
+      if (d !== "" && (s === d || s.startsWith(d + "/"))) return true
+    }
+    return false
+  }
   property string downloadDir: ""
   property string downloadDirDisplay: {
     if (downloadDir === "") return "~/Downloads/kcd"
@@ -412,8 +427,11 @@ Item {
       return
     }
     if (t === "notification" || t === "notification.received") {
-      // payload.icon може бути шляхом до кешованого файлу (kcd fetch_icons) або іменем
-      var iconSrc = String(payload.icon ?? payload.appIcon ?? payload.iconPath ?? "")
+      // payload.icon може бути шляхом до кешованого файлу (kcd fetch_icons) або іменем.
+      // Абсолютний шлях з телефона — лише з allowlist (див. allowedIconPath),
+      // інакше "" і тост підбере іконку теми за ім'ям додатку
+      var rawIcon = String(payload.icon ?? payload.appIcon ?? payload.iconPath ?? "")
+      var iconSrc = (rawIcon !== "" && rawIcon[0] === "/" && !root.allowedIconPath(rawIcon)) ? "" : rawIcon
       // Стабільний ключ Android-нотифікації (0|org.telegram... ) — не змінюється при реплеї,
       // на відміну від requestReplyId/UUID який kcd генерує новий при кожному watch-рестарті — його не використовуємо
       var stableKey = String(payload.key ?? payload.tag ?? "")
@@ -614,6 +632,20 @@ Item {
   }
 
   signal notificationReceived(var notif)
+
+  // Очищення історії з попапа: чистимо і дедуп-мапу, інакше повтор
+  // того ж тексту після Clear душиться як дублікат і список лишається
+  // порожнім (мапа жила до canceled/TTL 24г)
+  function clearNotifications() {
+    var copy = Object.assign({}, root._notifSeen)
+    for (var i = 0; i < root.recentNotifications.length; i++) {
+      var n = root.recentNotifications[i]
+      var h = String(n.appName ?? "").trim().replace(/\s+/g, " ") + "|" + String(n.title ?? "").trim().replace(/\s+/g, " ") + "|" + String(n.text ?? "").trim().replace(/\s+/g, " ") + "|" + String(n.deviceId ?? "")
+      if (copy[h] !== undefined) delete copy[h]
+    }
+    root._notifSeen = copy
+    root.recentNotifications = []
+  }
 
   // Публічні дії (викликаються з попапа) — тонкі обгортки, реальні
   // Process-и живуть в попапі, щоб не множити логіку помилок тут.
