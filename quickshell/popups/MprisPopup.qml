@@ -188,7 +188,9 @@ AnimatedPopup {
   // сама клемпить значення до довжини треку.
   Timer {
     interval: 1000
-    running: root.player?.isPlaying ?? false
+    // Позиція потрібна лише видимій смужці: без visible таймер крутив
+    // player.positionChanged() весь день поки грає музика
+    running: root.visible && (root.player?.isPlaying ?? false)
     repeat: true
     onTriggered: {
       if (root.player) root.player.positionChanged()

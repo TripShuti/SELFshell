@@ -44,6 +44,10 @@ Item {
   property bool _stateLoaded: false
   property bool _dumpDone: false
   property bool _confRestartPending: false
+  // Лічильник рестартів PipeWire: без sink конфіг+рестарт крутились би
+  // кожні ~2с вічно (флап аудіо), якщо sink не з'являється
+  property int _confRestarts: 0
+  readonly property int _confRestartCap: 3
 
   Component.onCompleted: {
     _pluginCheck.reload()
@@ -102,6 +106,13 @@ Item {
       '      }\n' +
       '  }\n' +
       ']\n'
+    // Не переписуємо файл і не рестартимо PipeWire, якщо вміст той самий:
+    // _ensureConf() викликається на кожному старті і тихо затирав ручні
+    // правки користувача
+    if (_confFile.text() === content) {
+      root._confRestartPending = false
+      return
+    }
     _confFile.setText(content)
   }
 
@@ -508,6 +519,7 @@ Item {
         } catch (e) {}
 
         if (sinkFound) {
+          root._confRestarts = 0
           if (root._restoreEnabled && !root.busy) {
             root._restoreEnabled = false
             root.enable()
@@ -516,8 +528,14 @@ Item {
         }
 
         // sink нема → забезпечуємо конфіг; рестарт — після фактичного
-        // збереження файлу (onSaved), інакше рестарт обігне запис
+        // збереження файлу (onSaved), інакше рестарт обігне запис.
+        // Кап: якщо sink не з'являється — не флапаємо PipeWire вічно
         if (root.pluginInstalled) {
+          if (root._confRestarts >= root._confRestartCap) {
+            root.error = "EQ sink missing — PipeWire restart skipped"
+            return
+          }
+          root._confRestarts++
           root._confRestartPending = true
           _ensureConf()
         }

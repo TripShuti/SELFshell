@@ -57,6 +57,7 @@ Item {
     root.checking = true
     root.error = ""
     checkProc.command = ["python3", root.checkScript]
+    checkTimeout.restart()
     checkProc.running = true
   }
 
@@ -147,6 +148,20 @@ Item {
     root.refresh()
   }
 
+  // Завислий чек (мережа) не повинен тримати checking вічно —
+  // скрипт всередині має власні таймаути, це останній рубіж
+  Timer {
+    id: checkTimeout
+    interval: 8 * 60 * 1000
+    onTriggered: {
+      if (checkProc.running) {
+        checkProc.running = false
+        root.checking = false
+        root.error = "Update check timed out"
+      }
+    }
+  }
+
   Process {
     id: checkProc
     stdout: StdioCollector {
@@ -156,6 +171,7 @@ Item {
     }
     onExited: (code) => {
       running = false
+      checkTimeout.stop()
       root.checking = false
     }
   }

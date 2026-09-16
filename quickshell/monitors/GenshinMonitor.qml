@@ -105,6 +105,7 @@ Item {
     if (syncProc.running) return
     root._syncManual = false
     console.log("[Genshin] Starting sync at", new Date().toISOString())
+    syncTimeout.restart()
     syncProc.running = true
   }
 
@@ -131,6 +132,7 @@ Item {
     root.refreshStatus = "loading"
     root.refreshMessage = ""
     root._syncManual = true
+    syncTimeout.restart()
     syncProc.running = true
   }
 
@@ -172,6 +174,19 @@ Item {
   // _syncManual розрізняє джерело запуску в onExited
   property bool _syncManual: false
 
+  // Мережа до HoYoLAB може зависнути — без таймаута syncProc.running
+  // лишається true назавжди і всі наступні синки стають no-op по гарду
+  Timer {
+    id: syncTimeout
+    interval: 45000
+    onTriggered: {
+      if (syncProc.running) {
+        console.warn("[Genshin] sync timed out, killing")
+        syncProc.running = false
+      }
+    }
+  }
+
   Process {
     id: syncProc
     property string _buf: ""
@@ -182,6 +197,7 @@ Item {
     }
     onExited: (code) => {
       running = false
+      syncTimeout.stop()
       var text = syncProc._buf.trim()
       syncProc._buf = ""
 

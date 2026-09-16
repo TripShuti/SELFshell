@@ -47,11 +47,11 @@ Item {
     onStarted: root._restarts = 0
     onExited: {
       // cava впав (глюк аудіо тощо) — перезапускаємось, поки ще потрібен.
-      // Кап у 5 спроб: якщо cava зламаний (немає пакета тощо), не крутимо
-      // цикл падіння-рестарту вічно
-      if (root.monitorEnabled && root.active && root._restarts < 5) {
-        root._restarts++
-        cavaRestartTimer.restart()
+      // Кап у 5 швидких спроб: якщо cava зламаний, далі пробує повільний
+      // таймер раз на хвилину (див. нижче), а не вічний цикл падінь
+      if (root.monitorEnabled && root.active) {
+        if (root._restarts < 5) cavaRestartTimer.restart()
+        else slowRetryTimer.restart()
       }
     }
   }
@@ -61,7 +61,31 @@ Item {
   Timer {
     id: cavaRestartTimer
     interval: 2000
-    onTriggered: cavaProcess.running = true
+    // Перевіряємо заново: за 2с попап могли закрити або віджет вимкнути —
+    // без гарда cava стартував би прихованим і палив CPU
+    onTriggered: {
+      if (root.monitorEnabled && root.active && !cavaProcess.running) {
+        if (root._restarts < 5) {
+          root._restarts++
+          cavaProcess.running = true
+        } else {
+          slowRetryTimer.restart()
+        }
+      }
+    }
+  }
+
+  // Після 5 швидких падінь — не мремо мовчки, а пробуємо раз на хвилину:
+  // cava міг впасти через тимчасовий глюк PipeWire
+  Timer {
+    id: slowRetryTimer
+    interval: 60000
+    onTriggered: {
+      if (root.monitorEnabled && root.active && !cavaProcess.running) {
+        root._restarts = 0
+        cavaProcess.running = true
+      }
+    }
   }
 
   property bool monitorEnabled: appConfig ? appConfig.cfg.mprisEnabled : false
@@ -74,6 +98,9 @@ Item {
     if (root.monitorEnabled && root.active) {
       // скидаємо лічильник щоб після ручного re-enable був свіжий ліміт 5
       if (root._restarts >= 5) root._restarts = 0
+    } else {
+      cavaRestartTimer.stop()
+      slowRetryTimer.stop()
     }
     cavaProcess.running = root.monitorEnabled && root.active
   }

@@ -159,7 +159,10 @@ Item {
     listProc.running = true
   }
 
-  // Запитує метадані ВСІХ треків — плейліст скролиться повністю
+  // Запитує метадані треків — кап 200: попап показує ~10 навколо
+  // поточного, а весь плейліст у тисячі треків рвав би ARG_MAX і вішав
+  // metaProc одним викликом tracklist.py + одним D-Bus GetTracksMetadata
+  readonly property int _metaCap: 200
   function _fetchAll() {
     if (root.trackIds.length === 0) {
       root.tracks = []
@@ -168,7 +171,7 @@ Item {
     }
     if (metaProc.running) return
     metaProc.command = ["python3", root.script, "--player", root.playerName,
-      "metadata"].concat(root.trackIds)
+      "metadata"].concat(root.trackIds.slice(0, root._metaCap))
     metaProc.running = true
   }
 

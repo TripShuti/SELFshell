@@ -29,18 +29,31 @@ Item {
   function refresh() {
     if (getProc.running) return
     getProc.command = ["powerprofilesctl", "get"]
+    procTimeout.restart()
     getProc.running = true
   }
 
   // isAuto=true — виклик від автоматики (батарея), не чіпає lastManual
   function setProfile(name, isAuto) {
     if (root.allProfiles.indexOf(name) === -1) return
-    if (setProc.running) return
+    if (setProc.running) {
+      // конкурентний запит не губимо мовчки — запам'ятовуємо останній
+      // і виконуємо після завершення поточного
+      setProc._queued = name
+      setProc._queuedAuto = isAuto === true
+      return
+    }
+    root._startSet(name, isAuto === true)
+  }
+
+  function _startSet(name, isAuto) {
     root.error = ""
     root.busy = true
     setProc._want = name
-    setProc._wantAuto = isAuto === true
+    setProc._wantAuto = isAuto
+    setProc._queued = ""
     setProc.command = ["powerprofilesctl", "set", name]
+    procTimeout.restart()
     setProc.running = true
   }
 
@@ -48,6 +61,21 @@ Item {
   function restoreManual() {
     if (!root.autoActive || root.lastManualProfile === "") return
     root.setProfile(root.lastManualProfile, false)
+  }
+
+  // Завислий powerprofilesctl не повинен вішати busy назавжди
+  // (селектор в SystemSection лишався заблокованим)
+  Timer {
+    id: procTimeout
+    interval: 15000
+    onTriggered: {
+      if (getProc.running) getProc.running = false
+      if (setProc.running) {
+        setProc.running = false
+        root.busy = false
+        root.error = "powerprofilesctl timed out"
+      }
+    }
   }
 
   Process {
@@ -68,6 +96,7 @@ Item {
     }
     onExited: (code) => {
       running = false
+      procTimeout.stop()
       if (code !== 0) root.available = false
     }
   }
@@ -76,8 +105,11 @@ Item {
     id: setProc
     property string _want: ""
     property bool _wantAuto: false
+    property string _queued: ""
+    property bool _queuedAuto: false
     onExited: (code) => {
       running = false
+      procTimeout.stop()
       root.busy = false
       if (code !== 0) {
         root.error = "powerprofilesctl set failed (" + code + ")"
@@ -93,6 +125,8 @@ Item {
         root.autoActive = false
         root.lastManualProfile = setProc._want
       }
+      // виконуємо запит, що прийшов під час роботи поточного
+      if (setProc._queued !== "") root._startSet(setProc._queued, setProc._queuedAuto)
     }
   }
 

@@ -24,6 +24,9 @@ Item {
   FileView {
     id: configFile
     path: Qt.resolvedUrl("../data/config.json")
+    // Вотчер вимкнено явно (див. коментар вище) — дефолт FileView його
+    // вмикає, а атомарний rename крашить шел на Quickshell 0.3.0
+    watchChanges: false
 
     // Типізовані дефолти адаптера — те, що буде записано у файл,
     // якщо ключ відсутній. Назви властивостей = ключі config.json.
@@ -140,7 +143,7 @@ Item {
 
       // --- Порядки віджетів ---
       property var leftOrder: ["launcher", "sep-2", "workspaces", "sep-7", "mpris"]
-      property var centerOrder: ["clock", "sep-5", "timer", "sep-6", "genshin", "battery"]
+      property var centerOrder: ["clock", "sep-5", "timer", "selftrack", "sep-6", "genshin", "battery"]
       property var rightOrder: ["tray", "sep-12", "net", "bt", "kcd", "keyboard", "sep-10", "audio", "sep-11", "control", "clipboard"]
     }
   }
@@ -148,6 +151,31 @@ Item {
   // Єдина точка правди — адаптер config.json
   readonly property var cfg: cfgAdapter
   function saveToFile() { configFile.writeAdapter() }
+
+  // Дебаунс запису для слайдерів: драг робив атомарний rename на кожен
+  // тік (IO-шторм + зайвий шанс UAF). onMoved → saveSoon(), разові
+  // дії (тогли/селекти) → saveToFile() як раніше.
+  Timer {
+    id: _saveTimer
+    interval: 400
+    onTriggered: root.saveToFile()
+  }
+  function saveSoon() { _saveTimer.restart() }
+
+  // Одноразова міграція видаленої white-теми: старі конфіги з
+  // themeMode "white" мовчки стають matugen (white поводилась як matugen
+  // всюди). Затримка — адаптер читає файл асинхронно.
+  Timer {
+    id: _whiteMigrateTimer
+    interval: 1000
+    onTriggered: {
+      if (root.cfg.themeMode === "white") {
+        root.cfg.themeMode = "matugen"
+        root.saveToFile()
+      }
+    }
+  }
+  Component.onCompleted: _whiteMigrateTimer.start()
 
   // Масштаб шрифтів/гліфів: усі font.pixelSize у віджетах і попапах
   // домножуються на uiScale через цей хелпер

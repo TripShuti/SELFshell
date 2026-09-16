@@ -93,11 +93,20 @@ Item {
     onIsIdleChanged: if (isIdle) root.lockRequested()
   }
 
-  // Рівень 2: DPMS off — з автоматичним увімкненням
+  // Рівень 2: DPMS off — з автоматичним увімкненням.
+  // Спільний процес без захисту губив другу команду при швидкому
+  // idle-bounce (чорний екран при активності): pending-докрутка нижче
+  property bool _dpmsPendingIdle: false
+  property bool _dpmsPendingSet: false
   IdleMonitor {
     timeout: root.appConfig.cfg.idleDpmsTimeout
     enabled: root.appConfig.cfg.idleDpmsTimeout > 0 && !root.mediaPlaying && !root.caffeineEnabled
     onIsIdleChanged: {
+      if (dpmsProc.running) {
+        root._dpmsPendingIdle = isIdle
+        root._dpmsPendingSet = true
+        return
+      }
       dpmsProc.command = isIdle
         ? ["hyprctl", "dispatch", "dpms", "off"]
         : ["hyprctl", "dispatch", "dpms", "on"]
@@ -114,7 +123,17 @@ Item {
 
   Process {
     id: dpmsProc
-    onExited: running = false
+    onExited: {
+      running = false
+      // докручуємо команду, що прийшла під час виконання попередньої
+      if (root._dpmsPendingSet) {
+        root._dpmsPendingSet = false
+        dpmsProc.command = root._dpmsPendingIdle
+          ? ["hyprctl", "dispatch", "dpms", "off"]
+          : ["hyprctl", "dispatch", "dpms", "on"]
+        dpmsProc.running = true
+      }
+    }
   }
 
   // Гарантоване читання початкового стану: preload асинхронний, тому
