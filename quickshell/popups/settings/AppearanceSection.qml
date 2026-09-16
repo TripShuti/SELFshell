@@ -148,7 +148,8 @@ Item {
         sys: root.sys
         label: "Theme mode"
         options: [{ id: "black", text: "Black" }, { id: "matugen", text: "Matugen" }]
-        value: root.cfg.themeMode === "white" ? "matugen" : root.cfg.themeMode
+        // white мігровано в matugen централізовано (AppConfig._whiteMigrateTimer)
+        value: root.cfg.themeMode
         onPicked: id => root.applyTheme(id)
       }
       Text {
@@ -191,7 +192,7 @@ Item {
         label: "UI scale"; from: 0.8; to: 1.5; step: 0.05; decimals: 2; suffix: "\u00D7"
         sub: "Multiplies all text and icon glyph sizes in the bar, popups and settings. 1.0 = default."
         value: root.cfg.uiScale
-        onMoved: v => { root.cfg.uiScale = v; root.ac.saveToFile() }
+        onMoved: v => { root.cfg.uiScale = v; root.ac.saveSoon() }
       }
     }
 
@@ -210,7 +211,7 @@ Item {
         label: "Animation speed"; from: 0.5; to: 2.0; step: 0.1; decimals: 1; suffix: "\u00D7"
         sub: "Multiplies every animation duration in the shell. 1.0 = default, 0.5 = twice as fast."
         value: root.cfg.animSpeed
-        onMoved: v => { root.cfg.animSpeed = v; root.ac.saveToFile() }
+        onMoved: v => { root.cfg.animSpeed = v; root.ac.saveSoon() }
       }
     }
   }

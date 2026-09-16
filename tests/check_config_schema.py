@@ -77,9 +77,10 @@ if cfg is not None:
         check(cfg["barPos"] in ("top", "bottom"),
               f"config barPos: expected top/bottom, got {cfg['barPos']!r}")
     if "themeMode" in cfg:
-        # white лишається валідним для зворотної сумісності (міграція → matugen), але UI більше не пропонує
-        check(cfg["themeMode"] in ("black", "white", "matugen"),
-              f"config themeMode: expected black/white/matugen, got {cfg['themeMode']!r}")
+        # white видалено: старі конфіги мігрують у matugen при старті
+        # шела (AppConfig._whiteMigrateTimer)
+        check(cfg["themeMode"] in ("black", "matugen"),
+              f"config themeMode: expected black/matugen, got {cfg['themeMode']!r}")
     for field in ORDER_FIELDS:
         if field in cfg:
             check(isinstance(cfg[field], list) and all(isinstance(x, str) for x in cfg[field]),
