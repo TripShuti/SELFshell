@@ -5,6 +5,7 @@
 
 import json
 import os
+import sys
 import time
 
 import dbus
@@ -133,7 +134,7 @@ class Agent(dbus.service.Object):
         timeout_id = GLib.timeout_add_seconds(
             REQUEST_TIMEOUT_S, self._on_timeout, self._next_id)
         self._pending = {'id': self._next_id, 'reply': do_reply,
-                         'timeout_id': timeout_id,
+                         'timeout_id': timeout_id, 'wrap': wrap,
                          'method': method, 'device_path': device_path}
 
     def _on_timeout(self, req_id):
@@ -155,6 +156,12 @@ class Agent(dbus.service.Object):
         pin = str(data.get('pin') or '')
         trust = bool(data.get('trust'))
         accepted = bool(data.get('accepted'))
+        # Порожній/нечисловий ввід для PIN/passkey не йде в BlueZ як
+        # ValueError після закриття попапа (запис висів би до таймаута),
+        # а відхиляється одразу як Rejected
+        if accepted and pending.get('wrap') is not None and not pin.isdigit():
+            self._settle(False)
+            return
         self._settle(accepted, pin)
         # Довіра — лише після успішного рішення людини: чекаємо завершення
         # бонда і ставимо Device1.Trusted, щоб сервіси підключались без
@@ -228,7 +235,11 @@ class Agent(dbus.service.Object):
     @dbus.service.method(AGENT_IFACE, in_signature='ouq', out_signature='')
     def DisplayPasskey(self, device, passkey, entered):
         # Вихідний паринг, коли код набирають на іншому пристрої:
-        # лише показуємо, відповіді не чекаємо
+        # лише показуємо, відповіді не чекаємо. Активний запит на
+        # підтвердження не затираємо — інакше QML замінить попап і
+        # підтвердити перший запит стане нічим, хоча _pending живий
+        if self._pending is not None:
+            return
         self._next_id += 1
         self._write_request({
             'id': self._next_id, 'ts': int(time.time()), 'method': 'display',
@@ -237,6 +248,8 @@ class Agent(dbus.service.Object):
 
     @dbus.service.method(AGENT_IFACE, in_signature='os', out_signature='')
     def DisplayPinCode(self, device, pincode):
+        if self._pending is not None:
+            return
         self._next_id += 1
         self._write_request({
             'id': self._next_id, 'ts': int(time.time()), 'method': 'displaypin',
