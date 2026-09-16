@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================
-# quickshell/scripts/update-wallpaper-only.sh — змінює шпалеру без регенерації палітри (для тем Black/White)
+# quickshell/scripts/update-wallpaper-only.sh — змінює шпалеру без регенерації палітри (для теми Black)
 # ============================================================
 set -euo pipefail
 WALLPAPER="${1:?usage: update-wallpaper-only.sh <wallpaper>}"
@@ -12,7 +12,6 @@ case "${WALLPAPER,,}" in
   *.jpg|*.jpeg|*.png|*.gif) ;;
   *) echo "error: unsupported wallpaper format (jpg/png/gif expected): $WALLPAPER" >&2; exit 1 ;;
 esac
-DIR="$(cd "$(dirname "$0")" && pwd)"
 EXT="${WALLPAPER##*.}"
 EXT="${EXT,,}"
 [ "$EXT" = "jpeg" ] && EXT="jpg"
