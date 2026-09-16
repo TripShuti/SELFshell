@@ -46,11 +46,22 @@ PopupWindow {
   // закриваємось з анімацією, як по Escape.
   HyprlandFocusGrab {
     id: focusGrab
-    active: root.visible
     windows: [root]
     onCleared: {
       if (root.visible) root.close()
     }
+  }
+
+  // Grab вмикаємо лише по замапленій поверхні: active=true синхронно
+  // з visible=true губиться (поверхні ще нема) і grab не стартує взагалі.
+  // Таймер самозупиняється коли grab взявся; ретраїть якщо композит гальмує
+  Timer {
+    id: grabTimer
+    interval: 150
+    repeat: true
+    running: root.visible && !focusGrab.active
+    // під час exit-анімації не перезахоплюємо (cleared вже відпрацював)
+    onTriggered: if (!exitAnim.running) focusGrab.active = true
   }
 
   // Закриває попап з анімацією
@@ -202,6 +213,8 @@ PopupWindow {
       container.scale = root.enterScale
       animY.y = -root.slideDistance
       enterAnim.start()
+    } else {
+      focusGrab.active = false
     }
   }
 }
