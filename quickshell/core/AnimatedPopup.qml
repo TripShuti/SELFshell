@@ -2,6 +2,7 @@
 // quickshell/core/AnimatedPopup.qml — базове анімоване попап-вікно для всіх спливаючих панелей
 // ============================================================
 import Quickshell
+import Quickshell.Hyprland
 import QtQuick
 
 // Базове анімоване попап-вікно для всіх спливаючих панелей
@@ -33,7 +34,24 @@ PopupWindow {
   default property alias content: container.data
 
   color: "transparent"
-  grabFocus: true
+  // xdg-grab НЕ використовуємо: він вимагає serial з інпута батьківського
+  // вікна, якого нема при відкритті через IPC з холодного старту — кейбінд
+  // не показував попап, доки бар не клікнуть мишею (Hyprland відхиляв grab).
+  // Замість нього фокус і light-dismiss дає HyprlandFocusGrab нижче.
+  grabFocus: false
+
+  // Явний фокус через протокол Hyprland: композит сам віддає клавіатуру
+  // переліченим вікнам, serial батька не потрібен — відкриття кейбіндом
+  // працює одразу після старту шела. Клік мимо знімає grab (cleared) —
+  // закриваємось з анімацією, як по Escape.
+  HyprlandFocusGrab {
+    id: focusGrab
+    active: root.visible
+    windows: [root]
+    onCleared: {
+      if (root.visible) root.close()
+    }
+  }
 
   // Закриває попап з анімацією
   function close() {

@@ -299,6 +299,12 @@ All popups inherit from `AnimatedPopup.qml` — the base component with:
 - closing animation (reverse)
 - shared background (gradient + border)
 - Escape handling
+- focus via `HyprlandFocusGrab` (explicit compositor grab): the classic
+  xdg keyboard grab needs an input serial from the parent window, which
+  does not exist when a popup is opened over IPC from a cold start —
+  keybind opens silently failed until the bar was clicked once. With
+  `grabFocus: false` + focus grab, keybind opens work immediately, and
+  outside clicks still dismiss with animation (via `cleared`).
 
 Popups, toasts and OSD share the same visual language: `bg0H` gradient
 (`popupBgLighten`/`toastLighten`/`osdLighten`), `bg2` border,

@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Keybind popups failed from a cold start** — `AnimatedPopup` used the xdg keyboard grab (`grabFocus: true`), which needs an input serial from the parent window: IPC-driven opens (`SUPER+R/S/Escape/...`) silently failed until the bar was clicked once (`Failed to create grabbing popup` in the log). Now `grabFocus: false` + `HyprlandFocusGrab` (explicit compositor grab, no serial needed): keybind opens work immediately, outside clicks still dismiss with animation, keyboard focus in popups is kept.
 - **qs-bt-agent crash in error handler** — missing `import sys` turned every agent-registration failure into a traceback loop; non-numeric PIN/passkey input is now rejected immediately instead of hanging until the 55s timeout; `DisplayPasskey/PinCode` no longer clobbers an active confirm request.
 - **Cava restart guard** — the 2s restart timer re-checks `monitorEnabled && active` so cava no longer starts hidden and burns CPU.
 - **Genshin state race** — see Added (pid-unique tmp); `syncTimeout` stops on exit.
