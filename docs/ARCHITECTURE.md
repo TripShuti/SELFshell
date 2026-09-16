@@ -358,8 +358,11 @@ Layout (drag-and-drop) implementation:
 
 QML lock screen built on `WlSessionLock` + `LockContext` (PamContext).
 Embedded directly in `shell.qml` — a single process. IPC via `IpcHandler`
-for the `lock`/`toggle` commands (invoked with `qs ipc call lockscreen ...`
-from `binds.lua` and the power buttons).
+for the `lock` command (invoked with `qs ipc call lockscreen lock`
+from `binds.lua` and the power buttons). `lockscreen toggle` is kept as
+a lock-only alias (no-op when already locked): unlocking over IPC would
+let any user process drop the lock without a password — unlock happens
+only through PAM (`LockContext.unlocked` → `locked = false`).
 
 ```
 ╔═══════════════════════════════════════════════╗
@@ -575,7 +578,7 @@ prompt is missed, the connect fails after the 55 s timeout.
 
 ### 9.12. Pacman updates
 
-`services/PacmanService.qml` — single instance in `shell.qml`, passed into `Bar` as `pacmanUpdates`. Owns the expensive network check so opening Settings never touches pacman: `scripts/pacman_updates.py` runs `checkupdates --nocolor` (official repos, own temp db — no root, system db untouched; exit 2 = up to date) + `<yay|paru> -Qua` for AUR (first helper found, `yay` preferred) and enriches repo rows with `Repository`/`Description`/`Download Size` via one `pacman --dbpath <tmpdb> -Si` call; prints a single JSON line (`packages[]`, `repo_count`/`aur_count`, `helper`, `total_download`). The service caches the result in `data/updates.json` (FileView `setText`, survives restarts), auto-checks once at startup (60 s delay, only if the cache is older than 24 h) plus a 24 h repeating `Timer`, and on manual `Check`. Upgrade goes through `scripts/pacman_upgrade.sh` launched as `kitty -e` (`yay -Syu` with a helper, else `sudo pacman -Syu` — the password is asked in that terminal); the wrapper writes its exit code to a unique sentinel file under `$XDG_RUNTIME_DIR/selfshell-upgrade/`, the service polls it every 3 s while `upgrading` and re-checks once when it appears, plus once more on `kitty` exit (covers closing the window mid-upgrade). The terminal carries a fixed title (`SELFshell Update`) matched by a `selfshell-upgrade-float` windowrule (float, centered 900×600) and is explicitly focused 700 ms after launch (`Hyprland.dispatch("hl.dsp.focus({ window = ... })")`, Quickshell API with Lua syntax like in `WorkspacesWidget` — skipped if already closed; closing the popup can otherwise return focus to the old window). `popups/settings/SystemSection.qml` shows an `Updates` card (status, `Check for updates` / `Update all` buttons, up to 30 rows + `+N more`).
+`services/PacmanService.qml` — single instance in `shell.qml`, passed into `Bar` as `pacmanUpdates`. Owns the expensive network check so opening Settings never touches pacman: `scripts/pacman_updates.py` runs `checkupdates --nocolor` (official repos, own temp db — no root, system db untouched; exit 2 = up to date) + `<yay|paru> -Qua` for AUR (first helper found, `yay` preferred) and enriches repo rows with `Repository`/`Description`/`Download Size` via one `pacman --dbpath <tmpdb> -Si` call (forced `LC_ALL=C`, one retry — a parallel `checkupdates` may be mid-sync); prints a single JSON line (`packages[]`, `repo_count`/`aur_count`, `helper`, `total_download`). The service caches the result in `data/updates.json` (FileView `setText`, survives restarts), auto-checks once at startup (60 s delay, only if the cache is older than 24 h) plus a 24 h repeating `Timer`, and on manual `Check` (an 8-minute QML-side timeout guards a hung check). Upgrade goes through `scripts/pacman_upgrade.sh` launched as `kitty -e` (`yay -Syu` with a helper, else `sudo pacman -Syu` — the password is asked in that terminal); the wrapper writes its exit code to a unique sentinel file under `$XDG_RUNTIME_DIR/selfshell-upgrade/`, the service polls it every 3 s while `upgrading` and re-checks once when it appears, plus once more on `kitty` exit (covers closing the window mid-upgrade). The terminal carries a fixed title (`SELFshell Update`) matched by a `selfshell-upgrade-float` windowrule (float, centered 900×600) and is explicitly focused 700 ms after launch (`Hyprland.dispatch("hl.dsp.focus({ window = ... })")`, Quickshell API with Lua syntax like in `WorkspacesWidget` — skipped if already closed; closing the popup can otherwise return focus to the old window). `popups/settings/SystemSection.qml` shows an `Updates` card (status, `Check for updates` / `Update all` buttons, up to 30 rows + `+N more`).
 
 ---
 
@@ -587,7 +590,7 @@ prompt is missed, the connect fails after the 55 s timeout.
 | Command | What it does |
 |---------|--------------|
 | `ipc call <target> <fn> [args]` | Wrapper for `qs ipc call` |
-| `lock` / `toggle-lock` | `qs ipc call lockscreen ...` |
+| `lock` / `toggle-lock` | Lock the screen (`qs ipc call lockscreen lock`; `toggle` is a lock-only alias, never unlocks) |
 | `launcher` / `settings` | `qs ipc call launcher/settings toggle` |
 | `control` / `clipboard` / `kcd` / `audio` | `qs ipc call <target> toggle` (control center, clipboard history, phone popup, audio mixer) |
 | `osd volume\|brightness` | `qs ipc call osd volume|brightness` (media-key overlay) |

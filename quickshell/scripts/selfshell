@@ -33,8 +33,8 @@ System:
   status                         Quick status summary
 
 Bar / Popups:
-  lock                           Lock the screen
-  toggle-lock                    Toggle the lock
+  lock                           Lock the screen (no-op if already locked)
+  toggle-lock                    Lock the screen (no-op if already locked)
   launcher                       Open/close the launcher
   settings                       Open/close the bar settings
   control                        Toggle control center
@@ -189,8 +189,15 @@ qs_running() {
   pgrep -x quickshell &>/dev/null || pgrep -x qs &>/dev/null
 }
 
-# Перезапуск quickshell: kill + новий інстанс у daemonize-режимі
+# Перезапуск quickshell: kill + новий інстанс у daemonize-режимі.
+# Lockdir: два паралельні reload вбивали один одного
 reload() {
+  local lockdir="${XDG_RUNTIME_DIR:-/tmp}/selfshell-reload.lock"
+  if ! mkdir "$lockdir" 2>/dev/null; then
+    error "Another reload is already in progress."
+    exit 1
+  fi
+  trap 'rmdir "$lockdir" 2>/dev/null || true' RETURN
   if ! pgrep -x Hyprland &>/dev/null; then
     error "Hyprland is not running — nothing to restart quickshell in."
     exit 1
@@ -271,7 +278,7 @@ update_from_archive() {
   trap 'rm -rf "$tmp"' EXIT
   url="$REPO_URL/archive/refs/heads/main.tar.gz"
   info "Downloading archive: $url"
-  if ! curl -fsSL "$url" -o "$tmp/selfshell.tar.gz"; then
+  if ! curl -fsSL --retry 3 --retry-delay 5 "$url" -o "$tmp/selfshell.tar.gz"; then
     rm -rf "$tmp"; trap - EXIT
     error "Failed to download the archive — check your internet connection and the repository name."
     exit 1
@@ -291,8 +298,8 @@ update_from_archive() {
   # Guard проти розсинхрону: архів старіший за встановлену версію майже
   # завжди означає помилку (stale кеш, відкат), тож питаємо дозвіл
   local old_v new_v
-  old_v="$(tr -d '\n' < "$QS_CONFIG_DIR/VERSION" 2>/dev/null || true)"
-  new_v="$(tr -d '\n' < "$src/VERSION" 2>/dev/null || true)"
+  old_v="$(tr -d '\n\r' < "$QS_CONFIG_DIR/VERSION" 2>/dev/null || true)"
+  new_v="$(tr -d '\n\r' < "$src/VERSION" 2>/dev/null || true)"
   if [ -n "$old_v" ] && [ -n "$new_v" ] && [ "$old_v" != "$new_v" ] \
      && [ "$(printf '%s\n%s' "$old_v" "$new_v" | sort -V | head -1)" = "$new_v" ]; then
     warn "Downgrade detected: installed $old_v, archive has $new_v."
@@ -624,7 +631,10 @@ doctor() {
       hver="$(hyprctl version 2>/dev/null | grep -oE 'Hyprland [0-9]+\.[0-9]+' | head -1 || true)"
     fi
     if [ -n "$hver" ]; then
-      if [ "$(printf '%s\n0.52' "$hver" | sort -V | head -1)" = "0.52" ]; then
+      # hver має вигляд "Hyprland 0.52" — порівнюємо лише числову частину,
+      # sort -V по рядку з префіксом давав хибний результат
+      hver_num="${hver#Hyprland }"
+      if [ "$(printf '%s\n0.52' "$hver_num" | sort -V | head -1)" = "0.52" ]; then
         ok "Hyprland $hver (>= 0.52 required)"
       else
         error "Hyprland $hver — too old, Lua config requires >= 0.52"

@@ -154,7 +154,7 @@ Wallpaper Picker or `selfshell palette-reload`).
 selfshell doctor         # check dependencies, config, services, hardware
 selfshell doctor --preboot # same, but skip session checks (for installer)
 selfshell lock           # lock the screen
-selfshell toggle-lock    # lock / unlock toggle
+selfshell toggle-lock    # lock the screen (lock-only alias, no-op if already locked)
 selfshell launcher       # toggle application launcher
 selfshell settings       # toggle bar settings popup
 selfshell palette-reload # re-read the wallpaper palette

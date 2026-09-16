@@ -71,6 +71,9 @@ ShellRoot {
       lockContext.locked = true
     }
     function onSuspendRequested() {
+      // повторний запит під час біжучого suspend не перезаписує
+      // command живого процесу (другий запит губився)
+      if (suspendProc.running) return
       lockContext.locked = true
       suspendDelay.restart()
     }
@@ -98,8 +101,11 @@ ShellRoot {
       lockContext.locked = true
     }
 
+    // Навмисно тільки лочить: розлок без PAM через IPC дозволяв би
+    // будь-якому процесу юзера зняти лок екрана без пароля.
+    // Розлок — лише через PAM (LockContext.unlocked → locked = false).
     function toggle(): void {
-      lockContext.locked = !lockContext.locked
+      if (!lockContext.locked) lockContext.locked = true
     }
   }
 
