@@ -91,9 +91,9 @@ sudo systemctl enable --now NetworkManager
 systemctl --user enable --now qs-bt-agent
 ```
 
-If the service is not installed — make sure `qs-bt-agent` is copied to
-`~/.local/bin/` or another directory in `PATH`, and the unit lives in
-`~/.config/systemd/user/`.
+The agent lives in `~/.config/quickshell/services/qs-bt-agent` and its unit
+in `~/.config/systemd/user/qs-bt-agent.service` (both installed by
+`install.sh`) — not in `~/.local/bin/`.
 
 ## qs-bt-agent is dead and will not restart
 **Symptom:** `systemctl --user status qs-bt-agent` shows `inactive
@@ -252,6 +252,52 @@ killall quickshell && quickshell &
 immediately; manual file edits — after a restart (FileView live-watching
 is disabled on Quickshell 0.3.0: atomic-rename writes crash the shell due
 to a use-after-free in the file watcher).
+
+## Wallpaper set but colors did not change (half-applied palette)
+
+**Symptom:** new wallpaper on screen, old colors in bar/popups.
+
+**Cause:** `update-palette.sh` applies the wallpaper (`awww img` + `current.*`)
+*before* `update-palette.py` regenerates the palette. If `matugen` fails
+(not installed, bad image), the state is "new wallpaper + stale palette".
+
+**Fix:** the scripts now print `error: ...` instead of failing silently —
+check the output of `selfshell wallpaper set <file>` (or `qs log` for the
+Settings path) and fix the reported step, then re-run the same command
+(it is idempotent; parallel runs are serialized via a lockdir).
+
+## Settings → System shows "Up to date" while offline
+
+**Symptom:** no updates listed although the machine was offline during the check.
+
+**Cause:** an unreachable AUR helper or a missing sync db used to collapse
+into an empty list, indistinguishable from "no updates".
+
+**Fix:** current `pacman_updates.py` reports offline/sync failures through
+`ok:false` + `error` (shown in the Updates card) instead of an empty list.
+`checkupdates` exit 2 still means "up to date". `pacman -Si` enrichment is
+forced to `LC_ALL=C` — under a non-English locale repo/description/size
+used to come back empty.
+
+## Duplicated Hyprland autostart in fish
+
+**Symptom:** two `uwsm start` blocks in `~/.config/fish/config.fish`
+after re-running `install.sh`.
+
+**Cause:** fixed — the installer now guards its block with
+`SELFshell-uwsm-begin/end` markers instead of grepping for `uwsm start`,
+so reruns and rollbacks no longer duplicate it. Remove a stale duplicate
+by hand once (keep one block).
+
+## Stale `current.*` wallpapers of mixed formats
+
+**Symptom:** `wp/` contains `current.jpg` and `current.png` at the same time;
+lock screen shows an old frame.
+
+**Cause:** fixed — both wallpaper scripts write `current.<ext>` via
+tmp+rename under a shared lockdir and delete stale `current.*` of other
+formats. If you edited `wp/` by hand, keep a single `current.*` plus
+`current-lock.jpg` (regenerated automatically by the next switch).
 
 ## selfshell update fails with a "not a git clone" error
 **Cause:** this was fixed — `selfshell update` now falls back to a GitHub

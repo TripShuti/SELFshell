@@ -36,7 +36,7 @@ echo "SELFshell test harness ($ROOT)"
 
 # --- Shell-синтаксис ---
 run "bash -n (install.sh, scripts)" bash -c \
-  'ok=0; for f in install.sh quickshell/scripts/selfshell quickshell/scripts/update-palette.sh tests/install_test.sh; do bash -n "$f" && ok=$((ok+1)); done; [ "$ok" -eq 4 ]'
+  'ok=0; for f in install.sh quickshell/scripts/selfshell quickshell/scripts/update-palette.sh quickshell/scripts/pacman_upgrade.sh quickshell/scripts/update-wallpaper-only.sh tests/install_test.sh; do bash -n "$f" && ok=$((ok+1)); done; [ "$ok" -eq 6 ]'
 
 # --- Інсталер: функціональні тести хелперів ---
 run "install.sh function tests" bash tests/install_test.sh
@@ -46,6 +46,7 @@ if have luajit; then
   run "lua: json.lua unit tests" luajit tests/lua/json_test.lua "$ROOT"
   run "lua: env+rules smoke" luajit tests/lua/env_rules_test.lua "$ROOT"
   run "lua: binds unit test" luajit tests/lua/binds_test.lua "$ROOT"
+  run "lua: visual defaults test" luajit tests/lua/visual_test.lua "$ROOT"
 else
   skip "lua tests" "luajit not installed"
 fi
@@ -62,11 +63,16 @@ run "fake upower fixture" bash -c '
   bash tests/fake_upower.sh -i | grep -q "state:[[:space:]]*charging" || exit 1
 '
 
-# --- Python — unittest (genshin, update-palette) ---
+# --- Python — unittest ---
+# stdlib-тести йдуть завжди; genshin потребує requests/dotenv.
+# Раніше відсутність requests/dotenv скіпала ВСІ python-тести, хоча
+# sysinfo/palette/pacman/tracklist — чистий stdlib
+run "python unit tests (stdlib)" bash -c \
+  'for t in test_sysinfo test_update_palette test_pacman_updates test_tracklist; do python3 -m unittest discover -s tests/python -p "$t.py" || exit 1; done'
 if python3 -c "import requests, dotenv" >/dev/null 2>&1; then
-  run "python unit tests" python3 -m unittest discover -s tests/python
+  run "python unit tests (needs requests)" python3 -m unittest discover -s tests/python -p "test_genshin.py"
 else
-  skip "python unit tests" "python3-requests / python3-dotenv missing"
+  skip "python genshin tests" "python3-requests / python3-dotenv missing"
 fi
 
 # --- Python-перевірки конфігів та документації ---
@@ -89,7 +95,7 @@ fi
 
 # --- Shellcheck (якщо встановлено) ---
 if have shellcheck; then
-  run "shellcheck" bash -c 'shellcheck install.sh quickshell/scripts/selfshell quickshell/scripts/update-palette.sh'
+  run "shellcheck" bash -c 'shellcheck install.sh quickshell/scripts/selfshell quickshell/scripts/update-palette.sh quickshell/scripts/pacman_upgrade.sh quickshell/scripts/update-wallpaper-only.sh'
 else
   skip "shellcheck" "shellcheck not installed"
 fi

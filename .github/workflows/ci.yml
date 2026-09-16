@@ -16,7 +16,7 @@ jobs:
 
       - name: Shell syntax (install.sh, CLI, scripts)
         run: |
-          for f in install.sh quickshell/scripts/selfshell quickshell/scripts/update-palette.sh tests/install_test.sh tests/fake_upower.sh; do
+          for f in install.sh quickshell/scripts/selfshell quickshell/scripts/update-palette.sh quickshell/scripts/pacman_upgrade.sh quickshell/scripts/update-wallpaper-only.sh tests/install_test.sh tests/fake_upower.sh; do
             bash -n "$f"
             echo "ok: $f"
           done
@@ -26,7 +26,9 @@ jobs:
           python3 -m py_compile \
             quickshell/scripts/update-palette.py \
             quickshell/scripts/tracklist.py \
-            quickshell/scripts/genshin_stats.py
+            quickshell/scripts/genshin_stats.py \
+            quickshell/scripts/pacman_updates.py \
+            quickshell/scripts/sysinfo.py
           echo "ok: python scripts"
 
       - name: JSON validity
@@ -79,6 +81,7 @@ jobs:
           luajit tests/lua/json_test.lua "$PWD"
           luajit tests/lua/env_rules_test.lua "$PWD"
           luajit tests/lua/binds_test.lua "$PWD"
+          luajit tests/lua/visual_test.lua "$PWD"
 
       - name: Fish syntax
         run: |
@@ -96,7 +99,7 @@ jobs:
           export FAKE_BATTERY_STATE=charging
           bash tests/fake_upower.sh -i | grep -q "state:[[:space:]]*charging" || exit 1
 
-      - name: Python unit tests (genshin_stats, update-palette)
+      - name: Python unit tests (genshin_stats, update-palette, sysinfo, pacman, tracklist)
         run: |
           sudo apt-get install -y -qq python3-requests python3-dotenv
           python3 -m unittest discover -s tests/python
@@ -120,7 +123,7 @@ jobs:
       - name: Shellcheck
         run: |
           command -v shellcheck || sudo apt-get install -y -qq shellcheck
-          shellcheck -S warning install.sh quickshell/scripts/selfshell quickshell/scripts/update-palette.sh
+          shellcheck -S warning install.sh quickshell/scripts/selfshell quickshell/scripts/update-palette.sh quickshell/scripts/pacman_upgrade.sh quickshell/scripts/update-wallpaper-only.sh
 
       - name: VERSION is valid SemVer
         run: |

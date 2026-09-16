@@ -6,7 +6,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Process timeouts** — hung background processes no longer wedge the shell forever: Genshin sync (45s), `powerprofilesctl` get/set (15s, queued concurrent `set` runs after the current one instead of being dropped), pacman update check (8min QML-side). Cava retries slowly (60s) after 5 fast crashes instead of dying silently.
+- **Power action confirm** — Shutdown/Reboot in the control center need a second click within 3s (button turns red); busy guard stops double-clicks from overwriting a live `systemctl` command.
+- **kcd action feedback** — Ping/Ring/Share/Clipboard/SFTP failures show an inline error in the phone popup instead of `console.warn` only; buttons ignore clicks while their process runs. Rejecting a pairing now tries `kcd unpair` best-effort instead of leaving the phone hanging until the 30s daemon timeout.
+- **White → matugen migration** — old configs with `themeMode "white"` are rewritten to `matugen` once at startup; schema and docs accept only `black`/`matugen` now.
+- **Installer hardening** — `set -E` (ERR trap fires in helpers), `fakeroot` in deps (doctor already required it), `mktemp -d` yay build dir, `chmod 600` fresh `.env`, backups of `/etc/greetd/config.toml` + cursor `index.theme`, marker-guarded fish uwsm block, `--no` skips service enable.
+- **Script robustness** — `update-palette.sh`/`update-wallpaper-only.sh` serialize via lockdir + atomic `current.*` writes; `pacman_upgrade.sh` atomic sentinel; `update-palette.py` flocked `foot.ini` append; `genshin_stats.py` pid-unique tmp; `pacman_updates.py` forced `LC_ALL=C` + comma decimals + one enrich retry; `tracklist.py` exact player-name match + count-mismatch diagnostics + stderr on failure; `sysinfo.py` Package/Tctl label priority + `MemAvailable` fallback; `selfshell` curl retry, reload lock, fixed Hyprland version compare and `\r`-proof downgrade guard.
+- **Tests/CI** — new `test_tracklist.py` (stubbed dbus), `visual_test.lua` wired into `run.sh` + CI, `py_compile`/`bash -n`/`shellcheck` cover all scripts, stdlib python tests run even without `requests`/`dotenv`.
+
+### Changed
+
+- **Lock is lock-only** — `qs ipc call lockscreen toggle` / `selfshell toggle-lock` no longer unlock without a password (any user process could drop the lock); unlock is PAM-only. SUPER+L still locks; docs/CLI help updated.
+- **Settings sliders debounce writes** — `onMoved` goes through `AppConfig.saveSoon()` (400ms) instead of an atomic `writeAdapter()` per tick.
+- **Control center probes are lazy** — `ddcutil`/`hyprsunset` warm up on first open, not at shell startup.
+- **MPRIS position timer gated on visibility** — no more 1s `positionChanged()` all day while music plays with the popup closed.
+- **TrackList metadata capped at 200** — huge playlists no longer risk `ARG_MAX`/hung `metaProc` for 10 visible rows.
+- **EQ config no longer rewritten every start** — identical content skips the write (and the PipeWire restart); missing sink restarts PipeWire at most 3× with an error instead of flapping forever.
+- **DPMS commands serialized** — a pending on/off change flushes after the running one instead of being lost on idle-bounce.
+- **kcd icon allowlist** — absolute phone-provided icon paths outside kcd dirs/`~/.cache/kcd` fall back to theme lookup (service + bar second line).
+- **kcd Clear clears dedup state** — same text can notify again after Clear instead of being suppressed until cancel/TTL.
+- **AppConfig/PaletteService declare `watchChanges: false`** — matches the documented UAF workaround (was comment-only).
+- **AppConfig adapter default gains `selftrack`** — fresh clones and Reset give the same bar (`defaultCfg` already had it).
+
 ### Fixed
+
+- **qs-bt-agent crash in error handler** — missing `import sys` turned every agent-registration failure into a traceback loop; non-numeric PIN/passkey input is now rejected immediately instead of hanging until the 55s timeout; `DisplayPasskey/PinCode` no longer clobbers an active confirm request.
+- **Cava restart guard** — the 2s restart timer re-checks `monitorEnabled && active` so cava no longer starts hidden and burns CPU.
+- **Genshin state race** — see Added (pid-unique tmp); `syncTimeout` stops on exit.
+- **Docs drift** — `toggle-lock` semantics, `qs-bt-agent` install path, white removal, `TROUBLESHOOTING` gains half-applied palette / offline updates / uwsm duplicate / stale `current.*` sections.
 
 - **Player sliders hard to grab** — the volume (84×4px) and progress (full-width×6px) tracks in the player popup had hit areas exactly the size of the visuals. Both now sit in taller transparent wrappers (22px/20px, same width/origin, visuals pixel-identical) so mouse coordinates and drag logic are unchanged; volume additionally gets mouse-wheel support (`audioStep` from Behavior settings, like the bar) and a pointer cursor. No wheel on progress by design (an accidental scroll would seek the track).
 - **kcd open-allowlist vs custom paths** — `KdeConnectPopup._safeOpenPath` only allowed `~/Downloads/kcd/`, so with a custom `sftp.mount_dir` (e.g. `~/kcd`) clicking the mount row silently did nothing. The allowlist is now built from the local `kcd.toml`: `download_dir` subtree + `sftp.mount_dir` itself/subtree (both service-parsed, never from phone payload); strict prefix + `..` rejection kept.
