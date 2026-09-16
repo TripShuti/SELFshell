@@ -133,31 +133,31 @@ Item {
         sys: root.sys
         label: "Bar height"; from: 24; to: 96; step: 1; suffix: "px"
         value: root.cfg.barHeight
-        onMoved: v => { root.cfg.barHeight = v; root.ac.saveToFile() }
+        onMoved: v => { root.cfg.barHeight = v; root.ac.saveSoon() }
       }
       SetSlider {
         sys: root.sys
         label: "Pill radius"; from: 0; to: 24; step: 1; suffix: "px"
         value: root.cfg.barRadius
-        onMoved: v => { root.cfg.barRadius = v; root.ac.saveToFile() }
+        onMoved: v => { root.cfg.barRadius = v; root.ac.saveSoon() }
       }
       SetSlider {
         sys: root.sys
         label: "Edge margin"; from: 0; to: 32; step: 1; suffix: "px"
         value: root.cfg.edgeMargin
-        onMoved: v => { root.cfg.edgeMargin = v; root.ac.saveToFile() }
+        onMoved: v => { root.cfg.edgeMargin = v; root.ac.saveSoon() }
       }
       SetSlider {
         sys: root.sys
         label: "Pill padding"; from: 2; to: 24; step: 1; suffix: "px"
         value: root.cfg.pillPadding
-        onMoved: v => { root.cfg.pillPadding = v; root.ac.saveToFile() }
+        onMoved: v => { root.cfg.pillPadding = v; root.ac.saveSoon() }
       }
       SetSlider {
         sys: root.sys
         label: "Content spacing"; from: 0; to: 16; step: 1; suffix: "px"
         value: root.cfg.contentSpacing
-        onMoved: v => { root.cfg.contentSpacing = v; root.ac.saveToFile() }
+        onMoved: v => { root.cfg.contentSpacing = v; root.ac.saveSoon() }
       }
     }
 
@@ -283,21 +283,21 @@ Item {
         label: "Pill background opacity"; from: 0.2; to: 1.0; step: 0.05; decimals: 2
         sub: "Multiplies the pill background alpha. 1.0 = palette color as-is, 0.2 = barely visible."
         value: root.cfg.barBgOpacity
-        onMoved: v => { root.cfg.barBgOpacity = v; root.ac.saveToFile() }
+        onMoved: v => { root.cfg.barBgOpacity = v; root.ac.saveSoon() }
       }
       SetSlider {
         sys: root.sys
         label: "Pill gradient"; from: 1.0; to: 2.0; step: 0.05; decimals: 2
         sub: "How much lighter the top of the pills is than the bottom. 1.0 = flat color."
         value: root.cfg.barLighten
-        onMoved: v => { root.cfg.barLighten = v; root.ac.saveToFile() }
+        onMoved: v => { root.cfg.barLighten = v; root.ac.saveSoon() }
       }
       SetSlider {
         sys: root.sys
         label: "Pill border width"; from: 0; to: 4; step: 1; suffix: "px"
         sub: "Outline around each pill. 0 = no border."
         value: root.cfg.barBorderWidth
-        onMoved: v => { root.cfg.barBorderWidth = v; root.ac.saveToFile() }
+        onMoved: v => { root.cfg.barBorderWidth = v; root.ac.saveSoon() }
       }
     }
 
@@ -309,14 +309,14 @@ Item {
         label: "Line opacity"; from: 0; to: 1.0; step: 0.05; decimals: 2
         sub: "The thin gradient line between widget groups in a pill."
         value: root.cfg.separatorOpacity
-        onMoved: v => { root.cfg.separatorOpacity = v; root.ac.saveToFile() }
+        onMoved: v => { root.cfg.separatorOpacity = v; root.ac.saveSoon() }
       }
       SetSlider {
         sys: root.sys
         label: "Glow"; from: 0; to: 0.5; step: 0.01; decimals: 2
         sub: "Soft glow around the separator line. 0 = no glow."
         value: root.cfg.separatorGlowOpacity
-        onMoved: function(v) { root.cfg.separatorGlowOpacity = v; root.ac.saveToFile() }
+        onMoved: function(v) { root.cfg.separatorGlowOpacity = v; root.ac.saveSoon() }
       }
     }
   }
