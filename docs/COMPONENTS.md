@@ -153,7 +153,7 @@
 | `NetworkConnectionSettingsPopup.qml` | Details of a specific Wi-Fi/connection | NetworkPopup |
 | `ControlPopup.qml` | Control center shell (state, screenshots, power, footer; sections push `stateDirty`, `IdleManager` refreshes caffeine explicitly — no file watcher) | NotificationServer, `control/*` sections below, `IdleManager` |
 | `popups/control/QuickToggles.qml` | 6-button top row (stateless, signals only; `open*` re-emitted so `Bar` wiring is unchanged) | — |
-| `popups/control/BrightnessSection.qml` | ddcutil slider with sub-stepping (`setPolling` from root `onVisibleChanged`) | ddcutil |
+| `popups/control/BrightnessSection.qml` | ddcutil slider with coalesced writes (optimistic display, one write per drag pause; `setPolling` from root `onVisibleChanged`) | ddcutil |
 | `popups/control/ReadingTempSection.qml` | hyprsunset slider (debounce, one-shot retries, daemon ensure) | hyprsunset |
 | `popups/control/NotificationList.qml` | Grouped notification list (reads `groupedModel`/`unread` only; card actions are model methods) | NotificationServer |
 | `OsdPopup.qml` | Volume/brightness overlay for media keys | PipeWire, ddcutil |

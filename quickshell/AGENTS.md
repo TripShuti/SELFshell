@@ -65,7 +65,7 @@
 ## Відомі обмеження та workaround
 - **`QtObject` не приймає дочірні об'єкти**. Помилка: "Cannot assign to non-existent default property". Для контейнерів з дітьми використовувати `Item { visible: false }`.
 - **z-index вкладених Pill**: діти Pill всередині `RowLayout` не можуть мати власний `z` (обмеження градієнтного фону). Якщо треба перекрити — використовувати overlay поза Layout.
-- **ddcutil brightness**: через обмеження DDC/CI яскравість встановлюється покроково (sub-stepping) — `_advanceSubStep()` в `ControlPopup.qml`.
+- **ddcutil brightness**: одна DDC-транзакція йде секунди, тому слайдер оптимістичний (дисплей одразу) і шле на шину один запис за драг (debounce + `_flushSet()` в `popups/control/BrightnessSection.qml`), відповіді опитувань старші за останній запис ігноруються.
 
 ## Валідація
 - `quickshell` не має `--check`. Тестувати через `quickshell kill default && timeout 5 quickshell 2>&1` (перевірити наявність "Configuration Loaded" в логах).

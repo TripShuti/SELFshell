@@ -7,11 +7,14 @@ import Quickshell
 import Quickshell.Io
 import "../../scripts/ControlState.js" as State
 
-// Слайдер яскравості (ddcutil з покроковим sub-stepping — обмеження DDC/CI).
-// Значення персиститься через сигнал stateDirty (корінь дебаунсить запис
-// у control-state.json). Опитування датчика — тільки поки попап відкритий
-// (setPolling з кореневого onVisibleChanged: у вкладеному компоненті власний
-// onVisibleChanged не стріляє). Корінь — ColumnLayout (див. ReadingTempSection).
+// Слайдер яскравості через ddcutil. Дисплей оптимістичний (значення видно
+// одразу), на шину йде один запис за драг: одна DDC-транзакція йде секунди,
+// а покроковий sub-stepping на такій шині давав 6 команд на драг 100→10
+// і слайдер стрибав по проміжних станах. Значення персиститься через сигнал
+// stateDirty (корінь дебаунсить запис у control-state.json). Опитування
+// датчика — тільки поки попап відкритий (setPolling з кореневого
+// onVisibleChanged: у вкладеному компоненті власний onVisibleChanged
+// не стріляє). Корінь — ColumnLayout (див. ReadingTempSection).
 ColumnLayout {
   id: root
 
@@ -20,7 +23,8 @@ ColumnLayout {
 
   property int brightness: -1
   property int prevBrightness: 50
-  property int _pendingBrightness: -1
+  // Останнє значення, віддане в ddcutil (-2 = ще нічого не слали)
+  property int _sent: -2
 
   Layout.fillWidth: true
 
@@ -39,9 +43,23 @@ ColumnLayout {
 
   function setBrightness(val) {
     brightness = Math.max(0, Math.min(100, val))
-    if (!setBrightnessProc.running) _advanceSubStep()
+    // драг шле тік за тіком — на шину лише останнє в простої
+    setDebounce.restart()
     State.setBrightness(brightness)
     stateDirty()
+  }
+
+  // Коалесцинг записів: пишемо не частіше ніж раз на паузу в драгу
+  Timer {
+    id: setDebounce
+    interval: 120
+    onTriggered: root._flushSet()
+  }
+
+  function _flushSet() {
+    if (setBrightnessProc.running) return // onExited докаже сам
+    if (root.brightness === root._sent) return // залізо вже там
+    _doSetDdcutil(root.brightness)
   }
 
   function toggleBrightness() {
@@ -53,24 +71,8 @@ ColumnLayout {
     }
   }
 
-  function _advanceSubStep() {
-    var target = brightness
-    if (_pendingBrightness < 0) {
-      _pendingBrightness = target
-      _doSetDdcutil(target)
-      return
-    }
-    var diff = target - _pendingBrightness
-    if (Math.abs(diff) <= 15) {
-      _pendingBrightness = target
-      _doSetDdcutil(target)
-    } else {
-      _pendingBrightness += diff > 0 ? 15 : -15
-      _doSetDdcutil(_pendingBrightness)
-    }
-  }
-
   function _doSetDdcutil(val) {
+    root._sent = val
     setBrightnessProc.command = ["ddcutil", "setvcp", "10", String(val)]
     setBrightnessProc.running = true
   }
@@ -80,9 +82,12 @@ ColumnLayout {
     waitForEnd: true
     onDataChanged: {
       if (brightnessCollector.text) {
+        // поки є недослане (драг/політ) — чужу відповідь не чіпаємо,
+        // інакше слайдер стрибає на проміжне/застаріле значення
+        if (root.brightness !== root._sent || setBrightnessProc.running || setDebounce.running) return
         var text = brightnessCollector.text.trim()
         var match = text.match(/current value = +(\d+).+max value = +(\d+)/)
-        if (match) { brightness = parseInt(match[1]); _pendingBrightness = brightness }
+        if (match) { brightness = parseInt(match[1]) }
       }
     }
   }
@@ -97,7 +102,8 @@ ColumnLayout {
     id: setBrightnessProc
     onExited: {
       running = false
-      if (_pendingBrightness !== brightness) _advanceSubStep()
+      // ціль зрушилась під час польоту — шлемо свіже
+      if (root._sent !== root.brightness) root._flushSet()
     }
   }
 

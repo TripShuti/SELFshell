@@ -48,7 +48,7 @@ no separate lock/idle daemons.
 - No restart required
 
 **Hardware**
-- Monitor brightness via `ddcutil` with smooth sub-stepping
+- Monitor brightness via `ddcutil` with coalesced writes (one transaction per drag)
 - Blue-light filter via `hyprsunset` (3500K–6500K slider)
 - Power actions: Shutdown, Reboot, Suspend, Logout, Lock
 
