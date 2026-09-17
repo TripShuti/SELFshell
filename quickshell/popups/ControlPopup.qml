@@ -252,11 +252,10 @@ AnimatedPopup {
 
   onVisibleChanged: {
     if (visible) {
-      // Важкі зонди (ddcutil ~1-2с, ensureHyprsunset з killall) — лише на
-      // першому відкритті, а не при старті шела
+      // Важкі зонди (ensureHyprsunset; ddcutil підхопить таймер сам) —
+      // лише на першому відкритті, а не при старті шела
       if (!root._warmedUp) {
         root._warmedUp = true
-        brightSection.refreshBrightness()
         tempSection.ensureHyprsunset()
       }
       // Стан process-wide (pragma library) — синхронізуємо кнопку зі змінами,

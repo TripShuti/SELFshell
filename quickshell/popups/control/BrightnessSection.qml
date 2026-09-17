@@ -31,7 +31,10 @@ ColumnLayout {
 
   function setPolling(on) {
     if (on) {
-      refreshBrightness()
+      // БЕЗ негайного опитування: одна DDC-транзакція йде ~3с і вішає
+      // серійну шину — перший getvcp блокував би перший драг. Дисплей вже
+      // має значення зі State (loadSavedState при старті шела), свіже
+      // підтягнеться таймером у простої
       brightnessPollTimer.running = true
     } else {
       brightnessPollTimer.running = false
@@ -43,6 +46,9 @@ ColumnLayout {
     // інвалідуємо висячі опитування: їхня пізня відповідь (старша за драг)
     // інакше затре свіже значення і слайдер стрибатиме назад
     root._reqSeq++
+    // наступне опитування — через повний інтервал ПІСЛЯ останнього руху,
+    // щоб не лізти опитуванням на зайняту драгом шину
+    if (brightnessPollTimer.running) brightnessPollTimer.restart()
     if (!setBrightnessProc.running) _advanceSubStep()
     State.setBrightness(brightness)
     stateDirty()
@@ -115,7 +121,10 @@ ColumnLayout {
 
   Timer {
     id: brightnessPollTimer
-    interval: 5000
+    // Рідше: кожне опитування тримає серійну DDC-шину ~3с; частіше —
+    // гальмує ручне регулювання. Зовнішні зміни (кнопки монітора)
+    // підтягнуться із затримкою — прийнятно
+    interval: 15000
     // Опитуємо ddcutil тільки поки попап відкритий — старт/стоп в
     // onVisibleChanged. Раніше таймер крутився вічно з моменту старту шела
     running: false
