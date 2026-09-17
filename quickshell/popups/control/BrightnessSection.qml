@@ -25,6 +25,7 @@ ColumnLayout {
   Layout.fillWidth: true
 
   function refreshBrightness() {
+    getBrightnessProc._seq = root._reqSeq
     getBrightnessProc.running = true
   }
 
@@ -39,6 +40,9 @@ ColumnLayout {
 
   function setBrightness(val) {
     brightness = Math.max(0, Math.min(100, val))
+    // інвалідуємо висячі опитування: їхня пізня відповідь (старша за драг)
+    // інакше затре свіже значення і слайдер стрибатиме назад
+    root._reqSeq++
     if (!setBrightnessProc.running) _advanceSubStep()
     State.setBrightness(brightness)
     stateDirty()
@@ -75,11 +79,18 @@ ColumnLayout {
     setBrightnessProc.running = true
   }
 
+  // Лічильник поколінь запитів: відповідь застосовується лише якщо після
+  // запиту не було ручної зміни (див. setBrightness)
+  property int _reqSeq: 0
+
   StdioCollector {
     id: brightnessCollector
     waitForEnd: true
     onDataChanged: {
       if (brightnessCollector.text) {
+        // застаріла відповідь (запит старший за останній драг) — ігнор,
+        // інакше слайдер стрибає на старе значення посеред регулювання
+        if (getBrightnessProc._seq !== root._reqSeq) return
         var text = brightnessCollector.text.trim()
         var match = text.match(/current value = +(\d+).+max value = +(\d+)/)
         if (match) { brightness = parseInt(match[1]); _pendingBrightness = brightness }
@@ -89,6 +100,7 @@ ColumnLayout {
 
   Process {
     id: getBrightnessProc
+    property int _seq: 0
     command: ["ddcutil", "getvcp", "10"]
     stdout: brightnessCollector
   }

@@ -35,13 +35,18 @@ ColumnLayout {
   }
 
   function ensureHyprsunset() {
+    // Свіжий демон стартуємо ОДРАЗУ на збереженій температурі, а не на
+    // 6500: інакше перше відкриття Control Center блимає холодним екраном
+    // (збережена застосовується лише при старті шела — в ще неіснуючий
+    // демон — і після рестарту її вже ніщо не повертає)
+    var t = Math.max(3500, Math.min(6500, State.getReadingTemp()))
     hyprsunsetEnsureProc.command = ["sh", "-c",
       'SOCK="$XDG_RUNTIME_DIR/hypr/$HYPRLAND_INSTANCE_SIGNATURE/.hyprsunset.sock"; ' +
       'if echo "temperature 6500" | socat - UNIX-CONNECT:"$SOCK" 2>/dev/null; then exit 0; fi; ' +
       'killall hyprsunset 2>/dev/null; ' +
       'rm -f "$SOCK" 2>/dev/null; ' +
       'sleep 0.5; ' +
-      'nohup hyprsunset --temperature 6500 >/dev/null 2>&1 &']
+      'nohup hyprsunset --temperature ' + t + ' >/dev/null 2>&1 &']
     hyprsunsetEnsureProc.running = true
   }
 
