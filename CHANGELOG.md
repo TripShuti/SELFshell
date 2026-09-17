@@ -9,7 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Process timeouts** — hung background processes no longer wedge the shell forever: Genshin sync (45s), `powerprofilesctl` get/set (15s, queued concurrent `set` runs after the current one instead of being dropped), pacman update check (8min QML-side). Cava retries slowly (60s) after 5 fast crashes instead of dying silently.
-- **Power action confirm** — Shutdown/Reboot in the control center need a second click within 3s (button turns red); busy guard stops double-clicks from overwriting a live `systemctl` command.
 - **kcd action feedback** — Ping/Ring/Share/Clipboard/SFTP failures show an inline error in the phone popup instead of `console.warn` only; buttons ignore clicks while their process runs. Rejecting a pairing now tries `kcd unpair` best-effort instead of leaving the phone hanging until the 30s daemon timeout.
 - **White → matugen migration** — old configs with `themeMode "white"` are rewritten to `matugen` once at startup; schema and docs accept only `black`/`matugen` now.
 - **Installer hardening** — `set -E` (ERR trap fires in helpers), `fakeroot` in deps (doctor already required it), `mktemp -d` yay build dir, `chmod 600` fresh `.env`, backups of `/etc/greetd/config.toml` + cursor `index.theme`, marker-guarded fish uwsm block, `--no` skips service enable.
@@ -20,7 +19,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Lock is lock-only** — `qs ipc call lockscreen toggle` / `selfshell toggle-lock` no longer unlock without a password (any user process could drop the lock); unlock is PAM-only. SUPER+L still locks; docs/CLI help updated.
 - **Settings sliders debounce writes** — `onMoved` goes through `AppConfig.saveSoon()` (400ms) instead of an atomic `writeAdapter()` per tick.
-- **Control center probes are lazy** — `ddcutil`/`hyprsunset` warm up on first open, not at shell startup.
 - **MPRIS position timer gated on visibility** — no more 1s `positionChanged()` all day while music plays with the popup closed.
 - **TrackList metadata capped at 200** — huge playlists no longer risk `ARG_MAX`/hung `metaProc` for 10 visible rows.
 - **EQ config no longer rewritten every start** — identical content skips the write (and the PipeWire restart); missing sink restarts PipeWire at most 3× with an error instead of flapping forever.
@@ -32,8 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **Control Center reset hyprsunset on first open** — lazy warmup restarted the daemon at hardcoded 6500K while the saved temperature was applied only at shell startup (into a nonexistent daemon). The fresh daemon now starts directly at the saved temperature.
-- **Brightness slider jumped mid-drag** — the first-open `ddcutil` poll landed during manual adjustment and its stale response overwrote the fresh value. Poll responses are now dropped if a manual set happened after the request (sequence guard). Follow-up: one `ddcutil` transaction takes ~3s on this bus, so polls no longer fire on open (display uses the saved value) and the poll countdown restarts after every manual move — no more polling on top of an active drag.
+- **Control Center probes reverted to startup behavior** — the lazy warmup + poll reshaping caused hyprsunset resets and sluggish brightness on real hardware. `ControlPopup`, `BrightnessSection` and `ReadingTempSection` are back to the pre-audit behavior (probes at shell startup); the ddcutil slowness (~3s per transaction on this bus) is a hardware/driver property, not something the shell can fix by rescheduling.
 - **Keybind popups failed from a cold start** — `AnimatedPopup` used the xdg keyboard grab (`grabFocus: true`), which needs an input serial from the parent window: IPC-driven opens (`SUPER+R/S/Escape/...`) silently failed until the bar was clicked once (`Failed to create grabbing popup` in the log). Now `grabFocus: false` + `HyprlandFocusGrab` (explicit compositor grab, no serial needed): keybind opens work immediately, outside clicks still dismiss with animation, keyboard focus in popups is kept.
 - **qs-bt-agent crash in error handler** — missing `import sys` turned every agent-registration failure into a traceback loop; non-numeric PIN/passkey input is now rejected immediately instead of hanging until the 55s timeout; `DisplayPasskey/PinCode` no longer clobbers an active confirm request.
 - **Cava restart guard** — the 2s restart timer re-checks `monitorEnabled && active` so cava no longer starts hidden and burns CPU.

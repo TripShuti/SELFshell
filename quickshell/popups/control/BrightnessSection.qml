@@ -25,16 +25,12 @@ ColumnLayout {
   Layout.fillWidth: true
 
   function refreshBrightness() {
-    getBrightnessProc._seq = root._reqSeq
     getBrightnessProc.running = true
   }
 
   function setPolling(on) {
     if (on) {
-      // БЕЗ негайного опитування: одна DDC-транзакція йде ~3с і вішає
-      // серійну шину — перший getvcp блокував би перший драг. Дисплей вже
-      // має значення зі State (loadSavedState при старті шела), свіже
-      // підтягнеться таймером у простої
+      refreshBrightness()
       brightnessPollTimer.running = true
     } else {
       brightnessPollTimer.running = false
@@ -43,12 +39,6 @@ ColumnLayout {
 
   function setBrightness(val) {
     brightness = Math.max(0, Math.min(100, val))
-    // інвалідуємо висячі опитування: їхня пізня відповідь (старша за драг)
-    // інакше затре свіже значення і слайдер стрибатиме назад
-    root._reqSeq++
-    // наступне опитування — через повний інтервал ПІСЛЯ останнього руху,
-    // щоб не лізти опитуванням на зайняту драгом шину
-    if (brightnessPollTimer.running) brightnessPollTimer.restart()
     if (!setBrightnessProc.running) _advanceSubStep()
     State.setBrightness(brightness)
     stateDirty()
@@ -85,18 +75,11 @@ ColumnLayout {
     setBrightnessProc.running = true
   }
 
-  // Лічильник поколінь запитів: відповідь застосовується лише якщо після
-  // запиту не було ручної зміни (див. setBrightness)
-  property int _reqSeq: 0
-
   StdioCollector {
     id: brightnessCollector
     waitForEnd: true
     onDataChanged: {
       if (brightnessCollector.text) {
-        // застаріла відповідь (запит старший за останній драг) — ігнор,
-        // інакше слайдер стрибає на старе значення посеред регулювання
-        if (getBrightnessProc._seq !== root._reqSeq) return
         var text = brightnessCollector.text.trim()
         var match = text.match(/current value = +(\d+).+max value = +(\d+)/)
         if (match) { brightness = parseInt(match[1]); _pendingBrightness = brightness }
@@ -106,7 +89,6 @@ ColumnLayout {
 
   Process {
     id: getBrightnessProc
-    property int _seq: 0
     command: ["ddcutil", "getvcp", "10"]
     stdout: brightnessCollector
   }
@@ -121,10 +103,7 @@ ColumnLayout {
 
   Timer {
     id: brightnessPollTimer
-    // Рідше: кожне опитування тримає серійну DDC-шину ~3с; частіше —
-    // гальмує ручне регулювання. Зовнішні зміни (кнопки монітора)
-    // підтягнуться із затримкою — прийнятно
-    interval: 15000
+    interval: 5000
     // Опитуємо ddcutil тільки поки попап відкритий — старт/стоп в
     // onVisibleChanged. Раніше таймер крутився вічно з моменту старту шела
     running: false

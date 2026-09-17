@@ -68,28 +68,8 @@ AnimatedPopup {
   // (IdleManager підхоплює зміну через refreshCaffeine() після збереження)
   property bool caffeineEnabled: false
 
-  // Виконує дію живлення: shutdown, reboot, suspend, logout, lock.
-  // Без busy-guard повторний клік під час біжучого systemctl перезаписував
-  // command живого процесу і губив одну команду.
-  // Shutdown/reboot — необоротні: перший клік лише зводить (кнопка червоніє),
-  // другий протягом 3с виконує.
-  property string _confirmAction: ""
-  // Важкі зонди вже прогріті (див. onVisibleChanged)
-  property bool _warmedUp: false
-  Timer {
-    id: confirmTimer
-    interval: 3000
-    onTriggered: root._confirmAction = ""
-  }
+  // Виконує дію живлення: shutdown, reboot, suspend, logout, lock
   function runPowerAction(action) {
-    if (powerProc.running) return
-    if ((action === "shutdown" || action === "reboot") && root._confirmAction !== action) {
-      root._confirmAction = action
-      confirmTimer.restart()
-      return
-    }
-    root._confirmAction = ""
-    confirmTimer.stop()
     var cmd = []
     switch (action) {
       case "shutdown": cmd = ["/usr/bin/systemctl", "poweroff"]; break
@@ -248,16 +228,10 @@ AnimatedPopup {
   popupWindow: window
   anchorTarget: anchorItem
 
-  Component.onCompleted: { anchor.window = window; loadSavedState(); root.rebuildGroups() }
+  Component.onCompleted: { anchor.window = window; brightSection.refreshBrightness(); tempSection.ensureHyprsunset(); loadSavedState(); root.rebuildGroups() }
 
   onVisibleChanged: {
     if (visible) {
-      // Важкі зонди (ensureHyprsunset; ddcutil підхопить таймер сам) —
-      // лише на першому відкритті, а не при старті шела
-      if (!root._warmedUp) {
-        root._warmedUp = true
-        tempSection.ensureHyprsunset()
-      }
       // Стан process-wide (pragma library) — синхронізуємо кнопку зі змінами,
       // зробленими в попапі іншого монітора.
       root.caffeineEnabled = State.getCaffeine()
@@ -266,8 +240,6 @@ AnimatedPopup {
     } else {
       brightSection.setPolling(false)
       tempSection.stopRetry()
-      root._confirmAction = ""
-      confirmTimer.stop()
     }
   }
 
@@ -444,9 +416,7 @@ AnimatedPopup {
           Layout.preferredWidth: 48
           implicitHeight: 36
           radius: 6
-          // зведена необоротна дія підсвічується червоним до другого кліку
-          color: root._confirmAction === act.action ? window.palette.red
-            : hovered ? window.palette.bg2 : window.palette.bg1
+          color: hovered ? window.palette.bg2 : window.palette.bg1
           Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
 
           Text {
