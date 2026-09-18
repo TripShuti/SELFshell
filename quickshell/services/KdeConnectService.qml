@@ -4,6 +4,7 @@
 import Quickshell
 import Quickshell.Io
 import QtQuick
+import "../scripts/SafePath.js" as SafePath
 
 // Сервіс телефону: перевіряє наявність kcd, слухає
 // `kcd watch --json` (battery/notification/share/device) та
@@ -65,16 +66,10 @@ Item {
   // (або кешу ~/.cache/kcd): інакше оракул існування файлів через
   // Image.status + парсинг чужого файлу Qt-декодером
   function allowedIconPath(p) {
-    var s = String(p ?? "")
-    if (s === "" || s[0] !== "/") return false
     var home = String(Quickshell.env("HOME") ?? "")
     var dirs = [root.downloadDir, root.sftpMountDir]
     if (home !== "") dirs.push(home + "/.cache/kcd")
-    for (var i = 0; i < dirs.length; i++) {
-      var d = String(dirs[i] ?? "").replace(/\/$/, "")
-      if (d !== "" && (s === d || s.startsWith(d + "/"))) return true
-    }
-    return false
+    return SafePath.isWithinAnyDir(p, dirs)
   }
   property string downloadDir: ""
   property string downloadDirDisplay: {
@@ -437,7 +432,7 @@ Item {
       var stableKey = String(payload.key ?? payload.tag ?? "")
       var nid = String(payload.id ?? stableKey ?? "")
       // Нормалізуємо текст для дедупу: trim + схлопуємо пробіли/переведення рядків
-      function _norm(s) { return String(s ?? "").trim().replace(/\s+/g, " ") }
+      function _norm(s) { return SafePath.norm(s) }
       var normTitle = _norm(payload.title ?? payload.summary ?? "")
       var normText = _norm(payload.text ?? payload.body ?? "")
       var normApp = _norm(payload.appName ?? payload.app ?? "Phone")

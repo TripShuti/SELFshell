@@ -6,6 +6,7 @@ import Quickshell.Io
 import "../core"
 import QtQuick
 import QtQuick.Layouts
+import "../scripts/SafePath.js" as SafePath
 
 // Попап телефону — батарея, ping/ring, share, список сповіщень
 AnimatedPopup {
@@ -66,12 +67,9 @@ AnimatedPopup {
   // симлінк-назовні не резолвимо — xdg-open йде за лінком, тому allowlist вузький
   function _safeOpenPath(path) {
     var p = String(path ?? "")
-    if (p === "" || p[0] !== "/" || p.includes("..")) return
     var dl = svc ? String(svc.downloadDir ?? "") : ""
     var mnt = svc ? String(svc.sftpMountDir ?? "") : ""
-    var ok = (dl !== "" && (p === dl || p.startsWith(dl.replace(/\/$/, "") + "/")))
-        || (mnt !== "" && (p === mnt || p.startsWith(mnt.replace(/\/$/, "") + "/")))
-    if (!ok) return
+    if (!SafePath.isWithinAnyDir(p, [dl, mnt])) return
     openShareProc.command = ["xdg-open", p]
     openShareProc.running = true
   }

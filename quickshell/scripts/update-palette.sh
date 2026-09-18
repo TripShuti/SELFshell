@@ -3,7 +3,14 @@
 # quickshell/scripts/update-palette.sh — генерує палітру з шпалери через matugen + оновлює palette.json, сповіщає quickshell через IPC
 # ============================================================
 set -euo pipefail
-WALLPAPER="${1:?usage: update-palette.sh <wallpaper>}"
+# --wallpaper-only: лише перемкнути шпалеру (awww + current.* + lock-кадр),
+# без регенерації палітри (тема Black; обгортка update-wallpaper-only.sh)
+WALLPAPER_ONLY=false
+if [ "${1:-}" = "--wallpaper-only" ]; then
+  WALLPAPER_ONLY=true
+  shift
+fi
+WALLPAPER="${1:?usage: update-palette.sh [--wallpaper-only] <wallpaper>}"
 if [ ! -f "$WALLPAPER" ]; then
   echo "error: wallpaper not found: $WALLPAPER" >&2
   exit 1
@@ -51,10 +58,13 @@ fi
 find "$WP_DIR" -maxdepth 1 -name 'current.*' \
   ! -name "current.$EXT" ! -name "current-lock.jpg" -delete 2>/dev/null || true
 
-/usr/bin/python3 "$DIR/update-palette.py" "$CURRENT"
+# Регенерація палітри — пропускаємо у wallpaper-only режимі (тема Black)
+if ! $WALLPAPER_ONLY; then
+  /usr/bin/python3 "$DIR/update-palette.py" "$CURRENT"
 
-# Перефарбовуємо живі foot-термінали без рестарту (foot перечитує colors-dark)
-pkill -USR1 -x foot 2>/dev/null || true
+  # Перефарбовуємо живі foot-термінали без рестарту (foot перечитує colors-dark)
+  pkill -USR1 -x foot 2>/dev/null || true
 
-# Повідомляємо quickshell про зміну палітри
-quickshell ipc call palette-reload reload 2>/dev/null || true
+  # Повідомляємо quickshell про зміну палітри
+  quickshell ipc call palette-reload reload 2>/dev/null || true
+fi

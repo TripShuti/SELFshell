@@ -148,7 +148,6 @@ Item {
         sys: root.sys
         label: "Theme mode"
         options: [{ id: "black", text: "Black" }, { id: "matugen", text: "Matugen" }]
-        // white мігровано в matugen централізовано (AppConfig._whiteMigrateTimer)
         value: root.cfg.themeMode
         onPicked: id => root.applyTheme(id)
       }

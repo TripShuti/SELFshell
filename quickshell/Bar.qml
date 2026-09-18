@@ -9,6 +9,7 @@ import QtQuick
 import "widgets"
 import "popups"
 import "monitors"
+import "scripts/SafePath.js" as SafePath
 
 PanelWindow {
   id: root
@@ -121,9 +122,9 @@ PanelWindow {
   }
   // Централізований список попапів для auto-hide — додаючи новий попап, додай сюди перевірку
   // Функція замість масиву: масив forward-id ловить null при ініціалізації QML,
-  // тому централізація — через одну функцію _anyPopupOpen() (20 попапів/тостів)
+  // тому централізація — через одну функцію _anyPopupOpen() (21 попап/тост)
   function _anyPopupOpen(): bool {
-    return calendarPopup.visible || audioPopup.visible || btPopup.visible || netPopup.visible || mprisPopup.visible || workspacesPopup.visible || keyboardPopup.visible || genshinPopup.visible || selftrackPopup.visible || controlPopup.visible || clipboardPopup.visible || wallpaperPopup.visible || settingsPopup.visible || launcherPopup.visible || trayPopup.visible || pairingPopup.visible || kcdPopup.visible || kcdPairingPopup.visible || notifToast.visible || osdPopup.visible
+    return calendarPopup.visible || audioPopup.visible || btPopup.visible || netPopup.visible || netPopup.settingsVisible || mprisPopup.visible || workspacesPopup.visible || keyboardPopup.visible || genshinPopup.visible || selftrackPopup.visible || controlPopup.visible || clipboardPopup.visible || wallpaperPopup.visible || settingsPopup.visible || launcherPopup.visible || trayPopup.visible || pairingPopup.visible || kcdPopup.visible || kcdPairingPopup.visible || notifToast.visible || osdPopup.visible
   }
   readonly property bool anyPopupOpenState: _anyPopupOpen()
   function _updateAutoHide() {
@@ -173,8 +174,8 @@ PanelWindow {
   // --- Шаблони компонентів для динамічного рендеру пігулок ---
   // Loader.sourceComponent бере звідси потрібний тип за іменем віджета.
   // Layout.fillHeight/alignment ставляться на сам Loader у делегаті Repeater-а
-  // всередині PillBar. Для тих, кому потрібен fillHeight (Mpris/Audio), сам
-  // item заповнює Loader через anchors.fill: parent.
+  // всередині PillBar. item заповнює Loader через anchors.fill: parent
+  // (скрізь, крім workspaces/clock — див. widgetNeedsFillHeight нижче).
   Component { id: launcherComp;   LauncherWidget { window: root; anchors.fill: parent } }
   Component { id: workspacesComp; WorkspacesWidget { window: root } }
   Component { id: mprisComp;      MprisWidget { window: root; anchors.fill: parent; cavBars: cavaMonitor.bars } }
@@ -200,18 +201,13 @@ PanelWindow {
     bt: btComp, net: netComp, tray: trayComp, kcd: kcdComp
   })
 
-  // Ці віджети самі всередині читають implicitHeight: parent?.height,
-  // тому Loader-у, що їх завантажує, потрібна РЕАЛЬНА висота від
-  // RowLayout (fillHeight), інакше він сам візьме висоту з item-а, а той —
-  // з Loader-а, замкнене коло, що резолвиться в 0 (0×0 MouseArea = не
-  // клікається, і жодного варнінгу при цьому не буде).
+  // Майже всі віджети всередині читають implicitHeight: parent?.height,
+  // тому їх Loader-и беруть РЕАЛЬНУ висоту від RowLayout (fillHeight),
+  // інакше замкнене коло резолвиться в 0 (0×0 MouseArea = не клікається,
+  // і жодного варнінгу при цьому не буде). Винятки — workspaces і clock,
+  // які висоту з батька не читають.
   function widgetNeedsFillHeight(name) {
-    return name === "mpris" || name === "audio"
-        || name === "launcher" || name === "control"
-        || name === "genshin" || name === "timer" || name === "selftrack"
-    || name === "bt" || name === "net" || name === "tray"
-    || name === "keyboard" || name === "battery"
-    || name === "clipboard" || name === "kcd"
+    return name !== "workspaces" && name !== "clock"
   }
 
   // Прихований бар не їсть кліки: input region вікна обмежується лише
@@ -370,7 +366,8 @@ PanelWindow {
         var last = root.kdeConnect.lastPhoneNotif
         var age = Date.now() - (root.kdeConnect.lastPhoneNotifTime ?? 0)
         if (age < 10000) {
-          function _norm(s) { return String(s ?? "").trim().replace(/\s+/g, " ").toLowerCase() }
+          // lower — свідомо: kcd та notify-send пишуть appName по-різному
+          function _norm(s) { return SafePath.norm(s).toLowerCase() }
           var a = _norm(notif.appName ?? ""), b = _norm(notif.summary ?? notif.title ?? ""), c = _norm(notif.body ?? notif.text ?? "")
           var la = _norm(last.appName), lb = _norm(last.title), lc = _norm(last.text)
           // строгий збіг або вміст — покриває Telegram vs org.telegram.desktop
@@ -379,13 +376,8 @@ PanelWindow {
       }
       notif.tracked = true
       notifToast.showNotif(notif)
-      // Лічильник непрочитаних: росте, поки центр керування закритий
-      if (!controlPopup.visible) root.newNotifs++
     }
   }
-
-  // Лічильник нових сповіщень (badge на ControlWidget, скидається при відкритті)
-  property int newNotifs: 0
 
   // Монітор аудіо-візуалізації (cava) — працює, коли візуалізатор реально
   // видно: у віджеті панелі під час відтворення або у відкритому попапі.
@@ -438,19 +430,7 @@ PanelWindow {
     window: root
     visible: false
     iconResolver: iconResolver
-    dateStr: selftrackMonitor.dateStr
-    dayActiveMs: selftrackMonitor.dayActiveMs
-    dayIdleMs: selftrackMonitor.dayIdleMs
-    weekMs: selftrackMonitor.weekMs
-    weekLabel: selftrackMonitor.weekLabel
-    monthMs: selftrackMonitor.monthMs
-    monthLabel: selftrackMonitor.monthLabel
-    appsModel: selftrackMonitor.appsModel
-    sessionsModel: selftrackMonitor.sessionsModel
-    pagesModel: selftrackMonitor.pagesModel
-    pageApp: selftrackMonitor.pageApp
-    loading: selftrackMonitor.loading
-    errorText: selftrackMonitor.errorText
+    monitor: selftrackMonitor
   }
 
   // Центр керування (сповіщення, швидкі дії)
@@ -524,12 +504,11 @@ PanelWindow {
           text: "Open",
           invoke: (function() {
             // path — з локального last-shot.txt (grim-пайплайн), але все одно
-            // відкриваємо лише абсолютний шлях без .. всередині ~/Screenshots
-            // (строгий префікс HOME, не includes: /tmp/Screenshots/* не проходить)
+            // відкриваємо лише всередині ~/Screenshots (строгий префікс
+            // через SafePath, не includes: /tmp/Screenshots/* не проходить)
             var p = String(path ?? "")
-            if (p === "" || p[0] !== "/" || p.includes("..")) return
             var home = String(Quickshell.env("HOME") ?? "")
-            if (home === "" || !p.startsWith(home + "/Screenshots/")) return
+            if (home === "" || !SafePath.isWithinDir(p, home + "/Screenshots")) return
             openShotProc.command = ["xdg-open", p]
             openShotProc.running = true
           })
@@ -652,7 +631,6 @@ PanelWindow {
         isPhone: true,
         actions: []
       })
-      if (!controlPopup.visible) root.newNotifs++
     }
   }
 
@@ -734,13 +712,6 @@ PanelWindow {
   Connections { target: controlPopup;   function onOpenBtManager() { controlPopup.visible = false; btPopup.toggle() } }
   Connections { target: controlPopup;   function onOpenNetManager() { controlPopup.visible = false; netPopup.toggle() } }
   Connections { target: controlPopup;   function onOpenSettingsPopup() { controlPopup.visible = false; settingsPopup.toggle() } }
-  Connections {
-    target: controlPopup
-    function onVisibleChanged() {
-      // Відкрили центр керування — сповіщення "прочитані"
-      if (controlPopup.visible) root.newNotifs = 0
-    }
-  }
   Connections { target: genshinPopup;   function onRefreshRequested() { genshinMonitor.refreshNow() } }
 
   // Трекер часу: сигнали попапу → методи монітора

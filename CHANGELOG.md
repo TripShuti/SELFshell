@@ -10,10 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Process timeouts** — hung background processes no longer wedge the shell forever: Genshin sync (45s), `powerprofilesctl` get/set (15s, queued concurrent `set` runs after the current one instead of being dropped), pacman update check (8min QML-side). Cava retries slowly (60s) after 5 fast crashes instead of dying silently.
 - **kcd action feedback** — Ping/Ring/Share/Clipboard/SFTP failures show an inline error in the phone popup instead of `console.warn` only; buttons ignore clicks while their process runs. Rejecting a pairing now tries `kcd unpair` best-effort instead of leaving the phone hanging until the 30s daemon timeout.
-- **White → matugen migration** — old configs with `themeMode "white"` are rewritten to `matugen` once at startup; schema and docs accept only `black`/`matugen` now.
 - **Installer hardening** — `set -E` (ERR trap fires in helpers), `fakeroot` in deps (doctor already required it), `mktemp -d` yay build dir, `chmod 600` fresh `.env`, backups of `/etc/greetd/config.toml` + cursor `index.theme`, marker-guarded fish uwsm block, `--no` skips service enable.
 - **Script robustness** — `update-palette.sh`/`update-wallpaper-only.sh` serialize via lockdir + atomic `current.*` writes; `pacman_upgrade.sh` atomic sentinel; `update-palette.py` flocked `foot.ini` append; `genshin_stats.py` pid-unique tmp; `pacman_updates.py` forced `LC_ALL=C` + comma decimals + one enrich retry; `tracklist.py` exact player-name match + count-mismatch diagnostics + stderr on failure; `sysinfo.py` Package/Tctl label priority + `MemAvailable` fallback; `selfshell` curl retry, reload lock, fixed Hyprland version compare and `\r`-proof downgrade guard.
-- **Tests/CI** — new `test_tracklist.py` (stubbed dbus), `visual_test.lua` wired into `run.sh` + CI, `py_compile`/`bash -n`/`shellcheck` cover all scripts, stdlib python tests run even without `requests`/`dotenv`.
+- **Tests/CI** — new `test_tracklist.py` (stubbed dbus), `visual_test.lua` wired into `run.sh` + CI, `py_compile`/`bash -n`/`shellcheck` cover all scripts, stdlib python tests run even without `requests`/`dotenv`. `check_config_schema.py` now guards `binds.json` action ids, `visual.json` keys and AppConfig adapter/defaultCfg parity (BindsSection/binds.lua/docs, hyprDefaults/Lua/docs and adapter/defaultCfg must match).
 
 ### Changed
 
@@ -41,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Player sliders hard to grab** — the volume (84×4px) and progress (full-width×6px) tracks in the player popup had hit areas exactly the size of the visuals. Both now sit in taller transparent wrappers (22px/20px, same width/origin, visuals pixel-identical) so mouse coordinates and drag logic are unchanged; volume additionally gets mouse-wheel support (`audioStep` from Behavior settings, like the bar) and a pointer cursor. No wheel on progress by design (an accidental scroll would seek the track).
 - **kcd open-allowlist vs custom paths** — `KdeConnectPopup._safeOpenPath` only allowed `~/Downloads/kcd/`, so with a custom `sftp.mount_dir` (e.g. `~/kcd`) clicking the mount row silently did nothing. The allowlist is now built from the local `kcd.toml`: `download_dir` subtree + `sftp.mount_dir` itself/subtree (both service-parsed, never from phone payload); strict prefix + `..` rejection kept.
 - **kcd pair timeout vs daemon** — service held `pendingPairRequest` 65s while the daemon kills the request at `[pairing] timeout_secs` (30s): a late Accept would send a *new* outbound request on kcd 1.18+ instead of accepting. Timeout cut to 35s (30s + click grace).
+- **Connection settings vs auto-hide** — opening a network's IPv4/DNS settings hides the manager popup, so with auto-hide on the bar slid away behind the settings window after 400ms. `NetworkPopup` now exposes `settingsVisible`, counted in `Bar._anyPopupOpen()`.
 
 ### Removed
 

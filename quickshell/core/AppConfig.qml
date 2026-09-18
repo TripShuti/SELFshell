@@ -162,21 +162,6 @@ Item {
   }
   function saveSoon() { _saveTimer.restart() }
 
-  // Одноразова міграція видаленої white-теми: старі конфіги з
-  // themeMode "white" мовчки стають matugen (white поводилась як matugen
-  // всюди). Затримка — адаптер читає файл асинхронно.
-  Timer {
-    id: _whiteMigrateTimer
-    interval: 1000
-    onTriggered: {
-      if (root.cfg.themeMode === "white") {
-        root.cfg.themeMode = "matugen"
-        root.saveToFile()
-      }
-    }
-  }
-  Component.onCompleted: _whiteMigrateTimer.start()
-
   // Масштаб шрифтів/гліфів: усі font.pixelSize у віджетах і попапах
   // домножуються на uiScale через цей хелпер
   function scaled(v) { return v * root.cfg.uiScale }
@@ -237,14 +222,10 @@ Item {
     return "left"
   }
 
-  // Переносить віджет в іншу пігулку (додається в кінець її списку)
+  // Переносить віджет в іншу пігулку (додається в кінець її списку).
+  // Делегує в moveToPillAt: індекс = довжина (clamp всередині дає append).
   function moveToPill(name, targetPill) {
-    root.cfg.leftOrder = root.cfg.leftOrder.filter(n => n !== name)
-    root.cfg.centerOrder = root.cfg.centerOrder.filter(n => n !== name)
-    root.cfg.rightOrder = root.cfg.rightOrder.filter(n => n !== name)
-    if (targetPill === "left") root.cfg.leftOrder = root.cfg.leftOrder.concat([name])
-    else if (targetPill === "center") root.cfg.centerOrder = root.cfg.centerOrder.concat([name])
-    else root.cfg.rightOrder = root.cfg.rightOrder.concat([name])
+    moveToPillAt(name, targetPill, pillOrderFor(targetPill).length)
   }
 
   function moveToPillAt(name, targetPill, targetIndex) {

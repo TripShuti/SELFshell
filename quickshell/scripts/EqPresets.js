@@ -57,10 +57,14 @@ function toMbeqBands(winampGains) {
 }
 
 // Усі пресети одразу в смугах mbeq: { "Flat": [15 значень], ... }
+// Кеш: winampPresets статичні, тому інтерполяція рахується один раз
+var _allCache = null
 function all() {
+  if (_allCache) return _allCache
   var out = {}
   for (var name in winampPresets)
     out[name] = toMbeqBands(winampPresets[name])
+  _allCache = out
   return out
 }
 

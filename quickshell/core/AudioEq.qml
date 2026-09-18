@@ -120,6 +120,15 @@ Item {
     return "'" + String(s).replace(/'/g, "'\\''") + "'"
   }
 
+  // ID першого не-EQ sink-у як shell-підстановка $(...): з флагом —
+  // лише RUNNING, без — перший зі списку. Єдине місце sink-резолву
+  // для enable/disable-ланцюгів (раніше три копії pactl-пайплайна).
+  function _firstNonEqSinkIdQ(running) {
+    var list = "pactl list short sinks | grep -v -F " + _shellQuote(root.sinkName)
+    if (running) list += " | grep RUNNING"
+    return "$(" + list + " | head -1 | cut -f1)"
+  }
+
   function _zeroControls() {
     var parts = []
     for (var i = 0; i < bandCount; i++)
@@ -367,8 +376,8 @@ Item {
       "if [ -n \"$SAVED\" ] && pactl list short sinks | grep -F -q \"$SAVED\"; then " +
       "T=$(pactl list short sinks | grep -F \"$SAVED\" | head -1 | cut -f1); fi; " +
       "if [ -z \"$T\" ]; then T=$(pactl get-default-sink); [ \"$T\" = " + _eqQ + " ] && T=''; fi; " +
-      "if [ -z \"$T\" ]; then T=$(pactl list short sinks | grep -v -F " + _eqQ + " | grep RUNNING | head -1 | cut -f1); fi; " +
-      "if [ -z \"$T\" ]; then T=$(pactl list short sinks | grep -v -F " + _eqQ + " | head -1 | cut -f1); fi; " +
+      "if [ -z \"$T\" ]; then T=" + _firstNonEqSinkIdQ(true) + "; fi; " +
+      "if [ -z \"$T\" ]; then T=" + _firstNonEqSinkIdQ(false) + "; fi; " +
       "[ -z \"$T\" ] && exit 0; " +
       "pactl list short sink-inputs | cut -f1 | " +
       "xargs -r -n1 -I{} pactl move-sink-input {} \"$T\"; " +
@@ -381,12 +390,11 @@ Item {
     id: _getDefaultSinkProc
     // резолвимо sink-for-restore: поточний default, але якщо це вже EQ
     // (отруєний стан попередніх кривих спроб) — перший не-EQ RUNNING
-    readonly property string _eqQuoted: "'" + root.sinkName.replace(/'/g, "'\\''") + "'"
     command: ["bash", "-c",
       "d=$(pactl get-default-sink); " +
-      "if [ \"$d\" = " + _eqQuoted + " ]; then " +
-      "d=$(pactl list short sinks | grep -v -F " + _eqQuoted + " | grep RUNNING | head -1 | cut -f1); fi; " +
-      "if [ -z \"$d\" ]; then d=$(pactl list short sinks | grep -v -F " + _eqQuoted + " | head -1 | cut -f1); fi; " +
+      "if [ \"$d\" = " + _shellQuote(root.sinkName) + " ]; then " +
+      "d=" + _firstNonEqSinkIdQ(true) + "; fi; " +
+      "if [ -z \"$d\" ]; then d=" + _firstNonEqSinkIdQ(false) + "; fi; " +
       "echo \"$d\""]
     stdout: StdioCollector {
       onStreamFinished: {
@@ -453,7 +461,7 @@ Item {
     id: _moveInputsProc
     onExited: (code) => {
       // default повертаємо навіть якщо move впав (може, потоків не було)
-      var _eqQ2 = "'" + root.sinkName.replace(/'/g, "'\\''") + "'"
+      var _eqQ2 = _shellQuote(root.sinkName)
       _restoreDefaultProc.command = ["bash", "-c",
         "T=$(pactl get-default-sink); " +
         "[ \"$T\" = " + _eqQ2 + " ] && " +
@@ -569,8 +577,6 @@ Timer {
 
   Process {
     id: _relinkProc
-    // sinkName — константа "SELFshell_EQ", екрануємо на випадок зміни
-    readonly property string _relinkEqQ: "'" + root.sinkName.replace(/'/g, "'\\''") + "'"
     command: ["bash", "-c",
       "SRC=$(pw-link -o 2>/dev/null | grep 'output.filter-chain' | head -1 | cut -d: -f1); " +
       "[ -z \"$SRC\" ] && exit 0; " +
@@ -578,7 +584,7 @@ Timer {
       "if pactl list short sinks 2>/dev/null | grep -F -q \"bluez\"; then " +
       "  BEST=$(pactl list short sinks 2>/dev/null | grep -F \"bluez\" | head -1 | cut -f2); " +
       "  [ -z \"$BEST\" ] && exit 0; " +
-      "  for T in $(pactl list short sinks 2>/dev/null | grep -v -F " + _relinkEqQ + " | cut -f2); do " +
+      "  for T in $(pactl list short sinks 2>/dev/null | grep -v -F " + _shellQuote(root.sinkName) + " | cut -f2); do " +
       "    if [ \"$T\" != \"$BEST\" ]; then " +
       "      if echo \"$LINKS\" | grep -F -q \"$T:playback_FL\"; then " +
         "pw-link -d \"$SRC:output_FL\" \"$T:playback_FL\" 2>/dev/null || true; " +
@@ -591,7 +597,7 @@ Timer {
       "    pw-link \"$SRC:output_FR\" \"$BEST:playback_FR\" 2>/dev/null || true; " +
       "  fi; " +
       "else " +
-      "  for T in $(pactl list short sinks 2>/dev/null | grep -v -F " + _relinkEqQ + " | cut -f2); do " +
+      "  for T in $(pactl list short sinks 2>/dev/null | grep -v -F " + _shellQuote(root.sinkName) + " | cut -f2); do " +
       "    if ! echo \"$LINKS\" | grep -F -q \"$T:playback_FL\"; then " +
       "      pw-link \"$SRC:output_FL\" \"$T:playback_FL\" 2>/dev/null || true; " +
       "      pw-link \"$SRC:output_FR\" \"$T:playback_FR\" 2>/dev/null || true; " +

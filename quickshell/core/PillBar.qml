@@ -69,7 +69,7 @@ Item {
 
         Loader {
           Layout.alignment: Qt.AlignVCenter
-          Layout.fillHeight: typeof root.needsFillHeight === "function" ? root.needsFillHeight(modelData) : false
+          Layout.fillHeight: root.needsFillHeight(modelData)
           sourceComponent: root.widgetComponents[modelData] ?? null
           active: !_isSep
           asynchronous: true

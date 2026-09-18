@@ -12,6 +12,9 @@ AnimatedPopup {
   id: root
 
   required property QtObject window
+  // Монітор-джерело даних (синглтон з shell.qml через Bar) — попап дані
+  // лише читає, назад ідуть сигнали prevDay/nextDay/goToday/refresh/pagesRequested
+  required property QtObject monitor
   palette: window.palette
   appConfig: window.appConfig
 
@@ -27,20 +30,21 @@ AnimatedPopup {
   slideDistance: 6
   transformOrigin: Item.Center
 
-  // Дані з SelfTrackMonitor (прокидаються через Bar.qml)
-  property string dateStr: ""
-  property int dayActiveMs: 0
-  property int dayIdleMs: 0
-  property int weekMs: 0
-  property string weekLabel: ""
-  property int monthMs: 0
-  property string monthLabel: ""
-  property var appsModel: []
-  property var sessionsModel: []
-  property var pagesModel: []
-  property string pageApp: ""
-  property bool loading: false
-  property string errorText: ""
+  // Дані з SelfTrackMonitor — readonly-аліаси поверх monitor
+  // (один обʼєкт замість 13 окремих пропсів з Bar.qml)
+  readonly property string dateStr: root.monitor ? root.monitor.dateStr : ""
+  readonly property int dayActiveMs: root.monitor ? root.monitor.dayActiveMs : 0
+  readonly property int dayIdleMs: root.monitor ? root.monitor.dayIdleMs : 0
+  readonly property int weekMs: root.monitor ? root.monitor.weekMs : 0
+  readonly property string weekLabel: root.monitor ? root.monitor.weekLabel : ""
+  readonly property int monthMs: root.monitor ? root.monitor.monthMs : 0
+  readonly property string monthLabel: root.monitor ? root.monitor.monthLabel : ""
+  readonly property var appsModel: root.monitor ? root.monitor.appsModel : []
+  readonly property var sessionsModel: root.monitor ? root.monitor.sessionsModel : []
+  readonly property var pagesModel: root.monitor ? root.monitor.pagesModel : []
+  readonly property string pageApp: root.monitor ? root.monitor.pageApp : ""
+  readonly property bool loading: root.monitor ? root.monitor.loading : false
+  readonly property string errorText: root.monitor ? root.monitor.errorText : ""
 
   signal prevDay()
   signal nextDay()

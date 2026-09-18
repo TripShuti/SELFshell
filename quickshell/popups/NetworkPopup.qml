@@ -31,6 +31,9 @@ AnimatedPopup {
   // true, поки йде підключення з паролем — діалог залишається відкритим,
   // кнопка та поле блокується, застарілі результати процесу ігноруються
   property bool connecting: false
+  // Видимість вікна налаштувань (менеджер у цей час приховано) —
+  // читає Bar._anyPopupOpen, щоб auto-hide не ховав бар під ним
+  readonly property bool settingsVisible: connectionSettings.visible
 
   NetworkConnectionSettingsPopup {
     id: connectionSettings

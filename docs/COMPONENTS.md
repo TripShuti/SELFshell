@@ -194,8 +194,9 @@
 | `tracklist.py` | Python | MPRIS TrackList (player queue) for MprisPopup |
 | `update-palette.py` | Python | Generates the palette and themes for the whole project |
 | `update-palette.sh` | Bash | Wrapper: matugen + update-palette.py + palette IPC update |
-| `update-wallpaper-only.sh` | Bash | Wallpaper-only switch without palette regen (Black theme) |
+| `update-wallpaper-only.sh` | Bash | Wallpaper-only switch without palette regen (Black theme, thin wrapper over `update-palette.sh --wallpaper-only`) |
 | `AudioMixerUtils.js` | JS | Audio mixer pure helpers (`formatPercent/Db`, `sinkNameForStream` `O(1)` cache) |
+| `SafePath.js` | JS | Shared path predicates (`isWithinDir`/`isWithinAnyDir` strict-prefix allowlist, `norm`) for Bar/KdeConnectPopup/KdeConnectService |
 | `SelfTrack.js` | JS | Time tracker formatting (durations, app colors, title cleanup, `todayStr`) |
 | `sysinfo.py` | Python | Mini-monitoring for Settings → System (`cpu_temp_c`, `cpu_mhz`, mem, disks as one JSON line; nulls when a sensor is missing) |
 | `pacman_updates.py` | Python | Update check for Settings → System (official via `checkupdates`, AUR via `yay/paru -Qua`, one JSON line; exit-2 = up to date) |
