@@ -303,6 +303,39 @@ Item {
 
     SetCard {
       sys: root.sys
+      SetLabel { sys: root.sys; text: "Bar Background" }
+      SetToggle {
+        sys: root.sys
+        label: "Solid bar behind pills"
+        sub: "Full-width backdrop under the floating pills. Darker and more transparent than pills to add depth."
+        on: root.cfg.barBackEnabled
+        onToggled: function(v) { root.cfg.barBackEnabled = v; root.ac.saveToFile() }
+      }
+      SetSlider {
+        sys: root.sys
+        label: "Background opacity"; from: 0.0; to: 1.0; step: 0.05; decimals: 2
+        sub: "Alpha of the solid bar. Lower than pills keeps pills readable."
+        value: root.cfg.barBackOpacity
+        onMoved: v => { root.cfg.barBackOpacity = v; root.ac.saveSoon() }
+      }
+      SetSlider {
+        sys: root.sys
+        label: "Background gradient"; from: 1.0; to: 2.0; step: 0.05; decimals: 2
+        sub: "How much lighter the top of the bar is than the bottom. 1.0 = flat color."
+        value: root.cfg.barBackLighten
+        onMoved: v => { root.cfg.barBackLighten = v; root.ac.saveSoon() }
+      }
+      SetSlider {
+        sys: root.sys
+        label: "Edge line width"; from: 0; to: 4; step: 1; suffix: "px"
+        sub: "Thin line on the inner edge separating the bar from windows below. 0 = no line."
+        value: root.cfg.barBackBorderWidth
+        onMoved: v => { root.cfg.barBackBorderWidth = v; root.ac.saveSoon() }
+      }
+    }
+
+    SetCard {
+      sys: root.sys
       SetLabel { sys: root.sys; text: "Separators" }
       SetSlider {
         sys: root.sys

@@ -247,6 +247,40 @@ PanelWindow {
       NumberAnimation { properties: "y,opacity,scale"; duration: root.appConfig.anim(350); easing.type: Easing.OutCubic }
     }
 
+    // Суцільна підкладка за пігулками — full-bleed фон на всю ширину/висоту
+    // вікна. Темніша і прозоріша за пігулки, тому дає глибину і підкреслює
+    // їх. Rectangle без hoverEnabled не перехоплює мишу — hover і кліки
+    // проходять до autoHideWatch і пігулок як раніше. Лежить першою дитиною,
+    // щоб малюватись під пігулками, ховається разом з barContent при автохайді.
+    Rectangle {
+      id: barBack
+      anchors.fill: parent
+      visible: root.appConfig.cfg.barBackEnabled
+      color: "transparent"
+      property real lighten: root.appConfig.cfg.barBackLighten
+      property real bgOpacity: root.appConfig.cfg.barBackOpacity
+      property color _backBase: root.palette ? root.palette.bgAlpha : "#9934302a"
+      property color _backTop: root.palette ? Qt.lighter(root.palette.baseOverlay, lighten) : "#9934302a"
+      Behavior on lighten { NumberAnimation { duration: root.appConfig.anim(150); easing.type: Easing.OutCubic } }
+      Behavior on bgOpacity { NumberAnimation { duration: root.appConfig.anim(150); easing.type: Easing.OutCubic } }
+      gradient: Gradient {
+        orientation: Gradient.Vertical
+        GradientStop { position: 0.0; color: Qt.rgba(barBack._backTop.r, barBack._backTop.g, barBack._backTop.b, barBack._backTop.a * barBack.bgOpacity) }
+        GradientStop { position: 1.0; color: Qt.rgba(barBack._backBase.r, barBack._backBase.g, barBack._backBase.b, barBack._backBase.a * barBack.bgOpacity) }
+      }
+
+      // Тонка лінія на внутрішній кромці — відділяє бар від вікон під ним
+      Rectangle {
+        visible: root.appConfig.cfg.barBackBorderWidth > 0
+        height: root.appConfig.cfg.barBackBorderWidth
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: root.appConfig.cfg.barPos === "top" ? undefined : parent.top
+        anchors.bottom: root.appConfig.cfg.barPos === "top" ? parent.bottom : undefined
+        color: root.palette.outlineVariant
+      }
+    }
+
     // Watchdog hover-а (батько пігулок — див. коментар вище)
     MouseArea {
       id: autoHideWatch

@@ -38,7 +38,7 @@ BOOL_FIELDS = [
     "timerEnabled", "selftrackEnabled", "genshinEnabled", "keyboardEnabled", "audioEnabled",
     "controlEnabled", "clipboardEnabled", "btEnabled", "netEnabled", "trayEnabled",
     "batteryEnabled", "kcdEnabled", "kcdDndEnabled", "dndEnabled", "autoPowerSaver", "barAutoHide",
-    "leftPillEnabled", "centerPillEnabled", "rightPillEnabled",
+    "leftPillEnabled", "centerPillEnabled", "rightPillEnabled", "barBackEnabled",
     "animationsEnabled",
 ]
 NUM_FIELDS = {
@@ -54,6 +54,7 @@ NUM_FIELDS = {
     "osdRadius": (0, 24), "osdLighten": (1.0, 2.0), "osdBgOpacity": (0.0, 1.0),
     "barLighten": (1.0, 2.0),
     "barBgOpacity": (0.0, 1.0), "barBorderWidth": (0, 4),
+    "barBackOpacity": (0.0, 1.0), "barBackLighten": (1.0, 2.0), "barBackBorderWidth": (0, 4),
     "separatorOpacity": (0.0, 1.0), "separatorGlowOpacity": (0.0, 0.5),
     "uiScale": (0.8, 1.5),
     "animSpeed": (0.5, 2.0),

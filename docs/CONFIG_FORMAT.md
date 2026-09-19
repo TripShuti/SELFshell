@@ -60,6 +60,10 @@ Edited through SettingsPopup (UI) or manually.
 | `barLighten` | `number` | `1.3` | Bar pill gradient lighten; 1.0 = flat color (1.0–2.0) |
 | `barBgOpacity` | `number` | `0.7` | Pill background opacity multiplier; 1.0 = palette color as-is (0.2–1.0) |
 | `barBorderWidth` | `number` | `1` | Pill outline width, px; 0 = no border (0–4) |
+| `barBackEnabled` | `boolean` | `true` | Solid full-width bar behind the floating pills |
+| `barBackOpacity` | `number` | `0.45` | Solid bar background opacity (0–1.0) |
+| `barBackLighten` | `number` | `1.15` | Solid bar gradient lighten; 1.0 = flat color (1.0–2.0) |
+| `barBackBorderWidth` | `number` | `1` | Edge line width on the inner bar edge, px; 0 = no line (0–4) |
 | `separatorOpacity` | `number` | `0.65` | Separator line opacity between widget groups (0–1.0) |
 | `separatorGlowOpacity` | `number` | `0.1` | Separator glow opacity (0–0.5) |
 | `uiScale` | `number` | `1.0` | Global multiplier for all text/icon-glyph sizes in bar, popups and settings (0.8–1.5) |

@@ -123,6 +123,14 @@ Item {
       property real barBgOpacity: 0.70
       // товщина рамки пігулки (0 = без рамки)
       property int barBorderWidth: 1
+      // Суцільна підкладка за пігулками (full-bleed фон вікна)
+      property bool barBackEnabled: true
+      // множник прозорості підкладки (нижчий за пігулки — дає глибину)
+      property real barBackOpacity: 0.45
+      // освітлення верху градієнта підкладки (пласкіше за пігулки)
+      property real barBackLighten: 1.15
+      // лінія на внутрішній кромці підкладки (0 = без лінії)
+      property int barBackBorderWidth: 1
       // роздільники між віджетами
       property real separatorOpacity: 0.65
       property real separatorGlowOpacity: 0.10
@@ -285,6 +293,8 @@ Item {
     osdRadius: 10, osdLighten: 1.5, osdBgOpacity: 0.90,
     barLighten: 1.30,
     barBgOpacity: 0.70, barBorderWidth: 1,
+    barBackEnabled: true,
+    barBackOpacity: 0.45, barBackLighten: 1.15, barBackBorderWidth: 1,
     separatorOpacity: 0.65, separatorGlowOpacity: 0.10,
     uiScale: 1.0,
     animationsEnabled: true, animSpeed: 1.0,
