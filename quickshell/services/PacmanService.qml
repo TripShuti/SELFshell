@@ -28,6 +28,9 @@ Item {
   property string error: ""
   property double lastCheck: 0
   property bool upgrading: false
+  // Таймаут спрацював, а процес досі живий (великий апгрейд): UI чесно
+  // показує "досі триває", повторний старт заблоковано через upgrading
+  property bool upgradeTimedOut: false
 
   readonly property int count: root.packages.length
   readonly property string checkScript: Qt.resolvedUrl("../scripts/pacman_updates.py").toString().replace("file://", "")
@@ -68,6 +71,7 @@ Item {
     root.sentinelPath = root.runtimeBase + "/selfshell-upgrade/done-" + Math.floor(Date.now() / 1000)
     sentinelFile.path = "file://" + root.sentinelPath
     root.upgrading = true
+    root.upgradeTimedOut = false
     // фіксований title ловить windowrule selfshell-upgrade-float
     // (hypr/modules/rules.lua): вікно пливе по центру, а не тайлиться
     upgradeProc.command = ["kitty", "--title", "SELFshell Update", "-e", root.upgradeScript, root.sentinelPath]
@@ -144,6 +148,7 @@ Item {
   function _onSentinelSeen() {
     if (!root.upgrading) return
     root.upgrading = false
+    root.upgradeTimedOut = false
     upgradeTimeout.stop()
     root.refresh()
   }
@@ -181,6 +186,7 @@ Item {
     onExited: (code) => {
       running = false
       upgradeTimeout.stop()
+      root.upgradeTimedOut = false
       // раннє закриття вікна (sentinel нема) — теж привід перечитати:
       // список покаже чесний залишок
       if (root.upgrading) {
@@ -235,11 +241,23 @@ Item {
     onTriggered: sentinelFile.reload()
   }
 
-  // страховка від завислого "Updating…", якщо термінал убили разом із шелом
+  // страховка від завислого "Updating…", якщо термінал убили разом із шелом.
+  // Живий процес НЕ гасимо (вбивати kitty в розпал транзакції pacman
+  // небезпечно — db lock): ставимо прапор overtime, upgrading лишається
+  // і блокує повторний старт, поки процес справді не завершиться.
   Timer {
     id: upgradeTimeout
     interval: 30 * 60 * 1000
-    onTriggered: root.upgrading = false
+    onTriggered: {
+      if (upgradeProc.running) {
+        root.upgradeTimedOut = true
+        return
+      }
+      if (root.upgrading) {
+        root.upgrading = false
+        root.refresh()
+      }
+    }
   }
 
   // відкладений стартовий чек — не гальмуємо завантаження шела мережею

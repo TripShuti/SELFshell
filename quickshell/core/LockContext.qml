@@ -16,6 +16,11 @@ Scope {
   property int failCount: 0
   property string userName: ""
 
+  // Покоління блокування проти stale PAM-відповіді: колбек, що стартував
+  // до повторного lock, ігнорується і не знімає новий лок без пароля
+  property int lockGeneration: 0
+  property int _pamGeneration: 0
+
   // Лок-аут після failThreshold невдалих спроб (анти-брутфорс):
   // tryUnlock() не стартує PAM, поки lockoutRemaining > 0.
   property int failThreshold: 3
@@ -39,6 +44,7 @@ Scope {
       currentText = ""
       unlockInProgress = false
       showFailure = false
+      lockGeneration++
     }
   }
 
@@ -47,6 +53,7 @@ Scope {
     if (lockoutRemaining > 0) return
     if (unlockInProgress) return
     unlockInProgress = true
+    _pamGeneration = lockGeneration
     pam.start()
   }
 
@@ -76,6 +83,12 @@ Scope {
     }
 
     onCompleted: result => {
+      // Stale PAM-відповідь з попереднього покоління lock — ігноруємо,
+      // інакше старий Success зняв би новий лок без авторизації
+      if (root._pamGeneration !== root.lockGeneration) {
+        root.unlockInProgress = false
+        return
+      }
       if (result == PamResult.Success) {
         failCount = 0
         root.currentText = ""

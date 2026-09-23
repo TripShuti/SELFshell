@@ -10,9 +10,10 @@ fish/fish_variables
 quickshell/data/calendar-tasks.json
 quickshell/data/launcher-usage.json
 
-# шпалери (залишаємо лише wp1.jpg як заглушку)
+# шпалери (трекаємо лише дефолтні: заглушка wp1.jpg + шпалера Black-теми)
 quickshell/wp/*
 !quickshell/wp/wp1.jpg
+!quickshell/wp/black.png
 *.bak
 quickshell/scripts/.genshin_requests.log
 quickshell/scripts/.genshin_state.json

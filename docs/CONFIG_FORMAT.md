@@ -324,8 +324,10 @@ string; `suspend` is a single bare key:
 
 Action ids: `launcher`, `settings`, `control`, `lock`, `clipboard`,
 `browser`, `terminal`, `files`, `suspend`. Unknown ids and non-string
-or empty values are ignored (the Lua default applies). `SUPER` is always
-part of app/shell shortcuts — the Settings UI composes it automatically.
+or empty values are ignored (the Lua default applies). Shortcuts default to
+the `mod` from `hypr/env.json` (`SUPER` out of the box); note the Settings
+UI always composes `SUPER`, so with a custom `mod` the UI labels no longer
+match the Lua binds and `binds.json` needs manual care.
 Changes apply via `hyprctl reload` (done by the Settings UI on every
 change).
 

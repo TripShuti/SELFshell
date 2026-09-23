@@ -657,6 +657,7 @@ AnimatedPopup {
             spacing: 2
             Text {
               text: modelData.appName + (modelData.title ? " • " + modelData.title : "")
+              textFormat: Text.PlainText
               color: window.palette.green
               font.family: window.palette.font; font.pixelSize: appConfig.scaled(11); font.bold: true
               elide: Text.ElideRight
@@ -665,6 +666,7 @@ AnimatedPopup {
             Text {
               visible: modelData.text !== ""
               text: modelData.text
+              textFormat: Text.PlainText
               color: window.palette.mutedAlt
               font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
               wrapMode: Text.Wrap

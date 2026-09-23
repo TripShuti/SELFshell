@@ -15,7 +15,7 @@ no separate lock/idle daemons.
 ## Features
 
 **Shell & Bar**
-- 15 built-in widgets across three configurable pill sections (left / center / right)
+- 16 built-in widgets across three configurable pill sections (left / center / right)
 - Drag-and-drop widget reordering via a built-in Settings popup
 - System Tray, MPRIS player with cava visualizer, Battery, Bluetooth, Network
 - Time tracking (optional, requires [`selftrack`](https://github.com/TripShuti/SELFtrack) daemon): today's active time in the bar, centered popup with day/week/month summary, 00–24 timeline strip and per-app page breakdown (`qs ipc call selftrack toggle`)
@@ -38,8 +38,8 @@ no separate lock/idle daemons.
 
 **Phone — KDE Connect via [kcd](https://github.com/bethropolis/kcd)**
 - Optional headless Go daemon [kcd](https://github.com/bethropolis/kcd) (`AUR kcd-bin`, `systemctl --user enable --now kcd`), LAN-only `1716/udp+tcp` `1739:1764/tcp`, no KDE stack, no telemetry
-- Battery + reachable dot, Ping / Ring (FindMyPhone), Share file (`zenity`/`kdialog` → `kcd share`), Clipboard push (`kcd clipboard`), SFTP browse/mount/unmount (`kcd sftp` → `~/Downloads/kcd/mnt` ↔ `/storage/emulated/0`), notifications (`Phone • App` in toast + Control Center, deduplicated, `kcdDndEnabled` — only popup when DND on)
-- Devices popup: battery bar, per-device Pair/Unpair, Pair new device (`kcd pair`), Connect by IP (`kcd connect`), `kcdDndEnabled` toggle (header bell `F0F3`/`F1F6` + widget badge)
+- Battery + reachable dot, Ping / Ring (FindMyPhone), Share file (`zenity`/`kdialog` → `kcd share`), Clipboard push (`kcd clipboard`), SFTP browse/mount/unmount (`kcd sftp` → `~/Downloads/kcd/mnt` ↔ `/storage/emulated/0`), notifications (`Phone • App` in toast + phone popup history, deduplicated, `kcdDndEnabled` — only popup when DND on)
+- Phone popup: battery bar, Ping / Ring, Share file, Clipboard push, SFTP browse/mount/unmount, recent notifications + Clear, firewall hint. Pairing is phone-initiated only (Accept/Decline popup); terminal flow (`kcd pair`, `kcd connect`) unchanged. `kcdDndEnabled` toggle (header bell `F0F3`/`F1F6` + widget badge)
 - MPRIS/media, volume and lock work via `kcd` plugins automatically (no extra UI)
 
 **Dynamic Theming**
@@ -114,7 +114,7 @@ Then:
 - Copy `quickshell/scripts/.env.example` to `.env` and fill in your credentials (if using Genshin widgets).
 - Place your wallpapers in `quickshell/wp/`.
 - Review and adjust path references in configs.
-- Place a wallpaper in `quickshell/wp/current.jpg` for the lock screen background.
+- Lock-screen frame `current-lock.jpg` and `current.*` are generated on every wallpaper switch; the tracked defaults are `wp1.jpg` and `black.png`.
 - Ensure all dependencies listed in `install.sh` (`PACMAN_DEPS`) are installed.
 
 ## Updating an existing setup
@@ -142,9 +142,10 @@ selfshell reload
 If you keep `~/.config/quickshell` as a git clone of the repository,
 `selfshell update` (git pull + shell restart) is the shortest path.
 
-The lock screen uses `quickshell/wp/current.jpg`; on a fresh clone it
-falls back to the tracked `wp1.jpg` until you pick a wallpaper (via the
-Wallpaper Picker or `selfshell palette-reload`).
+The lock screen uses the generated `current-lock.jpg` (static first frame of
+the wallpaper); on a fresh clone it falls back to the tracked `wp1.jpg` /
+`black.png` until you pick a wallpaper (via the Wallpaper Picker or
+`selfshell palette-reload`).
 
 ## CLI
 

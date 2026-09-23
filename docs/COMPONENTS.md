@@ -157,7 +157,7 @@
 | `popups/control/ReadingTempSection.qml` | hyprsunset slider (debounce, one-shot retries, daemon ensure) | hyprsunset |
 | `popups/control/NotificationList.qml` | Grouped notification list (reads `groupedModel`/`unread` only; card actions are model methods) | NotificationServer |
 | `OsdPopup.qml` | Volume/brightness overlay for media keys | PipeWire, ddcutil |
-| `SettingsPopup.qml` | Bar settings (8 sections, drag-and-drop) | AppConfig |
+| `SettingsPopup.qml` | Bar settings (9 sections, drag-and-drop) | AppConfig |
 | `settings/BarSection.qml` | Settings: bar geometry, auto-hide, layout drag-and-drop, pills appearance, separators | AppConfig |
 | `settings/PopupsSection.qml` | Settings: popups + toast & OSD design | AppConfig |
 | `settings/HyprlandSection.qml` | Settings: Hyprland windows + blur (visual.json) | Quickshell.Io |

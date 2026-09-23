@@ -44,8 +44,9 @@ Item {
       Qt.resolvedUrl("../services/cava-vis.conf").toString().replace("file://", "")]
     stdout: lineParser
 
-    onStarted: root._restarts = 0
+    onStarted: stableTimer.restart()
     onExited: {
+      stableTimer.stop()
       // cava впав (глюк аудіо тощо) — перезапускаємось, поки ще потрібен.
       // Кап у 5 швидких спроб: якщо cava зламаний, далі пробує повільний
       // таймер раз на хвилину (див. нижче), а не вічний цикл падінь
@@ -75,6 +76,17 @@ Item {
     }
   }
 
+  // Стабільний аптайм (30с) обнуляє лічильник швидких падінь.
+  // Скидання на кожному onStarted дозволяло зламаній cava крутитись
+  // у 2-секундному циклі вічно: кап 5 ніколи не досягався.
+  Timer {
+    id: stableTimer
+    interval: 30000
+    onTriggered: {
+      if (cavaProcess.running) root._restarts = 0
+    }
+  }
+
   // Після 5 швидких падінь — не мремо мовчки, а пробуємо раз на хвилину:
   // cava міг впасти через тимчасовий глюк PipeWire
   Timer {
@@ -101,6 +113,7 @@ Item {
     } else {
       cavaRestartTimer.stop()
       slowRetryTimer.stop()
+      stableTimer.stop()
     }
     cavaProcess.running = root.monitorEnabled && root.active
   }

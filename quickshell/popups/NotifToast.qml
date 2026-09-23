@@ -259,9 +259,10 @@ PopupWindow {
       }
     }
 
-    // Заголовок сповіщення
+    // Заголовок сповіщення (зовнішній текст — лише plain, без rich text)
     Text {
       text: root.toastSummary
+      textFormat: Text.PlainText
       color: root.palette ? root.palette.fg : "#ede0d4"
       font.family: root.palette ? root.palette.font : "sans-serif"; font.pixelSize: root.appConfig ? root.appConfig.scaled(13) : 13; font.bold: true
       wrapMode: Text.WordWrap
@@ -270,9 +271,10 @@ PopupWindow {
       elide: Text.ElideRight
     }
 
-    // Тіло сповіщення
+    // Тіло сповіщення (зовнішній текст — лише plain, без rich text)
     Text {
       text: root.toastBody
+      textFormat: Text.PlainText
       color: root.palette ? root.palette.gray : "#888888"
       font.family: root.palette ? root.palette.font : "sans-serif"; font.pixelSize: root.appConfig ? root.appConfig.scaled(12) : 12
       wrapMode: Text.WordWrap
@@ -306,6 +308,7 @@ PopupWindow {
             id: actionText
             anchors.centerIn: parent
             text: modelData.text
+            textFormat: Text.PlainText
             color: root.palette ? root.palette.light : "#ede0d4"
             font.family: root.palette ? root.palette.font : "sans-serif"; font.pixelSize: root.appConfig ? root.appConfig.scaled(9) : 9
           }

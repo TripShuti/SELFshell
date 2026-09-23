@@ -110,7 +110,7 @@ Item {
     var s = root.pacmanSvc
     if (!s) return ""
     if (!s.available) return s.error !== "" ? s.error : "Update service unavailable"
-    if (s.upgrading) return "Upgrading in terminal… the list refreshes when done."
+    if (s.upgrading) return s.upgradeTimedOut ? "Upgrading over 30m — still running, please wait." : "Upgrading in terminal… the list refreshes when done."
     if (s.checking) return "Checking for updates…"
     if (s.error !== "") return s.error
     if (s.count === 0) return "Up to date · checked " + s.lastCheckText()

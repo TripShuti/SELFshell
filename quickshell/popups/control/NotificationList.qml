@@ -254,6 +254,7 @@ Item {
 
                     Text {
                       text: notif.summary
+                      textFormat: Text.PlainText
                       color: window.palette.fg
                       font.family: window.palette.font; font.pixelSize: window.appConfig.scaled(12); font.bold: true
                       wrapMode: Text.WordWrap
@@ -264,6 +265,7 @@ Item {
 
                     Text {
                       text: notif.body
+                      textFormat: Text.PlainText
                       color: window.palette.gray
                       font.family: window.palette.font; font.pixelSize: window.appConfig.scaled(11)
                       wrapMode: Text.WordWrap

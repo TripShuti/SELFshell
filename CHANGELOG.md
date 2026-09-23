@@ -41,6 +41,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **kcd open-allowlist vs custom paths** — `KdeConnectPopup._safeOpenPath` only allowed `~/Downloads/kcd/`, so with a custom `sftp.mount_dir` (e.g. `~/kcd`) clicking the mount row silently did nothing. The allowlist is now built from the local `kcd.toml`: `download_dir` subtree + `sftp.mount_dir` itself/subtree (both service-parsed, never from phone payload); strict prefix + `..` rejection kept.
 - **kcd pair timeout vs daemon** — service held `pendingPairRequest` 65s while the daemon kills the request at `[pairing] timeout_secs` (30s): a late Accept would send a *new* outbound request on kcd 1.18+ instead of accepting. Timeout cut to 35s (30s + click grace).
 - **Connection settings vs auto-hide** — opening a network's IPv4/DNS settings hides the manager popup, so with auto-hide on the bar slid away behind the settings window after 400ms. `NetworkPopup` now exposes `settingsVisible`, counted in `Bar._anyPopupOpen()`.
+- **Cava crash cap actually caps** — the restart counter was reset on every start, so a broken cava looped every 2s forever; it now resets only after 30s of stable uptime, then the 5-fast-crashes → 60s-retry path works as documented.
+- **Upgrade timeout keeps ownership** — the 30-minute timeout cleared `upgrading` while kitty was still working, allowing a second upgrade on top; now a live process keeps the state (overtime notice in Settings → System) and only a dead one clears it.
+- **Black wallpaper ships with the repo** — `wp/black.png` is tracked instead of relying on a local file, so the Black theme applies palette + wallpaper on fresh clones.
+
+### Security
+
+- **Stale PAM guard** — a PAM reply started before a re-lock can no longer drop the new lock: completions carry the lock generation and mismatches are ignored.
 
 ### Removed
 
