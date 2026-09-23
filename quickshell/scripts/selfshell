@@ -197,7 +197,9 @@ reload() {
     error "Another reload is already in progress."
     exit 1
   fi
-  trap 'rmdir "$lockdir" 2>/dev/null || true' RETURN
+  # RETURN чистить при успіху, EXIT — при провалі через exit (RETURN на exit не спрацьовує).
+  # :-заглушка: на EXIT локальна змінна вже недоступна, а set -u свариться на unbound
+  trap 'rmdir "${lockdir:-__none__}" 2>/dev/null || true' RETURN EXIT
   if ! pgrep -x Hyprland &>/dev/null; then
     error "Hyprland is not running — nothing to restart quickshell in."
     exit 1

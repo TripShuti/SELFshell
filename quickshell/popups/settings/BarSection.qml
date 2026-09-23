@@ -92,6 +92,11 @@ Item {
       } else {
         if (targetPill === "pool") {
           cfg[dragName + "Enabled"] = false
+          // Прибране з бару імʼя не лишається мертвим слотом у масиві
+          // (як сепаратори вище): позицію все одно задає drop-індекс
+          cfg.leftOrder = cfg.leftOrder.filter(n => n !== dragName)
+          cfg.centerOrder = cfg.centerOrder.filter(n => n !== dragName)
+          cfg.rightOrder = cfg.rightOrder.filter(n => n !== dragName)
         } else {
           cfg[dragName + "Enabled"] = true
           ac.moveToPillAt(dragName, targetPill, dragDropIndex)

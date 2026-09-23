@@ -14,8 +14,8 @@ Edited through SettingsPopup (UI) or manually.
 | `mprisEnabled` | `boolean` | `true` | MPRIS player |
 | `clockEnabled` | `boolean` | `true` | Clock |
 | `timerEnabled` | `boolean` | `true` | Timer |
-| `selftrackEnabled` | `boolean` | `true` | Time tracking widget (requires `selftrack` daemon) |
-| `genshinEnabled` | `boolean` | `true` | Genshin widget |
+| `selftrackEnabled` | `boolean` | `false` | Time tracking widget (requires `selftrack` daemon) |
+| `genshinEnabled` | `boolean` | `false` | Genshin widget |
 | `keyboardEnabled` | `boolean` | `true` | Keyboard layout |
 | `audioEnabled` | `boolean` | `true` | Audio |
 | `controlEnabled` | `boolean` | `true` | Control center |
@@ -38,7 +38,7 @@ Edited through SettingsPopup (UI) or manually.
 | `barRadius` | `number` | `6` | Bar pill corner radius |
 | `barPos` | `string` | `"top"` | Bar edge: `top` or `bottom` |
 | `edgeMargin` | `number` | `8` | Gap from the screen edge to the side pills, px |
-| `pillPadding` | `number` | `8` | Inner padding of a pill, px |
+| `pillPadding` | `number` | `9` | Inner padding of a pill, px |
 | `contentSpacing` | `number` | `4` | Gap between widgets inside a pill, px |
 | `barAutoHide` | `boolean` | `false` | Slide the bar behind the screen edge; hover the 6px edge strip to bring it back |
 | `leftPillEnabled` | `boolean` | `true` | Show the left pill as a whole (its widgets stay configured) |
@@ -47,30 +47,30 @@ Edited through SettingsPopup (UI) or manually.
 | `leftOrder` | `string[]` | — | Widget names in the left pill (including `sep-N`) |
 | `centerOrder` | `string[]` | — | Widget names in the center pill |
 | `rightOrder` | `string[]` | — | Widget names in the right pill |
-| `popupBgOpacity` | `number` | `0.6` | Popup background opacity (0.5–1.0) |
-| `popupBgLighten` | `number` | `1.15` | Popup background gradient lighten; 1.0 = flat color (1.0–2.0) |
+| `popupBgOpacity` | `number` | `0.95` | Popup background opacity (0.5–1.0) |
+| `popupBgLighten` | `number` | `1.45` | Popup background gradient lighten; 1.0 = flat color (1.0–2.0) |
 | `popupRadius` | `number` | `14` | Popup corner radius, px (0–24) |
 | `popupBorderWidth` | `number` | `1` | Popup border width, px (0–4) |
 | `toastRadius` | `number` | `9` | Notification toast corner radius, px (0–24) |
-| `toastLighten` | `number` | `1.15` | Toast background gradient lighten (1.0–2.0) |
-| `toastBgOpacity` | `number` | `0.9` | Toast background opacity (0.5–1.0) |
+| `toastLighten` | `number` | `1.05` | Toast background gradient lighten (1.0–2.0) |
+| `toastBgOpacity` | `number` | `0.5` | Toast background opacity (0.5–1.0) |
 | `osdRadius` | `number` | `10` | OSD corner radius, px (0–24) |
 | `osdLighten` | `number` | `1.5` | OSD background gradient lighten (1.0–2.0) |
-| `osdBgOpacity` | `number` | `0.9` | OSD background opacity (0.5–1.0) |
-| `barLighten` | `number` | `1.3` | Bar pill gradient lighten; 1.0 = flat color (1.0–2.0) |
-| `barBgOpacity` | `number` | `0.7` | Pill background opacity multiplier; 1.0 = palette color as-is (0.2–1.0) |
+| `osdBgOpacity` | `number` | `0.55` | OSD background opacity (0.5–1.0) |
+| `barLighten` | `number` | `1.65` | Bar pill gradient lighten; 1.0 = flat color (1.0–2.0) |
+| `barBgOpacity` | `number` | `1` | Pill background opacity multiplier; 1.0 = palette color as-is (0.2–1.0) |
 | `barBorderWidth` | `number` | `1` | Pill outline width, px; 0 = no border (0–4) |
 | `barBackEnabled` | `boolean` | `true` | Solid full-width bar behind the floating pills |
-| `barBackOpacity` | `number` | `0.45` | Solid bar background opacity (0–1.0) |
+| `barBackOpacity` | `number` | `0.1` | Solid bar background opacity (0–1.0) |
 | `barBackLighten` | `number` | `1.15` | Solid bar gradient lighten; 1.0 = flat color (1.0–2.0) |
 | `barBackBorderWidth` | `number` | `1` | Edge line width on the inner bar edge, px; 0 = no line (0–4) |
-| `separatorOpacity` | `number` | `0.65` | Separator line opacity between widget groups (0–1.0) |
-| `separatorGlowOpacity` | `number` | `0.1` | Separator glow opacity (0–0.5) |
+| `separatorOpacity` | `number` | `1` | Separator line opacity between widget groups (0–1.0) |
+| `separatorGlowOpacity` | `number` | `0.05` | Separator glow opacity (0–0.5) |
 | `uiScale` | `number` | `1.0` | Global multiplier for all text/icon-glyph sizes in bar, popups and settings (0.8–1.5) |
 | `animationsEnabled` | `boolean` | `true` | Master switch for all shell animations (hover, popups, sliders, lock screen) |
 | `animSpeed` | `number` | `1.0` | Multiplier for every animation duration; e.g. `1.5` = 50% slower, `0.5` = 2× faster (0.5–2.0) |
 | `preferredPlayer` | `string` | `"selfsonic"` | Favorite media player identity substring (`spotify`, `chromium` …), shared by bar widget and popup |
-| `themeMode` | `string` | `"matugen"` | Theming mode: `matugen` (dynamic palette from wallpaper via `update-palette.sh`) or `black` (static mono palette `#121212` via `update-palette.py --theme black`, wallpapers switch without regeneration) |
+| `themeMode` | `string` | `"black"` | Theming mode: `black` (static mono palette `#121212` via `update-palette.py --theme black`, wallpapers switch without regeneration) or `matugen` (dynamic palette from wallpaper via `update-palette.sh`) |
 
 Separators look like `sep-N`, where N is a unique numeric ID.
 Generated automatically by `addSep()` in AppConfig.

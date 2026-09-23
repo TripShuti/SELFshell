@@ -298,6 +298,19 @@ if [ ! -f "$QS_CONFIG_DIR/scripts/.env" ] && [ -f "$QS_CONFIG_DIR/scripts/.env.e
   warn "(or disable the Genshin widget in Settings → Widgets)"
 fi
 
+# Дефолтна шпалера Black-теми: fresh install одразу зі встановленою
+# шпалерою і lock-кадром, не чекаємо першого перемикання.
+# Існуючі current.* не чіпаємо (перевстановлення не зносить шпалеру юзера).
+if ! ls "$QS_CONFIG_DIR/wp/current."* >/dev/null 2>&1; then
+  if [ -f "$QS_CONFIG_DIR/wp/black.png" ]; then
+    cp "$QS_CONFIG_DIR/wp/black.png" "$QS_CONFIG_DIR/wp/current.png"
+    if command -v magick >/dev/null 2>&1; then
+      magick "$QS_CONFIG_DIR/wp/current.png[0]" -quality 85 "$QS_CONFIG_DIR/wp/current-lock.jpg" || true
+    fi
+    info "Seeded default Black wallpaper (wp/current.png + current-lock.jpg)"
+  fi
+fi
+
 # qs-bt-agent — агент парування BlueZ як systemd user-сервіс
 chmod +x "$QS_CONFIG_DIR/services/qs-bt-agent"
 mkdir -p "$HOME/.config/systemd/user"

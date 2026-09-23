@@ -39,8 +39,8 @@ Item {
       property bool mprisEnabled: true
       property bool clockEnabled: true
       property bool timerEnabled: true
-      property bool selftrackEnabled: true
-      property bool genshinEnabled: true
+      property bool selftrackEnabled: false
+      property bool genshinEnabled: false
       property bool keyboardEnabled: true
       property bool audioEnabled: true
       property bool controlEnabled: true
@@ -89,7 +89,7 @@ Item {
       // відступ крайніх пігулок від кромки екрана
       property int edgeMargin: 8
       // внутрішній відступ пігулки
-      property int pillPadding: 8
+      property int pillPadding: 9
       // зазор між віджетами всередині пігулки
       property int contentSpacing: 4
       // автоскривання: панель їде за кромку і повертається наведенням
@@ -104,36 +104,36 @@ Item {
       // вигляд не змінюється, доки користувач не посуне повзунки.
 
       // Попапи (база AnimatedPopup — всі 15 вікон)
-      property real popupBgOpacity: 0.60
-      property real popupBgLighten: 1.15
+      property real popupBgOpacity: 0.95
+      property real popupBgLighten: 1.45
       property int popupRadius: 14
       property int popupBorderWidth: 1
 
       // Тост і OSD (автономні поверхні) — стиль як у попапів, без glow
       property int toastRadius: 9
-      property real toastLighten: 1.15
-      property real toastBgOpacity: 0.90
+      property real toastLighten: 1.05
+      property real toastBgOpacity: 0.5
       property int osdRadius: 10
       property real osdLighten: 1.5
-      property real osdBgOpacity: 0.90
+      property real osdBgOpacity: 0.55
 
       // Бар (пігулки)
-      property real barLighten: 1.30
+      property real barLighten: 1.65
       // множник прозорості фону пігулки (1.0 = колір з палітри як є)
-      property real barBgOpacity: 0.70
+      property real barBgOpacity: 1.0
       // товщина рамки пігулки (0 = без рамки)
       property int barBorderWidth: 1
       // Суцільна підкладка за пігулками (full-bleed фон вікна)
       property bool barBackEnabled: true
       // множник прозорості підкладки (нижчий за пігулки — дає глибину)
-      property real barBackOpacity: 0.45
+      property real barBackOpacity: 0.1
       // освітлення верху градієнта підкладки (пласкіше за пігулки)
       property real barBackLighten: 1.15
       // лінія на внутрішній кромці підкладки (0 = без лінії)
       property int barBackBorderWidth: 1
       // роздільники між віджетами
-      property real separatorOpacity: 0.65
-      property real separatorGlowOpacity: 0.10
+      property real separatorOpacity: 1.0
+      property real separatorGlowOpacity: 0.05
 
       // Глобальний множник шрифтів/гліфів (1.0 = база)
       property real uiScale: 1.0
@@ -147,12 +147,12 @@ Item {
       // --- Тема ---
       // Режим темінгу: "matugen" — динамічна палітра зі шпалери,
       // "black" — статична монохромна палітра без matugen, шпалери змінюються без регенерації
-      property string themeMode: "matugen"
+      property string themeMode: "black"
 
       // --- Порядки віджетів ---
       property var leftOrder: ["launcher", "sep-2", "workspaces", "sep-7", "mpris"]
-      property var centerOrder: ["clock", "sep-5", "timer", "selftrack", "sep-6", "genshin", "battery"]
-      property var rightOrder: ["tray", "sep-12", "net", "bt", "kcd", "keyboard", "sep-10", "audio", "sep-11", "control", "clipboard"]
+      property var centerOrder: ["clock", "sep-5", "timer"]
+      property var rightOrder: ["tray", "sep-12", "keyboard", "sep-10", "audio", "sep-11", "control"]
     }
   }
 
@@ -275,7 +275,7 @@ Item {
   // того, що зараз у файлі.
   readonly property var defaultCfg: ({
     launcherEnabled: true, workspacesEnabled: true, mprisEnabled: true,
-    clockEnabled: true, timerEnabled: true, selftrackEnabled: true, genshinEnabled: true,
+    clockEnabled: true, timerEnabled: true, selftrackEnabled: false, genshinEnabled: false,
     keyboardEnabled: true, audioEnabled: true, controlEnabled: true,
     clipboardEnabled: false, btEnabled: false, netEnabled: false,
     trayEnabled: true, batteryEnabled: false, kcdEnabled: false, kcdDndEnabled: false, dndEnabled: false,
@@ -285,23 +285,23 @@ Item {
     idleLockTimeout: 300, idleDpmsTimeout: 360, idleSuspendTimeout: 900,
     audioStep: 0.05, brightnessStep: 5,
     barHeight: 36, barRadius: 6, barPos: "top", edgeMargin: 8,
-    pillPadding: 8, contentSpacing: 4, barAutoHide: false,
+    pillPadding: 9, contentSpacing: 4, barAutoHide: false,
     leftPillEnabled: true, centerPillEnabled: true, rightPillEnabled: true,
-    popupBgOpacity: 0.60, popupBgLighten: 1.15, popupRadius: 14,
+    popupBgOpacity: 0.95, popupBgLighten: 1.45, popupRadius: 14,
     popupBorderWidth: 1,
-    toastRadius: 9, toastLighten: 1.15, toastBgOpacity: 0.90,
-    osdRadius: 10, osdLighten: 1.5, osdBgOpacity: 0.90,
-    barLighten: 1.30,
-    barBgOpacity: 0.70, barBorderWidth: 1,
+    toastRadius: 9, toastLighten: 1.05, toastBgOpacity: 0.5,
+    osdRadius: 10, osdLighten: 1.5, osdBgOpacity: 0.55,
+    barLighten: 1.65,
+    barBgOpacity: 1.0, barBorderWidth: 1,
     barBackEnabled: true,
-    barBackOpacity: 0.45, barBackLighten: 1.15, barBackBorderWidth: 1,
-    separatorOpacity: 0.65, separatorGlowOpacity: 0.10,
+    barBackOpacity: 0.1, barBackLighten: 1.15, barBackBorderWidth: 1,
+    separatorOpacity: 1.0, separatorGlowOpacity: 0.05,
     uiScale: 1.0,
     animationsEnabled: true, animSpeed: 1.0,
-    themeMode: "matugen",
+    themeMode: "black",
     leftOrder: ["launcher", "sep-2", "workspaces", "sep-7", "mpris"],
-    centerOrder: ["clock", "sep-5", "timer", "selftrack", "sep-6", "genshin", "battery"],
-    rightOrder: ["tray", "sep-12", "net", "bt", "kcd", "keyboard", "sep-10", "audio", "sep-11", "control", "clipboard"]
+    centerOrder: ["clock", "sep-5", "timer"],
+    rightOrder: ["tray", "sep-12", "keyboard", "sep-10", "audio", "sep-11", "control"]
   })
 
   function resetCfg() {

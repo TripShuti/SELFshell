@@ -26,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **kcd Clear clears dedup state** — same text can notify again after Clear instead of being suppressed until cancel/TTL.
 - **AppConfig/PaletteService declare `watchChanges: false`** — matches the documented UAF workaround (was comment-only).
 - **AppConfig adapter default gains `selftrack`** — fresh clones and Reset give the same bar (`defaultCfg` already had it).
+- **Fresh-install defaults follow the live setup** — shipped `data/config.json` (Black theme, current widget orders and opacity), black `palette.json`, and `install.sh` seeds `current.png`/`current-lock.jpg` from `black.png`, so a fresh install boots straight into the Black theme with wallpaper set.
+- **Pool drop removes the widget from pill orders** — dragging a widget to the pool disabled it but left a dead slot in `*Order`; now the name is removed (like separators), since the drop index always decides the position on re-enable. Shipped orders contain enabled widgets only.
 
 ### Fixed
 
