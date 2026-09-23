@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-09-24
+
 ### Added
 
 - **Process timeouts** — hung background processes no longer wedge the shell forever: Genshin sync (45s), `powerprofilesctl` get/set (15s, queued concurrent `set` runs after the current one instead of being dropped), pacman update check (8min QML-side). Cava retries slowly (60s) after 5 fast crashes instead of dying silently.
