@@ -20,6 +20,7 @@ AnimatedPopup {
 
   popupWindow: window
   anchorTarget: anchorItem
+  positionOnShow: true
 
   implicitWidth: 170
 
@@ -32,7 +33,6 @@ AnimatedPopup {
 
   onVisibleChanged: {
     if (visible) {
-      root.positionUnderAnchor()
       kbState.refreshMenu()
     }
   }

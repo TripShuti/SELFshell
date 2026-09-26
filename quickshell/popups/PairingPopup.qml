@@ -27,22 +27,7 @@ AnimatedPopup {
 
   // Таймаут має збігатися з REQUEST_TIMEOUT_S у services/qs-bt-agent
   readonly property int timeoutSeconds: 55
-
-  readonly property int screenW: window ? window.screen.width : 1920
-  readonly property int screenH: window ? window.screen.height : 1080
-
-  // Центрування на екрані — як у BluetoothPopup. Без цього popup-window
-  // дефолтно липне у лівий верхній кут anchor-вікна
-  function recenter() {
-    anchor.edges = PopupAnchor.None
-    anchor.gravity = PopupAnchor.None
-    anchor.rect = Qt.rect(
-      (screenW - implicitWidth) / 2,
-      (screenH - implicitHeight) / 2,
-      implicitWidth,
-      implicitHeight
-    )
-  }
+  centerScreen: window?.screen ?? Quickshell.screens[0]
 
   property string btAddress: req ? (req.address || "") : ""
   property int secondsLeft: timeoutSeconds
@@ -89,7 +74,7 @@ AnimatedPopup {
     pinInput = ""
     trustDevice = true
     countdown.restart()
-    recenter()
+    root.centerOnScreen()
     if (!visible) visible = true
   }
 

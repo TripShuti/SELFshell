@@ -58,8 +58,7 @@ AnimatedPopup {
     if (!root.sameDeviceOrder(root.sortedDevices, next)) root.sortedDevices = next
   }
 
-  property int screenW: window ? window.screen.width : 1920
-  property int screenH: window ? window.screen.height : 1080
+  centerScreen: window?.screen ?? Quickshell.screens[0]
 
   Component.onCompleted: {
     anchor.window = window
@@ -84,14 +83,7 @@ AnimatedPopup {
   onVisibleChanged: {
     if (visible) {
       root.resortDevices()
-      anchor.edges = PopupAnchor.None
-      anchor.gravity = PopupAnchor.None
-      anchor.rect = Qt.rect(
-        (screenW - implicitWidth) / 2,
-        (screenH - implicitHeight) / 2,
-        implicitWidth,
-        implicitHeight
-      )
+      root.centerOnScreen()
     } else if (adapter?.discovering) {
       adapter.discovering = false
     }

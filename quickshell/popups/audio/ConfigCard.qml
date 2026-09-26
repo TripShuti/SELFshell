@@ -20,8 +20,6 @@ Rectangle {
   color: window.palette.bg1
   border.width: 1; border.color: window.palette.bg2
 
-  IconResolver { id: iconResolver }
-
   ColumnLayout {
     id: col
     anchors.fill: parent
@@ -31,29 +29,14 @@ Rectangle {
     RowLayout {
       Layout.fillWidth: true
       spacing: 6
-        Item {
+        ResolvedIcon {
           Layout.preferredWidth: 22; Layout.preferredHeight: 22
-          // Імперативний резолв: resolve() мутує кеш резолвера,
-          // біндинг з викликом resolve() зациклюється
-          property string _iconName: cardData.properties ? cardData.properties["device.icon_name"] : "audio-card-analog-pci"
-          property string _res: ""
-          on_IconNameChanged: _res = iconResolver.resolve(_iconName)
-          Component.onCompleted: _res = iconResolver.resolve(_iconName)
-        Image {
-          anchors.fill: parent
-          source: parent._res
-          fillMode: Image.PreserveAspectFit
-          asynchronous: true
-          visible: status === Image.Ready
+          palette: window.palette; appConfig: window.appConfig
+          iconName: cardData.properties ? cardData.properties["device.icon_name"] : "audio-card-analog-pci"
+          fallbackGlyph: "\uF109"
+          glyphColor: window.palette.gray
+          glyphSize: 12
         }
-        Text {
-          anchors.centerIn: parent
-          visible: parent._res === ""
-          text: "\uF109"
-          color: window.palette.gray
-          font.family: window.palette.font; font.pixelSize: window.appConfig.scaled(12)
-        }
-      }
       ColumnLayout {
         Layout.fillWidth: true
         spacing: 0

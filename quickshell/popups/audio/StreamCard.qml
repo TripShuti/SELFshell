@@ -52,8 +52,6 @@ Item {
 
   property bool devMenuOpen: false
 
-  IconResolver { id: iconResolver }
-
   Rectangle {
     id: card
     width: parent.width
@@ -74,43 +72,14 @@ Item {
         Layout.fillWidth: true
         spacing: 6
 
-        Item {
+        ResolvedIcon {
           Layout.preferredWidth: 22
           Layout.preferredHeight: 22
-          // Імперативний резолв: resolve() мутує кеш резолвера,
-          // біндинг з викликом resolve() зациклюється
-          property string _iconName: {
-            var icon = root.isPlayback
-              ? (streamNode.properties["application.icon-name"] || streamNode.properties["application.name"] || "")
-              : (streamNode.properties["application.icon-name"] || "")
-            return icon
-          }
-          property string _res: ""
-          function _resolveStreamIcon() {
-            if (_iconName !== "") {
-              var r = iconResolver.resolve(_iconName)
-              if (r !== "") { _res = r; return }
-              var r2 = iconResolver.resolve(_iconName.toLowerCase())
-              if (r2 !== "") { _res = r2; return }
-            }
-            _res = ""
-          }
-          on_IconNameChanged: _resolveStreamIcon()
-          Component.onCompleted: _resolveStreamIcon()
-          Image {
-            anchors.fill: parent
-            source: parent._res
-            fillMode: Image.PreserveAspectFit
-            asynchronous: true
-            visible: status === Image.Ready
-          }
-          Text {
-            anchors.centerIn: parent
-            visible: parent._res === ""
-            text: root.isPlayback ? "\uF028" : "\uF130"
-            color: root.isPlayback ? window.palette.gray : window.palette.red
-            font.family: window.palette.font; font.pixelSize: window.appConfig.scaled(11)
-          }
+          palette: window.palette; appConfig: window.appConfig
+          iconName: root.isPlayback ? (streamNode.properties["application.icon-name"] || streamNode.properties["application.name"] || "") : (streamNode.properties["application.icon-name"] || "")
+          fallbackGlyph: root.isPlayback ? "\uF028" : "\uF130"
+          glyphColor: root.isPlayback ? window.palette.gray : window.palette.red
+          glyphSize: 11
         }
 
         ColumnLayout {

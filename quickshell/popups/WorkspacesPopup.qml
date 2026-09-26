@@ -24,6 +24,7 @@ AnimatedPopup {
 
   popupWindow: window
   anchorTarget: anchorItem
+  positionOnShow: true
 
   implicitWidth: 330
   // Розмір попапа — від контентного ColumnLayout: його implicitHeight
@@ -31,10 +32,6 @@ AnimatedPopup {
   implicitHeight: layout.implicitHeight + 24
 
   Component.onCompleted: { anchor.window = window }
-
-  onVisibleChanged: {
-    if (visible) root.positionUnderAnchor()
-  }
 
   // Попап слідкує за фокусом: після ▶/◀ (або зміни стола хоткеєм)
   // назва й список оновлюються до активного стола

@@ -21,9 +21,6 @@ AnimatedPopup {
   slideDistance: 6
   transformOrigin: Item.Center
 
-  readonly property int screenW: window ? window.screen.width : 1920
-  readonly property int screenH: window ? window.screen.height : 1080
-
   // Адаптер config.json (дані) і обгортка (хелпери isSep/addSep/...)
   readonly property var cfg: window.appConfig.cfg
   readonly property var ac: window.appConfig
@@ -41,24 +38,14 @@ AnimatedPopup {
     { title: "About", page: "settings/AboutSection.qml" }
   ]
   property int section: 0
+  centerScreen: window?.screen ?? Quickshell.screens[0]
 
   Component.onCompleted: { anchor.window = window }
 
   // Вікно фіксоване — центруємо один раз при показі
-  function recenter() {
-    anchor.rect = Qt.rect(
-      (screenW - root.implicitWidth) / 2,
-      (screenH - root.implicitHeight) / 2,
-      root.implicitWidth,
-      root.implicitHeight
-    )
-  }
-
   onVisibleChanged: {
     if (visible) {
-      anchor.edges = PopupAnchor.None
-      anchor.gravity = PopupAnchor.None
-      root.recenter()
+      root.centerOnScreen()
       // На кожному моніторі свій інстанс попапа зі своїм станом секцій —
       // без resync редагування на одному моніторі губилося б при відкритті
       // на іншому (стан секцій застарів)

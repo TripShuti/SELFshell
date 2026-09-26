@@ -27,20 +27,7 @@ AnimatedPopup {
   // Таймаут має збігатися з [pairing] timeout_secs у kcd.toml (30s)
   readonly property int timeoutSeconds: 30
   property int secondsLeft: timeoutSeconds
-
-  readonly property int screenW: window ? window.screen.width : 1920
-  readonly property int screenH: window ? window.screen.height : 1080
-
-  function recenter() {
-    anchor.edges = PopupAnchor.None
-    anchor.gravity = PopupAnchor.None
-    anchor.rect = Qt.rect(
-      (screenW - implicitWidth) / 2,
-      (screenH - implicitHeight) / 2,
-      implicitWidth,
-      implicitHeight
-    )
-  }
+  centerScreen: window?.screen ?? Quickshell.screens[0]
 
   property string deviceName: req ? (req.deviceName || req.deviceId || "") : ""
   property string deviceId: req ? (req.deviceId || "") : ""
@@ -72,7 +59,7 @@ AnimatedPopup {
   function openFor(req) {
     secondsLeft = timeoutSeconds
     countdown.restart()
-    recenter()
+    root.centerOnScreen()
     if (!visible) visible = true
   }
 

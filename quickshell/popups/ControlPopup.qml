@@ -227,6 +227,7 @@ AnimatedPopup {
 
   popupWindow: window
   anchorTarget: anchorItem
+  positionOnShow: true
 
   Component.onCompleted: { anchor.window = window; brightSection.refreshBrightness(); tempSection.ensureHyprsunset(); loadSavedState(); root.rebuildGroups() }
 
@@ -235,7 +236,6 @@ AnimatedPopup {
       // Стан process-wide (pragma library) — синхронізуємо кнопку зі змінами,
       // зробленими в попапі іншого монітора.
       root.caffeineEnabled = State.getCaffeine()
-      root.positionUnderAnchor()
       brightSection.setPolling(true)
     } else {
       brightSection.setPolling(false)

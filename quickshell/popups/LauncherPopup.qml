@@ -26,6 +26,7 @@ AnimatedPopup {
 
   implicitWidth: 400
   implicitHeight: 420
+  centerScreen: window.screen ?? Quickshell.screens[0]
 
   ScriptModel {
     id: appModel
@@ -103,16 +104,7 @@ AnimatedPopup {
 
   onVisibleChanged: {
     if (visible) {
-      var scr = window.screen ?? Quickshell.screens[0]
-      if (scr) {
-        // anchor.rect — координати відносно вікна-якоря (без scr.x/y:
-        // вони зміщували попап на другому моніторі)
-        anchor.rect = Qt.rect(
-          (scr.width - root.width) / 2,
-          (scr.height - root.height) / 2,
-          root.width, root.height
-        )
-      }
+      root.centerOnScreen()
       Qt.callLater(function() {
         searchField.text = ""
         searchField.forceActiveFocus()

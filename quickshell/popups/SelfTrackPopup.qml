@@ -25,7 +25,7 @@ AnimatedPopup {
   implicitWidth: 540
   // Висота за контентом (список розтягує, порожнечі знизу нема),
   // з кепом щоб влізти в екран — далі список скролиться всередині
-  implicitHeight: Math.min(layout.implicitHeight + 20, root.screenH - 120)
+  implicitHeight: Math.min(layout.implicitHeight + 20, (root.centerScreen ? root.centerScreen.height : 1080) - 120)
   enterScale: 0.75
   slideDistance: 6
   transformOrigin: Item.Center
@@ -145,18 +145,7 @@ AnimatedPopup {
   function appColor(app) {
     return window.palette[root.appColors[ST.appColorIndex(app, root.appColors.length)]]
   }
-
-  readonly property int screenW: window ? window.screen.width : 1920
-  readonly property int screenH: window ? window.screen.height : 1080
-
-  function recenter() {
-    anchor.rect = Qt.rect(
-      (screenW - root.implicitWidth) / 2,
-      (screenH - root.implicitHeight) / 2,
-      root.implicitWidth,
-      root.implicitHeight
-    )
-  }
+  centerScreen: window?.screen ?? Quickshell.screens[0]
 
   Component.onCompleted: {
     anchor.window = window
@@ -164,15 +153,13 @@ AnimatedPopup {
 
   // Дані приїжджають асинхронно після відкриття — перецентровуємо
   // під нову висоту, інакше контент обріжеться якорем
-  onAppsModelChanged: if (visible) recenter()
-  onPagesModelChanged: if (visible) recenter()
-  onPageAppChanged: if (visible) recenter()
+  onAppsModelChanged: if (visible) root.centerOnScreen()
+  onPagesModelChanged: if (visible) root.centerOnScreen()
+  onPageAppChanged: if (visible) root.centerOnScreen()
 
   onVisibleChanged: {
     if (visible) {
-      anchor.edges = PopupAnchor.None
-      anchor.gravity = PopupAnchor.None
-      root.recenter()
+      root.centerOnScreen()
       root.hoverInfo = ""
       root.refreshRequested()
     } else {

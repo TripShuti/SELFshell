@@ -13,7 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **Shared keyboard/hover/time/JSON plumbing** — new `core/KeyboardLayoutState` (single source of truth for the bar widget, layout popup and lockscreen), `core/JsonProcess` (hyprctl pretty-JSON accumulation), `scripts/Format.js` (`formatTime`); `HoverItem` gains `rightClicked`/`wheel`/`cursorShape` and 8 bar widgets drop their hand-rolled hover for it. No visual or behavior changes.
-- **Shared popup plumbing** — new `core/HoverButton` (all popup buttons in Control/Bluetooth/Network/KdeConnect/Calendar/SelfTrack/Pairing popups), `core/WallpaperController` (picker popup + settings section), `popups/audio/PactlJsonProc` (5 pactl loaders); Bluetooth and Wi-Fi lists assign their sorted model only on real order change instead of rebuilding delegates every second/RSSI tick (hover survived); button hover unified to `bg1/bg2` like the control center (matugen `hoverOverlay` proved nearly invisible). No behavior changes.
+- **Shared popup plumbing** — new `core/HoverButton` (all popup buttons in Control/Bluetooth/Network/KdeConnect/Calendar/SelfTrack/Pairing popups), `core/WallpaperController` (picker popup + settings section), `popups/audio/PactlJsonProc` (5 pactl loaders), `core/ResolvedIcon` (audio cards); Bluetooth and Wi-Fi lists assign their sorted model only on real order change instead of rebuilding delegates every second/RSSI tick (hover survived); button hover unified to `bg1/bg2` like the control center (matugen `hoverOverlay` proved nearly invisible). No behavior changes.
+- **Shared popup positioning** — `AnimatedPopup` gains `positionOnShow` (7 anchored popups drop manual handlers) and `centerScreen`/`centerOnScreen()` (10 centered popups drop `recenter()` copies); screen passed explicitly so multi-monitor behavior is unchanged. No behavior changes.
 
 ## [0.12.0] - 2026-09-24
 

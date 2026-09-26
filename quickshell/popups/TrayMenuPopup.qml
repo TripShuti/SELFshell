@@ -24,16 +24,13 @@ AnimatedPopup {
 
   popupWindow: window
   anchorTarget: anchorItem
+  positionOnShow: true
 
   implicitWidth: 220
   implicitHeight: stack.implicitHeight
 
   Component.onCompleted: {
     anchor.window = window
-  }
-
-  onVisibleChanged: {
-    if (visible) root.positionUnderAnchor()
   }
 
   // Зміна меню (клік на іншу іконку) — скидає навігацію до кореня

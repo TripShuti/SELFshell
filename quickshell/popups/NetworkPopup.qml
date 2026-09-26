@@ -169,6 +169,7 @@ AnimatedPopup {
   // на 2 с, поки попап відкритий; стани рядків оновлюються біндингами
   // всередині живих делегатів.
   property var sortedNetworks: []
+  centerScreen: window?.screen ?? Quickshell.screens[0]
   Timer {
     running: root.visible
     interval: 2000
@@ -209,17 +210,7 @@ AnimatedPopup {
   onVisibleChanged: {
     if (visible) {
       root.resortNetworks()
-      anchor.edges = PopupAnchor.None
-      anchor.gravity = PopupAnchor.None
-      // guard на випадок відсутнього screen (як у BluetoothPopup)
-      var sw = window.screen ? window.screen.width : 1920
-      var sh = window.screen ? window.screen.height : 1080
-      anchor.rect = Qt.rect(
-        (sw - implicitWidth) / 2,
-        (sh - implicitHeight) / 2,
-        implicitWidth,
-        implicitHeight
-      )
+      root.centerOnScreen()
       if (wifiDevice && wifiEnabled) wifiDevice.scannerEnabled = true;
     } else {
       if (wifiDevice) wifiDevice.scannerEnabled = false;

@@ -19,8 +19,6 @@ Item {
   signal setDefaultRequested()
   signal setPortRequested(string portName)
 
-  IconResolver { id: iconResolver }
-
   implicitHeight: card.implicitHeight
   Layout.fillWidth: true
 
@@ -43,28 +41,13 @@ Item {
         Layout.fillWidth: true
         spacing: 6
 
-        Item {
+        ResolvedIcon {
           Layout.preferredWidth: 22; Layout.preferredHeight: 22
-          // Імперативний резолв: resolve() мутує кеш резолвера,
-          // біндинг з викликом resolve() зациклюється
-          property string _iconName: deviceNode.properties["device.icon_name"] || (root.isSink ? "audio-card-analog" : "audio-input-microphone")
-          property string _res: ""
-          on_IconNameChanged: _res = iconResolver.resolve(_iconName)
-          Component.onCompleted: _res = iconResolver.resolve(_iconName)
-          Image {
-            anchors.fill: parent
-            source: parent._res
-            fillMode: Image.PreserveAspectFit
-            asynchronous: true
-            visible: status === Image.Ready
-          }
-          Text {
-            anchors.centerIn: parent
-            visible: parent._res === ""
-            text: deviceNode.name === "SELFshell_EQ" ? "\uF1DE" : (root.isSink ? "\uF028" : "\uF130")
-            color: deviceNode.name === "SELFshell_EQ" ? window.palette.purple : (root.isSink ? window.palette.green : window.palette.red)
-            font.family: window.palette.font; font.pixelSize: window.appConfig.scaled(12)
-          }
+          palette: window.palette; appConfig: window.appConfig
+          iconName: deviceNode.properties["device.icon_name"] || (root.isSink ? "audio-card-analog" : "audio-input-microphone")
+          fallbackGlyph: deviceNode.name === "SELFshell_EQ" ? "\uF1DE" : (root.isSink ? "\uF028" : "\uF130")
+          glyphColor: deviceNode.name === "SELFshell_EQ" ? window.palette.purple : (root.isSink ? window.palette.green : window.palette.red)
+          glyphSize: 12
         }
 
         ColumnLayout {

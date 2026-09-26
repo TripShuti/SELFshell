@@ -115,15 +115,12 @@ AnimatedPopup {
 
   popupWindow: window
   anchorTarget: anchorItem
+  // playlistOpen навмисно НЕ скидається: розгорнутий плейліст має
+  // лишатися розгорнутим між відкриттями попапа
+  positionOnShow: true
 
   Component.onCompleted: {
     anchor.window = window
-  }
-
-  onVisibleChanged: {
-    if (visible) root.positionUnderAnchor()
-    // playlistOpen навмисно НЕ скидається: розгорнутий плейліст має
-    // лишатися розгорнутим між відкриттями попапа
   }
 
   // Знаходить плеєр за назвою або перший доступний.

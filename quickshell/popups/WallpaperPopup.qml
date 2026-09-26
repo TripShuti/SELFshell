@@ -22,6 +22,7 @@ AnimatedPopup {
     id: wpCtl
     appConfig: root.appConfig
   }
+  centerScreen: window.screen ?? Quickshell.screens[0]
 
   Component.onCompleted: {
     anchor.window = window
@@ -33,15 +34,7 @@ AnimatedPopup {
       // список шпалер перечитується при кожному відкритті — нові файли
       // в wp/ з'являлись лише після рестарту шела
       wpCtl.refresh()
-      var scr = window.screen ?? Quickshell.screens[0]
-      if (scr) {
-        anchor.rect = Qt.rect(
-          (scr.width - implicitWidth) / 2,
-          (scr.height - implicitHeight) / 2,
-          implicitWidth,
-          implicitHeight
-        )
-      }
+      root.centerOnScreen()
     }
   }
 

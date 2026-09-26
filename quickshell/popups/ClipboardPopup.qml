@@ -20,6 +20,7 @@ AnimatedPopup {
 
   popupWindow: window
   anchorTarget: anchorItem
+  positionOnShow: true
 
   implicitWidth: 400
   implicitHeight: 340
@@ -35,7 +36,6 @@ AnimatedPopup {
 
   onVisibleChanged: {
     if (visible) {
-      root.positionUnderAnchor()
       root.refresh()
     }
   }

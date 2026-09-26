@@ -77,11 +77,32 @@ PopupWindow {
   }
 
   // --- Позиціонування під anchorItem-ом (спільний патерн попапів) ---
-  // Дочірні попапи встановлюють popupWindow/anchorTarget і викликають
-  // positionUnderAnchor() з onVisibleChanged — замість 5 однакових копій
-  // "var r = window.itemRect(...); anchor.rect = ..." по файлах.
+  // Дочірні попапи встановлюють popupWindow/anchorTarget і або викликають
+  // positionUnderAnchor() з onVisibleChanged, або ставлять positionOnShow.
   property QtObject popupWindow: null
   property QtObject anchorTarget: null
+
+  // true — позиціонувати під anchorTarget при кожному відкритті
+  // (замість ручного onVisibleChanged з positionUnderAnchor() по файлах)
+  property bool positionOnShow: false
+
+  // --- Центрування на екрані (спільний патерн центрованих попапів) ---
+  // Екран прокидається явно: window.screen ?? Quickshell.screens[0].
+  // Без scr.x/y: вони зміщували попап на другому моніторі.
+  property var centerScreen: null
+
+  function centerOnScreen() {
+    var scr = root.centerScreen ?? (Quickshell.screens.length > 0 ? Quickshell.screens[0] : null)
+    if (!scr) return
+    anchor.edges = PopupAnchor.None
+    anchor.gravity = PopupAnchor.None
+    anchor.rect = Qt.rect(
+      (scr.width - root.implicitWidth) / 2,
+      (scr.height - root.implicitHeight) / 2,
+      root.implicitWidth,
+      root.implicitHeight
+    )
+  }
 
   function positionUnderAnchor() {
     if (!root.popupWindow || !root.anchorTarget) return
@@ -207,6 +228,7 @@ PopupWindow {
   // Запуск анімації появи при відкритті
   onVisibleChanged: {
     if (visible) {
+      if (root.positionOnShow) root.positionUnderAnchor()
       if (exitAnim.running) exitAnim.stop()
       if (enterAnim.running) enterAnim.stop()
       container.opacity = 0

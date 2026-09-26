@@ -30,6 +30,7 @@ AnimatedPopup {
   enterScale: 0.75
   slideDistance: 6
   transformOrigin: Item.Center
+  centerScreen: window.screen
 
   // Внутрішній стан
   property string connectionName: ""
@@ -104,14 +105,7 @@ AnimatedPopup {
 
   onVisibleChanged: {
     if (visible) {
-      anchor.edges = PopupAnchor.None
-      anchor.gravity = PopupAnchor.None
-      anchor.rect = Qt.rect(
-        (window.screen.width - implicitWidth) / 2,
-        (window.screen.height - implicitHeight) / 2,
-        implicitWidth,
-        implicitHeight
-      )
+      root.centerOnScreen()
       resetState();
       startResolve();
     }

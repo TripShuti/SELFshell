@@ -64,6 +64,7 @@ AnimatedPopup {
 
   popupWindow: window
   anchorTarget: anchorItem
+  positionOnShow: true
 
   Component.onCompleted: {
     root.anchor.window = root.window
@@ -76,7 +77,6 @@ AnimatedPopup {
 
   onVisibleChanged: {
     if (visible) {
-      root.positionUnderAnchor()
       // Скидаємо фідбек і розблоковуємо кнопку тільки якщо чекін не
       // триває (попап могли закрити й відкрити під час signProc)
       if (!signProc.running) {

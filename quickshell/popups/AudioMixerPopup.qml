@@ -24,18 +24,7 @@ AnimatedPopup {
   enterScale: 0.75
   slideDistance: 6
   transformOrigin: Item.Center
-
-  readonly property int screenW: window ? window.screen.width : 1920
-  readonly property int screenH: window ? window.screen.height : 1080
-
-  function recenter() {
-    anchor.rect = Qt.rect(
-      (screenW - root.implicitWidth) / 2,
-      (screenH - root.implicitHeight) / 2,
-      root.implicitWidth,
-      root.implicitHeight
-    )
-  }
+  centerScreen: window?.screen ?? Quickshell.screens[0]
 
   Component.onCompleted: {
     anchor.window = window
@@ -44,9 +33,7 @@ AnimatedPopup {
 
   onVisibleChanged: {
     if (visible) {
-      anchor.edges = PopupAnchor.None
-      anchor.gravity = PopupAnchor.None
-      root.recenter()
+      root.centerOnScreen()
       root.refreshAll()
       pollTimer.running = true
     } else {
