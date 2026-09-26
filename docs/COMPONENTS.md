@@ -92,16 +92,22 @@
 | `SetSelect.qml` | util | Settings segmented selector | — |
 | `SetSlider.qml` | util | Settings slider row | — |
 | `SetToggle.qml` | util | Settings toggle row | — |
-| `AnimatedPopup.qml` | util | Base animated popup window (scale+fade+slide) | PaletteService |
+| `AnimatedPopup.qml` | util | Base animated popup window (scale+fade+slide); shared `popupWindow`/`anchorTarget` + `positionUnderAnchor()`, `positionOnShow` flag, `centerScreen`/`centerOnScreen()` | PaletteService |
 | `PillBar.qml` | util | Bar pill: Repeater + Loader with `widgetComponents` | AppConfig |
-| `HoverItem.qml` | util | Item with a built-in MouseArea for hover/click (exposes `hovered`/`pressed`) | — |
+| `HoverItem.qml` | util | Item with a built-in MouseArea for hover/click (exposes `hovered`/`pressed`; `rightClicked`, `wheel`, `cursorShape`) | — |
+| `HoverButton.qml` | util | Rectangular hover button (icon/label, colors, border) for popups | PaletteService |
 | `HoverText.qml` | util | Text with animated hover color/scale and press squash | — |
+| `JsonProcess.qml` | util | `Process` accumulating pretty-printed JSON until it parses (`parsed` signal) | Quickshell.Io |
+| `KeyboardLayoutState.qml` | state | Single source of truth for keyboard layout (widget, popup, lockscreen) | `hyprctl`, Hyprland socket |
+| `WallpaperController.qml` | state | Shared wallpaper list/apply for picker popup + settings section | `update-palette.sh`, `update-palette.py` |
+| `ResolvedIcon.qml` | util | Theme icon with glyph fallback (imperative resolve, no binding loops) | `IconResolver.qml` |
+| `EmptyHint.qml` | util | Centered empty-list hint (icon + text) | — |
 | `ToggleSwitch.qml` | util | Toggle switch (SettingsPopup) | — |
 | `Separator.qml` | util | Vertical pill separator | PaletteService |
 | `GradientSeparator.qml` | util | Gradient separator | — |
 | `BlinkAnimation.qml` | util | Pulsing animation (critical resin) | — |
 | `LockContext.qml` | shell | PAM auth and shared lock screen state | PamContext |
-| `LockSurface.qml` | shell | Lock UI for one monitor | WlSessionLockSurface, LockContext |
+| `LockSurface.qml` | shell | Lock UI for one monitor (password field, keyboard layout badge, power actions) | WlSessionLockSurface, LockContext |
 | `IdleManager.qml` | shell | Multi-level idle management (300/360/900 s) | IdleMonitor |
 | `AudioEq.qml` | service | 15-band PipeWire EQ (filter-chain `SELFshell_EQ`, `pw-cli` live, `data/eq.json`) | `EqPresets.js`, `data/eq.json`, PipeWire |
 | `VertSlider.qml` | util | Vertical slider for EQ bands (track+fill+knob, drag/wheel) | — |
@@ -117,7 +123,7 @@
 | `TimerWidget.qml` | Timer | — |
 | `SelfTrackWidget.qml` | Time tracking (today active time) | SelfTrackMonitor |
 | `GenshinWidget.qml` | Genshin icon + resin | GenshinMonitor |
-| `KeyboardLayoutWidget.qml` | Keyboard layout indicator | — |
+| `KeyboardLayoutWidget.qml` | Keyboard layout indicator (state from `KeyboardLayoutState`) | — |
 | `AudioWidget.qml` | Volume | AudioMixerPopup, PipeWire |
 | `ControlWidget.qml` | Control center | ControlPopup |
 | `ClipboardWidget.qml` | Clipboard history open button | ClipboardPopup |
@@ -140,19 +146,20 @@
 | `popups/mpris/EqSection.qml` | System EQ section (status, preset chips + rename, 15 sliders, ctx menu with `z:50`) | `AudioEq`, `EqPresets.js`, `VertSlider` |
 | `GenshinPopup.qml` | Genshin details, manual refresh, check-in | GenshinMonitor, `scripts/genshin_stats.py` |
 | `SelfTrackPopup.qml` | Time tracking (day nav, day/week/month summary, 00–24 timeline, apps with bars, expandable pages) | SelfTrackMonitor, `scripts/SelfTrack.js` |
-| `AudioMixerPopup.qml` | Audio mixer — pavucontrol-style 5 tabs (Playback/Recording/Output/Input/Configuration), stream/device volume + port/profile/fallback, single-pass `_filtered` + `ScriptModel` + `sinkNameMap` cache | PipeWire, `AudioMixerUtils.js` |
+| `AudioMixerPopup.qml` | Audio mixer — pavucontrol-style 5 tabs (Playback/Recording/Output/Input/Configuration), stream/device volume + port/profile/fallback, single-pass `_filtered` + `ScriptModel` + `sinkNameMap` cache | PipeWire, `AudioMixerUtils.js`, `PactlJsonProc.qml` |
 | `popups/audio/AudioSlider.qml` | Unified volume row (mute + track + %/dB + lock, `PwNode` direct, `Item` anchors) | PipeWire, `AudioMixerUtils.js` |
 | `popups/audio/StreamCard.qml` | Stream card (icon + `AudioSlider` + device combo + destroy) | PipeWire, `AudioMixerUtils.js` |
 | `popups/audio/DeviceCard.qml` | Device card (icon + `PortCombo` + `AudioSlider` + fallback + base) | PipeWire |
 | `popups/audio/PortCombo.qml` | Port combo (button + inline menu, `unplugged`) | — |
 | `popups/audio/MixerTabBar.qml` | 5-tab bar (active underline) | — |
+| `popups/audio/PactlJsonProc.qml` | `pactl list` JSON loader (`loaded` signal, array/map modes) | PipeWire (`pactl`) |
 | `popups/audio/EmptyState.qml` | Empty placeholder | — |
 | `popups/audio/ConfigCard.qml` | Card + profile combo | PipeWire |
-| `BluetoothPopup.qml` | Bluetooth management | bluez |
-| `NetworkPopup.qml` | Network management | NetworkManager |
+| `BluetoothPopup.qml` | Bluetooth management (sorted device model, hover-stable delegates) | bluez |
+| `NetworkPopup.qml` | Network management (sorted network model, hover-stable delegates) | NetworkManager |
 | `NetworkConnectionSettingsPopup.qml` | Details of a specific Wi-Fi/connection | NetworkPopup |
 | `ControlPopup.qml` | Control center shell (state, screenshots, power, footer; sections push `stateDirty`, `IdleManager` refreshes caffeine explicitly — no file watcher) | NotificationServer, `control/*` sections below, `IdleManager` |
-| `popups/control/QuickToggles.qml` | 6-button top row (stateless, signals only; `open*` re-emitted so `Bar` wiring is unchanged) | — |
+| `popups/control/QuickToggles.qml` | 6-button top row as a `Repeater` over icon+action model (`open*` re-emitted so `Bar` wiring is unchanged) | `HoverButton.qml` |
 | `popups/control/BrightnessSection.qml` | ddcutil slider with coalesced writes (optimistic display, one write per drag pause; `setPolling` from root `onVisibleChanged`) | ddcutil |
 | `popups/control/ReadingTempSection.qml` | hyprsunset slider (debounce, one-shot retries, daemon ensure) | hyprsunset |
 | `popups/control/NotificationList.qml` | Grouped notification list (reads `groupedModel`/`unread` only; card actions are model methods) | NotificationServer |
@@ -162,18 +169,18 @@
 | `settings/PopupsSection.qml` | Settings: popups + toast & OSD design | AppConfig |
 | `settings/HyprlandSection.qml` | Settings: Hyprland windows + blur (visual.json) | Quickshell.Io |
 | `settings/AppearanceSection.qml` | Settings: scale (`uiScale`) + animations | AppConfig |
-| `settings/WallpaperSection.qml` | Settings: wallpaper picker | PaletteService |
+| `settings/WallpaperSection.qml` | Settings: wallpaper picker | `WallpaperController.qml` |
 | `settings/BehaviorSection.qml` | Settings: DND, idle timeouts, wheel steps | AppConfig |
 | `settings/SystemSection.qml` | Settings: power profile selector (power-profiles-daemon) + auto power-saver + pacman/AUR updates + mini-monitoring | PowerProfileService, PacmanService, `sysinfo.py`, AppConfig |
 | `settings/BindsSection.qml` | Settings: rebindable shortcuts | Quickshell.Io |
 | `settings/AboutSection.qml` | Settings: versions, machine info, project link | Quickshell.Io |
-| `KeyboardLayoutPopup.qml` | Keyboard layout list | — |
+| `KeyboardLayoutPopup.qml` | Keyboard layout list (state from `KeyboardLayoutState`) | — |
 | `WorkspacesPopup.qml` | Window list per workspace | Hyprland |
 | `ClipboardPopup.qml` | Clipboard history (`SUPER+SHIFT+V`) | cliphist |
-| `WallpaperPopup.qml` | Wallpaper picker | `scripts/update-palette.sh` |
+| `WallpaperPopup.qml` | Wallpaper picker | `WallpaperController.qml` |
 | `TrayMenuPopup.qml` | System tray menu (QML rendering via QsMenuOpener) | TrayWidget |
 | `PairingPopup.qml` | Bluetooth pairing confirmation (passkey/PIN/authorization, 55s countdown) | `PairingAgent.qml` |
-| `KdeConnectPairingPopup.qml` | Phone pairing request (accept/decline, 35s timeout vs daemon 30s) | KdeConnectService |
+| `KdeConnectPairingPopup.qml` | Phone pairing request (accept/decline, 30s timeout matching the daemon) | KdeConnectService |
 | `NotifToast.qml` | Popup notification (toast) | NotificationServer |
 | `KdeConnectPopup.qml` | Phone (kcd) — battery, ping/ring, share, clipboard, SFTP | KdeConnectService |
 
@@ -203,6 +210,7 @@
 | `pacman_upgrade.sh` | Bash | Full upgrade in a terminal (`yay -Syu` or `sudo pacman -Syu`) + exit code to a sentinel file for auto re-check |
 | `CalendarTasks.js` | JS | Calendar task save/load |
 | `ControlState.js` | JS | Control center state |
+| `Format.js` | JS | Shared value formatting (`formatTime`) |
 | `LauncherUsage.js` | JS | Application launch frequency |
 | `EqPresets.js` | JS | 15-band EQ presets (Winamp 10→15 log-interpolation, `all()`, `bandLabels`) |
 | `.env.example` | env | HoYoLAB credentials template (runtime copy `.env`, git-ignored) |
@@ -229,3 +237,5 @@
 | `calendar-tasks.json` | Calendar tasks |
 | `control-state.json` | Control center state (muted, brightness) |
 | `launcher-usage.json` | Launcher launch statistics |
+
+> Only `config.json` and `palette.json` are tracked in git; the rest are created at runtime.

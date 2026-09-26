@@ -67,12 +67,12 @@ input:kb_layout`.
 
 **Fix:**
 1. Make sure `kitty.conf` contains `include current-theme.conf`
-2. Run `update-palette.py`
+2. Run `selfshell palette reload` (or `selfshell wallpaper set <file>`)
 
 ## Yazi: icons or colors missing
 **Cause:** `theme.toml` or `flavors/palette.yazi/flavor.toml` is stale.
 
-**Fix:** run `update-palette.py`.
+**Fix:** run `selfshell palette reload`.
 
 ## Network does not work after install.sh
 **Cause:** `NetworkManager` is not enabled/started.
@@ -84,12 +84,16 @@ sudo systemctl enable --now NetworkManager
 
 ## Bluetooth will not pair
 **Cause:** `qs-bt-agent` is not running. It is a separate process
-(systemd user service), not part of quickshell.
+(systemd user service), not part of quickshell. Or the adapter is not
+in pairing mode: new pairings are only accepted while Discoverable is
+on (the Bluetooth popup toggle enables Discoverable + Pairable together;
+both drop when the discoverable timeout expires).
 
 **Fix:**
 ```sh
 systemctl --user enable --now qs-bt-agent
 ```
+Then turn on Discoverable in the Bluetooth popup and pair within the timeout.
 
 The agent lives in `~/.config/quickshell/services/qs-bt-agent` and its unit
 in `~/.config/systemd/user/qs-bt-agent.service` (both installed by
@@ -209,8 +213,7 @@ the size of the `container`.
 **Cause:** the `implicitHeight` was fixed and did not account for the real
 content height (especially with many widgets in the Pool).
 
-**Fix:** replaced with `implicitHeight: contentColumn.implicitHeight + 30` —
-adjusts automatically to the content.
+**Fix:** `implicitHeight: 560` with the page Flickable sized from `contentHeight: sectionLoader.item?.implicitHeight ?? 0` (`SettingsPopup.qml`) — adjusts automatically to the content.
 
 ## config.json reset to defaults
 **Symptom:** after a quickshell update the widget order and enablement reset

@@ -39,7 +39,7 @@ milestone:
 1. In `CHANGELOG.md`, rename `## [Unreleased]` to
    `## [X.Y.Z] - YYYY-MM-DD` and open a fresh empty `## [Unreleased]`
    section above it.
-2. Update `quickshell/VERSION` to `X.Y.Z` (hexadecimal-pure, no `v`).
+2. Update `quickshell/VERSION` to `X.Y.Z` (plain SemVer, no `v`).
 3. Commit: `chore(release): X.Y.Z`.
 4. Push to `main`, let CI validate (`VERSION` format check included).
 5. Tag and push the tag:

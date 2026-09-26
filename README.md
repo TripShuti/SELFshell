@@ -25,6 +25,7 @@ no separate lock/idle daemons.
 
 **Lock Screen & Idle**
 - Native lock screen via `ext-session-lock-v1` with PAM authentication
+- Keyboard layout badge next to the password field (left-click cycles layouts, right-click picks from the list)
 - Brute-force protection — lockout after repeated failed attempts
 - Built-in idle manager — lock → DPMS → suspend timeouts (replaces hypridle)
 - Media playback pauses idle timers automatically
@@ -145,7 +146,7 @@ If you keep `~/.config/quickshell` as a git clone of the repository,
 The lock screen uses the generated `current-lock.jpg` (static first frame of
 the wallpaper); on a fresh clone it falls back to the tracked `wp1.jpg` /
 `black.png` until you pick a wallpaper (via the Wallpaper Picker or
-`selfshell palette-reload`).
+`selfshell palette reload`).
 
 ## CLI
 
@@ -158,12 +159,22 @@ selfshell lock           # lock the screen
 selfshell toggle-lock    # lock the screen (lock-only alias, no-op if already locked)
 selfshell launcher       # toggle application launcher
 selfshell settings       # toggle bar settings popup
-selfshell palette-reload # re-read the wallpaper palette
-selfshell ipc call <target> <function> [args...]
+selfshell control        # toggle control center
+selfshell clipboard      # toggle clipboard history
+selfshell kcd            # toggle phone (kcd) popup
+selfshell audio          # toggle audio mixer
+selfshell osd <volume|brightness> # show OSD overlay
+selfshell theme [list|status|set <black|matugen>] # manage theme
+selfshell wallpaper <list|current|set <file>|random> # manage wallpapers
+selfshell palette <reload|show|path> # palette operations
+selfshell config <get|set|edit|reset> <key> [value] # manage config.json
+selfshell ipc [call] <target> <function> [args...]
 selfshell reload         # restart quickshell
 selfshell update         # update config (git pull, or GitHub archive download) + reload
 selfshell version        # show version
 selfshell list           # list running quickshell instances
+selfshell status         # quick status summary
+selfshell services       # list services
 ```
 
 ## Dependencies
@@ -201,14 +212,14 @@ hypr/        - Hyprland (lua module system, env.json for user settings) & hyprsu
 install.sh   - automated setup script
 kitty/       - terminal config
 quickshell/  - QML panels, core, popups, widgets, monitors, scripts, data, assets, services
-             - core/ — shell infrastructure (AppConfig, IdleManager, LockScreen, etc.)
-             - monitors/ — background data monitors (Cava, Genshin)
+             - core/ — shell infrastructure (AppConfig, IdleManager, LockSurface/LockContext, AnimatedPopup, HoverItem/HoverButton, etc.)
+             - monitors/ — background data monitors (Cava, Genshin, SelfTrack)
              - widgets/ — panel widgets (16 total, incl. KdeConnectWidget)
-             - popups/ — popup windows (17 total, incl. KdeConnectPopup + settings sections) + audio/ subcomponents (AudioSlider/StreamCard/DeviceCard)
-             - scripts/ — helper scripts (palette, Genshin, AudioMixerUtils, etc.)
+             - popups/ — popup windows (21 total, incl. KdeConnectPopup + settings/audio/mpris/control sections) + shared blocks (HoverButton, WallpaperController, PactlJsonProc, ResolvedIcon, EmptyHint)
+             - scripts/ — helper scripts (palette, Genshin, AudioMixerUtils, Format.js, etc.)
              - data/ — persisted state (config.json, calendar-tasks, eq.json, etc.)
              - assets/ — icons, sounds
-             - services/ — pairing agent, MPRIS tracklist bridge, cava config, KdeConnectService
+             - services/ — pairing agent, TrackListService, PacmanService, PowerProfileService, KdeConnectService, cava config
              - pam/password.conf — PAM config for lock screen auth
 starship/    - prompt config
 yazi/        - file manager config, keybindings, themes

@@ -53,24 +53,30 @@ Commit messages are **English**, following the
 Run the whole suite locally: `bash tests/run.sh` (skips tools you don't have).
 
 Per layer:
-- Bash scripts (`install.sh`, `scripts/selfshell`, `update-palette.sh`, tests):
+- Bash scripts (`install.sh`, `scripts/selfshell`, `update-palette.sh`,
+  `pacman_upgrade.sh`, `update-wallpaper-only.sh`, `tests/install_test.sh`):
   `bash -n <file>`; CI additionally runs `shellcheck -S warning`
 - `install.sh` helpers (backup/rollback/prompts/retry): functional tests —
   `bash tests/install_test.sh` (extracts the real functions and runs them
   in a sandbox HOME)
-- Lua: `luac -p hypr/modules/*.lua` for syntax + unit tests via luajit
-  (`luajit tests/lua/json_test.lua <root>` — json.lua must return `nil` on
-  any broken input; `tests/lua/env_rules_test.lua` mocks the global `hl` and
-  checks env defaults, shipped `env.json` neutrality, `windowRules`
-  pass-through and `appLayout` switching)
-- Python scripts: unit tests via `python3 -m unittest discover -s tests/python`
-  (`quickshell/scripts` is loaded without network — matugen and HoYoLAB API
-  are mocked; `update-palette.py` is tested through its `main()`, HOME is a
-  temp dir)
+- Lua: `lua5.4 -e "assert(loadfile(...))"` for syntax + unit tests via
+  luajit (`luajit tests/lua/json_test.lua <root>` — json.lua must return
+  `nil` on any broken input; `env_rules_test.lua`, `binds_test.lua`,
+  `visual_test.lua` mock the global `hl`)
+- Python scripts: stdlib tests always
+  (`test_sysinfo`/`test_update_palette`/`test_pacman_updates`/`test_tracklist`
+  one by one); `test_genshin.py` only with `requests`+`dotenv` installed
+  (CI installs both and runs full `discover`)
 - Config schemas: `python3 tests/check_config_schema.py` validates
-  `data/config.json` and `hypr/env.json` against `CONFIG_FORMAT.md`
+  `data/config.json` and `hypr/env.json` against `CONFIG_FORMAT.md`,
+  plus `binds.json` action ids, `visual.json` keys and
+  `AppConfig` adapter/defaultCfg parity
 - Docs: `python3 tests/check_md_links.py` — all relative links in `*.md`
   must resolve
+- File banners: `python3 tests/check_banner.py` (see Code style above);
+  repo URL must use the canonical `TripShuti/SELFshell` case
+- Fish: `fish -n` on scripts; `tests/fake_upower.sh` fixtures the upower
+  output contract parsed by `BatteryWidget`
 - QML: quickshell has no `--check` — `selfshell reload` and check `qs log`
   for "Configuration Loaded"
 - After changing hypr configs: `hyprctl reload` + `selfshell doctor`

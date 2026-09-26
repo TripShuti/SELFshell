@@ -44,21 +44,21 @@ Edited through SettingsPopup (UI) or manually.
 | `leftPillEnabled` | `boolean` | `true` | Show the left pill as a whole (its widgets stay configured) |
 | `centerPillEnabled` | `boolean` | `true` | Show the center pill as a whole |
 | `rightPillEnabled` | `boolean` | `true` | Show the right pill as a whole |
-| `leftOrder` | `string[]` | — | Widget names in the left pill (including `sep-N`) |
-| `centerOrder` | `string[]` | — | Widget names in the center pill |
-| `rightOrder` | `string[]` | — | Widget names in the right pill |
-| `popupBgOpacity` | `number` | `0.95` | Popup background opacity (0.5–1.0) |
+| `leftOrder` | `string[]` | `["launcher", "sep-2", "workspaces", "sep-7", "mpris"]` | Widget names in the left pill (including `sep-N`) |
+| `centerOrder` | `string[]` | `["clock", "sep-5", "timer"]` | Widget names in the center pill |
+| `rightOrder` | `string[]` | `["tray", "sep-12", "keyboard", "sep-10", "audio", "sep-11", "control"]` | Widget names in the right pill |
+| `popupBgOpacity` | `number` | `0.95` | Popup background opacity (0.0–1.0) |
 | `popupBgLighten` | `number` | `1.45` | Popup background gradient lighten; 1.0 = flat color (1.0–2.0) |
 | `popupRadius` | `number` | `14` | Popup corner radius, px (0–24) |
 | `popupBorderWidth` | `number` | `1` | Popup border width, px (0–4) |
 | `toastRadius` | `number` | `9` | Notification toast corner radius, px (0–24) |
 | `toastLighten` | `number` | `1.05` | Toast background gradient lighten (1.0–2.0) |
-| `toastBgOpacity` | `number` | `0.5` | Toast background opacity (0.5–1.0) |
+| `toastBgOpacity` | `number` | `0.5` | Toast background opacity (0.0–1.0) |
 | `osdRadius` | `number` | `10` | OSD corner radius, px (0–24) |
 | `osdLighten` | `number` | `1.5` | OSD background gradient lighten (1.0–2.0) |
-| `osdBgOpacity` | `number` | `0.55` | OSD background opacity (0.5–1.0) |
+| `osdBgOpacity` | `number` | `0.55` | OSD background opacity (0.0–1.0) |
 | `barLighten` | `number` | `1.65` | Bar pill gradient lighten; 1.0 = flat color (1.0–2.0) |
-| `barBgOpacity` | `number` | `1` | Pill background opacity multiplier; 1.0 = palette color as-is (0.2–1.0) |
+| `barBgOpacity` | `number` | `1` | Pill background opacity multiplier; 1.0 = palette color as-is (0.0–1.0) |
 | `barBorderWidth` | `number` | `1` | Pill outline width, px; 0 = no border (0–4) |
 | `barBackEnabled` | `boolean` | `true` | Solid full-width bar behind the floating pills |
 | `barBackOpacity` | `number` | `0.1` | Solid bar background opacity (0–1.0) |
@@ -316,10 +316,13 @@ string; `suspend` is a single bare key:
 
 ```json
 {
-  "launcher": "SUPER + T",
-  "clipboard": "SUPER + ALT + H",
+  "launcher": "SUPER + R",
+  "clipboard": "SUPER + SHIFT + V",
   "suspend": "XF86Launch1"
 }
+
+> Example override values — built-in defaults are `SUPER + R` /
+> `SUPER + SHIFT + V` (see `BindsSection.qml`); an absent file means defaults.
 ```
 
 Action ids: `launcher`, `settings`, `control`, `lock`, `clipboard`,

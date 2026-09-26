@@ -10,15 +10,20 @@ selfshell/                       # git repo root (cloned into ~/.config)
   │   ├── VERSION                # project version (read by selfshell)
   │   ├── core/                  # infrastructure (AppConfig, PaletteService,
   │   │                          #   IdleManager, LockContext/Surface, AnimatedPopup,
-  │   │                          #   PillBar, HoverItem/Text, ToggleSwitch,
+  │   │                          #   PillBar, HoverItem/Text/Button, ToggleSwitch,
+  │   │                          #   KeyboardLayoutState, JsonProcess,
+  │   │                          #   WallpaperController, ResolvedIcon, EmptyHint,
   │   │                          #   AudioEq, VertSlider, ...)
    │   ├── widgets/               # bar widgets
-   │   ├── popups/                # popup windows (incl. audio/ — AudioSlider/StreamCard/DeviceCard)
+   │   ├── popups/                # popup windows (incl. audio/ — AudioSlider/StreamCard/DeviceCard,
+  │   │                          #   PactlJsonProc/EmptyState — and settings/, mpris/, control/ sections)
    │   ├── monitors/              # 3 background monitors (Cava, Genshin, SelfTrack)
    │   ├── services/              # systemd units and QML services (qs-bt-agent,
-   │   │                          #   TrackListService, cava-vis.conf)
+   │   │                          #   TrackListService, KdeConnectService,
+  │   │                          #   PowerProfileService, PacmanService, cava-vis.conf)
    │   ├── scripts/               # selfshell CLI, python/js scripts, .env + EqPresets.js + AudioMixerUtils.js
-   │   ├── data/                  # persisted JSON (config, eq, palette, tasks...)
+  │   │                          #   + Format.js/SafePath.js and helpers
+   │   ├── data/                  # persisted JSON (config + palette in git, the rest runtime)
    │   ├── assets/                # resources (sounds, icons)
    │   └── pam/                   # lock screen PAM config
   ├── hypr/                      # ~/.config/hypr/ — Hyprland configs
@@ -56,11 +61,11 @@ file.
 
 | Module | Purpose |
 |--------|---------|
-| `env.lua` | Reads `env.json`, provides modules: mainMod, terminal, browser, cursor, kb layout, suspendKey, autostarts, devices, windowRules |
+| `env.lua` | Reads `env.json`, provides modules: mainMod, terminal, fileManager, browser, cursorTheme/cursorSize, kbLayout/kbOptions, suspendKey, autostarts, devices, windowRules |
 | `json.lua` | Minimal JSON parser (no dependencies). Any error → `nil` |
-| `exec.lua` | `XCURSOR_*` env + autostart: `quickshell` (always), polkit agent, `wl-paste --watch cliphist store` watchers, and the list from `env.json` |
+| `exec.lua` | `XCURSOR_*` env + autostart: `sleep 2 quickshell` (always), `sleep 3 lxqt-policykit-agent`, `wl-paste --watch cliphist store` watchers (text + `image/png`), and the list from `env.json` |
 | `general.lua` | Window settings: gaps, border, colors, master/dwindle, decorations, input (`kbLayout`/`kbOptions` from `env.json`); `devices[]` from `env.json` |
-| `binds.lua` | Keybindings: screenshots, clipboard history (`SUPER+SHIFT+V`), launcher, workspaces, focus, window movement |
+| `binds.lua` | Keybindings: Print/SUPER+Print screenshots, XF86 volume/brightness (+OSD), launcher (SUPER+R), settings (SUPER+S), control (SUPER+Escape), lock (SUPER+L), clipboard (SUPER+SHIFT+V), browser/terminal/files (SUPER+W/Q/E), workspaces, focus, window movement |
 | `animation.lua` | Animation curves (`wind`, `winIn`, `winOut`, `liner`) and styles |
 | `rules.lua` | Universal window rules + data-driven per-app rules from `env.json` (`windowRules`) |
 
@@ -203,16 +208,16 @@ Settings are stored in `data/config.json` (JSON format).
 {
   "launcherEnabled": true,
   "workspacesEnabled": true,
-  "themeMode": "matugen",
+  "themeMode": "black",
   "kcdEnabled": false,
   "kcdDndEnabled": false,
   "batteryEnabled": false,
   "animationsEnabled": true,
   "animSpeed": 1.0,
   "preferredPlayer": "selfsonic",
-  "leftOrder": ["launcher", "workspaces", "mpris"],
-  "centerOrder": ["clock", "timer", "genshin"],
-  "rightOrder": ["tray", "sep-0", "bt", "net", "sep-1", "keyboard", "audio", "control"]
+  "leftOrder": ["launcher", "sep-2", "workspaces", "sep-7", "mpris"],
+  "centerOrder": ["clock", "sep-5", "timer"],
+  "rightOrder": ["tray", "sep-12", "keyboard", "sep-10", "audio", "sep-11", "control"]
 }
 ```
 
@@ -224,12 +229,13 @@ a restart.
 
 **Writing** — `saveToFile()` calls `configFile.writeAdapter()`, which
 serializes all adapter properties back to disk (missing keys get the
-factory defaults).
+factory defaults). Sliders debounce through `saveSoon()` (400 ms) instead
+of writing on every tick.
 
 Why JSON:
 - standard parser — no regex hacks
 - backward compatibility: unknown fields are simply ignored
-- changes apply immediately, no shell restart needed
+- UI writes apply immediately; manual file edits apply after a restart (watcher off, see above)
 
 ### Animation system: `AppConfig.anim()`
 
@@ -267,7 +273,10 @@ Rules of thumb applied throughout:
 Monitors (CavaMonitor, GenshinMonitor, SelfTrackMonitor) are QML components that:
 - run a background process (cava, python script)
 - constantly update properties (bars, resinText)
-- those properties are bound to widgets through bindings in Bar.qml
+- those properties are bound to widgets: Genshin/SelfTrack monitors are
+  single instances in `shell.qml` (one process, not one per monitor);
+  CavaMonitor lives in `Bar.qml` because it is screen-bound. Widgets
+  reach them through bindings in `Bar.qml`.
 
 Gated by `Config`: each monitor has a `monitorEnabled` property reading the
 corresponding `appConfig.*Enabled`. If the widget is disabled, the monitor
@@ -315,10 +324,19 @@ clipped by the Wayland surface or invisible behind the opaque background.
 
 Each popup is attached to a widget via `anchorItem` — e.g.
 `calendarPopup.anchorItem = root.clockWidget`. The popup appears below/above
-the widget. The link is wired via `Connections` on click.
+the widget. The link is wired via `Connections` on click. Anchored popups
+set `positionOnShow: true` instead of a manual `onVisibleChanged` handler;
+screen-centered popups (mixer, settings, pairing, launcher, …) pass
+`centerScreen` and call `centerOnScreen()` — the screen is passed
+explicitly so multi-monitor placement stays correct.
 
-Clipboard history (`ClipboardPopup`) works differently: it has no widget, it
-is opened by the `SUPER+SHIFT+V` keybind via `qs ipc call clipboard toggle`
+Keyboard layout has one shared state (`core/KeyboardLayoutState.qml`):
+the bar widget, the layout popup and the lockscreen badge all read it.
+Left-click cycles (`cycleNext()`), right-click opens the popup/list
+(`refreshMenu()` + `switchTo(index)`).
+
+Clipboard history (`ClipboardPopup`) is opened by its bar widget or, as a
+fallback, by the `SUPER+SHIFT+V` keybind via `qs ipc call clipboard toggle`
 (`IpcHandler` in `Bar.qml`) and anchored below the control-center widget.
 The history itself is gathered by `cliphist`, fed by two
 `wl-paste --watch cliphist store` watchers started in `exec.lua` (one for
@@ -384,7 +402,7 @@ only through PAM (`LockContext.unlocked` → `locked = false`).
 ║    ├── IdleManager       ← 3 IdleMonitors     ║
 ║    ├── IpcHandler "lockscreen"                ║
 ║    ├── sleepMonitor      ← dbus-monitor +     ║
-║    │                      StdioCollector      ║
+║    │                      SplitParser         ║
 ║    │                      (PrepareForSleep)   ║
 ║    ├── suspendProc       ← Process            ║
 ║    ├── Connections       ← unlock→locked=false ║
@@ -422,8 +440,14 @@ directory (`auth required pam_unix.so`), not `/etc/pam.d/`.
 #### Multi-monitor focus
 
 `LockSurface` has a full-screen `MouseArea` that calls
-`passwordInput.forceActiveFocus()` on click. Needed because some
-compositors lose focus on the password field when switching monitors.
+`hiddenInput.forceActiveFocus()` on click (and closes the layout menu).
+Needed because some compositors lose focus on the password field when
+switching monitors.
+
+The password pill sits next to a keyboard layout badge (same
+`KeyboardLayoutState` as the bar widget): left-click cycles layouts,
+right-click opens an inline list. The pill grows with long passwords;
+dots auto-scroll to the tail instead of spilling past the edges.
 
 #### fail-secure
 
@@ -439,7 +463,8 @@ killall quickshell && quickshell &
 `dbus-monitor` listens for the `PrepareForSleep` signal from
 `org.freedesktop.login1`. When logind prepares the system for sleep
 (lid close, `systemctl suspend`, power button), it sends
-`PrepareForSleep(true)`. shell.qml catches it via `StdioCollector` and sets
+`PrepareForSleep(true)`. shell.qml catches it via `SplitParser` (line
+filter, no `sh -c` pipeline) and sets
 `lockContext.locked = true` **before** the system sleeps. After resume the
 lock screen stays active.
 
@@ -606,10 +631,10 @@ prompt is missed, the connect fails after the 55 s timeout.
 | `control` / `clipboard` / `kcd` / `audio` | `qs ipc call <target> toggle` (control center, clipboard history, phone popup, audio mixer) |
 | `osd volume\|brightness` | `qs ipc call osd volume|brightness` (media-key overlay) |
 | `theme list\|status\|set <black\|matugen>` | Theming mode in `data/config.json` (`--theme black` static palette vs `update-palette.sh` regen) |
-| `wallpaper list\|current\|set <file>\|random\|reload` | Wallpaper picker (respects `themeMode`: wallpaper-only in Black, regen in Matugen) |
+| `wallpaper list\|current\|set <file>\|random` | Wallpaper picker (respects `themeMode`: wallpaper-only in Black, regen in Matugen) |
 | `palette reload\|show\|path` | `qs ipc call palette-reload reload`, dump `palette.json`, print its path |
 | `status` | One-line overview: version, `themeMode`, wallpaper, Hyprland, quickshell |
-| `config get\|set\|edit\|check\|path` | Read/write a `data/config.json` key (atomic writes), validate, print path |
+| `config get\|set\|edit\|reset` | Read/write a `data/config.json` key (atomic writes), reset to factory defaults |
 | `services` | `systemctl --user` status of shell services (qs-bt-agent, kcd, pipewire) |
 | `doctor` | Diagnostics: dependencies, python modules, session, configs, services, ddcutil. Exit 1 on critical problems |
 | `reload` | `qs kill` + `qs -d` (this quickshell version has no `qs reload`) |
