@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-09-26
+
 ### Added
 
 - **Lockscreen keyboard layout** — `LockSurface` shows the current layout next to the password field (same mapping as the bar widget): left-click cycles to the next layout, right-click opens an inline list for direct selection. The password pill grows with long passwords and dots auto-scroll to the tail instead of spilling past the edges.
