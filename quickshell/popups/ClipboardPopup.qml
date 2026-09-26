@@ -283,27 +283,13 @@ AnimatedPopup {
       }
 
       // Порожній стан — історія ще порожня
-      ColumnLayout {
+      EmptyHint {
         anchors.centerIn: parent
         visible: root.entries.length === 0
-        spacing: 4
-
-        Text {
-          Layout.alignment: Qt.AlignHCenter
-          text: "\uF328"
-          color: window.palette.mutedAlt
-          font.family: window.palette.font
-          font.pixelSize: appConfig.scaled(20)
+        palette: window.palette; appConfig: root.appConfig
+        icon: "\uF328"; iconSize: 20
+        text: "Clipboard is empty"
         }
-
-        Text {
-          Layout.alignment: Qt.AlignHCenter
-          text: "Clipboard is empty"
-          color: window.palette.mutedAlt
-          font.family: window.palette.font
-          font.pixelSize: appConfig.scaled(12)
-        }
-      }
     }
   }
 }

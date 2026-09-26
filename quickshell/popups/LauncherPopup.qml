@@ -304,25 +304,13 @@ AnimatedPopup {
       }
 
       // Порожній стан
-      ColumnLayout {
+      EmptyHint {
         anchors.centerIn: parent
         visible: root.entries.length === 0
-        spacing: 4
-
-        Text {
-          Layout.alignment: Qt.AlignHCenter
-          text: "\uF002"
-          color: window.palette.mutedAlt
-          font.family: window.palette.font; font.pixelSize: appConfig.scaled(22)
+        palette: window.palette; appConfig: root.appConfig
+        icon: "\uF002"
+        text: root.searchText.trim() === "" ? "No applications found" : "No results for \"" + root.searchText.trim() + "\""
         }
-
-        Text {
-          Layout.alignment: Qt.AlignHCenter
-          text: root.searchText.trim() === "" ? "No applications found" : "No results for \"" + root.searchText.trim() + "\""
-          color: window.palette.mutedAlt
-          font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
-        }
-      }
     }
 
 

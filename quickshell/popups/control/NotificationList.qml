@@ -3,6 +3,7 @@
 // ============================================================
 import QtQuick
 import QtQuick.Layouts
+import "../../core"
 
 // Список сповіщень. Модель груп і лічильник — з кореня (rebuildGroups там);
 // дії карток — методи самих об'єктів сповіщень, посередництва не треба.
@@ -392,23 +393,12 @@ Item {
   }
 
   // Порожній стан — немає сповіщень
-  ColumnLayout {
+  EmptyHint {
     anchors.centerIn: parent
     visible: unread === 0
-    spacing: 4
-
-    Text {
-      Layout.alignment: Qt.AlignHCenter
-      text: "\uF0F3"
-      color: window.palette.gray
-      font.family: window.palette.font; font.pixelSize: window.appConfig.scaled(22)
+    palette: window.palette; appConfig: window.appConfig
+    icon: "\uF0F3"
+    text: "No notifications"
+    color: window.palette.gray
     }
-
-    Text {
-      Layout.alignment: Qt.AlignHCenter
-      text: "No notifications"
-      color: window.palette.gray
-      font.family: window.palette.font; font.pixelSize: window.appConfig.scaled(12)
-    }
-  }
 }

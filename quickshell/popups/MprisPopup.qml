@@ -312,27 +312,16 @@ AnimatedPopup {
     }
 
     // Порожній стан — немає плеєра
-    ColumnLayout {
+    EmptyHint {
       Layout.fillWidth: true
       Layout.topMargin: 24
       Layout.bottomMargin: 24
-      spacing: 4
       visible: root.player == null
-
-      Text {
-        Layout.alignment: Qt.AlignHCenter
-        text: "\uF001"
-        color: window.palette.gray
-        font.family: window.palette.font; font.pixelSize: appConfig.scaled(22)
+      palette: window.palette; appConfig: root.appConfig
+      icon: "\uF001"
+      text: "No player detected"
+      color: window.palette.gray
       }
-
-      Text {
-        Layout.alignment: Qt.AlignHCenter
-        text: "No player detected"
-        color: window.palette.gray
-        font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
-      }
-    }
   }
 
   // Вибір плеєра — випадає прямо з пігулки під обкладинкою, не розтягує попап (overlay)
