@@ -3,7 +3,6 @@
 // ============================================================
 import QtQuick
 import QtQuick.Layouts
-import Quickshell.Io
 import "../../core"
 
 Item {
@@ -12,69 +11,18 @@ Item {
 
   readonly property var window: sys.window
 
-  readonly property string paletteScriptPath: Qt.resolvedUrl("../../scripts/update-palette.sh").toString().replace("file://", "")
-  readonly property string wallpaperOnlyPath: Qt.resolvedUrl("../../scripts/update-wallpaper-only.sh").toString().replace("file://", "")
-  readonly property string listScriptPath: Qt.resolvedUrl("../../scripts/update-palette.py").toString().replace("file://", "")
-
-  property var wallpapers: []
-  property string statusText: ""
-  // StdioCollector не чиститься між запусками — прапор свіжих даних
-  property bool _listGotData: false
+  WallpaperController {
+    id: wpCtl
+    appConfig: root.window.appConfig
+  }
 
   implicitWidth: parent?.width ?? 0
   implicitHeight: col.implicitHeight
 
-  Component.onCompleted: refresh()
+  Component.onCompleted: wpCtl.refresh()
 
-  function refresh() { listProc.running = true }
+  function refresh() { wpCtl.refresh() }
 
-  // Список шпалер з директорії wp/ (той самий механізм, що в WallpaperPopup)
-  Process {
-    id: listProc
-    stdout: listCollector
-    command: ["python3", root.listScriptPath, "list"]
-    onStarted: root._listGotData = false
-    onExited: {
-      running = false
-      if (!root._listGotData) root.wallpapers = []
-    }
-  }
-
-  StdioCollector {
-    id: listCollector
-    waitForEnd: true
-    onDataChanged: {
-      root._listGotData = true
-      if (listCollector.text) {
-        root.wallpapers = listCollector.text.trim().split("\n").filter(p => p.trim() !== "")
-      }
-    }
-  }
-
-  // Застосовує вибрану шпалеру; статус "Setting wallpaper..." зникає
-  // за кілька секунд (як у WallpaperPopup); помилку показуємо текстом
-  Process {
-    id: applyProc
-    onExited: (exitCode) => {
-      running = false
-      if (exitCode !== 0) root.statusText = "\u26A0 Failed to set wallpaper (code " + exitCode + ")"
-      statusTimer.restart()
-    }
-  }
-
-  Timer {
-    id: statusTimer
-    interval: 3000
-    onTriggered: root.statusText = ""
-  }
-
-  function setWallpaper(path) {
-    if (applyProc.running) return
-    var isStatic = window.appConfig.cfg.themeMode === "black"
-    root.statusText = isStatic ? "\uF002 Setting wallpaper (palette stays)..." : "\uF002 Setting wallpaper..."
-    applyProc.command = isStatic ? [root.wallpaperOnlyPath, path] : [root.paletteScriptPath, path]
-    applyProc.running = true
-  }
 
   ColumnLayout {
     id: col
@@ -89,12 +37,12 @@ Item {
 
       Text {
         text: {
-          if (root.statusText !== "") return root.statusText
+          if (wpCtl.statusText !== "") return wpCtl.statusText
           if (window.appConfig.cfg.themeMode === "black")
             return "Pick a wallpaper — palette stays fixed (black theme, wallpaper-only)"
           return "Pick a wallpaper — the palette regenerates automatically (Matugen)"
         }
-        color: root.statusText !== "" ? window.palette.green : window.palette.gray
+        color: wpCtl.statusText !== "" ? window.palette.green : window.palette.gray
         font.family: window.palette.font
         font.pixelSize: window.appConfig.scaled(11)
         wrapMode: Text.WordWrap
@@ -118,7 +66,7 @@ Item {
           anchors.fill: parent
           hoverEnabled: true
           cursorShape: Qt.PointingHandCursor
-          onClicked: root.refresh()
+          onClicked: wpCtl.refresh()
         }
       }
     }
@@ -130,7 +78,7 @@ Item {
       spacing: 8
 
       Repeater {
-        model: root.wallpapers
+        model: wpCtl.wallpapers
 
         delegate: Rectangle {
           required property string modelData
@@ -160,7 +108,7 @@ Item {
             anchors.fill: parent
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
-            onClicked: root.setWallpaper(modelData)
+            onClicked: wpCtl.setWallpaper(modelData)
           }
         }
       }

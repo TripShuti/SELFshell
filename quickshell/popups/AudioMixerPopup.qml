@@ -204,26 +204,11 @@ AnimatedPopup {
     root.refreshSinkInputs()
     root.refreshSourceOutputs()
   }
-  function refreshCards() {
-    _cardsProc.command = ["pactl", "-f", "json", "list", "cards"]
-    _cardsProc.running = true
-  }
-  function refreshSinks() {
-    _sinksProc.command = ["pactl", "-f", "json", "list", "sinks"]
-    _sinksProc.running = true
-  }
-  function refreshSources() {
-    _sourcesProc.command = ["pactl", "-f", "json", "list", "sources"]
-    _sourcesProc.running = true
-  }
-  function refreshSinkInputs() {
-    _sinkInputsProc.command = ["pactl", "-f", "json", "list", "sink-inputs"]
-    _sinkInputsProc.running = true
-  }
-  function refreshSourceOutputs() {
-    _sourceOutputsProc.command = ["pactl", "-f", "json", "list", "source-outputs"]
-    _sourceOutputsProc.running = true
-  }
+  function refreshCards() { _cardsProc.running = true }
+  function refreshSinks() { _sinksProc.running = true }
+  function refreshSources() { _sourcesProc.running = true }
+  function refreshSinkInputs() { _sinkInputsProc.running = true }
+  function refreshSourceOutputs() { _sourceOutputsProc.running = true }
 
   // --- Процеси для дій — логуємо помилки pactl/pw-cli ---
   Process { id: _moveStreamsProc; onExited: (code) => { if (code !== 0) console.warn("[AudioMixer] move-stream failed", code, command); running = false } }
@@ -233,94 +218,35 @@ AnimatedPopup {
   Process { id: _defaultSinkProc; onExited: (code) => { if (code !== 0) console.warn("[AudioMixer] set-default-sink failed", code); running = false } }
   Process { id: _defaultSourceProc; onExited: (code) => { if (code !== 0) console.warn("[AudioMixer] set-default-source failed", code); running = false } }
 
-  // --- Завантаження списків ---
-  Process {
+  // --- Завантаження списків (команда всередині — pactl list <what>) ---
+  PactlJsonProc {
     id: _cardsProc
-    stdout: StdioCollector {
-      id: _cardsCollector
-      waitForEnd: true
-      onStreamFinished: {
-        var text = _cardsCollector.text.trim()
-        if (!text) { root.cardsModel = []; return }
-        try {
-          var arr = JSON.parse(text)
-          root.cardsModel = arr
-        } catch (e) {
-          console.warn("[AudioMixer] cards parse fail", e)
-          root.cardsModel = []
-        }
-      }
-    }
+    pactlWhat: "cards"
+    onLoaded: arr => root.cardsModel = arr
   }
-  Process {
+  PactlJsonProc {
     id: _sinksProc
-    stdout: StdioCollector {
-      id: _sinksCollector
-      waitForEnd: true
-      onStreamFinished: {
-        var text = _sinksCollector.text.trim()
-        if (!text) return
-        try {
-          var arr = JSON.parse(text)
-          var map = {}
-          for (var i = 0; i < arr.length; i++) {
-            var s = arr[i]
-            map[s.name] = s
-          }
-          root.sinkPortMap = map
-        } catch (e) { console.warn("[AudioMixer] sinks parse fail", e) }
-      }
-    }
+    pactlWhat: "sinks"
+    rawArray: false
+    resetOnEmpty: false
+    onLoaded: map => root.sinkPortMap = map
   }
-  Process {
+  PactlJsonProc {
     id: _sourcesProc
-    stdout: StdioCollector {
-      id: _sourcesCollector
-      waitForEnd: true
-      onStreamFinished: {
-        var text = _sourcesCollector.text.trim()
-        if (!text) return
-        try {
-          var arr = JSON.parse(text)
-          var map = {}
-          for (var i = 0; i < arr.length; i++) {
-            var s = arr[i]
-            map[s.name] = s
-          }
-          root.sourcePortMap = map
-        } catch (e) { console.warn("[AudioMixer] sources parse fail", e) }
-      }
-    }
+    pactlWhat: "sources"
+    rawArray: false
+    resetOnEmpty: false
+    onLoaded: map => root.sourcePortMap = map
   }
-  Process {
+  PactlJsonProc {
     id: _sinkInputsProc
-    stdout: StdioCollector {
-      id: _sinkInputsCollector
-      waitForEnd: true
-      onStreamFinished: {
-        var text = _sinkInputsCollector.text.trim()
-        if (!text) { root.sinkInputsInfo = []; return }
-        try {
-          var arr = JSON.parse(text)
-          root.sinkInputsInfo = arr
-        } catch (e) { console.warn("[AudioMixer] sink-inputs parse fail", e); root.sinkInputsInfo = [] }
-      }
-    }
+    pactlWhat: "sink-inputs"
+    onLoaded: arr => root.sinkInputsInfo = arr
   }
-  Process {
+  PactlJsonProc {
     id: _sourceOutputsProc
-    stdout: StdioCollector {
-      id: _sourceOutputsCollector
-      waitForEnd: true
-      onStreamFinished: {
-        var text = _sourceOutputsCollector.text.trim()
-        if (!text) { root.sourceOutputsInfo = []; return }
-        try {
-          var arr = JSON.parse(text)
-          root.sourceOutputsInfo = arr
-        } catch (e) { console.warn("[AudioMixer] source-outputs parse fail", e); root.sourceOutputsInfo = [] }
-      }
-    }
+    pactlWhat: "source-outputs"
+    onLoaded: arr => root.sourceOutputsInfo = arr
   }
 
   Timer {

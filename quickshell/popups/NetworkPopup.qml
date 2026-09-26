@@ -162,8 +162,53 @@ AnimatedPopup {
     return Math.max(1, Math.min(4, Math.ceil(percent / 25)));
   }
 
+  // Відсортований список Wi-Fi: ListView перестворює делегати при кожному
+  // новому масиві (ховер вмирає), а signalStrength смикається постійно.
+  // Тому присвоюємо лише коли порядок реально змінився: сигнал
+  // квантується до 5%, порівняння за ключами позицій. Перевірка раз
+  // на 2 с, поки попап відкритий; стани рядків оновлюються біндингами
+  // всередині живих делегатів.
+  property var sortedNetworks: []
+  Timer {
+    running: root.visible
+    interval: 2000
+    repeat: true
+    onTriggered: root.resortNetworks()
+  }
+
+  function netKey(n) {
+    if (!n) return ""
+    var q = Math.round((n.signalStrength || 0) * 20)
+    return (n.connected ? "1" : "0") + (n.known ? "1" : "0") + (n.name || "") + "|" + q
+  }
+
+  function sameNetOrder(a, b) {
+    if (!a || !b || a.length !== b.length) return false
+    for (var i = 0; i < a.length; ++i) {
+      if (root.netKey(a[i]) !== root.netKey(b[i])) return false
+    }
+    return true
+  }
+
+  function resortNetworks() {
+    if (!root.wifiDevice || !root.wifiEnabled || !root.wifiDevice.networks) {
+      if (root.sortedNetworks.length !== 0) root.sortedNetworks = []
+      return
+    }
+    var list = root.wifiDevice.networks.values || []
+    var next = list.filter(n => n !== null && n !== undefined).sort((a, b) => {
+      if (a.connected && !b.connected) return -1
+      if (b.connected && !a.connected) return 1
+      if (a.known && !b.known) return -1
+      if (b.known && !a.known) return 1
+      return Math.round((b.signalStrength || 0) * 20) - Math.round((a.signalStrength || 0) * 20)
+    })
+    if (!root.sameNetOrder(root.sortedNetworks, next)) root.sortedNetworks = next
+  }
+
   onVisibleChanged: {
     if (visible) {
+      root.resortNetworks()
       anchor.edges = PopupAnchor.None
       anchor.gravity = PopupAnchor.None
       // guard на випадок відсутнього screen (як у BluetoothPopup)
@@ -234,62 +279,36 @@ AnimatedPopup {
         }
 
         // Кнопка налаштувань
-        Rectangle {
+        HoverButton {
           id: settingsBtn
-          property bool hovered: false
-          implicitWidth: settingsLabel.implicitWidth + 12; height: 24; radius: 4
-          color: hovered ? window.palette.hoverOverlay : window.palette.bgLayer
-          Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
-
-          Text {
-            id: settingsLabel
-            anchors.centerIn: parent
-            text: "Settings"
-            color: window.palette.textLight
-            font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
-          }
-
-          MouseArea {
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onEntered: settingsBtn.hovered = true
-            onExited: settingsBtn.hovered = false
-            onClicked: root.openEthernetSettings()
-          }
+          implicitWidth: settingsBtn.contentWidth + 12; height: 24; radius: 4
+          palette: window.palette; appConfig: root.appConfig
+          icon: "Settings"; iconSize: 10
+          hoverBg: window.palette.bg2
+          normalFg: window.palette.textLight
+          hoverFg: window.palette.textLight
+          cursorShape: Qt.PointingHandCursor
+          onClicked: root.openEthernetSettings()
         }
 
         // Кнопка підключення/відключення
-        Rectangle {
+        HoverButton {
           id: wiredActionBtn
-          property bool hovered: false
-          implicitWidth: wiredActionLabel.implicitWidth + 12; height: 24; radius: 4
-          color: hovered ? window.palette.hoverOverlay : window.palette.bgLayer
-          Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
-
-          Text {
-            id: wiredActionLabel
-            anchors.centerIn: parent
-            text: root.wiredDevice?.connected ? "Disconnect" : "Connect"
-            color: window.palette.textLight
-            font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
-          }
-          
-          MouseArea {
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onEntered: wiredActionBtn.hovered = true
-            onExited: wiredActionBtn.hovered = false
-            onClicked: {
-              if (root.wiredDevice && root.wiredDevice.name) {
-                if (root.wiredDevice.connected) {
-                  wiredProcess.command = ["nmcli", "device", "disconnect", root.wiredDevice.name];
-                } else {
-                  wiredProcess.command = ["nmcli", "device", "connect", root.wiredDevice.name];
-                }
-                wiredProcess.running = true;
+          implicitWidth: wiredActionBtn.contentWidth + 12; height: 24; radius: 4
+          palette: window.palette; appConfig: root.appConfig
+          icon: root.wiredDevice?.connected ? "Disconnect" : "Connect"; iconSize: 10
+          hoverBg: window.palette.bg2
+          normalFg: window.palette.textLight
+          hoverFg: window.palette.textLight
+          cursorShape: Qt.PointingHandCursor
+          onClicked: {
+            if (root.wiredDevice && root.wiredDevice.name) {
+              if (root.wiredDevice.connected) {
+                wiredProcess.command = ["nmcli", "device", "disconnect", root.wiredDevice.name];
+              } else {
+                wiredProcess.command = ["nmcli", "device", "connect", root.wiredDevice.name];
               }
+              wiredProcess.running = true;
             }
           }
         }
@@ -379,21 +398,20 @@ AnimatedPopup {
         Layout.alignment: Qt.AlignRight
         spacing: 8
 
-        Rectangle {
+        HoverButton {
           implicitWidth: 70; height: 24; radius: 4
-          color: window.palette.bgLayer
-          Text { anchors.centerIn: parent; text: "Cancel"; color: window.palette.mutedAlt; font.family: window.palette.font; font.pixelSize: appConfig.scaled(11) }
-          MouseArea {
-            anchors.fill: parent
-            cursorShape: Qt.PointingHandCursor
-            enabled: !root.connecting
-            onClicked: {
-              root.connecting = false;
-              root.statusMessage = "";
-              root.statusIsError = false;
-              root.pendingNetwork = null;
-              passwordInput.text = "";
-            }
+          palette: window.palette; appConfig: root.appConfig
+          icon: "Cancel"; iconSize: 11
+          normalFg: window.palette.mutedAlt
+          hoverFg: window.palette.mutedAlt
+          cursorShape: Qt.PointingHandCursor
+          enabled: !root.connecting
+          onClicked: {
+            root.connecting = false;
+            root.statusMessage = "";
+            root.statusIsError = false;
+            root.pendingNetwork = null;
+            passwordInput.text = "";
           }
         }
 
@@ -430,7 +448,7 @@ AnimatedPopup {
         id: scanBtn
         property bool hovered: false
         implicitWidth: scanLabel.implicitWidth + 16; height: 24; radius: 4
-        color: root.scanning ? window.palette.sepBg : (hovered ? window.palette.hoverOverlay : window.palette.bgLayer)
+        color: root.scanning ? window.palette.sepBg : (hovered ? window.palette.bg2 : window.palette.bg1)
         Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
 
         // Пульсація під час сканування
@@ -481,20 +499,9 @@ AnimatedPopup {
       interactive: contentHeight > height
       visible: root.pendingNetwork === null
 
-      model: ScriptModel {
-        values: {
-          if (!root.wifiDevice || !root.wifiEnabled || !root.wifiDevice.networks) return [];
-          var list = root.wifiDevice.networks.values || [];
-          // Сортування: підключена → збережена → за сигналом
-          return list.filter(n => n !== null && n !== undefined).sort((a, b) => {
-            if (a.connected && !b.connected) return -1;
-            if (b.connected && !a.connected) return 1;
-            if (a.known && !b.known) return -1;
-            if (b.known && !a.known) return 1;
-            return (b.signalStrength || 0) - (a.signalStrength || 0);
-          });
-        }
-      }
+      // Модель — стабільний масив (див. resortNetworks): делегати живуть,
+      // поки не зміниться порядок, ховер не злітає на кожному RSSI
+      model: root.sortedNetworks
 
       delegate: Item {
         id: networkItem
@@ -551,55 +558,33 @@ AnimatedPopup {
           }
 
           // Кнопка налаштувань (для збережених мереж)
-          Rectangle {
-            id: gearBtn
-            property bool hovered: false
+          HoverButton {
             width: 24; height: 24; radius: 4
-            color: hovered ? window.palette.hoverOverlay : window.palette.bgLayer
+            palette: window.palette; appConfig: root.appConfig
+            icon: "\u2699"; iconSize: 11
+            hoverBg: window.palette.bg2
+            normalFg: window.palette.textLight
+            hoverFg: window.palette.textLight
+            cursorShape: Qt.PointingHandCursor
             visible: modelData.known
-
-            Text {
-              anchors.centerIn: parent
-              text: "\u2699"
-              color: window.palette.textLight
-              font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
-            }
-            MouseArea {
-              anchors.fill: parent
-              hoverEnabled: true
-              cursorShape: Qt.PointingHandCursor
-              onEntered: gearBtn.hovered = true
-              onExited: gearBtn.hovered = false
-              onClicked: root.openWifiSettings(modelData)
-            }
+            onClicked: root.openWifiSettings(modelData)
           }
 
           // Кнопка видалення (для збережених, не підключених)
-          Rectangle {
-            id: forgetBtn
-            property bool hovered: false
+          HoverButton {
             width: 24; height: 24; radius: 4
-            color: hovered ? window.palette.hoverOverlay : window.palette.bgLayer
+            palette: window.palette; appConfig: root.appConfig
+            icon: "\u2716"; iconSize: 10
+            hoverBg: window.palette.bg2
+            normalFg: window.palette.danger
+            hoverFg: window.palette.danger
+            cursorShape: Qt.PointingHandCursor
             visible: modelData.known && !modelData.connected
-            
-            Text {
-              anchors.centerIn: parent
-              text: "\u2716"
-              color: window.palette.danger
-              font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
-            }
-            MouseArea {
-              anchors.fill: parent
-              hoverEnabled: true
-              cursorShape: Qt.PointingHandCursor
-              onEntered: forgetBtn.hovered = true
-              onExited: forgetBtn.hovered = false
-              onClicked: {
+            onClicked: {
                 if (typeof modelData.forget === "function") {
                   modelData.forget();
                 }
               }
-            }
           }
 
           // Кнопка підключення/відключення
@@ -607,7 +592,7 @@ AnimatedPopup {
             id: actionBtn
             property bool hovered: false
             implicitWidth: actionLabel.implicitWidth + 12; height: 24; radius: 4
-            color: modelData.connected ? (hovered ? window.palette.hoverOverlay : window.palette.bgLayer) : (modelData.known ? (hovered ? window.palette.widgetFg : window.palette.accent) : (hovered ? window.palette.hoverOverlay : window.palette.bgLayer))
+            color: modelData.connected ? (hovered ? window.palette.bg2 : window.palette.bg1) : (modelData.known ? (hovered ? window.palette.widgetFg : window.palette.accent) : (hovered ? window.palette.bg2 : window.palette.bg1))
             Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
 
             Text {

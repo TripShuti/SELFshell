@@ -205,26 +205,14 @@ AnimatedPopup {
       Item { Layout.fillWidth: true }
 
       // Кнопка "попередній день"
-      Rectangle {
-        implicitWidth: 24
-        implicitHeight: 24
-        radius: 6
-        color: navPrevMa.containsMouse ? window.palette.bg2 : window.palette.bg1
-        Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
-        Text {
-          anchors.centerIn: parent
-          text: "‹"
-          color: window.palette.fg
-          font.family: window.palette.font
-          font.pixelSize: appConfig.scaled(16)
-        }
-        MouseArea {
-          id: navPrevMa
-          anchors.fill: parent
-          hoverEnabled: true
-          cursorShape: Qt.PointingHandCursor
-          onClicked: root.prevDay()
-        }
+      HoverButton {
+        implicitWidth: 24; implicitHeight: 24
+        palette: window.palette; appConfig: root.appConfig
+        icon: "‹"; iconSize: 16
+        normalFg: window.palette.fg
+        hoverFg: window.palette.fg
+        cursorShape: Qt.PointingHandCursor
+        onClicked: root.prevDay()
       }
 
       // Дата (клік — повернутись на сьогодні)
@@ -242,26 +230,14 @@ AnimatedPopup {
       }
 
       // Кнопка "наступний день"
-      Rectangle {
-        implicitWidth: 24
-        implicitHeight: 24
-        radius: 6
-        color: navNextMa.containsMouse ? window.palette.bg2 : window.palette.bg1
-        Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
-        Text {
-          anchors.centerIn: parent
-          text: "›"
-          color: window.palette.fg
-          font.family: window.palette.font
-          font.pixelSize: appConfig.scaled(16)
-        }
-        MouseArea {
-          id: navNextMa
-          anchors.fill: parent
-          hoverEnabled: true
-          cursorShape: Qt.PointingHandCursor
-          onClicked: root.nextDay()
-        }
+      HoverButton {
+        implicitWidth: 24; implicitHeight: 24
+        palette: window.palette; appConfig: root.appConfig
+        icon: "›"; iconSize: 16
+        normalFg: window.palette.fg
+        hoverFg: window.palette.fg
+        cursorShape: Qt.PointingHandCursor
+        onClicked: root.nextDay()
       }
 
       // Кнопка оновлення

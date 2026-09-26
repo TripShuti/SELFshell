@@ -139,27 +139,35 @@ AnimatedPopup {
       Layout.fillWidth: true
       Layout.topMargin: 8
 
-      Rectangle {
-        property bool hovered: false
+      HoverButton {
         Layout.fillWidth: true
         implicitHeight: 32
         radius: 6
-        color: hovered ? window.palette.danger : window.palette.bg1
-        border.width: 1; border.color: window.palette.bg2
-        Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
-        Text { anchors.centerIn: parent; text: "Reject"; color: parent.hovered ? window.palette.bg0H : window.palette.textLight; font.family: window.palette.font; font.pixelSize: appConfig.scaled(12); font.bold: true }
-        MouseArea { anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onEntered: parent.hovered = true; onExited: parent.hovered = false; onClicked: root.decide(false) }
+        palette: window.palette; appConfig: root.appConfig
+        icon: "Reject"; iconSize: 12; fontBold: true
+        normalBg: window.palette.bg1
+        hoverBg: window.palette.danger
+        normalFg: window.palette.textLight
+        hoverFg: window.palette.bg0H
+        borderWidth: 1; borderColor: window.palette.bg2
+        cursorShape: Qt.PointingHandCursor
+        onClicked: root.decide(false)
       }
-      Rectangle {
-        property bool hovered: false
+      HoverButton {
+        id: acceptBtn
         Layout.fillWidth: true
         implicitHeight: 32
         radius: 6
-        color: hovered ? window.palette.accent : window.palette.bg2
-        border.width: 1; border.color: hovered ? window.palette.accent : window.palette.bg2
-        Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
-        Text { anchors.centerIn: parent; text: "Accept"; color: parent.hovered ? window.palette.bg0H : window.palette.textLight; font.family: window.palette.font; font.pixelSize: appConfig.scaled(12); font.bold: true }
-        MouseArea { anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onEntered: parent.hovered = true; onExited: parent.hovered = false; onClicked: root.decide(true) }
+        palette: window.palette; appConfig: root.appConfig
+        icon: "Accept"; iconSize: 12; fontBold: true
+        normalBg: window.palette.bg2
+        hoverBg: window.palette.accent
+        normalFg: window.palette.textLight
+        hoverFg: window.palette.bg0H
+        borderWidth: 1
+        borderColor: acceptBtn.hovered ? window.palette.accent : window.palette.bg2
+        cursorShape: Qt.PointingHandCursor
+        onClicked: root.decide(true)
       }
     }
 

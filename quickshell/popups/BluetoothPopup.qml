@@ -25,14 +25,37 @@ AnimatedPopup {
   property BluetoothAdapter adapter: Bluetooth.defaultAdapter
   readonly property bool scanning: adapter?.discovering ?? false
 
-  // Ревізія для пересортвання: біндинг ScriptModel.values залежить лише
-  // від складу списку — зміни connected/paired пристроїв його не чіпають
-  property int sortRev: 0
+  // Відсортований список пристроїв. Repeater перестворює ВСІ делегати
+  // при кожному новому масиві (ховер/клік-стан вмирають), тому присвоюємо
+  // лише коли порядок реально змінився — порівняння за адресами.
+  // Перевірка раз на секунду, поки попап відкритий.
+  property var sortedDevices: []
   Timer {
     running: root.visible
     interval: 1000
     repeat: true
-    onTriggered: root.sortRev++
+    onTriggered: root.resortDevices()
+  }
+
+  function sameDeviceOrder(a, b) {
+    if (!a || !b || a.length !== b.length) return false
+    for (var i = 0; i < a.length; ++i) {
+      var da = a[i] ? (a[i].address || "") : ""
+      var db = b[i] ? (b[i].address || "") : ""
+      if (da !== db) return false
+    }
+    return true
+  }
+
+  function resortDevices() {
+    var next = root.adapter ? [...root.adapter.devices.values].sort((a, b) => {
+      if (a.connected && !b.connected) return -1
+      if (b.connected && !a.connected) return 1
+      if (a.bonded && !b.bonded) return -1
+      if (b.bonded && !a.bonded) return 1
+      return (a.name || "").localeCompare(b.name || "")
+    }) : []
+    if (!root.sameDeviceOrder(root.sortedDevices, next)) root.sortedDevices = next
   }
 
   property int screenW: window ? window.screen.width : 1920
@@ -60,6 +83,7 @@ AnimatedPopup {
 
   onVisibleChanged: {
     if (visible) {
+      root.resortDevices()
       anchor.edges = PopupAnchor.None
       anchor.gravity = PopupAnchor.None
       anchor.rect = Qt.rect(
@@ -120,7 +144,7 @@ AnimatedPopup {
       Rectangle {
         property bool hovered: false
         implicitWidth: scanLabel.implicitWidth + 16; height: 24; radius: 4
-        color: scanning ? window.palette.danger : (hovered ? window.palette.hoverOverlay : window.palette.bgLayer)
+        color: scanning ? window.palette.danger : (hovered ? window.palette.bg2 : window.palette.bg1)
         Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
 
         SequentialAnimation on opacity {
@@ -195,19 +219,10 @@ AnimatedPopup {
     }
 
     // Список Bluetooth пристроїв
+    // Модель — стабільний масив: делегати живуть, поки не зміниться
+    // порядок (див. resortDevices), ховер не злітає щосекунди
       Repeater {
-        model: ScriptModel {
-          values: {
-            root.sortRev // залежність: пересортовувати при змінах стану пристроїв
-            return adapter ? [...adapter.devices.values].sort((a, b) => {
-              if (a.connected && !b.connected) return -1;
-              if (b.connected && !a.connected) return 1;
-              if (a.bonded && !b.bonded) return -1;
-              if (b.bonded && !a.bonded) return 1;
-              return (a.name || "").localeCompare(b.name || "");
-            }) : []
-          }
-        }
+        model: root.sortedDevices
 
       delegate: Item {
         id: device
@@ -283,7 +298,7 @@ AnimatedPopup {
           Rectangle {
             property bool hovered: false
             implicitWidth: actionLabel.implicitWidth + 12; height: 24; radius: 4
-            color: device.devConnected ? window.palette.bgLayer : (modelData.pairing ? window.palette.yellow : (modelData.paired ? (hovered ? window.palette.widgetFg : window.palette.accent) : (hovered ? window.palette.hoverOverlay : window.palette.bgLayer)))
+            color: device.devConnected ? window.palette.bg1 : (modelData.pairing ? window.palette.yellow : (modelData.paired ? (hovered ? window.palette.widgetFg : window.palette.accent) : (hovered ? window.palette.bg2 : window.palette.bg1)))
             Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
             opacity: device.devLoading ? 0.5 : 1
             enabled: !device.devLoading
@@ -323,55 +338,28 @@ AnimatedPopup {
           // Довіра пристрою: trusted-пристрої підключають сервіси без
           // запиту авторизації. Клік перемикає Device1.Trusted на місці —
           // не лише в момент парингу
-          Rectangle {
-            property bool hovered: false
+          HoverButton {
             width: 24; height: 24; radius: 4
-            color: hovered ? window.palette.hoverOverlay : window.palette.bgLayer
-            Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
+            palette: window.palette; appConfig: root.appConfig
+            icon: modelData.trusted ? "\uF023" : "\uF09C"; iconSize: 11
+            hoverBg: window.palette.bg2
+            hoverFg: window.palette.green
+            cursorShape: Qt.PointingHandCursor
+            normalFg: modelData.trusted ? window.palette.accent : window.palette.mutedAlt
             visible: modelData.paired
-
-            HoverText {
-              anchors.centerIn: parent
-              // замок: закритий — довіряємо, відкритий — ні
-              text: modelData.trusted ? "\uF023" : "\uF09C"
-              palette: window.palette
-              appConfig: window.appConfig
-              normalColor: modelData.trusted ? window.palette.accent : window.palette.mutedAlt
-              hovered: parent.hovered
-              font.pixelSize: appConfig.scaled(11)
-            }
-
-            MouseArea {
-              id: trustArea
-              anchors.fill: parent
-              hoverEnabled: true
-              cursorShape: Qt.PointingHandCursor
-              onEntered: parent.hovered = true
-              onExited: parent.hovered = false
-              onClicked: modelData.trusted = !modelData.trusted
-            }
+            onClicked: modelData.trusted = !modelData.trusted
           }
 
           // Кнопка забути пристрій
-          Rectangle {
-            property bool hovered: false
+          HoverButton {
             width: 24; height: 24; radius: 4
-            color: hovered ? window.palette.hoverOverlay : window.palette.bgLayer
-            Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
+            palette: window.palette; appConfig: root.appConfig
+            icon: "\u2716"; iconSize: 12
+            hoverBg: window.palette.bg2
+            normalFg: window.palette.danger
+            hoverFg: window.palette.danger
             visible: modelData.paired
-            Text {
-              anchors.centerIn: parent
-              text: "\u2716"
-              color: window.palette.danger
-              font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
-            }
-            MouseArea {
-              anchors.fill: parent
-              hoverEnabled: true
-              onEntered: parent.hovered = true
-              onExited: parent.hovered = false
-              onClicked: modelData.forget()
-            }
+            onClicked: modelData.forget()
           }
         }
       }

@@ -352,73 +352,43 @@ AnimatedPopup {
       Layout.fillWidth: true
       spacing: 6
       // Пінг
-      Rectangle {
-        property bool hovered: false
-        Layout.fillWidth: true; height: 28; radius: 6
-        color: hovered ? window.palette.accent : window.palette.bg1
-        border.width: 1; border.color: window.palette.bg2
-        Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
+      HoverButton {
+        Layout.fillWidth: true; height: 28
+        palette: window.palette; appConfig: root.appConfig
+        icon: "\uF1EB Ping"; iconSize: 11
+        hoverBg: window.palette.accent
+        normalFg: window.palette.textLight
+        hoverFg: window.palette.bg0H
+        borderWidth: 1; borderColor: window.palette.bg2
         enabled: root.reachable
         opacity: root.reachable ? 1 : 0.5
-        Text {
-          anchors.centerIn: parent
-          text: "\uF1EB Ping"
-          color: parent.hovered ? window.palette.bg0H : window.palette.textLight
-          font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
-        }
-        MouseArea {
-          anchors.fill: parent
-          hoverEnabled: true
-          onEntered: parent.hovered = true
-          onExited: parent.hovered = false
-          onClicked: root.doPing()
-        }
+        onClicked: root.doPing()
       }
       // Пошук телефону
-      Rectangle {
-        property bool hovered: false
-        Layout.fillWidth: true; height: 28; radius: 6
-        color: hovered ? window.palette.accent : window.palette.bg1
-        border.width: 1; border.color: window.palette.bg2
-        Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
+      HoverButton {
+        Layout.fillWidth: true; height: 28
+        palette: window.palette; appConfig: root.appConfig
+        icon: "\uF028 Ring"; iconSize: 11
+        hoverBg: window.palette.accent
+        normalFg: window.palette.textLight
+        hoverFg: window.palette.bg0H
+        borderWidth: 1; borderColor: window.palette.bg2
         enabled: root.reachable
         opacity: root.reachable ? 1 : 0.5
-        Text {
-          anchors.centerIn: parent
-          text: "\uF028 Ring"
-          color: parent.hovered ? window.palette.bg0H : window.palette.textLight
-          font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
-        }
-        MouseArea {
-          anchors.fill: parent
-          hoverEnabled: true
-          onEntered: parent.hovered = true
-          onExited: parent.hovered = false
-          onClicked: root.doRing()
-        }
+        onClicked: root.doRing()
       }
       // Поділитися
-      Rectangle {
-        property bool hovered: false
-        Layout.fillWidth: true; height: 28; radius: 6
-        color: hovered ? window.palette.accent : window.palette.bg1
-        Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
+      HoverButton {
+        Layout.fillWidth: true; height: 28
+        palette: window.palette; appConfig: root.appConfig
+        icon: "\uF0EE Share"; iconSize: 11
+        hoverBg: window.palette.accent
+        normalFg: window.palette.textLight
+        hoverFg: window.palette.bg0H
+        cursorShape: Qt.PointingHandCursor
         enabled: root.reachable
         opacity: root.reachable ? 1 : 0.5
-        Text {
-          anchors.centerIn: parent
-          text: "\uF0EE Share"
-          color: parent.hovered ? window.palette.bg0H : window.palette.textLight
-          font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
-        }
-        MouseArea {
-          anchors.fill: parent
-          hoverEnabled: true
-          cursorShape: Qt.PointingHandCursor
-          onEntered: parent.hovered = true
-          onExited: parent.hovered = false
-          onClicked: root.doSharePick()
-        }
+        onClicked: root.doSharePick()
       }
     }
 
@@ -482,27 +452,17 @@ AnimatedPopup {
         font.family: window.palette.font; font.pixelSize: appConfig.scaled(11); font.bold: true
         Layout.fillWidth: true
       }
-      Rectangle {
-        property bool hovered: false
-        width: 90; height: 24; radius: 6
-        color: hovered ? window.palette.accent : window.palette.bg1
-        border.width: 1; border.color: window.palette.bg2
-        Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
+      HoverButton {
+        width: 90; height: 24
+        palette: window.palette; appConfig: root.appConfig
+        icon: "Push"; iconSize: 11
+        hoverBg: window.palette.accent
+        normalFg: window.palette.textLight
+        hoverFg: window.palette.bg0H
+        borderWidth: 1; borderColor: window.palette.bg2
         enabled: root.reachable
         opacity: root.reachable ? 1 : 0.5
-        Text {
-          anchors.centerIn: parent
-          text: "Push"
-          color: parent.hovered ? window.palette.bg0H : window.palette.textLight
-          font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
-        }
-        MouseArea {
-          anchors.fill: parent
-          hoverEnabled: true
-          onEntered: parent.hovered = true
-          onExited: parent.hovered = false
-          onClicked: root.doClipboardPush()
-        }
+        onClicked: root.doClipboardPush()
       }
     }
     Text {
@@ -527,38 +487,41 @@ AnimatedPopup {
         font.family: window.palette.font; font.pixelSize: appConfig.scaled(11); font.bold: true
         Layout.fillWidth: true
       }
-      Rectangle {
-        property bool hovered: false
-        width: 56; height: 22; radius: 6
-        color: hovered ? window.palette.accent : window.palette.bg1
-        border.width: 1; border.color: window.palette.bg2
-        Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
+      HoverButton {
+        width: 56; height: 22
+        palette: window.palette; appConfig: root.appConfig
+        icon: "Browse"; iconSize: 10
+        hoverBg: window.palette.accent
+        normalFg: window.palette.textLight
+        hoverFg: window.palette.bg0H
+        borderWidth: 1; borderColor: window.palette.bg2
         enabled: root.reachable
         opacity: root.reachable ? 1 : 0.5
-        Text { anchors.centerIn: parent; text: "Browse"; color: parent.hovered ? window.palette.bg0H : window.palette.textLight; font.family: window.palette.font; font.pixelSize: appConfig.scaled(10) }
-        MouseArea { anchors.fill: parent; hoverEnabled: true; onEntered: parent.hovered = true; onExited: parent.hovered = false; onClicked: root.doSftpBrowse() }
+        onClicked: root.doSftpBrowse()
       }
-      Rectangle {
-        property bool hovered: false
-        width: 56; height: 22; radius: 6
-        color: hovered ? window.palette.accent : window.palette.bg1
-        border.width: 1; border.color: window.palette.bg2
-        Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
+      HoverButton {
+        width: 56; height: 22
+        palette: window.palette; appConfig: root.appConfig
+        icon: "Mount"; iconSize: 10
+        hoverBg: window.palette.accent
+        normalFg: window.palette.textLight
+        hoverFg: window.palette.bg0H
+        borderWidth: 1; borderColor: window.palette.bg2
         enabled: root.reachable
         opacity: root.reachable ? 1 : 0.5
-        Text { anchors.centerIn: parent; text: "Mount"; color: parent.hovered ? window.palette.bg0H : window.palette.textLight; font.family: window.palette.font; font.pixelSize: appConfig.scaled(10) }
-        MouseArea { anchors.fill: parent; hoverEnabled: true; onEntered: parent.hovered = true; onExited: parent.hovered = false; onClicked: root.doSftpMount() }
+        onClicked: root.doSftpMount()
       }
-      Rectangle {
-        property bool hovered: false
-        width: 64; height: 22; radius: 6
-        color: hovered ? window.palette.accent : window.palette.bg1
-        border.width: 1; border.color: window.palette.bg2
-        Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
+      HoverButton {
+        width: 64; height: 22
+        palette: window.palette; appConfig: root.appConfig
+        icon: "Unmount"; iconSize: 10
+        hoverBg: window.palette.accent
+        normalFg: window.palette.textLight
+        hoverFg: window.palette.bg0H
+        borderWidth: 1; borderColor: window.palette.bg2
         enabled: root.reachable
         opacity: root.reachable ? 1 : 0.5
-        Text { anchors.centerIn: parent; text: "Unmount"; color: parent.hovered ? window.palette.bg0H : window.palette.textLight; font.family: window.palette.font; font.pixelSize: appConfig.scaled(10) }
-        MouseArea { anchors.fill: parent; hoverEnabled: true; onEntered: parent.hovered = true; onExited: parent.hovered = false; onClicked: root.doSftpUnmount() }
+        onClicked: root.doSftpUnmount()
       }
     }
     Text {
@@ -610,25 +573,16 @@ AnimatedPopup {
         color: window.palette.mutedAlt
         font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
       }
-      Rectangle {
-        property bool hovered: false
+      HoverButton {
         width: 48; height: 20; radius: 4
-        color: hovered ? window.palette.accent : window.palette.bg1
-        border.width: 1; border.color: window.palette.bg2
+        palette: window.palette; appConfig: root.appConfig
+        icon: "Clear"; iconSize: 10
+        hoverBg: window.palette.accent
+        normalFg: window.palette.mutedAlt
+        hoverFg: window.palette.bg0H
+        borderWidth: 1; borderColor: window.palette.bg2
         visible: svc && svc.recentNotifications.length > 0
-        Text {
-          anchors.centerIn: parent
-          text: "Clear"
-          color: parent.hovered ? window.palette.bg0H : window.palette.mutedAlt
-          font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
-        }
-        MouseArea {
-          anchors.fill: parent
-          hoverEnabled: true
-          onEntered: parent.hovered = true
-          onExited: parent.hovered = false
-          onClicked: svc.clearNotifications()
-        }
+        onClicked: svc.clearNotifications()
       }
     }
 

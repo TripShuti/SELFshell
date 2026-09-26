@@ -168,23 +168,15 @@ AnimatedPopup {
       Layout.fillWidth: true
       spacing: 4
 
-      Rectangle {
-        property bool hovered: false
+      HoverButton {
         width: 26; height: 26; radius: 4
-        color: hovered ? window.palette.hoverBg : window.palette.bgAlpha
-        Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
-        Text {
-          anchors.centerIn: parent
-          text: "\uF053"; color: window.palette.fg
-          font.family: window.palette.font; font.pixelSize: appConfig.scaled(14)
-        }
-        MouseArea {
-          anchors.fill: parent
-          hoverEnabled: true
-          onEntered: parent.hovered = true
-          onExited: parent.hovered = false
-          onClicked: root.prevMonth()
-        }
+        palette: window.palette; appConfig: root.appConfig
+        icon: "\uF053"; iconSize: 14
+        normalBg: window.palette.bgAlpha
+        hoverBg: window.palette.hoverBg
+        normalFg: window.palette.fg
+        hoverFg: window.palette.fg
+        onClicked: root.prevMonth()
       }
 
       // Назва місяця та рік
@@ -195,23 +187,15 @@ AnimatedPopup {
         color: window.palette.fg; font.family: window.palette.font; font.pixelSize: appConfig.scaled(14); font.bold: true
       }
 
-      Rectangle {
-        property bool hovered: false
+      HoverButton {
         width: 26; height: 26; radius: 4
-        color: hovered ? window.palette.hoverBg : window.palette.bgAlpha
-        Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
-        Text {
-          anchors.centerIn: parent
-          text: "\uF054"; color: window.palette.fg
-          font.family: window.palette.font; font.pixelSize: appConfig.scaled(14)
-        }
-        MouseArea {
-          anchors.fill: parent
-          hoverEnabled: true
-          onEntered: parent.hovered = true
-          onExited: parent.hovered = false
-          onClicked: root.nextMonth()
-        }
+        palette: window.palette; appConfig: root.appConfig
+        icon: "\uF054"; iconSize: 14
+        normalBg: window.palette.bgAlpha
+        hoverBg: window.palette.hoverBg
+        normalFg: window.palette.fg
+        hoverFg: window.palette.fg
+        onClicked: root.nextMonth()
       }
     }
 
@@ -449,28 +433,17 @@ AnimatedPopup {
             }
 
             // Кнопка видалення
-            Rectangle {
-              property bool hovered: false
+            HoverButton {
               width: 22; height: 22; radius: 4
-              color: hovered ? window.palette.red : window.palette.bg2
-              Behavior on color { ColorAnimation { duration: appConfig.anim(120) } }
+              palette: window.palette; appConfig: root.appConfig
+              icon: "x"; iconSize: 12; fontBold: true
+              normalBg: window.palette.bg2
+              hoverBg: window.palette.red
+              normalFg: window.palette.fg
+              hoverFg: window.palette.textLight
+              cursorShape: Qt.PointingHandCursor
               Layout.alignment: Qt.AlignVCenter
-
-              Text {
-                anchors.centerIn: parent
-                text: "x"
-                color: hovered ? window.palette.textLight : window.palette.fg
-                font.family: window.palette.font; font.pixelSize: appConfig.scaled(12); font.bold: true
-              }
-
-              MouseArea {
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onEntered: parent.hovered = true
-                onExited: parent.hovered = false
-                onClicked: root.removeTask(index)
-              }
+              onClicked: root.removeTask(index)
             }
           }
         }

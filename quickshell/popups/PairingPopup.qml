@@ -269,37 +269,21 @@ AnimatedPopup {
              { label: root.acceptLabel(), danger: false, act: true }]
           : [{ label: "Close", danger: true, act: null }]
 
-        delegate: Rectangle {
+        delegate: HoverButton {
           required property var modelData
-          property bool hovered: false
-
           Layout.fillWidth: true
           implicitHeight: 30
           radius: 5
-          color: modelData.danger
-            ? (hovered ? window.palette.danger : window.palette.bgLayer)
-            : (hovered ? window.palette.widgetFg : window.palette.bgLayer)
-          Behavior on color { ColorAnimation { duration: appConfig.anim(150) } }
-
-          Text {
-            anchors.centerIn: parent
-            text: modelData.label
-            color: modelData.danger
-              ? (parent.hovered ? window.palette.bg0H : window.palette.danger)
-              : (parent.hovered ? window.palette.bg0H : window.palette.textLight)
-            font.family: window.palette.font; font.pixelSize: appConfig.scaled(11); font.bold: true
-          }
-
-          MouseArea {
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onEntered: parent.hovered = true
-            onExited: parent.hovered = false
-            onClicked: {
-              if (modelData.act === null) { root.close(); return }
-              root.decide(modelData.act)
-            }
+          palette: window.palette; appConfig: root.appConfig
+          icon: modelData.label; iconSize: 11; fontBold: true
+          normalBg: window.palette.bgLayer
+          hoverBg: modelData.danger ? window.palette.danger : window.palette.widgetFg
+          normalFg: modelData.danger ? window.palette.danger : window.palette.textLight
+          hoverFg: window.palette.bg0H
+          cursorShape: Qt.PointingHandCursor
+          onClicked: {
+            if (modelData.act === null) { root.close(); return }
+            root.decide(modelData.act)
           }
         }
       }

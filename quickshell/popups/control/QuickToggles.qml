@@ -3,6 +3,7 @@
 // ============================================================
 import QtQuick
 import QtQuick.Layouts
+import "../../core"
 
 // Шість кнопок верхнього ряду. Власного стану нема — тільки емісія:
 // відкриття менеджерів форвардяться коренем (його сигнали лишаються,
@@ -25,150 +26,32 @@ RowLayout {
     Layout.fillWidth: true
     spacing: 8
 
-    // Кнопка мережі
-    Rectangle {
-      Layout.fillWidth: true
-      implicitHeight: 24
-      radius: 6
-      color: netArea.containsMouse ? window.palette.bg2 : window.palette.bg1
-      Behavior on color { ColorAnimation { duration: window.appConfig.anim(120) } }
+    // Шість кнопок одним Repeater: іконка + дія з моделі
+    Repeater {
+      model: [
+        { icon: "󰖩", act: "net" },
+        { icon: "", act: "bt" },
+        { icon: "\uF03E", act: "wall" },
+        { icon: "", act: "settings" },
+        { icon: "\uF030", act: "full" },
+        { icon: "\uF125", act: "region" },
+      ]
 
-      Text {
-        anchors.centerIn: parent
-        text: "󰖩"
-        color: netArea.containsMouse ? window.palette.green : window.palette.gray
-        Behavior on color { ColorAnimation { duration: window.appConfig.anim(120) } }
-        font.family: window.palette.font; font.pixelSize: window.appConfig.scaled(13)
-      }
-
-      MouseArea {
-        id: netArea
-        anchors.fill: parent
-        hoverEnabled: true
-        onClicked: root.openNetManager()
-      }
-    }
-
-    // Кнопка Bluetooth
-    Rectangle {
-      Layout.fillWidth: true
-      implicitHeight: 24
-      radius: 6
-      color: btArea.containsMouse ? window.palette.bg2 : window.palette.bg1
-      Behavior on color { ColorAnimation { duration: window.appConfig.anim(120) } }
-
-      Text {
-        anchors.centerIn: parent
-        text: ""
-        color: btArea.containsMouse ? window.palette.green : window.palette.gray
-        Behavior on color { ColorAnimation { duration: window.appConfig.anim(120) } }
-        font.family: window.palette.font; font.pixelSize: window.appConfig.scaled(13)
-      }
-
-      MouseArea {
-        id: btArea
-        anchors.fill: parent
-        hoverEnabled: true
-        onClicked: root.openBtManager()
-      }
-    }
-
-    // Кнопка шпалер
-    Rectangle {
-      Layout.fillWidth: true
-      implicitHeight: 24
-      radius: 6
-      color: wallArea.containsMouse ? window.palette.bg2 : window.palette.bg1
-      Behavior on color { ColorAnimation { duration: window.appConfig.anim(120) } }
-
-      Text {
-        anchors.centerIn: parent
-        text: "\uF03E"
-        color: wallArea.containsMouse ? window.palette.green : window.palette.gray
-        Behavior on color { ColorAnimation { duration: window.appConfig.anim(120) } }
-        font.family: window.palette.font; font.pixelSize: window.appConfig.scaled(13)
-      }
-
-      MouseArea {
-        id: wallArea
-        anchors.fill: parent
-        hoverEnabled: true
-        onClicked: root.openWallpaperPopup()
-      }
-    }
-
-    // Кнопка налаштувань
-    Rectangle {
-      Layout.fillWidth: true
-      implicitHeight: 24
-      radius: 6
-      color: settingsArea.containsMouse ? window.palette.bg2 : window.palette.bg1
-      Behavior on color { ColorAnimation { duration: window.appConfig.anim(120) } }
-
-      Text {
-        anchors.centerIn: parent
-        text: ""
-        color: settingsArea.containsMouse ? window.palette.green : window.palette.gray
-        Behavior on color { ColorAnimation { duration: window.appConfig.anim(120) } }
-        font.family: window.palette.font; font.pixelSize: window.appConfig.scaled(13)
-      }
-
-      MouseArea {
-        id: settingsArea
-        anchors.fill: parent
-        hoverEnabled: true
-        onClicked: root.openSettingsPopup()
-      }
-    }
-
-    // Кнопка скріншота всього екрану
-    Rectangle {
-      Layout.fillWidth: true
-      implicitHeight: 24
-      radius: 6
-      color: fullArea.containsMouse ? window.palette.bg2 : window.palette.bg1
-      Behavior on color { ColorAnimation { duration: window.appConfig.anim(120) } }
-
-      Text {
-        anchors.centerIn: parent
-        text: "\uF030"
-        color: fullArea.containsMouse ? window.palette.green : window.palette.gray
-        Behavior on color { ColorAnimation { duration: window.appConfig.anim(120) } }
-        font.family: window.palette.font; font.pixelSize: window.appConfig.scaled(13)
-      }
-
-      MouseArea {
-        id: fullArea
-        anchors.fill: parent
-        hoverEnabled: true
+      delegate: HoverButton {
+        Layout.fillWidth: true
+        implicitHeight: 24
+        palette: window.palette
+        appConfig: window.appConfig
+        icon: modelData.icon
         onClicked: {
-          root.takeShot("full")
-        }
-      }
-    }
-
-    // Кнопка скріншота області (slurp)
-    Rectangle {
-      Layout.fillWidth: true
-      implicitHeight: 24
-      radius: 6
-      color: regionArea.containsMouse ? window.palette.bg2 : window.palette.bg1
-      Behavior on color { ColorAnimation { duration: window.appConfig.anim(120) } }
-
-      Text {
-        anchors.centerIn: parent
-        text: "\uF125"
-        color: regionArea.containsMouse ? window.palette.green : window.palette.gray
-        Behavior on color { ColorAnimation { duration: window.appConfig.anim(120) } }
-        font.family: window.palette.font; font.pixelSize: window.appConfig.scaled(13)
-      }
-
-      MouseArea {
-        id: regionArea
-        anchors.fill: parent
-        hoverEnabled: true
-        onClicked: {
-          root.takeShot("region")
+          switch (modelData.act) {
+            case "net": root.openNetManager(); break
+            case "bt": root.openBtManager(); break
+            case "wall": root.openWallpaperPopup(); break
+            case "settings": root.openSettingsPopup(); break
+            case "full": root.takeShot("full"); break
+            case "region": root.takeShot("region"); break
+          }
         }
       }
     }
