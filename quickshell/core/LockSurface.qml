@@ -24,6 +24,102 @@ Rectangle {
   readonly property string wallpaperFallback: Qt.resolvedUrl("../wp/wp1.jpg")
   property string wallpaperSource: wallpaperFallback
 
+  // Розкладка клавіатури (як KeyboardLayoutWidget в барі): показ + ЛКМ next,
+  // ПКМ — інлайн-список для прямого вибору. Логіка скопійована з віджета/
+  // попапа, бо LockSurface живе в WlSessionLock і не має доступу до Bar.
+  property string kbLayout: "US"
+  property bool kbHovered: false
+  property bool kbListOpen: false
+  property string kbInitialBuf: ""
+  property string kbNextBuf: ""
+  property string kbMenuDevsBuf: ""
+  property string kbMenuLayoutsBuf: ""
+  property string kbMainKeyboard: ""
+  property string kbActiveKeymap: ""
+  property var kbRawCodes: []
+  property var kbLayoutsModel: []
+  property bool kbMenuDevsDone: false
+  property bool kbMenuLayoutsDone: false
+
+  readonly property string kbDisplayText: {
+    var l = root.kbLayout
+    if (l.indexOf("Ukrainian") >= 0) return "UA"
+    if (l.indexOf("Russian") >= 0) return "RU"
+    if (l.indexOf("German") >= 0) return "DE"
+    if (l.indexOf("French") >= 0) return "FR"
+    if (l.indexOf("(UK)") >= 0) return "UK"
+    if (l.indexOf("English") >= 0 || l.indexOf("(US)") >= 0) return "US"
+    var first = String(l).split(/[\s(-]+/)[0] ?? ""
+    return first.slice(0, 3).toUpperCase()
+  }
+
+  function kbLayoutLabel(code) {
+    var map = {
+      us: "US", ua: "UA", ru: "RU", de: "DE", fr: "FR", gb: "GB", uk: "UK",
+      es: "ES", it: "IT", pl: "PL", cz: "CZ", se: "SE", fi: "FI", no: "NO",
+      tr: "TR", il: "IL", br: "BR", pt: "PT", nl: "NL", be: "BE", ch: "CH",
+      jp: "JP", kr: "KR", cn: "CN"
+    }
+    var key = String(code).toLowerCase().split(/[\s(-]+/)[0]
+    return map[key] || String(code).toUpperCase()
+  }
+
+  function kbActiveIndex(activeKeymap, codes) {
+    var ak = String(activeKeymap || "").toLowerCase()
+    var words = {
+      us: "us", ua: "ukrain", ru: "russi", de: "german", fr: "french",
+      gb: "english (uk)", uk: "english (uk)", es: "spanish", it: "italian",
+      pl: "polish", cz: "czech", se: "swedish", fi: "finnish", tr: "turkish",
+      il: "hebrew", br: "brazil", pt: "portuguese", nl: "dutch", jp: "japanese",
+      kr: "korean", cn: "chinese"
+    }
+    for (var i = 0; i < codes.length; ++i) {
+      var c = String(codes[i]).toLowerCase()
+      var w = words[c]
+      if (w && ak.indexOf(w) >= 0) return i
+    }
+    for (var j = 0; j < codes.length; ++j) {
+      var n = String(codes[j]).toLowerCase().replace(/[^a-z]/g, "")
+      if (n !== "" && ak.replace(/[^a-z]/g, "").indexOf(n) >= 0) return j
+    }
+    return -1
+  }
+
+  function kbRebuildModel() {
+    if (!root.kbMenuDevsDone || !root.kbMenuLayoutsDone) return
+    var idx = root.kbActiveIndex(root.kbActiveKeymap, root.kbRawCodes)
+    var out = []
+    for (var i = 0; i < root.kbRawCodes.length; ++i) {
+      out.push({ label: root.kbLayoutLabel(root.kbRawCodes[i]), active: i === idx })
+    }
+    root.kbLayoutsModel = out
+  }
+
+  function kbRefreshMenu() {
+    root.kbMenuDevsDone = false
+    root.kbMenuLayoutsDone = false
+    root.kbMenuDevsBuf = ""
+    root.kbMenuLayoutsBuf = ""
+    kbMenuDevsProc.running = true
+    kbMenuLayoutsProc.running = true
+  }
+
+  function kbPickKeyboard(obj) {
+    var keyboards = obj.keyboards ?? []
+    for (var i = 0; i < keyboards.length; ++i) {
+      if (keyboards[i].active_keymap && keyboards[i].main === true)
+        return keyboards[i]
+    }
+    for (var j = 0; j < keyboards.length; ++j) {
+      var k = keyboards[j]
+      if (k.active_keymap && k.name.indexOf("keyboard") < 0 && k.name.indexOf("system") < 0 && k.name.indexOf("consumer") < 0)
+        return k
+    }
+    if (keyboards.length > 0 && keyboards[0].active_keymap)
+      return keyboards[0]
+    return null
+  }
+
   // Отримує шлях шпалери для lock-скріна (current-lock.jpg або фолбек).
   // Читаємо через onDataChanged колектора (як у WallpaperPopup): у
   // onExited текст ще може бути неповним — тоді зостається wp1.jpg.
@@ -43,10 +139,147 @@ Rectangle {
     }
   }
 
+  // Поточна розкладка при старті (як initialProc у KeyboardLayoutWidget)
+  Process {
+    id: kbInitialProc
+    command: ["hyprctl", "devices", "-j"]
+    onStarted: root.kbInitialBuf = ""
+    stdout: SplitParser {
+      splitMarker: "\n"
+      onRead: data => {
+        root.kbInitialBuf += (data ?? "")
+        var obj = null
+        try { obj = JSON.parse(root.kbInitialBuf) } catch (e) {}
+        if (obj === null) return
+        root.kbInitialBuf = ""
+        var kb = root.kbPickKeyboard(obj)
+        if (kb !== null) {
+          root.kbLayout = kb.active_keymap
+          root.kbActiveKeymap = kb.active_keymap
+        }
+      }
+    }
+  }
+
+  // Стеження за зміною розкладки через Hyprland socket (як socketProc у віджеті)
+  Process {
+    id: kbSocketProc
+    command: ["sh", "-c", "while true; do socat - UNIX-CONNECT:$XDG_RUNTIME_DIR/hypr/$HYPRLAND_INSTANCE_SIGNATURE/.socket2.sock 2>/dev/null; sleep 1; done"]
+    stdout: SplitParser {
+      splitMarker: "\n"
+      onRead: data => {
+        var text = (data ?? "").trim()
+        if (text === "") return
+        if (text.indexOf("activelayout") === 0) {
+          var eventParts = text.split(">>")
+          if (eventParts.length >= 2) {
+            var dataParts = eventParts[1].split(",")
+            var name = dataParts[dataParts.length - 1].trim()
+            root.kbLayout = name
+            root.kbActiveKeymap = name
+            root.kbRebuildModel()
+          }
+        }
+      }
+    }
+  }
+
+  // ЛКМ — next розкладка: ім'я main-клавіатури, потім switchxkblayout next
+  Process {
+    id: kbNextProc
+    command: ["hyprctl", "devices", "-j"]
+    onStarted: root.kbNextBuf = ""
+    stdout: SplitParser {
+      splitMarker: "\n"
+      onRead: data => {
+        root.kbNextBuf += (data ?? "")
+        var obj = null
+        try { obj = JSON.parse(root.kbNextBuf) } catch (e) {}
+        if (obj === null) return
+        root.kbNextBuf = ""
+        var mainName = ""
+        var keyboards = obj.keyboards ?? []
+        for (var i = 0; i < keyboards.length; ++i) {
+          if (keyboards[i].main === true) { mainName = keyboards[i].name; break }
+        }
+        if (mainName === "" && keyboards.length > 0) mainName = keyboards[0].name
+        if (mainName !== "") {
+          kbSwitchProc.command = ["hyprctl", "switchxkblayout", mainName, "next"]
+          kbSwitchProc.running = true
+        }
+      }
+    }
+  }
+
+  // ПКМ — інлайн-список: main-клавіатура + активна розкладка
+  Process {
+    id: kbMenuDevsProc
+    command: ["hyprctl", "devices", "-j"]
+    onStarted: root.kbMenuDevsBuf = ""
+    stdout: SplitParser {
+      splitMarker: "\n"
+      onRead: data => {
+        root.kbMenuDevsBuf += (data ?? "")
+        var obj = null
+        try { obj = JSON.parse(root.kbMenuDevsBuf) } catch (e) {}
+        if (obj === null) return
+        root.kbMenuDevsBuf = ""
+        var keyboards = obj.keyboards ?? []
+        for (var i = 0; i < keyboards.length; ++i) {
+          if (keyboards[i].main === true) {
+            root.kbMainKeyboard = keyboards[i].name
+            root.kbActiveKeymap = keyboards[i].active_keymap ?? ""
+            break
+          }
+        }
+        if (root.kbMainKeyboard === "" && keyboards.length > 0) {
+          root.kbMainKeyboard = keyboards[0].name
+          root.kbActiveKeymap = keyboards[0].active_keymap ?? ""
+        }
+        root.kbMenuDevsDone = true
+        root.kbRebuildModel()
+      }
+    }
+  }
+
+  // ПКМ — інлайн-список: коди розкладок з input:kb_layout
+  Process {
+    id: kbMenuLayoutsProc
+    command: ["hyprctl", "getoption", "input:kb_layout", "-j"]
+    onStarted: root.kbMenuLayoutsBuf = ""
+    stdout: SplitParser {
+      splitMarker: "\n"
+      onRead: data => {
+        root.kbMenuLayoutsBuf += (data ?? "")
+        var obj = null
+        try { obj = JSON.parse(root.kbMenuLayoutsBuf) } catch (e) {}
+        if (obj === null) return
+        root.kbMenuLayoutsBuf = ""
+        var codes = String(obj.str ?? "").split(",")
+        var out = []
+        for (var i = 0; i < codes.length; ++i) {
+          var code = codes[i].trim()
+          if (code !== "") out.push(code)
+        }
+        root.kbRawCodes = out
+        root.kbMenuLayoutsDone = true
+        root.kbRebuildModel()
+      }
+    }
+  }
+
+  Process {
+    id: kbSwitchProc
+    command: ["hyprctl", "switchxkblayout", "", "next"]
+  }
+
   Component.onCompleted: {
     curProc.running = true
+    kbInitialProc.running = true
+    kbSocketProc.running = true
     entranceAnim.start()
   }
+  Component.onDestruction: kbSocketProc.running = false
 
   color: "#000000"
 
@@ -70,6 +303,7 @@ Rectangle {
     PauseAnimation { duration: root._d(60) }
     ParallelAnimation {
       NumberAnimation { target: powerRow; property: "opacity"; from: 0; to: 1; duration: root._d(200); easing.type: Easing.OutCubic }
+      NumberAnimation { target: kbBadge; property: "opacity"; from: 0; to: 1; duration: root._d(200); easing.type: Easing.OutCubic }
     }
   }
 
@@ -82,7 +316,10 @@ Rectangle {
   // на полі пароля (необхідно для багатомоніторних конфігурацій)
   MouseArea {
     anchors.fill: parent
-    onClicked: hiddenInput.forceActiveFocus()
+    onClicked: {
+      root.kbListOpen = false
+      hiddenInput.forceActiveFocus()
+    }
   }
 
   // Шпалера як фон з блюром
@@ -172,9 +409,18 @@ Rectangle {
 
     Rectangle {
       id: inputBg
-      implicitWidth: 280
+      // Єдина дитина колонки — поле завжди строго по центру; бейдж
+      // розкладки живе всередині (якори до parent валідні). z щоб меню
+      // розкладки перекривало текст помилки під полем.
+      z: 2
+      // Розширюється під довгий пароль миттєво (без Behavior: анімована
+      // ширина відставала від точок і вони на мить обрізались). Далі
+      // максимуму точки скроляться через dotsViewport, краї цілі (clip).
+      implicitWidth: Math.max(280, Math.min(dotsRow.implicitWidth + 56, 560, Math.max(0, root.width - 220)))
       implicitHeight: 46
       radius: 23
+      // Без clip: бейдж — дитина inputBg поза його межами, різати його
+      // не можна; точки ріже dotsViewport з власним clip нижче
       color: root.palette.bg0H
       opacity: hiddenInput.activeFocus ? 0.7 : 0.5
       border.width: hiddenInput.activeFocus ? 1 : 0
@@ -206,22 +452,189 @@ Rectangle {
         }
       }
 
-      // Анімовані точки замість символів
-      Row {
-        anchors.centerIn: parent
-        spacing: 6
+      // Анімовані точки замість символів. В'юпорт з полями + автоскрол
+      // до хвоста: поки влазять — по центру, довший пароль — видно
+      // останні символи, краї пігулки не розриваються (clip на inputBg).
+      Item {
+        id: dotsViewport
+        anchors.fill: parent
+        anchors.leftMargin: 28
+        anchors.rightMargin: 28
+        clip: true
 
-        Repeater {
-          model: hiddenInput.text.length
+        Row {
+          id: dotsRow
+          spacing: 6
+          anchors.verticalCenter: parent.verticalCenter
+          x: Math.min((parent.width - width) / 2, parent.width - width)
+          Behavior on x { NumberAnimation { duration: root._d(150); easing.type: Easing.OutCubic } }
 
-          delegate: Text {
-            text: "\u25CF"
-            color: root.palette.textLight
+          Repeater {
+            model: hiddenInput.text.length
+
+            delegate: Text {
+              text: "\u25CF"
+              color: root.palette.textLight
+              font.family: root.palette.font
+              font.pixelSize: 12
+
+              NumberAnimation on scale { from: 0; to: 1; duration: root._d(400); easing.type: Easing.OutCubic }
+              NumberAnimation on opacity { from: 0; to: 1; duration: root._d(350) }
+            }
+          }
+        }
+      }
+
+      // Бейдж розкладки праворуч від поля (дитина inputBg — якори до
+      // parent валідні). ЛКМ — next (як віджет в барі), ПКМ — інлайн-
+      // список. Кліки повертають фокус паролю вручну.
+      Item {
+        id: kbBadge
+        anchors {
+          left: parent.right
+          verticalCenter: parent.verticalCenter
+          leftMargin: 10
+        }
+        width: kbPill.implicitWidth
+        height: kbPill.implicitHeight
+        opacity: 0
+
+        Rectangle {
+          id: kbPill
+          anchors.centerIn: parent
+          implicitWidth: kbText.implicitWidth + 30
+          implicitHeight: 34
+          radius: 17
+          color: root.palette.bg0H
+          opacity: kbMouse.containsMouse ? 0.85 : 0.6
+          border.width: kbMouse.containsMouse ? 1 : 0
+          border.color: root.palette.mutedAlt
+          Behavior on opacity { NumberAnimation { duration: root._d(150) } }
+
+          Text {
+            id: kbText
+            anchors.centerIn: parent
+            text: root.kbDisplayText
+            color: root.kbHovered ? root.palette.green : root.palette.textLight
             font.family: root.palette.font
-            font.pixelSize: 12
+            font.pixelSize: 14
+            scale: root.kbHovered ? 1.08 : 1.0
+            Behavior on color { ColorAnimation { duration: root._d(220) } }
+            Behavior on scale {
+              NumberAnimation { duration: root._d(120); easing.type: Easing.OutBack; easing.overshoot: 2.5 }
+            }
+          }
 
-            NumberAnimation on scale { from: 0; to: 1; duration: root._d(400); easing.type: Easing.OutCubic }
-            NumberAnimation on opacity { from: 0; to: 1; duration: root._d(350) }
+          MouseArea {
+            id: kbMouse
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
+            hoverEnabled: true
+            onEntered: root.kbHovered = true
+            onExited: root.kbHovered = false
+            onClicked: mouse => {
+              if (mouse.button === Qt.LeftButton) {
+                root.kbListOpen = false
+                kbNextProc.running = true
+              } else {
+                if (root.kbListOpen) {
+                  root.kbListOpen = false
+                } else {
+                  root.kbRefreshMenu()
+                  root.kbListOpen = true
+                }
+              }
+              hiddenInput.forceActiveFocus()
+            }
+          }
+        }
+
+        Rectangle {
+          id: kbMenu
+          anchors {
+            top: kbPill.bottom
+            right: kbPill.right
+            topMargin: 8
+          }
+          width: 140
+          height: kbMenuCol.implicitHeight + 16
+          radius: 10
+          color: root.palette.bg0H
+          opacity: 0.95
+          border.width: 1
+          border.color: root.palette.mutedAlt
+          visible: root.kbListOpen && root.kbLayoutsModel.length > 0
+
+          Column {
+            id: kbMenuCol
+            anchors {
+              left: parent.left
+              right: parent.right
+              top: parent.top
+              topMargin: 8
+              leftMargin: 6
+              rightMargin: 6
+            }
+            spacing: 2
+
+            Repeater {
+              model: root.kbLayoutsModel
+
+              delegate: Rectangle {
+                required property var modelData
+                required property int index
+                readonly property bool isActive: modelData.active
+
+                width: kbMenuCol.width
+                height: 28
+                radius: 6
+                color: kbRowArea.containsMouse ? root.palette.bg2 : "transparent"
+                Behavior on color { ColorAnimation { duration: root._d(120) } }
+
+                Text {
+                  anchors {
+                    left: parent.left
+                    leftMargin: 10
+                    verticalCenter: parent.verticalCenter
+                  }
+                  text: modelData.label
+                  color: isActive ? root.palette.green : root.palette.fg
+                  font.family: root.palette.font
+                  font.pixelSize: 12
+                  font.bold: isActive
+                }
+
+                Rectangle {
+                  opacity: isActive ? 1 : 0
+                  anchors {
+                    right: parent.right
+                    rightMargin: 10
+                    verticalCenter: parent.verticalCenter
+                  }
+                  width: 6
+                  height: 6
+                  radius: 3
+                  color: root.palette.green
+                  Behavior on opacity { NumberAnimation { duration: root._d(150); easing.type: Easing.OutCubic } }
+                }
+
+                MouseArea {
+                  id: kbRowArea
+                  anchors.fill: parent
+                  cursorShape: Qt.PointingHandCursor
+                  hoverEnabled: true
+                  onClicked: {
+                    if (root.kbMainKeyboard !== "") {
+                      kbSwitchProc.command = ["hyprctl", "switchxkblayout", root.kbMainKeyboard, String(index)]
+                      kbSwitchProc.running = true
+                    }
+                    root.kbListOpen = false
+                    hiddenInput.forceActiveFocus()
+                  }
+                }
+              }
+            }
           }
         }
       }
