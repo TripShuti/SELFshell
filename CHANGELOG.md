@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Lockscreen keyboard layout** — `LockSurface` shows the current layout next to the password field (same mapping as the bar widget): left-click cycles to the next layout, right-click opens an inline list for direct selection. The password pill grows with long passwords and dots auto-scroll to the tail instead of spilling past the edges.
 
+### Changed
+
+- **Shared keyboard/hove/time/JSON plumbing** — new `core/KeyboardLayoutState` (single source of truth for the bar widget, layout popup and lockscreen), `core/JsonProcess` (hyprctl pretty-JSON accumulation), `scripts/Format.js` (`formatTime`); `HoverItem` gains `rightClicked`/`wheel`/`cursorShape` and 8 bar widgets drop their hand-rolled hover for it. No visual or behavior changes.
+
 ## [0.12.0] - 2026-09-24
 
 ### Added

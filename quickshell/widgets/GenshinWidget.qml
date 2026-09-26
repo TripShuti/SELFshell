@@ -5,18 +5,16 @@ import "../core"
 import QtQuick
 import QtQuick.Layouts
 
-// Віджет Genshin на панелі — смола та статус
-Item {
+// Віджет Genshin на панелі — смола та статус.
+// Клік форвардиться сигналом HoverItem.clicked (Bar відкриває попап);
+// ПКМ ковтається як раніше (раніше ігнорувався в onClicked).
+HoverItem {
   id: root
 
   required property QtObject window
-  signal clicked()
 
   property string resinText: "\uF737 0/200"
   property string resinClass: "normal"
-
-  // Hover-стан для фідбеку (HoverText-рецепт: колір + масштаб)
-  property bool hovered: false
 
   property string resinIconSource: "../assets/resin2.png"
 
@@ -79,18 +77,6 @@ Item {
       }
 
       onVisibleChanged: if (!visible) opacity = 1.0
-    }
-  }
-
-  MouseArea {
-    anchors.fill: parent
-    acceptedButtons: Qt.LeftButton | Qt.RightButton
-    hoverEnabled: true
-    onEntered: root.hovered = true
-    onExited: root.hovered = false
-    onClicked: mouse => {
-      if (mouse.button === Qt.LeftButton)
-        root.clicked()
     }
   }
 }

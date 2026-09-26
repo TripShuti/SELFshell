@@ -3,6 +3,7 @@
 // ============================================================
 import QtQuick
 import QtQuick.Layouts
+import "../../scripts/Format.js" as Format
 
 // Секція плейлісту. Дані черги — з TrackListService (прокидається об'єктом);
 // цільову висоту рахує корінь (_updatePlaylistTarget), сюди приходить готове
@@ -20,16 +21,6 @@ Item {
   Layout.preferredHeight: sectionHeight
   visible: sectionHeight > 0
   clip: true
-
-  // NOTE: дубль форматування часу з PlaybackControls — правити обидва
-  // (спільний модуль відхилено свідомо: два споживачі не варті нового файлу;
-  // якщо з'явиться третій — переглянути).
-  function formatTime(secs) {
-    if (isNaN(secs) || secs < 0) return "0:00"
-    var m = Math.floor(secs / 60)
-    var s = Math.floor(secs % 60)
-    return m + ":" + (s < 10 ? "0" : "") + s
-  }
 
   // Прокручує список плейлісту до поточного треку.
   // mode: ListView.Beginning — при відкритті/перезавантаженні (поточний зверху),
@@ -173,7 +164,7 @@ Item {
             }
 
             Text {
-              text: formatTime((modelData?.length ?? 0) / 1000000)
+              text: Format.formatTime((modelData?.length ?? 0) / 1000000)
               color: window.palette.gray
               font.family: window.palette.font; font.pixelSize: window.appConfig.scaled(10)
             }

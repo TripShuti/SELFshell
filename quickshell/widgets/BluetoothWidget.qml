@@ -7,13 +7,12 @@ import Quickshell
 import Quickshell.Bluetooth
 import "../core"
 
-// Віджет Bluetooth на панелі — іконка + батарея
-Item {
+// Віджет Bluetooth на панелі — іконка + батарея.
+// Клік форвардиться сигналом HoverItem.clicked (Bar відкриває попап).
+HoverItem {
   id: root
 
   required property QtObject window
-  signal clicked()
-  property bool hovered: false
 
   property BluetoothAdapter adapter: Bluetooth.defaultAdapter
 
@@ -89,13 +88,5 @@ Item {
       Behavior on color { ColorAnimation { duration: window.appConfig.anim(220) } }
       Behavior on scale { NumberAnimation { duration: window.appConfig.anim(120); easing.type: Easing.OutBack; easing.overshoot: 2.5 } }
     }
-  }
-
-  MouseArea {
-    anchors.fill: parent
-    hoverEnabled: true
-    onEntered: root.hovered = true
-    onExited: root.hovered = false
-    onClicked: root.clicked()
   }
 }

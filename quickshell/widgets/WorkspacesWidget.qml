@@ -32,12 +32,9 @@ Item {
       delegate: Item {
         required property HyprlandWorkspace modelData
 
-        // Hover-стан рядка (HoverText-рецепт: колір + масштаб)
-        property bool hovered: false
-
         readonly property color dotColor: modelData.focused ? window.palette.green
           : (modelData.urgent ? window.palette.red
-          : (hovered ? window.palette.green
+          : (hov.hovered ? window.palette.green
           : (modelData.active ? window.palette.light : window.palette.muted)))
 
         readonly property var wnds: modelData.windows ?? []
@@ -57,7 +54,7 @@ Item {
             font.family: window.palette.font
             font.pixelSize: window.appConfig.scaled(14)
             font.bold: modelData.focused
-            scale: (modelData.focused || hovered) ? 1.15 : 1.0
+            scale: (modelData.focused || hov.hovered) ? 1.15 : 1.0
 
             Behavior on color { ColorAnimation { duration: window.appConfig.anim(220) } }
             Behavior on scale {
@@ -93,16 +90,11 @@ Item {
           }
         }
 
-        MouseArea {
+        HoverItem {
+          id: hov
           anchors.fill: parent
-          acceptedButtons: Qt.LeftButton | Qt.RightButton
-          hoverEnabled: true
-          onEntered: hovered = true
-          onExited: hovered = false
-          onClicked: mouse => {
-            if (mouse.button === Qt.LeftButton) modelData.activate()
-            else root.openPopup(modelData, parent)
-          }
+          onClicked: modelData.activate()
+          onRightClicked: root.openPopup(modelData, hov)
           onWheel: wheel => {
             // Lua-синтаксис Hyprland 0.56+: класичні dispatch-команди
             // оцінюються як lua-вираз в обгортці hl.dispatch(...)

@@ -5,15 +5,14 @@ import "../core"
 import QtQuick
 import QtQuick.Layouts
 
-// Віджет трекера на панелі — активний час сьогодні, клік відкриває попап
-Item {
+// Віджет трекера на панелі — активний час сьогодні, клік відкриває попап.
+// Клік форвардиться сигналом HoverItem.clicked.
+HoverItem {
   id: root
 
   required property QtObject window
-  signal clicked()
 
   property string todayText: ""
-  property bool hovered: false
 
   implicitWidth: layout.implicitWidth
   implicitHeight: parent?.height ?? 36
@@ -44,14 +43,5 @@ Item {
         NumberAnimation { duration: window.appConfig.anim(120); easing.type: Easing.OutBack; easing.overshoot: 2.5 }
       }
     }
-  }
-
-  MouseArea {
-    anchors.fill: parent
-    acceptedButtons: Qt.LeftButton
-    hoverEnabled: true
-    onEntered: root.hovered = true
-    onExited: root.hovered = false
-    onClicked: root.clicked()
   }
 }

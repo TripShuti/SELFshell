@@ -3,14 +3,15 @@
 // ============================================================
 import QtQuick
 import QtQuick.Layouts
+import "../core"
 
 // Віджет телефону: іконка + батарея + індикатор досяжності.
 // Читає стан з window.kdeConnect (KdeConnectService в shell.qml).
-Item {
+// Клік форвардиться сигналом HoverItem.clicked (Bar відкриває попап).
+HoverItem {
   id: root
 
   required property QtObject window
-  signal clicked()
 
   readonly property var svc: window ? window.kdeConnect : null
   readonly property bool installed: svc ? svc.installed : false
@@ -18,8 +19,6 @@ Item {
   readonly property int charge: svc ? svc.batteryCharge : -1
   readonly property bool charging: svc ? svc.batteryCharging : false
   readonly property string devName: svc ? svc.primaryDeviceName : ""
-
-  property bool hovered: false
 
   implicitWidth: row.implicitWidth
   implicitHeight: parent?.height ?? 36
@@ -80,13 +79,5 @@ Item {
       Behavior on color { ColorAnimation { duration: window.appConfig.anim(220) } }
       Behavior on opacity { NumberAnimation { duration: window.appConfig.anim(220) } }
     }
-  }
-
-  MouseArea {
-    anchors.fill: parent
-    hoverEnabled: true
-    onEntered: root.hovered = true
-    onExited: root.hovered = false
-    onClicked: root.clicked()
   }
 }

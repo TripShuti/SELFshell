@@ -4,6 +4,7 @@
 import Quickshell.Services.Mpris
 import QtQuick
 import QtQuick.Layouts
+import "../../scripts/Format.js" as Format
 
 // Кнопки плеєра, вторинний ряд (гучність/shuffle/loop/перемикачі секцій)
 // і смужка прогресу. Плеєр прокидається об'єктом (усі дії — прямі виклики
@@ -22,16 +23,6 @@ ColumnLayout {
 
   Layout.fillWidth: true
   spacing: 6
-
-  // NOTE: дубль форматування часу з PlaylistSection — правити обидва
-  // (спільний модуль відхилено свідомо: два споживачі не варті нового файлу;
-  // якщо з'явиться третій — переглянути).
-  function formatTime(secs) {
-    if (isNaN(secs) || secs < 0) return "0:00"
-    var m = Math.floor(secs / 60)
-    var s = Math.floor(secs % 60)
-    return m + ":" + (s < 10 ? "0" : "") + s
-  }
 
   // Плавне встановлення гучності за позицією миші на треку
   function _setVolumeFrom(track, mouse) {
@@ -297,7 +288,7 @@ ColumnLayout {
 
     // Поточний час (клемпимо дрейф інтерполяції позиції до довжини)
     Text {
-      text: formatTime(Math.min(player?.position ?? 0, player?.length ?? 0))
+      text: Format.formatTime(Math.min(player?.position ?? 0, player?.length ?? 0))
       color: window.palette.gray
       font.family: window.palette.font; font.pixelSize: window.appConfig.scaled(9)
     }
@@ -357,7 +348,7 @@ ColumnLayout {
 
     // Загальна довжина
     Text {
-      text: formatTime(player?.length ?? 0)
+      text: Format.formatTime(player?.length ?? 0)
       color: window.palette.gray
       font.family: window.palette.font; font.pixelSize: window.appConfig.scaled(9)
     }

@@ -197,14 +197,6 @@ AnimatedPopup {
     }
   }
 
-  // Форматує секунди в "m:ss"
-  function formatTime(secs) {
-    if (isNaN(secs) || secs < 0) return "0:00"
-    var m = Math.floor(secs / 60)
-    var s = Math.floor(secs % 60)
-    return m + ":" + (s < 10 ? "0" : "") + s
-  }
-
   // Якщо плеєр зник — закриваємо секцію плейлісту
   onPlayerChanged: {
     if (!root.player) root.playlistOpen = false

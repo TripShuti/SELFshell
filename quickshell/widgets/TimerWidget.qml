@@ -7,7 +7,7 @@ import "../core"
 import QtQuick
 
 // Віджет таймера на панелі — відлік, нагадування, керування колесом
-Item {
+HoverItem {
   id: root
 
   required property QtObject window
@@ -130,8 +130,14 @@ Item {
     }
   }
 
-  // Hover-стан для фідбеку (HoverText-рецепт: колір + масштаб)
-  property bool hovered: false
+  onClicked: root.toggle()
+  onWheel: function(wheel) {
+    if (wheel.angleDelta.y === 0) return // горизонтальний скрол — ігноруємо
+    if (wheel.angleDelta.y > 0)
+      root.durUp()
+    else
+      root.durDown()
+  }
 
   Text {
     id: txt
@@ -156,22 +162,6 @@ Item {
       minOpacity: 0.4
       blinkDuration: 600
       appConfig: window.appConfig
-    }
-  }
-
-  MouseArea {
-    anchors.fill: parent
-    acceptedButtons: Qt.LeftButton
-    hoverEnabled: true
-    onEntered: root.hovered = true
-    onExited: root.hovered = false
-    onClicked: root.toggle()
-    onWheel: function(wheel) {
-      if (wheel.angleDelta.y === 0) return // горизонтальний скрол — ігноруємо
-      if (wheel.angleDelta.y > 0)
-        root.durUp()
-      else
-        root.durDown()
     }
   }
 }

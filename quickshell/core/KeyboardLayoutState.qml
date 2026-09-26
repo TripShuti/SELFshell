@@ -25,11 +25,6 @@ Item {
   property bool menuLayoutsDone: false
   readonly property bool menuReady: root.menuDevsDone && root.menuLayoutsDone
 
-  property string initialBuf: ""
-  property string nextBuf: ""
-  property string menuDevsBuf: ""
-  property string menuLayoutsBuf: ""
-
   readonly property string displayText: {
     var l = root.layout
     if (l.indexOf("Ukrainian") >= 0) return "UA"
@@ -91,8 +86,6 @@ Item {
   function refreshMenu() {
     root.menuDevsDone = false
     root.menuLayoutsDone = false
-    root.menuDevsBuf = ""
-    root.menuLayoutsBuf = ""
     menuDevsProc.running = true
     menuLayoutsProc.running = true
   }
@@ -127,40 +120,25 @@ Item {
   }
 
   // Поточна розкладка при старті
-  Process {
+  JsonProcess {
     id: initialProc
     command: ["hyprctl", "devices", "-j"]
-
-    // Скидання буфера на старті: без цього залишок попереднього виводу
-    // клеїться до нового JSON і парс вмирає назавжди
-    onStarted: root.initialBuf = ""
-
-    stdout: SplitParser {
-      splitMarker: "\n"
-      onRead: data => {
-        root.initialBuf += (data ?? "")
-        var obj = null
-        try { obj = JSON.parse(root.initialBuf) } catch (e) {}
-        if (obj === null) return
-        root.initialBuf = ""
-        var keyboards = obj.keyboards ?? []
-        for (var i = 0; i < keyboards.length; ++i) {
-          if (keyboards[i].main === true) { root.mainKeyboard = keyboards[i].name; break }
-        }
-        if (root.mainKeyboard === "" && keyboards.length > 0) root.mainKeyboard = keyboards[0].name
-        var kb = root.pickKeyboard(obj)
-        if (kb !== null) {
-          root.layout = kb.active_keymap
-          root.activeKeymap = kb.active_keymap
-        }
+    onParsed: obj => {
+      var keyboards = obj.keyboards ?? []
+      for (var i = 0; i < keyboards.length; ++i) {
+        if (keyboards[i].main === true) { root.mainKeyboard = keyboards[i].name; break }
+      }
+      if (root.mainKeyboard === "" && keyboards.length > 0) root.mainKeyboard = keyboards[0].name
+      var kb = root.pickKeyboard(obj)
+      if (kb !== null) {
+        root.layout = kb.active_keymap
+        root.activeKeymap = kb.active_keymap
       }
     }
   }
 
-  // Стежить за змінами розкладки через Hyprland socket.
-  // hyprctl -j друкує pretty-printed JSON (поле на рядок), тому SplitParser
-  // ріже його по рядках і JSON.parse одного рядка завжди падає. Накопичуємо
-  // рядки в буфер і парсимо лише коли накопичився повний документ.
+  // Стежить за змінами розкладки через Hyprland socket (рядкові події,
+  // не JSON — тому звичайний SplitParser, не JsonProcess)
   Process {
     id: socketProc
     command: ["sh", "-c", "while true; do socat - UNIX-CONNECT:$XDG_RUNTIME_DIR/hypr/$HYPRLAND_INSTANCE_SIGNATURE/.socket2.sock 2>/dev/null; sleep 1; done"]
@@ -185,89 +163,59 @@ Item {
   }
 
   // Ім'я main-клавіатури для cycleNext
-  Process {
+  JsonProcess {
     id: nextProc
     command: ["hyprctl", "devices", "-j"]
-    onStarted: root.nextBuf = ""
-
-    stdout: SplitParser {
-      splitMarker: "\n"
-      onRead: data => {
-        root.nextBuf += (data ?? "")
-        var obj = null
-        try { obj = JSON.parse(root.nextBuf) } catch (e) {}
-        if (obj === null) return
-        root.nextBuf = ""
-        var mainName = ""
-        var keyboards = obj.keyboards ?? []
-        for (var i = 0; i < keyboards.length; ++i) {
-          if (keyboards[i].main === true) { mainName = keyboards[i].name; break }
-        }
-        if (mainName === "" && keyboards.length > 0) mainName = keyboards[0].name
-        if (mainName !== "") {
-          switchProc.command = ["hyprctl", "switchxkblayout", mainName, "next"]
-          switchProc.running = true
-        }
+    onParsed: obj => {
+      var mainName = ""
+      var keyboards = obj.keyboards ?? []
+      for (var i = 0; i < keyboards.length; ++i) {
+        if (keyboards[i].main === true) { mainName = keyboards[i].name; break }
+      }
+      if (mainName === "" && keyboards.length > 0) mainName = keyboards[0].name
+      if (mainName !== "") {
+        switchProc.command = ["hyprctl", "switchxkblayout", mainName, "next"]
+        switchProc.running = true
       }
     }
   }
 
   // Ім'я main-клавіатури + активна розкладка для меню
-  Process {
+  JsonProcess {
     id: menuDevsProc
     command: ["hyprctl", "devices", "-j"]
-    onStarted: root.menuDevsBuf = ""
-
-    stdout: SplitParser {
-      splitMarker: "\n"
-      onRead: data => {
-        root.menuDevsBuf += (data ?? "")
-        var obj = null
-        try { obj = JSON.parse(root.menuDevsBuf) } catch (e) {}
-        if (obj === null) return
-        root.menuDevsBuf = ""
-        var keyboards = obj.keyboards ?? []
-        for (var i = 0; i < keyboards.length; ++i) {
-          if (keyboards[i].main === true) {
-            root.mainKeyboard = keyboards[i].name
-            root.activeKeymap = keyboards[i].active_keymap ?? ""
-            break
-          }
+    onParsed: obj => {
+      var keyboards = obj.keyboards ?? []
+      for (var i = 0; i < keyboards.length; ++i) {
+        if (keyboards[i].main === true) {
+          root.mainKeyboard = keyboards[i].name
+          root.activeKeymap = keyboards[i].active_keymap ?? ""
+          break
         }
-        if (root.mainKeyboard === "" && keyboards.length > 0) {
-          root.mainKeyboard = keyboards[0].name
-          root.activeKeymap = keyboards[0].active_keymap ?? ""
-        }
-        root.menuDevsDone = true
-        root.rebuildModel()
       }
+      if (root.mainKeyboard === "" && keyboards.length > 0) {
+        root.mainKeyboard = keyboards[0].name
+        root.activeKeymap = keyboards[0].active_keymap ?? ""
+      }
+      root.menuDevsDone = true
+      root.rebuildModel()
     }
   }
 
   // Список розкладок з input:kb_layout
-  Process {
+  JsonProcess {
     id: menuLayoutsProc
     command: ["hyprctl", "getoption", "input:kb_layout", "-j"]
-    onStarted: root.menuLayoutsBuf = ""
-
-    stdout: SplitParser {
-      splitMarker: "\n"
-      onRead: data => {
-        root.menuLayoutsBuf += (data ?? "")
-        var obj = null
-        try { obj = JSON.parse(root.menuLayoutsBuf) } catch (e) {}
-        if (obj === null) return
-        root.menuLayoutsBuf = ""
-        var codes = String(obj.str ?? "").split(",")
-        var out = []
-        for (var i = 0; i < codes.length; ++i) {
-          var code = codes[i].trim()
-          if (code !== "") out.push(code)
-        }
-        root.rawCodes = out
-        root.menuLayoutsDone = true
-        root.rebuildModel()
+    onParsed: obj => {
+      var codes = String(obj.str ?? "").split(",")
+      var out = []
+      for (var i = 0; i < codes.length; ++i) {
+        var code = codes[i].trim()
+        if (code !== "") out.push(code)
       }
+      root.rawCodes = out
+      root.menuLayoutsDone = true
+      root.rebuildModel()
     }
   }
 

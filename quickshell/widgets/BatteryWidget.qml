@@ -5,10 +5,11 @@ import Quickshell
 import Quickshell.Io
 import QtQuick
 import QtQuick.Layouts
+import "../core"
 
 // Віджет батареї: іконка + відсоток, червоний < 15% без зарядки.
 // Джерело — UPower через `upower` (зовнішня програма, без читання файлів).
-Item {
+HoverItem {
   id: root
 
   required property QtObject window
@@ -20,8 +21,9 @@ Item {
   readonly property bool available: device !== ""
   visible: available
 
-  // Hover-стан для фідбеку (HoverText-рецепт: колір + масштаб)
-  property bool hovered: false
+  // Клік — негайне оновлення
+  cursorShape: Qt.PointingHandCursor
+  onClicked: devsProc.running = true
 
   implicitWidth: rowLayout.implicitWidth
   implicitHeight: parent?.height ?? 36
@@ -133,16 +135,6 @@ Item {
         root.state = st
       }
     }
-  }
-
-  // Клік — негайне оновлення
-  MouseArea {
-    anchors.fill: parent
-    cursorShape: Qt.PointingHandCursor
-    hoverEnabled: true
-    onEntered: root.hovered = true
-    onExited: root.hovered = false
-    onClicked: devsProc.running = true
   }
 
   RowLayout {
