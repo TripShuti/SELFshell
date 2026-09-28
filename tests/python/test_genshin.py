@@ -129,6 +129,18 @@ class DoSyncTest(StateFileTest):
         self.assertIn("synced_at", state)
 
     @mock.patch.object(gs, "_real_check_sign_status", return_value=(False, 0))
+    def test_zero_recovery_with_partial_resin(self, mock_sign):
+        # Живий кейс: API повернув 199/200 з resin_recovery_time "0".
+        # Без корекції full_at == synced_at і естімейт одразу давав 200
+        notes = dict(self.NOTES, current_resin=199, resin_recovery_time="0")
+        with mock.patch.object(gs, "_real_get_notes", return_value=(notes, None)):
+            out = gs.do_sync()
+        self.assertEqual(out["resin"], 199)
+        self.assertEqual(out["text"], " 199/200")
+        state = gs.load_state()
+        self.assertAlmostEqual(state["full_at"] - state["synced_at"], 480, delta=5)
+
+    @mock.patch.object(gs, "_real_check_sign_status", return_value=(False, 0))
     def test_throttle_within_min_interval(self, mock_sign):
         calls = []
 

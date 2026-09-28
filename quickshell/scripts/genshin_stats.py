@@ -315,7 +315,15 @@ def do_sync(min_interval=SYNC_MIN_INTERVAL):
 
     resin = notes.get("current_resin", 0)
     max_resin = notes.get("max_resin", 200)
-    recovery_time = int(notes.get("resin_recovery_time", 0))
+    try:
+        recovery_time = int(notes.get("resin_recovery_time", 0))
+    except (TypeError, ValueError):
+        recovery_time = 0
+    # API іноді повертає 0 при неповній смолі (живий кейс: 199/200 + "0"):
+    # без корекції full_at == synced_at і естімейт одразу дає кап,
+    # а монітор вирішує, що смола повна. Дораховуємо з дефіциту
+    if resin < max_resin and recovery_time <= 0:
+        recovery_time = (max_resin - resin) * RESIN_REGEN_SECONDS
 
     state["resin"] = resin
     state["max_resin"] = max_resin

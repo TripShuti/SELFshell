@@ -47,24 +47,24 @@ Item {
     root.resinClass = resin >= 190 ? "critical" : "normal"
   }
 
-  // Через скільки секунд після досягнення капу знову дозволяємо перевіряти
-  // (щоб не залипати на "200/200" увесь день, якщо гравець витратив смолу)
-  readonly property int _maxFreezeTimeout: 2400 // 40 хв
+  // Після капу сервер опитується повільним таймером (див. capTimer):
+  // локальний лічильник тільки росте, тож повний фриз синків залишав
+  // би "200/200" навіть після витрати смоли в грі
+  readonly property int _capPollInterval: 900000 // 15 хв
 
   function _checkHighResin() {
     if (!_firstSyncDone) {
       highResinTimer.running = false
+      capTimer.running = false
       return
     }
     if (_reachedMaxToday) {
-      if ((Date.now() / 1000 - _lastSyncTime) > _maxFreezeTimeout)
-        _reachedMaxToday = false
-      else {
-        highResinTimer.running = false
-        return
-      }
+      highResinTimer.running = false
+      if (root.monitorEnabled) capTimer.running = true
+      return
     }
-    highResinTimer.running = _currentResin() >= 198
+    capTimer.running = false
+    highResinTimer.running = root.monitorEnabled && _currentResin() >= 198
   }
 
   function _checkDailySync() {
@@ -87,12 +87,16 @@ Item {
       root._lastSyncDate = root._todayStr()
       root._firstSyncDone = true
 
-      // Кап рахуємо від реального максимуму, не від захардкодженого 200
+      // Кап рахуємо від реального максимуму, не від захардкодженого 200.
+      // На капі highResin зупиняється, а capTimer повільно опитує сервер,
+      // щоб витрата смоли в грі не залипала на "200/200"
       if (obj.resin >= root._lastSyncMaxResin) {
         root._reachedMaxToday = true
         highResinTimer.running = false
+        if (root.monitorEnabled) capTimer.running = true
       } else {
         root._reachedMaxToday = false
+        capTimer.running = false
         root._checkHighResin()
       }
     }
@@ -165,6 +169,16 @@ Item {
   Timer {
     id: highResinTimer
     interval: 480000
+    running: false
+    repeat: true
+    onTriggered: root._doSync()
+  }
+
+  // Таймер капу: повільний синк на максимумі — витрата смоли в грі стає
+  // видно максимум за _capPollInterval замість залипання на "200/200"
+  Timer {
+    id: capTimer
+    interval: root._capPollInterval
     running: false
     repeat: true
     onTriggered: root._doSync()
@@ -258,6 +272,7 @@ Item {
     else {
       mainTimer.running = false
       highResinTimer.running = false
+      capTimer.running = false
       syncProc.running = false
     }
   }
