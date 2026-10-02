@@ -54,10 +54,14 @@ hl.bind(bindKey("terminal", s.mainMod .. " + Q"), hl.dsp.exec_cmd(s.terminal))
 hl.bind(bindKey("files", s.mainMod .. " + E"), hl.dsp.exec_cmd(s.fileManager))
 
 -- Клавіша сну: дефолт — suspendKey з env.json (може бути порожнім),
--- оверрайд у binds.json має пріоритет
+-- оверрайд у binds.json має пріоритет.
+-- Явний лок до саспенда з паузою на коміт WlSessionLock: голий
+-- systemctl suspend покладався лише на пізній пре-лок через
+-- PrepareForSleep в sleepMonitor, фріз міг застати лок посеред
+-- створення LockSurface.
 local suspend = bindKey("suspend", s.suspendKey)
 if suspend ~= "" then
-    hl.bind(suspend, hl.dsp.exec_cmd("systemctl suspend"))
+    hl.bind(suspend, hl.dsp.exec_cmd("sh -c 'qs ipc call lockscreen lock; sleep 0.5; systemctl suspend'"))
 end
 -- SUPER+Escape — центр керування (живлення/налаштування) — див. control вище
 
