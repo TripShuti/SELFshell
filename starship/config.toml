@@ -12,14 +12,15 @@ background = "#121212"
 current_line = "#2c2c2e"
 foreground = "#e8e8eb"
 comment = "#9a9a9a"
-cyan = "#d0d0d0"
-green = "#d0d0d0"
-orange = "#c8c8c8"
-pink = "#d9d9d9"
+cyan = "#9ab3c0"
+green = "#9ab3c0"
+orange = "#a8a8a8"
+pink = "#dbd4d4"
 purple = "#b0b0b0"
-red = "#b0b0b0"
+red = "#b5a3a3"
 yellow = "#c8c8c8"
 white = "#f5f5f5"
+blue = "#b0b0b0"
 
 
 [character]
@@ -32,12 +33,12 @@ symbol = " "
 
 [username]
 show_always = true
-style_user = "bold pink"
+style_user = "bold white"
 format = "[$user]($style)"
 
 [hostname]
 ssh_only = false
-style = "bold purple"
+style = "comment"
 format = "@[$hostname]($style) "
 
 [container]
@@ -70,29 +71,29 @@ style = "bold cyan"
 
 [git_branch]
 symbol = " "
-style = "bold orange"
+style = "comment"
 
 [git_status]
-style = "yellow"
+style = "comment"
 
 [nodejs]
 symbol = " "
-style = "green"
+style = "comment"
 
 [python]
 symbol = " "
-style = "blue"
+style = "comment"
 
 [bun]
 symbol = " "
-style = "yellow" 
+style = "comment" 
 
 [golang]
 symbol = " "
-style = "cyan"
+style = "comment"
 
 [time]
 disabled = false
 time_format = "%H:%M"
-style = "cyan"
+style = "comment"
 format = "[$time]($style)"

@@ -155,13 +155,16 @@ def foot_hex(h):
 
 STATIC_PALETTES = {
     "black": {
-        # Пом’якшений чорний — не OLED #000000, а глибокий сірий #121212 (менш різкий)
-        "fg": "#e8e8eb", "gray": "#7a7a7a", "green": "#d0d0d0", "red": "#b0b0b0",
+        # Моно + 1 акцент: фон #121212, текст сірий, єдиний приглушений
+        # сталевий #9ab3c0 для команди/теки/стрілки. Решта ролей — сірі
+        # за яскравістю, щоб fastfetch і промпт не перетворювались на райдугу.
+        # red — теплий сірий #b5a3a3: помилка має відрізнятись, інакше небезпечно.
+        "fg": "#e8e8eb", "gray": "#7a7a7a", "green": "#9ab3c0", "red": "#b5a3a3",
         "bg0H": "#121212", "bg1": "#1e1e1e", "bg2": "#2c2c2e",
         "muted": "#9a9a9a", "light": "#d0d0d0", "bright": "#f5f5f5",
-        "yellow": "#c8c8c8", "blue": "#c0c0c0", "purple": "#b0b0b0",
-        "orange": "#c8c8c8", "aqua": "#d0d0d0",
-        "accent": "#e0e0e0", "on_primary": "#121212",
+        "yellow": "#c8c8c8", "blue": "#b0b0b0", "purple": "#b0b0b0",
+        "orange": "#a8a8a8", "aqua": "#9ab3c0",
+        "accent": "#9ab3c0", "on_primary": "#121212",
         "background": "#121212", "on_surface": "#e8e8eb",
     },
 }
@@ -283,17 +286,31 @@ def _build_and_write_palette(fg, gray, green, red, bg0H, bg1, bg2, muted, light,
             "red":            red,
             "yellow":         yellow,
             "white":          bright,
+            # python-модуль starship використовує style "blue" — без цього ключа
+            # версія python світилась дефолтним синім повз тему
+            "blue":           blue,
         }
 
         lines = content.split("\n")
         in_palette = False
+        seen = set()
         new_lines = []
+        def flush_missing(indent=""):
+            missing = [k for k in palette_map if k not in seen]
+            out = []
+            for k in missing:
+                out.append(f'{indent}{k} = "{palette_map[k]}"')
+                seen.add(k)
+            return out
         for line in lines:
             stripped = line.strip()
             if stripped == "[palettes.self]":
                 in_palette = True
                 new_lines.append(line)
             elif in_palette and stripped.startswith("["):
+                # Дописуємо ключі, яких бракувало в шаблоні (напр. blue для python),
+                # щоб нова роль не лишалась на дефолтному кольорі повз тему
+                new_lines.extend(flush_missing())
                 in_palette = False
                 new_lines.append(line)
             elif in_palette:
@@ -303,12 +320,15 @@ def _build_and_write_palette(fg, gray, green, red, bg0H, bg1, bg2, muted, light,
                     key = match.group(2)
                     if key in palette_map:
                         new_lines.append(f'{indent}{key} = "{palette_map[key]}"')
+                        seen.add(key)
                     else:
                         new_lines.append(line)
                 else:
                     new_lines.append(line)
             else:
                 new_lines.append(line)
+        if in_palette:
+            new_lines.extend(flush_missing())
 
         atomic_write(starship_path, "\n".join(new_lines))
 

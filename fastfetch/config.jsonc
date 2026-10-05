@@ -15,54 +15,54 @@
 	"break",
 	{
             "type": "title",
-            "keyColor": "32"  // зелений
+            "keyColor": "90"  // сірий — Black моно, без райдуги
         },
         {
             "type": "os",
             "key": "os    ",
-            "keyColor": "33"  // жовтий
+            "keyColor": "90"
         },
         {
             "type": "kernel",
             "key": "kernel",
-            "keyColor": "34"  // синій
+            "keyColor": "90"
         },
         {
             "type": "host",
             "format": "{5} {1}",
             "key": "host  ",
-            "keyColor": "35"  // фіолетовий
+            "keyColor": "90"
         },
         {
             "type": "packages",
             "key": "pkgs  ",
-            "keyColor": "32"  // зелений
+            "keyColor": "90"
         },
         {
             "type": "shell",
             "key": "shell ",
-            "keyColor": "36"  // блакитний
+            "keyColor": "90"
         },
         {
             "type": "wm",
             "key": "wm    ",
-            "keyColor": "34"  // синій
+            "keyColor": "90"
         },
         {
             "type": "uptime",
             "format": "{2}h {3}m",
             "key": "uptime",
-            "keyColor": "33"  // жовтий
+            "keyColor": "90"
         },
         {
             "type": "memory",
             "key": "memory",
-            "keyColor": "31"  // червоний
+            "keyColor": "90"
         },
         {
             "type": "disk",
             "key": "disk  ",
-            "keyColor": "35"  // фіолетовий
+            "keyColor": "90"
         },
         "break"
     ]

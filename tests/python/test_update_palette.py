@@ -279,6 +279,8 @@ class MainEndToEndTest(unittest.TestCase):
         self.assertIn('red = "#ff9aa5"', content)
         self.assertNotIn('red = "#ff0000"', content)
         self.assertIn("[palettes.other]", content)  # решта файлу збережена
+        # Відсутні ключі дописуються (python-модуль використовує blue)
+        self.assertIn('blue = ', content)
 
     def test_yazi_foot_qt6ct(self):
         up.main()
@@ -309,9 +311,11 @@ class MainEndToEndTest(unittest.TestCase):
         with open(os.path.join(self.qs_dir, "data", "palette.json")) as f:
             palette = json.load(f)
         self.assertEqual(palette["bg0H"], "#121212")
-        self.assertEqual(palette["accent"], "#e0e0e0")
-        # orange і aqua розведені — не тотожні
-        self.assertNotEqual(palette["orange"], palette["aqua"])
+        self.assertEqual(palette["accent"], "#9ab3c0")
+        # Black моно + 1 акцент: команда/тека сталеві, решта сірі
+        self.assertEqual(palette["green"], "#9ab3c0")
+        self.assertEqual(palette["aqua"], "#9ab3c0")
+        self.assertEqual(palette["red"], "#b5a3a3")
 
     def test_theme_black_rejects_unknown(self):
         with mock.patch.object(sys, "argv", ["update-palette.py", "--theme", "white"]):

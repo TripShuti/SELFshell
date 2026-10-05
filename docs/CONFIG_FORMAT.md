@@ -70,7 +70,7 @@ Edited through SettingsPopup (UI) or manually.
 | `animationsEnabled` | `boolean` | `true` | Master switch for all shell animations (hover, popups, sliders, lock screen) |
 | `animSpeed` | `number` | `1.0` | Multiplier for every animation duration; e.g. `1.5` = 50% slower, `0.5` = 2× faster (0.5–2.0) |
 | `preferredPlayer` | `string` | `"selfsonic"` | Favorite media player identity substring (`spotify`, `chromium` …), shared by bar widget and popup |
-| `themeMode` | `string` | `"black"` | Theming mode: `black` (static mono palette `#121212` via `update-palette.py --theme black`, wallpapers switch without regeneration) or `matugen` (dynamic palette from wallpaper via `update-palette.sh`) |
+| `themeMode` | `string` | `"black"` | Theming mode: `black` (static mono `#121212` + one steel accent via `update-palette.py --theme black`, wallpapers switch without regeneration) or `matugen` (dynamic palette from wallpaper via `update-palette.sh`) |
 
 Separators look like `sep-N`, where N is a unique numeric ID.
 Generated automatically by `addSep()` in AppConfig.
@@ -392,13 +392,13 @@ include current-theme.conf
 
 ## Starship: `config.toml`
 
-Standard Starship TOML format. The `tokyonight` palette is refreshed
+Standard Starship TOML format. The `self` palette is refreshed
 automatically by `update-palette.py`:
 
 ```toml
-[palettes.tokyonight]
-background = "#2e3132"
-foreground = "#dee3e5"
+[palettes.self]
+background = "#121212"
+foreground = "#e8e8eb"
 ...
 ```
 

@@ -163,7 +163,7 @@ Item {
       Text {
         visible: root.themeStatus === ""
         text: {
-          if (root.cfg.themeMode === "black") return "Black — soft mono static palette, wallpaper changes without regeneration."
+          if (root.cfg.themeMode === "black") return "Black — mono with one steel accent, wallpaper changes without regeneration."
           return "Matugen — dynamic palette from wallpaper (awww + matugen + palette reload)."
         }
         color: window.palette.gray
