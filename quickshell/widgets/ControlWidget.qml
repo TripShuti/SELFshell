@@ -31,7 +31,8 @@ HoverItem {
 
     // Блимання при непрочитаних
     BlinkAnimation {
-      running: root.unread > 0
+      target: txt
+      active: root.visible && root.unread > 0
       minOpacity: 0.4
       blinkDuration: 1000
       appConfig: window.appConfig

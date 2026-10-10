@@ -22,7 +22,7 @@ AnimatedPopup {
   slideDistance: 6
   transformOrigin: Item.Center
 
-  readonly property var req: agent ? agent.request : null
+  readonly property var req: window.shellController.pairingBar === window && agent ? agent.request : null
   readonly property bool actionable: req !== null && req.method !== "display" && req.method !== "displaypin"
 
   // Таймаут має збігатися з REQUEST_TIMEOUT_S у services/qs-bt-agent
@@ -93,6 +93,7 @@ AnimatedPopup {
   //    анімації виходу).
   function syncToRequest() {
     if (!req || req.method === "done" || req.method === "cancel") {
+      countdown.stop()
       if (visible) close()
       return
     }

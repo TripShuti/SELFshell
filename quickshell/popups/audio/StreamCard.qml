@@ -47,9 +47,6 @@ Item {
     return true
   }
 
-  property bool showVirtualOverride: false
-  // зовнішній контроль видимості — батько вже фільтрує, тут тільки для прозорості
-
   property bool devMenuOpen: false
 
   Rectangle {

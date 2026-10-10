@@ -35,6 +35,7 @@ AnimatedPopup {
   // Внутрішній стан
   property string connectionName: ""
   property bool resolved: false
+  property int requestGeneration: 0
   property string statusMessage: ""
   property bool statusIsError: false
   // true, коли резолвимо профіль за SSID (а не за активним пристроєм) —
@@ -81,6 +82,7 @@ AnimatedPopup {
 
   // Скидає стан при відкритті
   function resetState() {
+    root.requestGeneration++;
     connectionName = "";
     resolved = false;
     statusMessage = "";
@@ -89,6 +91,7 @@ AnimatedPopup {
     newPassword = "";
     activeTab = 0;
     autoconnectPending = false;
+    autoconnect = true;
     resolvingBySsid = false;
     duplicateProfileCount = 0;
     // Без очищення полів налаштувань попередня мережа показувала б свої
@@ -108,12 +111,18 @@ AnimatedPopup {
       root.centerOnScreen()
       resetState();
       startResolve();
+    } else {
+      root.requestGeneration++;
     }
   }
 
   // Крок 1: знайти ім'я профілю NetworkManager
   function startResolve() {
     if (!network) return;
+    if (resolveConnProcess.running) { resolveConnProcess.pending = true; return; }
+    resolveConnProcess.pending = false;
+    resolveConnProcess.generation = root.requestGeneration;
+    resolveConnProcess.bySsid = false;
 
     // Активне з'єднання — беремо профіль з пристрою
     if (connKind === "ethernet" || network.connected) {
@@ -146,6 +155,7 @@ AnimatedPopup {
     //    який очікує QML-парсер нижче.
     if (network.name) {
       resolvingBySsid = true;
+      resolveConnProcess.bySsid = true;
       resolveConnProcess.command = ["bash", "-c",
         "SSID=" + escapeShell(network.name) + "; " +
         "nmcli -e no -t -f NAME,TYPE,TIMESTAMP con show | " +
@@ -171,12 +181,17 @@ AnimatedPopup {
   // Крок 1 (продовження): отримуємо ім'я з'єднання
   Process {
     id: resolveConnProcess
+    property int generation: -1
+    property bool bySsid: false
+    property bool pending: false
+    onExited: if (pending && root.visible) Qt.callLater(root.startResolve)
     stdout: StdioCollector {
       onStreamFinished: {
+        if (!root.visible || resolveConnProcess.generation !== root.requestGeneration) return;
         var name = "";
         root.duplicateProfileCount = 0;
 
-        if (root.resolvingBySsid) {
+        if (resolveConnProcess.bySsid) {
           // Формат: "timestamp|connName" по одному на рядок, найновіший — перший
           // (список вже відсортований у самому bash-скрипті через sort -k1,1nr)
           var lines = text.split("\n").filter(l => l.trim().length > 0);
@@ -191,10 +206,7 @@ AnimatedPopup {
 
         if (name.length > 0 && name !== "--") {
           root.connectionName = name;
-          fetchSettingsProcess.command = ["nmcli", "-t", "-f",
-            "ipv4.method,ipv4.addresses,ipv4.gateway,ipv4.dns,ipv4.ignore-auto-dns,802-11-wireless-security.key-mgmt,connection.autoconnect",
-            "con", "show", name];
-          fetchSettingsProcess.running = true;
+          root.fetchSettings();
         } else {
           root.statusMessage = "Failed to find NetworkManager connection profile for this network";
           root.statusIsError = true;
@@ -204,11 +216,25 @@ AnimatedPopup {
     }
   }
 
+  function fetchSettings() {
+    if (fetchSettingsProcess.running) { fetchSettingsProcess.pending = true; return; }
+    fetchSettingsProcess.pending = false;
+    fetchSettingsProcess.generation = root.requestGeneration;
+    fetchSettingsProcess.command = ["nmcli", "-t", "-f",
+      "ipv4.method,ipv4.addresses,ipv4.gateway,ipv4.dns,ipv4.ignore-auto-dns,802-11-wireless-security.key-mgmt,connection.autoconnect",
+      "con", "show", root.connectionName];
+    fetchSettingsProcess.running = true;
+  }
+
   // Крок 2: витягнути поточні налаштування
   Process {
     id: fetchSettingsProcess
+    property int generation: -1
+    property bool pending: false
+    onExited: if (pending && root.visible) Qt.callLater(root.fetchSettings)
     stdout: StdioCollector {
       onStreamFinished: {
+        if (!root.visible || fetchSettingsProcess.generation !== root.requestGeneration) return;
         var lines = text.split("\n");
         for (var i = 0; i < lines.length; i++) {
           var line = lines[i];
@@ -244,9 +270,14 @@ AnimatedPopup {
   // Крок 3: застосувати IPv4 + DNS через nmcli con mod
   Process {
     id: applyProcess
+    property int generation: -1
+    property string profileName: ""
     onExited: (exitCode, exitStatus) => {
+      if (applyProcess.generation !== root.requestGeneration || !root.visible) return;
       if (exitCode === 0) {
-        reactivateProcess.command = ["nmcli", "con", "up", root.connectionName];
+        reactivateProcess.generation = applyProcess.generation;
+        reactivateProcess.profileName = applyProcess.profileName;
+        reactivateProcess.command = ["nmcli", "con", "up", applyProcess.profileName];
         reactivateProcess.running = true;
       } else {
         root.statusMessage = "nmcli con mod error (code " + exitCode + ")";
@@ -258,7 +289,10 @@ AnimatedPopup {
   // Крок 4: перезастосувати з'єднання
   Process {
     id: reactivateProcess
+    property int generation: -1
+    property string profileName: ""
     onExited: (exitCode, exitStatus) => {
+      if (reactivateProcess.generation !== root.requestGeneration || !root.visible) return;
       if (exitCode === 0) {
         root.statusMessage = "Applied";
         root.statusIsError = false;
@@ -272,9 +306,14 @@ AnimatedPopup {
   // Зміна пароля Wi-Fi
   Process {
     id: passwordProcess
+    property int generation: -1
+    property string profileName: ""
     onExited: (exitCode, exitStatus) => {
+      if (passwordProcess.generation !== root.requestGeneration || !root.visible) return;
       if (exitCode === 0) {
-        reactivateProcess.command = ["nmcli", "con", "up", root.connectionName];
+        reactivateProcess.generation = passwordProcess.generation;
+        reactivateProcess.profileName = passwordProcess.profileName;
+        reactivateProcess.command = ["nmcli", "con", "up", passwordProcess.profileName];
         reactivateProcess.running = true;
         root.changingPassword = false;
         root.newPassword = "";
@@ -288,7 +327,10 @@ AnimatedPopup {
   // Автопідключення — вмикається/вимикається миттєво, без кнопки Apply
   Process {
     id: autoconnectProcess
+    property int generation: -1
+    property string profileName: ""
     onExited: (exitCode, exitStatus) => {
+      if (autoconnectProcess.generation !== root.requestGeneration || !root.visible) return;
       root.autoconnectPending = false;
       if (exitCode === 0) {
         root.statusMessage = root.autoconnect ? "Auto-connect enabled" : "Auto-connect disabled";
@@ -304,6 +346,9 @@ AnimatedPopup {
 
   // Перемикає автопідключення для цього конкретного профілю з'єднання
   function toggleAutoconnect(v) {
+    if (autoconnectProcess.running || root.connectionName === "") return;
+    autoconnectProcess.generation = root.requestGeneration;
+    autoconnectProcess.profileName = root.connectionName;
     if (autoconnectPending || connectionName.length === 0) return;
     autoconnect = (v !== undefined) ? v : !autoconnect;
     autoconnectPending = true;
@@ -315,6 +360,9 @@ AnimatedPopup {
 
   // Формує команду nmcli для застосування IPv4 та DNS
   function applyIpv4AndDns() {
+    if (applyProcess.running || root.connectionName === "") return;
+    applyProcess.generation = root.requestGeneration;
+    applyProcess.profileName = root.connectionName;
     var args = ["con", "mod", connectionName];
 
     if (ipv4Manual) {
@@ -342,6 +390,9 @@ AnimatedPopup {
 
   // Застосовує новий пароль Wi-Fi
   function applyPassword() {
+    if (passwordProcess.running || root.connectionName === "") return;
+    passwordProcess.generation = root.requestGeneration;
+    passwordProcess.profileName = root.connectionName;
     if (newPassword.length < 8) {
       statusMessage = "Password must be at least 8 characters";
       statusIsError = true;

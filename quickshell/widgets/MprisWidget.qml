@@ -13,64 +13,9 @@ Item {
   required property QtObject window
   signal clicked()
 
-  // Улюблений плеєр — спільний з попапом (config.json → preferredPlayer)
-  readonly property string preferredPlayer: window.appConfig.cfg.preferredPlayer
-  property var player: null
-  property var cavBars: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-
-  // Hover-стан для фідбеку (HoverText-рецепт: колір + масштаб)
+  readonly property var player: window.mediaPlayer.player
+  property var cavBars: []
   property bool hovered: false
-
-  // Знаходить плеєр за назвою або перший доступний.
-  // Не перезаписує player, якщо той самий об'єкт — інакше таймер
-  // періодичного пошуку спамив би перепризначенням.
-  function findAndSetPlayer() {
-    var target = null
-    var fallback = null
-
-    for (var i = 0; i < playerRepeater.count; ++i) {
-      var del = playerRepeater.itemAt(i)
-      if (!del || !del.modelData) continue
-      if (!fallback && del.modelData.trackTitle) fallback = del.modelData
-      if (del.playerName.indexOf(root.preferredPlayer) >= 0) {
-        target = del.modelData
-        break
-      }
-    }
-
-    var best = target ?? fallback
-    if (root.player !== best) root.player = best
-  }
-
-  // Стежить за появою/зникненням плеєрів Mpris
-  Repeater {
-    id: playerRepeater
-    model: Mpris.players
-
-    delegate: Item {
-      required property var modelData
-
-      readonly property string playerName: (modelData.identity ?? modelData.dbusName ?? "").toLowerCase()
-
-      Component.onCompleted: root.findAndSetPlayer()
-      // onDestruction з Qt.callLater тут був зайвим: QML-скоуп всередині
-      // замикання губиться (ReferenceError в логах), а переобрання плеєра
-      // і так робить 2-секундний поллер нижче
-    }
-  }
-
-  // Періодичний пошук плеєра. Крутиться тільки коли віджет видимий
-  // І увімкнений в Settings: Loader лишає вимкнений віджет живим навмисно
-  // (PillBar без thrash), а root.visible власного флага не бачить прихованого
-  // предка — тому читаємо cfg напряму. Коли невидимий — не будимо CPU.
-  // Mpris-модель наповнюється асинхронно, таймер підхоплює preferredPlayer
-  // щойно той з'явиться.
-  Timer {
-    interval: 2000
-    running: root.visible && window.appConfig.cfg.mprisEnabled
-    repeat: true
-    onTriggered: root.findAndSetPlayer()
-  }
 
   implicitWidth: root.player ? contentRow.implicitWidth : 0
   implicitHeight: parent?.height ?? 36

@@ -230,12 +230,6 @@ Item {
     return "left"
   }
 
-  // Переносить віджет в іншу пігулку (додається в кінець її списку).
-  // Делегує в moveToPillAt: індекс = довжина (clamp всередині дає append).
-  function moveToPill(name, targetPill) {
-    moveToPillAt(name, targetPill, pillOrderFor(targetPill).length)
-  }
-
   function moveToPillAt(name, targetPill, targetIndex) {
     root.cfg.leftOrder = root.cfg.leftOrder.filter(n => n !== name)
     root.cfg.centerOrder = root.cfg.centerOrder.filter(n => n !== name)
@@ -245,27 +239,6 @@ Item {
     arr.splice(idx, 0, name)
     if (targetPill === "left") root.cfg.leftOrder = arr
     else if (targetPill === "center") root.cfg.centerOrder = arr
-    else root.cfg.rightOrder = arr
-  }
-
-  function cyclePill(name) {
-    var pills = ["left", "center", "right"]
-    var idx = pills.indexOf(pillOf(name))
-    moveToPill(name, pills[(idx + 1) % 3])
-  }
-
-  // Пересуває віджет на 1 позицію вгору(-1)/вниз(+1) всередині його
-  // поточної пігулки. Межі списку — no-op (нікуди рухати).
-  function moveWithinPill(name, direction) {
-    var p = pillOf(name)
-    var arr = pillOrderFor(p).slice()
-    var idx = arr.indexOf(name)
-    if (idx === -1) return
-    var newIdx = idx + direction
-    if (newIdx < 0 || newIdx >= arr.length) return
-    var tmp = arr[idx]; arr[idx] = arr[newIdx]; arr[newIdx] = tmp
-    if (p === "left") root.cfg.leftOrder = arr
-    else if (p === "center") root.cfg.centerOrder = arr
     else root.cfg.rightOrder = arr
   }
 

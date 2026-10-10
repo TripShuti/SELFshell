@@ -25,6 +25,8 @@ Item {
   property var pagesModel: []
   property string pageApp: ""
   property bool loading: false
+  property bool _refreshPending: false
+  property int _pagesGeneration: 0
   // Старт видимого оновлення — щоб спінер встиг обернутись хоча б раз,
   // гасіння loading затримуємо до мінімальних 700мс (export локальний
   // і проходить за ~50мс, інакше видно лише смикання)
@@ -75,6 +77,7 @@ Item {
     var d = new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]))
     d.setDate(d.getDate() + days)
     root.dateStr = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0")
+    root._pagesGeneration++
     root.pageApp = ""
     root.pagesModel = []
     root.refresh()
@@ -82,6 +85,7 @@ Item {
 
   function goToday() {
     root.dateStr = root._todayStr()
+    root._pagesGeneration++
     root.pageApp = ""
     root.pagesModel = []
     root.refresh()
@@ -90,11 +94,13 @@ Item {
   // Основне оновлення: день + тиждень + місяць + застосунки + сесії
   function refresh() {
     if (!root.monitorEnabled) return
-    if (fetchProc.running) return
+    if (fetchProc.running) { root._refreshPending = true; return }
+    root._refreshPending = false
     root.loading = true
     root.errorText = ""
     root._refreshStartMs = Date.now()
     loadingMinTimer.stop()
+    fetchProc._date = root.dateStr
     fetchProc._todayOnly = false
     fetchProc.command = [root.selftrackBin, "export", "--date", root.dateStr]
     fetchProc.running = true
@@ -105,6 +111,7 @@ Item {
   function refreshToday() {
     if (!root.monitorEnabled) return
     if (fetchProc.running) return
+    fetchProc._date = root._todayStr()
     fetchProc._todayOnly = true
     fetchProc.command = [root.selftrackBin, "export", "--date", root._todayStr()]
     fetchProc.running = true
@@ -113,6 +120,7 @@ Item {
   // Підвантаження сторінок застосунку (ліниво, по кліку)
   function refreshPages(app) {
     if (fetchPagesProc.running) return
+    root._pagesGeneration++
     // Повторний клік по розкритому — згорнути
     if (root.pageApp === app) {
       root.pageApp = ""
@@ -121,12 +129,9 @@ Item {
     }
     fetchPagesProc.command = [root.selftrackBin, "export", "--date", root.dateStr, "--app", app]
     fetchPagesProc._wantApp = app
+    fetchPagesProc._date = root.dateStr
+    fetchPagesProc._generation = root._pagesGeneration
     fetchPagesProc.running = true
-  }
-
-  function collapsePages() {
-    root.pageApp = ""
-    root.pagesModel = []
   }
 
   function _applyExport(obj) {
@@ -179,10 +184,12 @@ Item {
   Process {
     id: fetchProc
     property bool _todayOnly: false
+    property string _date: ""
     stdout: StdioCollector {
       id: fetchCollector
       waitForEnd: true
       onStreamFinished: {
+        if (!root.monitorEnabled || (!fetchProc._todayOnly && fetchProc._date !== root.dateStr)) return
         var text = fetchCollector.text.trim()
         // Прапорець не скидаємо тут — onExited читає його для того
         // самого запуску; новий запуск виставить його заново
@@ -195,7 +202,7 @@ Item {
             if (todayOnly) {
               if (obj.date === root._todayStr() && obj.day) root.todayActiveMs = obj.day.active_ms
             } else {
-              root._applyExport(obj)
+              if (obj.date === root.dateStr) root._applyExport(obj)
             }
           } catch (e) {
             if (!todayOnly) root.errorText = "Parse error"
@@ -208,6 +215,12 @@ Item {
     }
     onExited: (code) => {
       running = false
+      if (root._refreshPending) {
+        root._refreshPending = false
+        Qt.callLater(root.refresh)
+        return
+      }
+      if (fetchProc._date !== root.dateStr && !fetchProc._todayOnly) return
       if (fetchProc._todayOnly) {
         root.loading = false
       } else {
@@ -220,6 +233,8 @@ Item {
   Process {
     id: fetchPagesProc
     property string _wantApp: ""
+    property string _date: ""
+    property int _generation: 0
     stdout: StdioCollector {
       id: pagesCollector
       waitForEnd: true
@@ -230,7 +245,9 @@ Item {
           var obj = JSON.parse(text)
           // Застосунок могли перемкнути поки йшов запит — показуємо
           // тільки якщо збігається з запитаним
-          if (obj.page_app === fetchPagesProc._wantApp) {
+          if (root.monitorEnabled && fetchPagesProc._date === root.dateStr &&
+              fetchPagesProc._generation === root._pagesGeneration &&
+              obj.page_app === fetchPagesProc._wantApp) {
             root.pageApp = obj.page_app ? obj.page_app : ""
             root.pagesModel = obj.pages ? obj.pages : []
           }
@@ -248,6 +265,8 @@ Item {
       root.refresh()
       pollTimer.running = true
     } else {
+      root._refreshPending = false
+      root._pagesGeneration++
       pollTimer.running = false
       fetchProc.running = false
       fetchPagesProc.running = false

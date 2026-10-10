@@ -104,8 +104,8 @@ AnimatedPopup {
   // Час останнього кліку по кожній кнопці скріншота (double-click guard).
   // Числові проперти замість var-об'єкта — щоб виключити будь-які
   // дива з мутацією об'єкта в property var.
-  property int _lastShotTimeFull: 0
-  property int _lastShotTimeRegion: 0
+  property real _lastShotTimeFull: 0
+  property real _lastShotTimeRegion: 0
 
   // Подвійний клік МОЖЕ генерувати два onClicked (як у LauncherPopup) —
   // без debounce перший click стартує, але його тут же вбиває restart

@@ -17,6 +17,10 @@ AnimatedPopup {
   palette: window.palette
   appConfig: window.appConfig
 
+  popupWindow: window
+  anchorTarget: anchorItem
+  centerAnchor: true
+
   implicitWidth: 280
   implicitHeight: layout.implicitHeight + 16
 
@@ -144,15 +148,16 @@ AnimatedPopup {
 
   onVisibleChanged: {
     if (visible) {
+      tasksFile.reload()
+      try { Tasks.setData(JSON.parse(tasksFile.text() || "{}")) } catch(e) { Tasks.setData({}) }
+      root.refreshTasks()
       // "сьогодні" оновлюється при кожному відкритті: попап живе вічно,
       // і після півночі підсвітка лишалась на вчорашній комірці
       var now = new Date()
       todayDay = now.getDate()
       todayMonth = now.getMonth()
       todayYear = now.getFullYear()
-      var pos = anchorItem.mapToItem(window.contentItem, 0, 0)
-      var popupX = pos.x + (anchorItem.width - implicitWidth) / 2
-      anchor.rect = Qt.rect(popupX, pos.y + anchorItem.height + 10, implicitWidth, implicitHeight)
+      root.positionUnderAnchor()
     }
   }
 

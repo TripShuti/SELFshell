@@ -3,12 +3,10 @@
 // ============================================================
 import Quickshell
 import Quickshell.Io
-import Quickshell.Services.Notifications
 import "core"
 import QtQuick
 import "widgets"
 import "popups"
-import "monitors"
 import "scripts/SafePath.js" as SafePath
 
 PanelWindow {
@@ -31,7 +29,29 @@ PanelWindow {
   required property QtObject pacmanUpdates
   // менеджер бездіяльності (синглтон з shell.qml) — прокидається в ControlPopup
   // для подієвого оновлення caffeine (без вотчера control-state.json через UAF)
+  required property QtObject shellController
+  required property QtObject battery
+  required property QtObject audioEq
+  required property QtObject mediaPlayer
+  required property QtObject cavaMonitor
+  required property QtObject notifServer
+  required property QtObject pairingAgent
   required property QtObject idleManager
+
+
+  function invokePopup(name) {
+    switch (name) {
+      case "settings": settingsPopup.toggle(); break
+      case "launcher": launcherPopup.toggle(); break
+      case "control": controlPopup.toggle(); break
+      case "clipboard": clipboardPopup.toggle(); break
+      case "kcd": kcdPopup.toggle(); break
+      case "audio": audioPopup.toggle(); break
+      case "selftrack": selftrackPopup.toggle(); break
+    }
+  }
+  Component.onCompleted: root.shellController.registerBar(root)
+  Component.onDestruction: root.shellController.unregisterBar(root)
 
   readonly property real pillHeight: root.implicitHeight - 8
 
@@ -383,44 +403,30 @@ PanelWindow {
     visible: false
   }
 
-  // Сервер сповіщень — ловить системні сповіщення
-  NotificationServer {
-    id: notifServer
-    actionsSupported: true
-    bodySupported: true
-    imageSupported: true
-
-    onNotification: (notif) => {
-      // DND — повністю ховає сповіщення (тост, список, звук)
-      if (root.appConfig.cfg.dndEnabled) return
-      // kcd DND — ховає телефонні дублі через notify-send (kcd notification plugin)
-      // Уніфіковано з KdeConnectService.dnd: коли в попапі кде DND увімкнено — тільки попап, нікуди більше
-      // Нормалізуємо як в сервісі (trim+collapse whitespace, lower) і матчимо нестрого, бо kcd та notify-send мають різні appName
-      if (root.appConfig.cfg.kcdDndEnabled && root.kdeConnect && root.kdeConnect.lastPhoneNotif) {
-        var last = root.kdeConnect.lastPhoneNotif
-        var age = Date.now() - (root.kdeConnect.lastPhoneNotifTime ?? 0)
-        if (age < 10000) {
-          // lower — свідомо: kcd та notify-send пишуть appName по-різному
-          function _norm(s) { return SafePath.norm(s).toLowerCase() }
-          var a = _norm(notif.appName ?? ""), b = _norm(notif.summary ?? notif.title ?? ""), c = _norm(notif.body ?? notif.text ?? "")
-          var la = _norm(last.appName), lb = _norm(last.title), lc = _norm(last.text)
-          // строгий збіг або вміст — покриває Telegram vs org.telegram.desktop
-          if ((a === la && b === lb && c === lc) || (b === lb && c === lc) || (a !== "" && la !== "" && (a.includes(la) || la.includes(a)) && b === lb)) return
-        }
+  function handleSystemNotification(notif) {
+    // DND — повністю ховає сповіщення (тост, список, звук)
+    if (root.appConfig.cfg.dndEnabled) return
+    // kcd DND — ховає телефонні дублі через notify-send (kcd notification plugin)
+    // Уніфіковано з KdeConnectService.dnd: коли в попапі кде DND увімкнено — тільки попап, нікуди більше
+    // Нормалізуємо як в сервісі (trim+collapse whitespace, lower) і матчимо нестрого, бо kcd та notify-send мають різні appName
+    if (root.appConfig.cfg.kcdDndEnabled && root.kdeConnect && root.kdeConnect.lastPhoneNotif) {
+      var last = root.kdeConnect.lastPhoneNotif
+      var age = Date.now() - (root.kdeConnect.lastPhoneNotifTime ?? 0)
+      if (age < 10000) {
+        // lower — свідомо: kcd та notify-send пишуть appName по-різному
+        function _norm(s) { return SafePath.norm(s).toLowerCase() }
+        var a = _norm(notif.appName ?? ""), b = _norm(notif.summary ?? notif.title ?? ""), c = _norm(notif.body ?? notif.text ?? "")
+        var la = _norm(last.appName), lb = _norm(last.title), lc = _norm(last.text)
+        // строгий збіг або вміст — покриває Telegram vs org.telegram.desktop
+        if ((a === la && b === lb && c === lc) || (b === lb && c === lc) || (a !== "" && la !== "" && (a.includes(la) || la.includes(a)) && b === lb)) return
       }
-      notif.tracked = true
-      notifToast.showNotif(notif)
     }
+    notif.tracked = true
+    notifToast.showNotif(notif)
   }
 
-  // Монітор аудіо-візуалізації (cava) — працює, коли візуалізатор реально
-  // видно: у віджеті панелі під час відтворення або у відкритому попапі.
-  // Інакше cava на 30 fps спалював би CPU вхолосту весь день.
-  CavaMonitor {
-    id: cavaMonitor
-    appConfig: root.appConfig
-    active: mprisPopup.visible || (root.mprisWidget?.player?.isPlaying ?? false)
-  }
+  readonly property bool visualizationActive: mprisPopup.visible ||
+    (!root.barHidden && !!root.mprisWidget?.visible && (root.mediaPlayer.player?.isPlaying ?? false))
 
   MprisPopup {
     id: mprisPopup
@@ -513,16 +519,6 @@ PanelWindow {
     visible: false
   }
 
-  // IpcHandler: XF86-клавіші (binds.lua) → показ OSD
-  IpcHandler {
-    target: "osd"
-    function volume(): void {
-      osdPopup.showVolume()
-    }
-    function brightness(): void {
-      osdPopup.showBrightness()
-    }
-  }
 
   // Кнопка скріншота в ControlPopup → тост «Screenshot saved» з кнопкою Open
   Connections {
@@ -557,13 +553,6 @@ PanelWindow {
     onExited: running = false
   }
 
-  // IpcHandler для глобального виклику налаштувань
-  IpcHandler {
-    target: "settings"
-    function toggle(): void {
-      settingsPopup.toggle()
-    }
-  }
 
   LauncherPopup {
     id: launcherPopup
@@ -584,12 +573,11 @@ PanelWindow {
   // Підтвердження Bluetooth-парингу (запити пише services/qs-bt-agent).
   // Попап центрований, без прив'язки до віджета: має з'явитись незалежно
   // від того, який попап відкритий зараз
-  PairingAgent { id: pairingAgent }
 
   PairingPopup {
     id: pairingPopup
     window: root
-    agent: pairingAgent
+    agent: root.pairingAgent
     visible: false
   }
 
@@ -633,6 +621,7 @@ PanelWindow {
   Connections {
     target: kdeConnect
     function onNotificationReceived(notif) {
+      if (!root.shellController.isActiveBar(root)) return
       if (root.appConfig.cfg.dndEnabled) return
       if (root.appConfig.cfg.kcdDndEnabled) return
       notif.tracked = true
@@ -668,44 +657,10 @@ PanelWindow {
     }
   }
 
-  // IpcHandler для глобального виклику лаунчера
-  IpcHandler {
-    target: "launcher"
-    function toggle(): void {
-      launcherPopup.toggle()
-    }
-  }
 
-  // IpcHandler для глобального виклику центру керування (SUPER+Escape)
-  IpcHandler {
-    target: "control"
-    function toggle(): void {
-      controlPopup.toggle()
-    }
-  }
 
-  // IpcHandler для глобального виклику історії буфера обміну (SUPER+SHIFT+V)
-  IpcHandler {
-    target: "clipboard"
-    function toggle(): void {
-      clipboardPopup.toggle()
-    }
-  }
 
-  // IpcHandler для телефону (kcd)
-  IpcHandler {
-    target: "kcd"
-    function toggle(): void {
-      kcdPopup.toggle()
-    }
-  }
 
-  IpcHandler {
-    target: "audio"
-    function toggle(): void {
-      audioPopup.toggle()
-    }
-  }
 
   // Зв'язки: клік на віджеті → відкриває відповідний попап
   Connections { target: launcherWidget; enabled: target !== null; function onClicked() { launcherPopup.toggle() } }
@@ -755,13 +710,6 @@ PanelWindow {
   Connections { target: selftrackPopup; function onRefreshRequested() { selftrackMonitor.refresh() } }
   Connections { target: selftrackPopup; function onPagesRequested(app) { selftrackMonitor.refreshPages(app) } }
 
-  // IpcHandler для трекера часу (кейбінди з Hyprland)
-  IpcHandler {
-    target: "selftrack"
-    function toggle(): void {
-      selftrackPopup.toggle()
-    }
-  }
   Connections {
     target: trayWidget
     enabled: target !== null

@@ -104,10 +104,19 @@ PopupWindow {
     )
   }
 
+  property bool centerAnchor: false
+
   function positionUnderAnchor() {
     if (!root.popupWindow || !root.anchorTarget) return
     var r = root.popupWindow.itemRect(root.anchorTarget)
-    root.anchor.rect = Qt.rect(r.x, r.y + r.height + 10, root.implicitWidth, root.implicitHeight)
+    var bottom = root.appConfig && root.appConfig.cfg.barPos === "bottom"
+    var screenWidth = root.popupWindow.screen?.width ?? root.implicitWidth
+    var x = root.centerAnchor ? r.x + (r.width - root.implicitWidth) / 2 : r.x
+    x = Math.max(0, Math.min(x, screenWidth - root.implicitWidth))
+    root.transformOrigin = bottom ? Item.Bottom : Item.Top
+    root.slideDistance = bottom ? -Math.abs(root.slideDistance) : Math.abs(root.slideDistance)
+    root.anchor.rect = Qt.rect(x, bottom ? r.y - root.implicitHeight - 10 : r.y + r.height + 10,
+      root.implicitWidth, root.implicitHeight)
   }
 
   // Контейнер — тільки трансформація (масштаб/зсув/fade) і рамка.

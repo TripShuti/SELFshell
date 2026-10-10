@@ -265,7 +265,6 @@ Item {
       border.color: window.palette.bg2
 
       property string ctxName: ""
-      readonly property bool ctxIsUser: audioEq.userPresets[ctxName] !== undefined
 
       function openFor(name, pos) {
         ctxName = name

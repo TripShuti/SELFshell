@@ -25,7 +25,7 @@ RowLayout {
     color: sel.sys.palette.fg
     elide: Text.ElideRight
     font.family: sel.sys.palette.font
-    font.pixelSize: 10
+    font.pixelSize: sel.sys.ac.scaled(10)
   }
 
   Rectangle {
@@ -60,7 +60,7 @@ RowLayout {
             text: seg.modelData.text
             color: seg.active ? sel.sys.palette.bg0H : sel.sys.palette.gray
             font.family: sel.sys.palette.font
-            font.pixelSize: 10
+            font.pixelSize: sel.sys.ac.scaled(10)
           }
 
           MouseArea {

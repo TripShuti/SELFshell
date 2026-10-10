@@ -32,6 +32,7 @@ HoverItem {
     spacing: 4
 
     Image {
+      id: resinIcon
       source: root.resinIconSource
       visible: root.resinIconSource !== ""
       Layout.preferredWidth: 18
@@ -45,7 +46,8 @@ HoverItem {
       onVisibleChanged: if (!visible) opacity = 1.0
 
       BlinkAnimation {
-        running: root.resinClass === "critical"
+        target: resinIcon
+        active: root.visible && root.resinClass === "critical"
         minOpacity: 0.45
         blinkDuration: 700
         appConfig: window.appConfig
@@ -70,7 +72,8 @@ HoverItem {
 
       // Блимання тексту при critical
       BlinkAnimation {
-        running: root.resinClass === "critical"
+        target: txt
+        active: root.visible && root.resinClass === "critical"
         minOpacity: 0.45
         blinkDuration: 700
         appConfig: window.appConfig

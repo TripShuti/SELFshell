@@ -4,6 +4,7 @@
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
+import Quickshell.Services.Notifications
 import Quickshell.Wayland
 import "core"
 import "services"
@@ -12,6 +13,67 @@ import QtQuick
 
 ShellRoot {
   id: root
+
+  property var bars: []
+  function registerBar(bar) { root.bars = root.bars.concat([bar]) }
+  function unregisterBar(bar) {
+    root.bars = root.bars.filter(b => b !== bar)
+    if (root.pairingBar === bar) root.pairingBar = root.activeBar()
+    if (root.phonePairingBar === bar) root.phonePairingBar = root.activeBar()
+  }
+  function activeBar() {
+    var name = Hyprland.focusedMonitor?.name ?? ""
+    for (var i = 0; i < root.bars.length; i++) {
+      if (root.bars[i].screen?.name === name) return root.bars[i]
+    }
+    return root.bars.length > 0 ? root.bars[0] : null
+  }
+  function isActiveBar(bar) { return root.activeBar() === bar }
+  function togglePopup(name) { root.activeBar()?.invokePopup(name) }
+
+  AudioEq { id: audioEqSvc }
+  MprisService { id: mediaPlayerSvc; appConfig: rootAppConfig }
+  property var pairingBar: null
+  property var phonePairingBar: null
+  PairingAgent {
+    id: pairingAgentSvc
+    onRequestChanged: if (request) root.pairingBar = root.activeBar()
+  }
+  Connections {
+    target: kdeConnectService
+    function onPendingPairRequestChanged() {
+      if (kdeConnectService.pendingPairRequest) root.phonePairingBar = root.activeBar()
+    }
+  }
+  CavaMonitor {
+    id: cavaMonitorSvc
+    appConfig: rootAppConfig
+    active: {
+      for (var i = 0; i < root.bars.length; i++) {
+        if (root.bars[i].visualizationActive) return true
+      }
+      return false
+    }
+  }
+  NotificationServer {
+    id: notificationServerSvc
+    actionsSupported: true
+    bodySupported: true
+    imageSupported: true
+    onNotification: notif => root.activeBar()?.handleSystemNotification(notif)
+  }
+  IpcHandler { target: "settings"; function toggle(): void { root.togglePopup("settings") } }
+  IpcHandler { target: "launcher"; function toggle(): void { root.togglePopup("launcher") } }
+  IpcHandler { target: "control"; function toggle(): void { root.togglePopup("control") } }
+  IpcHandler { target: "clipboard"; function toggle(): void { root.togglePopup("clipboard") } }
+  IpcHandler { target: "kcd"; function toggle(): void { root.togglePopup("kcd") } }
+  IpcHandler { target: "audio"; function toggle(): void { root.togglePopup("audio") } }
+  IpcHandler { target: "selftrack"; function toggle(): void { root.togglePopup("selftrack") } }
+  IpcHandler {
+    target: "osd"
+    function volume(): void { root.activeBar()?.osd.showVolume() }
+    function brightness(): void { root.activeBar()?.osd.showBrightness() }
+  }
 
   PaletteService { id: paletteService }
 
@@ -26,12 +88,19 @@ ShellRoot {
   // HoYoLAB rate-limit, N× selftrack export. Імена з Svc-суфіксом навмисно:
   // в делегаті Variants нижче Bar має однойменні required-властивості, і
   // `genshinMonitor: genshinMonitor` замкнулось би саме на себе (binding loop).
-  // CavaMonitor і NotificationServer лишаються в Bar свідомо — вони
-  // прив'язані до екрана (візуалізатор/тост)).
   GenshinMonitor { id: genshinMonitorSvc; appConfig: rootAppConfig }
   SelfTrackMonitor { id: selftrackMonitorSvc; appConfig: rootAppConfig }
 
   PowerProfileService { id: powerProfileService }
+  BatteryService {
+    id: batterySvc
+    appConfig: rootAppConfig
+    powerProfiles: powerProfileService
+    onLowBattery: percent => root.activeBar()?.toast.showNotif({
+      appName: "Battery", summary: "Low battery (" + percent + "%)",
+      body: "Connect the charger.", appIcon: "battery-low", actions: []
+    })
+  }
 
   PacmanService { id: pacmanService }
 
@@ -159,6 +228,13 @@ ShellRoot {
   Variants {
     model: Quickshell.screens
     Bar {
+      shellController: root
+      battery: batterySvc
+      audioEq: audioEqSvc
+      mediaPlayer: mediaPlayerSvc
+      cavaMonitor: cavaMonitorSvc
+      notifServer: notificationServerSvc
+      pairingAgent: pairingAgentSvc
       palette: paletteService
       appConfig: rootAppConfig
       kdeConnect: kdeConnectService

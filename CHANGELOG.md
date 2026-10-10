@@ -6,6 +6,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Restore initial brightness reads and reject polling results that predate slider writes.
+- Route shell IPC to the focused monitor through one handler per target; share EQ, battery, MPRIS selection, cava and notifications across bars.
+- Reject stale SelfTrack, playlist and network-settings responses; queue refreshes that arrive during an active request.
+- Recover the EQ sink when its configuration is already present, restore battery power profiles at the recovery threshold, and separate profile read/write timeouts.
+- Position anchored popups above a bottom bar, fix screenshot debounce timestamps, and let the tray menu stack own its pages.
+- Keep calendar save callbacks local to each popup; stop pairing countdowns when requests disappear and show each request on one monitor.
+- Apply UI text scaling to settings controls and explicitly target blinking widgets.
+
+### Changed
+
+- React to audio graph changes with debounced EQ relinking and retain a one-minute fallback check.
+- Load audio mixer delegates only for the visible tab, defer initial pactl queries until opening, and cache launcher sorting between search edits.
+- Remove unused mixer processes, wrappers and obsolete widget-order helpers; disable infinite blinking when animations are off.
+
 ## [0.13.0] - 2026-09-26
 
 ### Added

@@ -15,6 +15,10 @@ Item {
   property var tracks: []
   property bool loading: false
   property bool active: false
+  property int _generation: 0
+  property bool _listPending: false
+  property bool _metaPending: false
+  property bool _busPending: false
 
   readonly property string script: Qt.resolvedUrl("../scripts/tracklist.py").toString().replace("file://", "")
   // Розв'язане D-Bus ім'я плеєра (може відрізнятись від identity, напр.
@@ -25,11 +29,16 @@ Item {
 
   Process {
     id: listProc
+    property int generation: -1
+    onExited: {
+      if (root._listPending && root.active) Qt.callLater(root.refresh)
+    }
 
     stdout: StdioCollector {
       id: listCollector
       waitForEnd: true
       onStreamFinished: {
+        if (!root.active || listProc.generation !== root._generation) return
         var text = listCollector.text.trim()
         if (!text) {
           root.trackIds = []
@@ -42,7 +51,7 @@ Item {
           var ids = JSON.parse(text)
           // Список не змінився — не перезавантажуємо метадані,
           // інакше модель заміниться і скинеться скрол плейлісту
-          if (JSON.stringify(ids) === JSON.stringify(root.trackIds)) {
+          if (JSON.stringify(ids) === JSON.stringify(root.trackIds) && !root._metaPending) {
             root.loading = false
             return
           }
@@ -61,11 +70,16 @@ Item {
 
   Process {
     id: metaProc
+    property int generation: -1
+    onExited: {
+      if (root._metaPending && root.active) Qt.callLater(root._fetchAll)
+    }
 
     stdout: StdioCollector {
       id: metaCollector
       waitForEnd: true
       onStreamFinished: {
+        if (!root.active || metaProc.generation !== root._generation) return
         root.loading = false
         var text = metaCollector.text.trim()
         if (!text) return
@@ -89,11 +103,16 @@ Item {
   // Запускається перед стартом watch, при зміні плеєра.
   Process {
     id: busnameProc
+    property int generation: -1
+    onExited: {
+      if (root._busPending && root.active) Qt.callLater(root._resolveBusName)
+    }
 
     stdout: StdioCollector {
       id: busnameCollector
       waitForEnd: true
       onStreamFinished: {
+        if (!root.active || busnameProc.generation !== root._generation) return
         var text = busnameCollector.text.trim()
         // Плеєр недоступний/вмер — лишаємо старе ім'я; _startWatch
         // підставиться з фолбеком через _playerBusName()
@@ -152,7 +171,9 @@ Item {
     }
     // Запит уже виконується — не запускаємо другий паралельний процес
     // (гонка за порядок результатів)
-    if (listProc.running) return
+    if (listProc.running) { root._listPending = true; return }
+    root._listPending = false
+    listProc.generation = root._generation
     root.loading = true
     // Прямі аргументи, без sh -c: playerName не парситься шеллом
     listProc.command = ["python3", root.script, "--player", root.playerName, "list"]
@@ -169,7 +190,9 @@ Item {
       root.loading = false
       return
     }
-    if (metaProc.running) return
+    if (metaProc.running) { root._metaPending = true; return }
+    root._metaPending = false
+    metaProc.generation = root._generation
     metaProc.command = ["python3", root.script, "--player", root.playerName,
       "metadata"].concat(root.trackIds.slice(0, root._metaCap))
     metaProc.running = true
@@ -215,12 +238,18 @@ Item {
       root._startWatch()
       return
     }
+    if (busnameProc.running) { root._busPending = true; return }
+    root._busPending = false
+    busnameProc.generation = root._generation
     busnameProc.command = ["python3", root.script, "--player", root.playerName, "busname"]
     busnameProc.running = true
   }
 
   // Оновлення при зміні плеєра чи активності
   onActiveChanged: {
+    root._generation++
+    root.trackIds = []
+    root.tracks = []
     refresh()
     if (root.active)
       root._resolveBusName()
@@ -228,6 +257,11 @@ Item {
       root._stopWatch()
   }
   onPlayerNameChanged: {
+    root._generation++
+    root._stopWatch()
+    root.trackIds = []
+    root.tracks = []
+    root.supported = false
     root._resolvedBusName = ""
     refresh()
     if (root.active)

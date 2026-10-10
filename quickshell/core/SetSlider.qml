@@ -34,13 +34,13 @@ ColumnLayout {
       color: sl.sys.palette.fg
       elide: Text.ElideRight
       font.family: sl.sys.palette.font
-      font.pixelSize: 10
+      font.pixelSize: sl.sys.ac.scaled(10)
     }
     Text {
       text: sl.value.toFixed(sl.decimals) + (sl.suffix ? " " + sl.suffix : "")
       color: sl.sys.palette.gray
       font.family: sl.sys.palette.font
-      font.pixelSize: 10
+      font.pixelSize: sl.sys.ac.scaled(10)
     }
   }
 
@@ -120,6 +120,6 @@ ColumnLayout {
     color: sl.sys.palette.gray
     wrapMode: Text.WordWrap
     font.family: sl.sys.palette.font
-    font.pixelSize: 9
+    font.pixelSize: sl.sys.ac.scaled(9)
   }
 }

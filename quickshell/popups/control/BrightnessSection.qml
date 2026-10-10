@@ -25,10 +25,13 @@ ColumnLayout {
   property int prevBrightness: 50
   // Останнє значення, віддане в ddcutil (-2 = ще нічого не слали)
   property int _sent: -2
+  property int _writeGeneration: 0
 
   Layout.fillWidth: true
 
   function refreshBrightness() {
+    if (getBrightnessProc.running) return
+    getBrightnessProc.generation = root._writeGeneration
     getBrightnessProc.running = true
   }
 
@@ -42,6 +45,7 @@ ColumnLayout {
   }
 
   function setBrightness(val) {
+    root._writeGeneration++
     brightness = Math.max(0, Math.min(100, val))
     // драг шле тік за тіком — на шину лише останнє в простої
     setDebounce.restart()
@@ -84,16 +88,20 @@ ColumnLayout {
       if (brightnessCollector.text) {
         // поки є недослане (драг/політ) — чужу відповідь не чіпаємо,
         // інакше слайдер стрибає на проміжне/застаріле значення
-        if (root.brightness !== root._sent || setBrightnessProc.running || setDebounce.running) return
+        if (getBrightnessProc.generation !== root._writeGeneration || setBrightnessProc.running || setDebounce.running) return
         var text = brightnessCollector.text.trim()
         var match = text.match(/current value = +(\d+).+max value = +(\d+)/)
-        if (match) { brightness = parseInt(match[1]) }
+        if (match) {
+          brightness = parseInt(match[1])
+          root._sent = brightness
+        }
       }
     }
   }
 
   Process {
     id: getBrightnessProc
+    property int generation: 0
     command: ["ddcutil", "getvcp", "10"]
     stdout: brightnessCollector
   }

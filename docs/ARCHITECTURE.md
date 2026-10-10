@@ -268,6 +268,12 @@ Rules of thumb applied throughout:
 
 ---
 
+All global IPC targets are registered once in `shell.qml`. The bar registry
+routes popup and OSD commands to `Hyprland.focusedMonitor`, falling back to
+the first available bar. Notification history and pairing requests also have
+one shared owner; toasts and pairing dialogs appear on the selected monitor.
+`MprisService` selects one player reactively for every bar and media popup.
+
 ### 9.3. Monitors — background data collection
 
 Monitors (CavaMonitor, GenshinMonitor, SelfTrackMonitor) are QML components that:
@@ -275,8 +281,8 @@ Monitors (CavaMonitor, GenshinMonitor, SelfTrackMonitor) are QML components that
 - constantly update properties (bars, resinText)
 - those properties are bound to widgets: Genshin/SelfTrack monitors are
   single instances in `shell.qml` (one process, not one per monitor);
-  CavaMonitor lives in `Bar.qml` because it is screen-bound. Widgets
-  reach them through bindings in `Bar.qml`.
+  CavaMonitor is also shared and runs only while at least one bar or popup
+  displays its output. Widgets reach them through bindings in `Bar.qml`.
 
 Gated by `Config`: each monitor has a `monitorEnabled` property reading the
 corresponding `appConfig.*Enabled`. If the widget is disabled, the monitor
@@ -337,7 +343,7 @@ Left-click cycles (`cycleNext()`), right-click opens the popup/list
 
 Clipboard history (`ClipboardPopup`) is opened by its bar widget or, as a
 fallback, by the `SUPER+SHIFT+V` keybind via `qs ipc call clipboard toggle`
-(`IpcHandler` in `Bar.qml`) and anchored below the control-center widget.
+(`IpcHandler` in `shell.qml`, routed to the focused monitor) and anchored below the control-center widget.
 The history itself is gathered by `cliphist`, fed by two
 `wl-paste --watch cliphist store` watchers started in `exec.lua` (one for
 text, one for images). Clicking an entry pipes it back into the clipboard
@@ -599,18 +605,18 @@ prompt is missed, the connect fails after the 55 s timeout.
 
 ### 9.10. AudioEq — 15-band system equalizer
 
-`core/AudioEq.qml` — real EQ via PipeWire `filter-chain` (`SELFshell_EQ`, 15× `mbeq_1197` LADSPA, `mbeqL`/`mbeqR`).
+`core/AudioEq.qml` — one shared instance in `shell.qml`, providing real EQ via PipeWire `filter-chain` (`SELFshell_EQ`, 15× `mbeq_1197` LADSPA, `mbeqL`/`mbeqR`).
 
 * **Sink:** static config `~/.config/pipewire/pipewire.conf.d/10-selfshell-eq.conf` (`_ensureConf` + `_confFile` + `systemctl --user restart pipewire` once). Always exists, `enable`/`disable` = pure routing (`pactl set-default-sink` + `move-sink-input`), no `load-module`/`unload`.
 * **Bands:** live `pw-cli s <node> 2 {params: ["mbeqL:50Hz...", v, "mbeqR:...", v]}` (`_applyAllNow` 30 entries, `setBand` 2 entries). `EqPresets.js` interpolates Winamp 10→15 bands (log-frequency, `all()` cached per call) + `bandLabels`.
 * **Presets:** `Flat` + 17 Winamp classics, `userPresets: {name:[15]}` shadow built-ins, `deletedBuiltins`, `pinned` (chronological chip order), `chipExists`/`isPinned`/`togglePin`/`renamePreset`/`saveChangesTo`/`deletePreset`/`createPreset` (`new`/`new2`…).
 * **State:** `data/eq.json` (`enabled`, `preset`, `bands[15]`, `userPresets`, `deletedBuiltins`, `pinned`) via `FileView` (`_stateFile` + `_loadState`/`saveState` + `Flat+bands` migration for removed `Custom`). `enabled` restored via `pw-dump` adoption (`_dumpProc` → `enable` if `enabled` and sink found) + relink (`_findNodeProc` → `_relinkProc`).
-* **Auto-relink:** `Timer _linkCheckTimer` (3s, `enabled && !busy && _eqNodeId>=0`) + `Process _relinkProc` (`pw-link -o | grep output.filter-chain` → bluetooth sink exclusive when present, otherwise all hardware sinks) keeps `filter-chain` output on correct hardware after headphone/BT hotplug. All sink names in shell snippets go through `_shellQuote()`; `grep` on sink names uses `grep -F`. Triggered also on `onEnabledChanged` / `_findNodeProc` / `_loadState` re-apply.
+* **Auto-relink:** PipeWire node/link-group events (500ms debounce), with `Timer _linkCheckTimer` (60s, `enabled && !busy && _eqNodeId>=0`) + `Process _relinkProc` (`pw-link -o | grep output.filter-chain` → bluetooth sink exclusive when present, otherwise all hardware sinks) keeps `filter-chain` output on correct hardware after headphone/BT hotplug. All sink names in shell snippets go through `_shellQuote()`; `grep` on sink names uses `grep -F`. Triggered also on `onEnabledChanged` / `_findNodeProc` / `_loadState` re-apply.
 * **UI:** `popups/MprisPopup.qml` — collapsible EQ section (`eqOpen`/`eqHeight`/`eqTarget:216`, `VertSlider` 15× `20x130`, `Flickable` chip row `pinned→builtins→user`, `+` `createPreset`, `ToggleSwitch` `enable`/`disable`, context menu `pin/rename/save/delete` + `Rename` `TextInput`).
 
 ### 9.11. Power profiles — PPD
 
-`services/PowerProfileService.qml` — single instance in `shell.qml`, passed into `Bar` as `powerProfiles`. Wraps `powerprofilesctl get/set` (fixed enum, no root, works on `amd_pstate` and `intel_pstate` alike); tracks `lastManualProfile` + `autoActive` so the battery auto-switch can restore. `popups/settings/SystemSection.qml` — selector + status (governor/EPP read-only from sysfs) + `autoPowerSaver` toggle (`config.json`). `widgets/BatteryWidget.qml` drives the auto-switch on its existing low/re-arm hysteresis (≤15% → `power-saver`, charge/≥20% → restore); manual picks always win.
+`services/PowerProfileService.qml` — single instance in `shell.qml`, passed into `Bar` as `powerProfiles`. Wraps `powerprofilesctl get/set` (fixed enum, no root, works on `amd_pstate` and `intel_pstate` alike); tracks `lastManualProfile` + `autoActive` so the battery auto-switch can restore. `popups/settings/SystemSection.qml` — selector + status (governor/EPP read-only from sysfs) + `autoPowerSaver` toggle (`config.json`). The shared `services/BatteryService.qml` drives the auto-switch after parsing a complete UPower response, using low/re-arm hysteresis (≤15% → `power-saver`, charge/≥20% → restore); manual picks always win.
 
 ### 9.12. Pacman updates
 

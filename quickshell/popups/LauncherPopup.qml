@@ -21,6 +21,7 @@ AnimatedPopup {
 
   property string searchText: ""
   property var entries: []
+  property var sortedApps: []
 
   enterScale: 0.9
 
@@ -33,9 +34,28 @@ AnimatedPopup {
     values: root.entries
   }
 
+  function rebuildApps() {
+    var all = [...DesktopEntries.applications.values]
+    // Сортування: частота запуску → за абеткою
+    all.sort(function(a, b) {
+      var ca = Usage.getCount(a.id)
+      var cb = Usage.getCount(b.id)
+      if (ca !== cb) return cb - ca
+      return (a.name || "").localeCompare(b.name || "")
+    })
+
+    root.sortedApps = all
+    root.filterApps()
+  }
+
+  Connections {
+    target: DesktopEntries.applications
+    function onValuesChanged() { root.rebuildApps() }
+  }
+
   // Фільтрує додатки за пошуком, сортує за частотою запуску
   function filterApps() {
-    var all = DesktopEntries.applications.values
+    var all = root.sortedApps
     var q = searchText.toLowerCase().trim()
     var result
 
@@ -50,14 +70,6 @@ AnimatedPopup {
           result.push(e)
       }
     }
-
-    // Сортування: частота запуску → за абеткою
-    result.sort(function(a, b) {
-      var ca = Usage.getCount(a.id)
-      var cb = Usage.getCount(b.id)
-      if (ca !== cb) return cb - ca
-      return (a.name || "").localeCompare(b.name || "")
-    })
 
     // Плавна зміна списку: затемнення перед оновленням
     listView.opacity = 0.6
@@ -99,12 +111,13 @@ AnimatedPopup {
   Component.onCompleted: {
     anchor.window = window
     try { Usage.setData(JSON.parse(usageFile.text() || "{}")) } catch(e) { Usage.setData({}) }
-    filterApps()
+    rebuildApps()
   }
 
   onVisibleChanged: {
     if (visible) {
       root.centerOnScreen()
+      root.rebuildApps()
       Qt.callLater(function() {
         searchField.text = ""
         searchField.forceActiveFocus()

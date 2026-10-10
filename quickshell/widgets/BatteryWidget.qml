@@ -1,64 +1,25 @@
 // ============================================================
 // quickshell/widgets/BatteryWidget.qml — віджет заряду батареї на панелі
 // ============================================================
-import Quickshell
-import Quickshell.Io
 import QtQuick
 import QtQuick.Layouts
 import "../core"
 
 // Віджет батареї: іконка + відсоток, червоний < 15% без зарядки.
-// Джерело — UPower через `upower` (зовнішня програма, без читання файлів).
+// Дані та автоматика живуть в одному BatteryService для всіх моніторів.
 HoverItem {
   id: root
 
   required property QtObject window
-  property int percent: -1
-  property string state: ""
-  property string device: ""
-
-  // Прихований на машинах без батареї (десктоп)
-  readonly property bool available: device !== ""
-  visible: available
-
-  // Клік — негайне оновлення
+  readonly property var battery: window.battery
+  readonly property int percent: battery.percent
+  readonly property bool charging: battery.charging
+  readonly property bool low: battery.low
+  visible: battery.available
   cursorShape: Qt.PointingHandCursor
-  onClicked: devsProc.running = true
-
+  onClicked: battery.refresh()
   implicitWidth: rowLayout.implicitWidth
   implicitHeight: parent?.height ?? 36
-
-  readonly property bool charging: state === "charging" || state === "pending-charge"
-  readonly property bool low: percent >= 0 && percent <= 15 && !root.charging
-
-  // Сповіщення про низький заряд: один раз за цикл розряду (не спамимо
-  // кожні 30 с опитування), скидається при зарядці або > 15%.
-  // DND поважається — тост не показується, коли dndEnabled.
-  // Гістерезис re-arm і авто-профіль живлення — ті самі пороги.
-  property bool lowNotified: false
-  readonly property var powerSvc: window.powerProfiles ?? null
-  onLowChanged: {
-    // Гістерезис: re-arm лише при зарядці або >= 20% — без нього заряд,
-    // що коливається біля 15%, спамив би тостом на кожному пересіченні.
-    // Тут же повертаємо ручний профіль живлення після авто power-saver.
-    if (root.percent >= 20 || root.charging) {
-      root.lowNotified = false
-      if (root.powerSvc && window.appConfig.cfg.autoPowerSaver) root.powerSvc.restoreManual()
-      return
-    }
-    if (!root.low || root.lowNotified) return
-    root.lowNotified = true
-    // Авто power-saver — до тоста, щоб профіль встиг перемкнутись навіть у DND
-    if (root.powerSvc && window.appConfig.cfg.autoPowerSaver) root.powerSvc.setProfile("power-saver", true)
-    if (window.appConfig.cfg.dndEnabled) return
-    window.toast.showNotif({
-      appName: "Battery",
-      summary: "Low battery (" + root.percent + "%)",
-      body: "Connect the charger.",
-      appIcon: "battery-low",
-      actions: []
-    })
-  }
 
   readonly property string icon: {
     var p = root.percent
@@ -75,67 +36,6 @@ HoverItem {
       : root.charging ? window.palette.green
       : root.hovered ? window.palette.green
       : window.palette.fg
-
-  // sysfs не підтримує inotify, тому раз на 30 с опитуємо upower.
-  // Гейтимо коли батареї нема, але перший запуск завжди — інакше device ніколи не знайдеться.
-  // Плюс гейт по batteryEnabled: вимкнений в Settings віджет не форкає upower
-  // (Loader лишає його живим навмисно — див. PillBar, без thrash; root.visible
-  // власного флага не бачить прихованого предка, тому читаємо cfg напряму)
-  readonly property bool widgetEnabled: window.appConfig.cfg.batteryEnabled
-  Timer {
-    interval: 30000
-    repeat: true
-    triggeredOnStart: true
-    running: (root.visible || root.device === "") && root.widgetEnabled
-    onTriggered: {
-      devsProc.running = true
-    }
-  }
-
-  // Крок 1: знайти пристрій батареї
-  Process {
-    id: devsProc
-    command: ["upower", "-e"]
-    stdout: SplitParser {
-      splitMarker: "\n"
-      onRead: data => {
-        var dev = ""
-        for (var line of String(data ?? "").split(/\r?\n/)) {
-          if (/battery/i.test(line)) { dev = line; break }
-        }
-        if (root.device !== dev) root.device = dev
-        if (dev !== "") {
-          infoProc.command = ["upower", "-i", dev]
-          infoProc.running = true
-        }
-      }
-    }
-  }
-
-  // Крок 2: прочитати стан та відсоток
-  Process {
-    id: infoProc
-    command: []
-    stdout: SplitParser {
-      splitMarker: "\n"
-      onRead: data => {
-        var pct = root.percent
-        var st = root.state
-        for (var line of String(data ?? "").split(/\r?\n/)) {
-          var m = line.match(/^\s*([a-z]+)\s*:\s*(.+?)\s*$/)
-          if (!m) continue
-          if (m[1] === "percentage") {
-            var v = parseInt(m[2], 10)
-            if (!isNaN(v)) pct = v
-          } else if (m[1] === "state") {
-            st = m[2]
-          }
-        }
-        root.percent = pct
-        root.state = st
-      }
-    }
-  }
 
   RowLayout {
     id: rowLayout

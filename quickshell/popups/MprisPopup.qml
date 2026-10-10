@@ -29,14 +29,14 @@ AnimatedPopup {
   property bool playerSelOpen: false
   property real playerSelHeight
   readonly property real playerSelTarget: Mpris.players.values.length * 26 + 4
-  property var player: null
+  readonly property var player: window.mediaPlayer.player
   property var cavBars: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 
   // Стабілізований artUrl: 
   // metadata push (~2/с), тож trackArtUrl міняється постійно, і без
   // стабілізації Image перезавантажував би HTTP-картинку при кожному push.
   // Оновлюємо source лише коли змінився сам трек (ключ — URL без токена);
-  // оновлення робить findAndSetPlayer (викликається таймером кожні 2с).
+  // оновлення робить updateArt за зміною плеєра або URL.
   property string _artUrl: ""
   property string _lastArtKey: ""
 
@@ -55,11 +55,7 @@ AnimatedPopup {
   // цільова висота виїзду (сама секція — в mpris/EqSection)
   readonly property real eqTarget: 216
 
-  AudioEq { id: audioEq }
-  // Аліас для прокидання в секції: `audioEq: audioEq` замкнулось би саме
-  // на себе (required-властивість компонента перекриває id попапа —
-  // та сама пастка, що Svc-суфікси в shell.qml).
-  readonly property QtObject audioEqSvc: audioEq
+  readonly property QtObject audioEqSvc: window.audioEq
 
   // Ім'я плеєра для TrackListService (з identity, інакше dbusName)
   readonly property string _servicePlayer: {
@@ -123,27 +119,8 @@ AnimatedPopup {
     anchor.window = window
   }
 
-  // Знаходить плеєр за назвою або перший доступний.
-  // Не перезаписує player, якщо той самий об'єкт — інакше таймер
-  // періодичного пошуку спамив би перепризначенням.
-  function findAndSetPlayer() {
-    var target = null
-    var fallback = null
-
-    for (var i = 0; i < playerRepeater.count; ++i) {
-      var del = playerRepeater.itemAt(i)
-      if (!del || !del.modelData) continue
-      if (!fallback && del.modelData.trackTitle) fallback = del.modelData
-      if (del.playerName.indexOf(root.preferredPlayer) >= 0) {
-        target = del.modelData
-        break
-      }
-    }
-
-    var best = target ?? fallback
-    if (root.player !== best) root.player = best
-
-    // Стабілізація artUrl: не чіпаємо source, поки змінюється лише auth-токен
+  // Токени обкладинки не перезавантажують зображення того самого треку.
+  function updateArt() {
     var raw = root.player?.trackArtUrl ?? ""
     var key = root._artKeyOf(raw)
     if (key !== root._lastArtKey) {
@@ -151,31 +128,9 @@ AnimatedPopup {
       root._artUrl = raw
     }
   }
-
-  // Стежить за появою/зникненням плеєрів Mpris
-  Repeater {
-    id: playerRepeater
-    model: Mpris.players
-
-    delegate: Item {
-      required property var modelData
-
-      readonly property string playerName: (modelData.identity ?? modelData.dbusName ?? "").toLowerCase()
-
-      Component.onCompleted: root.findAndSetPlayer()
-      // onDestruction з Qt.callLater тут був зайвим: гард if (root) не рятує —
-      // сам ідентифікатор root не резолвиться в знищеному скоупі
-      // (ReferenceError during delayed evaluation), а переобрання плеєра
-      // і так робить 2-секундний поллер вище (той самий патерн що в MprisWidget)
-    }
-  }
-
-  // Періодичний пошук плеєра — тільки коли попап видимий, інакше Bar керує вибором
-  Timer {
-    interval: 2000
-    running: root.visible
-    repeat: true
-    onTriggered: root.findAndSetPlayer()
+  Connections {
+    target: root.player
+    function onTrackArtUrlChanged() { root.updateArt() }
   }
 
   // Позиція плеєра не реактивна: Quickshell emitи positionChanged лише на
@@ -196,6 +151,7 @@ AnimatedPopup {
 
   // Якщо плеєр зник — закриваємо секцію плейлісту
   onPlayerChanged: {
+    root.updateArt()
     if (!root.player) root.playlistOpen = false
   }
 
@@ -407,7 +363,7 @@ AnimatedPopup {
             onClicked: {
               window.appConfig.cfg.preferredPlayer = modelData.key
               window.appConfig.saveToFile()
-              root.findAndSetPlayer()
+              root.updateArt()
               root.playerSelOpen = false
             }
           }

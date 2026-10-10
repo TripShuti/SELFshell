@@ -63,6 +63,13 @@ run "fake upower fixture" bash -c '
   bash tests/fake_upower.sh -i | grep -q "state:[[:space:]]*charging" || exit 1
 '
 
+# --- Регресії QML-логіки без запуску системних процесів ---
+if have node; then
+  run "QML logic regressions" node tests/qml_regressions.js
+else
+  skip "QML logic regressions" "node not installed"
+fi
+
 # --- Python — unittest ---
 # stdlib-тести йдуть завжди; genshin потребує requests/dotenv.
 # Раніше відсутність requests/dotenv скіпала ВСІ python-тести, хоча

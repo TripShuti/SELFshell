@@ -16,7 +16,7 @@ AnimatedPopup {
 
   // Сервіс kcd — прокидається через window.kdeConnect (Bar.qml)
   readonly property var svc: window ? window.kdeConnect : null
-  readonly property var req: svc ? svc.pendingPairRequest : null
+  readonly property var req: window.shellController.phonePairingBar === window && svc ? svc.pendingPairRequest : null
 
   implicitWidth: 360
   implicitHeight: contentCol.implicitHeight + 40
@@ -66,6 +66,7 @@ AnimatedPopup {
   // Синхронізація з сервісом
   function syncToRequest() {
     if (!req) {
+      countdown.stop()
       if (visible) close()
       return
     }

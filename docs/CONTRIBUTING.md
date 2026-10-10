@@ -77,6 +77,9 @@ Per layer:
   repo URL must use the canonical `TripShuti/SELFshell` case
 - Fish: `fish -n` on scripts; `tests/fake_upower.sh` fixtures the upower
   output contract parsed by `BatteryWidget`
+- QML logic: `node tests/qml_regressions.js` exercises request ordering,
+  brightness, battery recovery and related state transitions without system actions
+  (optional Node.js; included in `tests/run.sh` when available).
 - QML: quickshell has no `--check` — `selfshell reload` and check `qs log`
   for "Configuration Loaded"
 - After changing hypr configs: `hyprctl reload` + `selfshell doctor`

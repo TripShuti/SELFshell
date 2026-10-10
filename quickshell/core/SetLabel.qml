@@ -11,7 +11,7 @@ Text {
   // з контентом рядків (ті — 10px fg/muted)
   color: sys.palette.muted
   font.family: sys.palette.font
-  font.pixelSize: 10
+  font.pixelSize: sys.ac.scaled(10)
   font.bold: true
   font.letterSpacing: 1.5
   font.capitalization: Font.AllUppercase

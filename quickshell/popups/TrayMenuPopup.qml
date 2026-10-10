@@ -51,7 +51,7 @@ AnimatedPopup {
     function showMenu(handle) {
       if (!handle) return
       stack.clear()
-      stack.push(subMenuComp.createObject(null, { handle: handle }))
+      stack.push(subMenuComp, { handle: handle })
     }
   }
 
@@ -170,10 +170,10 @@ AnimatedPopup {
               if (!modelData.enabled) return
               if (modelData.hasChildren) {
                 // QsMenuEntry сам є QsMenuHandle — підменю рендериться з нього
-                stack.push(subMenuComp.createObject(null, {
+                stack.push(subMenuComp, {
                   handle: modelData,
                   isSubMenu: true
-                }))
+                })
               } else {
                 modelData.triggered()
                 root.close()

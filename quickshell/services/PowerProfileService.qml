@@ -29,7 +29,7 @@ Item {
   function refresh() {
     if (getProc.running) return
     getProc.command = ["powerprofilesctl", "get"]
-    procTimeout.restart()
+    getTimeout.restart()
     getProc.running = true
   }
 
@@ -53,7 +53,7 @@ Item {
     setProc._wantAuto = isAuto
     setProc._queued = ""
     setProc.command = ["powerprofilesctl", "set", name]
-    procTimeout.restart()
+    setTimeout.restart()
     setProc.running = true
   }
 
@@ -66,16 +66,21 @@ Item {
   // Завислий powerprofilesctl не повинен вішати busy назавжди
   // (селектор в SystemSection лишався заблокованим)
   Timer {
-    id: procTimeout
+    id: setTimeout
     interval: 15000
     onTriggered: {
-      if (getProc.running) getProc.running = false
       if (setProc.running) {
         setProc.running = false
         root.busy = false
         root.error = "powerprofilesctl timed out"
       }
     }
+  }
+
+  Timer {
+    id: getTimeout
+    interval: 15000
+    onTriggered: getProc.running = false
   }
 
   Process {
@@ -96,7 +101,7 @@ Item {
     }
     onExited: (code) => {
       running = false
-      procTimeout.stop()
+      getTimeout.stop()
       if (code !== 0) root.available = false
     }
   }
@@ -109,12 +114,13 @@ Item {
     property bool _queuedAuto: false
     onExited: (code) => {
       running = false
-      procTimeout.stop()
+      setTimeout.stop()
       root.busy = false
       if (code !== 0) {
         root.error = "powerprofilesctl set failed (" + code + ")"
         // профіль міг зникнути (зміна драйверів) — перечитуємо список
         root.refreshProfiles()
+        if (setProc._queued !== "") root._startSet(setProc._queued, setProc._queuedAuto)
         return
       }
       root.profile = setProc._want

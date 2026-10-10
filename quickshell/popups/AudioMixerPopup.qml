@@ -5,7 +5,6 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Pipewire
 import "../core"
-import "../scripts/AudioMixerUtils.js" as AudioUtils
 import "audio"
 import QtQuick
 import QtQuick.Layouts
@@ -28,7 +27,6 @@ AnimatedPopup {
 
   Component.onCompleted: {
     anchor.window = window
-    root.refreshAll()
   }
 
   onVisibleChanged: {
@@ -45,6 +43,15 @@ AnimatedPopup {
   property int selectedTab: 2 // 0 Playback, 1 Recording, 2 Output, 3 Input, 4 Config
   readonly property var tabNames: ["Playback", "Recording", "Output Devices", "Input Devices", "Configuration"]
   property bool showVirtual: false
+
+  onSelectedTabChanged: {
+    if (!root.visible) return
+    if (selectedTab === 0 || selectedTab === 1) {
+      root.refreshSinkInputs(); root.refreshSourceOutputs()
+    } else if (selectedTab === 2) root.refreshSinks()
+    else if (selectedTab === 3) root.refreshSources()
+    else root.refreshCards()
+  }
 
   // --- Дані з pactl ---
   property var cardsModel: []
@@ -162,28 +169,6 @@ AnimatedPopup {
     return m2
   }
 
-  // --- Допоміжні функції — делегують у AudioMixerUtils.js ---
-  function formatPercent(v) { return AudioUtils.formatPercent(v) }
-  function formatDb(v) { return AudioUtils.formatDb(v) }
-  function sinkNameForStream(streamNode) {
-    var serial = streamNode && streamNode.properties ? String(streamNode.properties["object.serial"] || "") : ""
-    if (serial && root.sinkNameMap[serial]) return root.sinkNameMap[serial]
-    return AudioUtils.sinkNameForStream(streamNode, root.sinkInputsInfo, root.sinkPortMap, Pipewire.nodes ? Pipewire.nodes.values : null)
-  }
-  function sourceNameForStream(streamNode) {
-    var serial2 = streamNode && streamNode.properties ? String(streamNode.properties["object.serial"] || "") : ""
-    if (serial2 && root.sourceNameMap[serial2]) return root.sourceNameMap[serial2]
-    return AudioUtils.sourceNameForStream(streamNode, root.sourceOutputsInfo, root.sourcePortMap, Pipewire.nodes ? Pipewire.nodes.values : null)
-  }
-  function sinkDescription(name) {
-    if (root.sinkDescMap[name]) return root.sinkDescMap[name]
-    return AudioUtils.sinkDescription(name, root.sinkPortMap, Pipewire.nodes ? Pipewire.nodes.values : null)
-  }
-  function sourceDescription(name) {
-    if (root.sourceDescMap[name]) return root.sourceDescMap[name]
-    return AudioUtils.sourceDescription(name, root.sourcePortMap, Pipewire.nodes ? Pipewire.nodes.values : null)
-  }
-
   function refreshAll() {
     root.refreshCards()
     root.refreshSinks()
@@ -202,8 +187,6 @@ AnimatedPopup {
   Process { id: _destroyProc; onExited: (code) => { if (code !== 0) console.warn("[AudioMixer] destroy failed", code); running = false } }
   Process { id: _portProc; onExited: (code) => { if (code !== 0) console.warn("[AudioMixer] set-port failed", code); running = false } }
   Process { id: _profileProc; onExited: (code) => { if (code !== 0) console.warn("[AudioMixer] set-profile failed", code); running = false } }
-  Process { id: _defaultSinkProc; onExited: (code) => { if (code !== 0) console.warn("[AudioMixer] set-default-sink failed", code); running = false } }
-  Process { id: _defaultSourceProc; onExited: (code) => { if (code !== 0) console.warn("[AudioMixer] set-default-source failed", code); running = false } }
 
   // --- Завантаження списків (команда всередині — pactl list <what>) ---
   PactlJsonProc {
@@ -339,7 +322,7 @@ AnimatedPopup {
             }
 
             Repeater {
-              model: playbackSM
+              model: root.visible && root.selectedTab === 0 ? playbackSM : null
               delegate: StreamCard {
                 required property var modelData
                 window: root.window
@@ -417,7 +400,7 @@ AnimatedPopup {
             }
 
             Repeater {
-              model: recordingSM
+              model: root.visible && root.selectedTab === 1 ? recordingSM : null
               delegate: StreamCard {
                 required property var modelData
                 window: root.window
@@ -482,7 +465,7 @@ AnimatedPopup {
             }
 
             Repeater {
-              model: outputSM
+              model: root.visible && root.selectedTab === 2 ? outputSM : null
               delegate: DeviceCard {
                 required property var modelData
                 window: root.window
@@ -543,7 +526,7 @@ AnimatedPopup {
             }
 
             Repeater {
-              model: inputSM
+              model: root.visible && root.selectedTab === 3 ? inputSM : null
               delegate: DeviceCard {
                 required property var modelData
                 window: root.window
@@ -606,7 +589,7 @@ AnimatedPopup {
             }
 
             Repeater {
-              model: root.cardsModel
+              model: root.visible && root.selectedTab === 4 ? root.cardsModel : []
               delegate: ConfigCard {
                 required property var modelData
                 window: root.window

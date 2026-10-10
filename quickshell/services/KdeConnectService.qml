@@ -16,7 +16,6 @@ Item {
 
   // --- Публічний стан ---
   property bool installed: false
-  property bool daemonRunning: watchProc.running
   property var devices: []
   property var connectedDevice: null
   property string primaryDeviceId: ""
@@ -72,12 +71,6 @@ Item {
     return SafePath.isWithinAnyDir(p, dirs)
   }
   property string downloadDir: ""
-  property string downloadDirDisplay: {
-    if (downloadDir === "") return "~/Downloads/kcd"
-    var home = String(Quickshell.env("HOME") ?? "")
-    if (home && downloadDir.startsWith(home)) return "~" + downloadDir.substring(home.length)
-    return downloadDir
-  }
   // SFTP mount dir — читаємо з kcd.toml, без хардкоду ~/Downloads/kcd/mnt
   property string sftpMountDir: ""
   property string sftpMountDirDisplay: {

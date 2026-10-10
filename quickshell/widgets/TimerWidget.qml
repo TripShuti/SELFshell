@@ -158,7 +158,8 @@ HoverItem {
 
     // Блимання при завершенні
     BlinkAnimation {
-      running: root.timerClass === "done"
+      target: txt
+      active: root.visible && root.timerClass === "done"
       minOpacity: 0.4
       blinkDuration: 600
       appConfig: window.appConfig

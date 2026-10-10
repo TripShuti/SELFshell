@@ -53,7 +53,7 @@
 - **Головна панель**: `Bar.qml`
 - **Спільний стан**: `window.appConfig` — єдиний екземпляр `core/AppConfig.qml`, створюється в `shell.qml`. Доступний барам через `window.appConfig`.
 - **Комунікація попапів з панеллю**: через `window` (проброшується в `required property QtObject window`). Попапи читають `window.appConfig` для стану, `window.itemRect(item)` для позиціонування.
-- **IpcHandler**: для гарячих клавіш з Hyprland (`qs ipc call <target> <action>`). Визначені в `Bar.qml` та `shell.qml`.
+- **IpcHandler**: для гарячих клавіш з Hyprland (`qs ipc call <target> <action>`). Визначені в `shell.qml`; виклики попапів спрямовуються на бар активного монітора.
 - **Палітра**: `data/palette.json` генерується `scripts/update-palette.sh`. Читається через `PaletteService.qml` (FileView + reactive properties). Доступна через `window.palette.xxx` або `root.palette.xxx`. Зміни підхоплюються на льоту, без рестарту.
 - **Персистентність**: тільки `FileView` (Quickshell.Io). Жодних `sh -c echo`/`sh -c cat`/`Process` для читання/запису файлів.
   - `data/config.json` — налаштування панелі (через AppConfig)

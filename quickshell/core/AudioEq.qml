@@ -2,6 +2,7 @@
 // quickshell/core/AudioEq.qml — 15-смуговий еквалайзер PipeWire (filter-chain SELFshell_EQ, live pw-cli, data/eq.json)
 // ============================================================
 import Quickshell
+import Quickshell.Services.Pipewire
 import Quickshell.Io
 import QtQuick
 import "../scripts/EqPresets.js" as EqPresets
@@ -110,7 +111,10 @@ Item {
     // _ensureConf() викликається на кожному старті і тихо затирав ручні
     // правки користувача
     if (_confFile.text() === content) {
-      root._confRestartPending = false
+      if (root._confRestartPending) {
+        root._confRestartPending = false
+        _pwRestartProc.running = true
+      }
       return
     }
     _confFile.setText(content)
@@ -567,9 +571,28 @@ Item {
   // Перевірка та відновлення лінків EQ (output.filter-chain) після зміни аудіовиходів:
   // якщо підключено Bluetooth — лінкує ексклюзивно на нього, інакше — на всі доступні sinks.
   // Перебудовує зв'язки тільки за потреби, щоб не рвати аудіобуфер.
-Timer {
+  function scheduleRelink() {
+    if (root.enabled && !root.busy) relinkDelay.restart()
+  }
+  Connections {
+    target: Pipewire.nodes
+    function onValuesChanged() { root.scheduleRelink() }
+  }
+  Connections {
+    target: Pipewire.linkGroups
+    function onValuesChanged() { root.scheduleRelink() }
+  }
+  Timer {
+    id: relinkDelay
+    interval: 500
+    onTriggered: {
+      if (root.enabled && !root.busy && !_relinkProc.running) _relinkProc.running = true
+    }
+  }
+  // Рідка страховка на випадок пропущеної події аудіографа.
+  Timer {
     id: _linkCheckTimer
-    interval: 3000
+    interval: 60000
     running: root.enabled && !root.busy && root._eqNodeId >= 0
     repeat: true
     onTriggered: _relinkProc.running = true
@@ -619,6 +642,7 @@ Timer {
   FileView {
     id: _stateFile
     path: Qt.resolvedUrl("../data/eq.json")
+    blockLoading: true
     // watchChanges лишаємо false — той самий UAF що в AppConfig (див. AudioEq:14)
     // Зовнішні правки eq.json застосовуються після рестарту; мертвий onFileChanged прибрано
     watchChanges: false
@@ -629,6 +653,7 @@ Timer {
   FileView {
     id: _confFile
     path: "file://" + root.confPath
+    blockLoading: true
     watchChanges: false
     onSaved: {
       if (root._confRestartPending) {

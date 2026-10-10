@@ -75,7 +75,7 @@
 | File | Type | What it does | Dependencies |
 |------|------|--------------|--------------|
 | `shell.qml` | root | ShellRoot: LockContext + WlSessionLock + Bar + IdleManager + IPC | Quickshell |
-| `Bar.qml` | root | Bar, AppConfig, pills, monitors, popups, IPC | All widgets, popups, monitors |
+| `Bar.qml` | root | Per-monitor pills and popups; injected shared services | All widgets, popups, monitors |
 | `VERSION` | data | Project version (read by the `selfshell` CLI) | — |
 
 ### `core/` — infrastructure
@@ -130,7 +130,7 @@
 | `BluetoothWidget.qml` | Bluetooth | BluetoothPopup |
 | `NetWidget.qml` | Network | NetworkPopup |
 | `TrayWidget.qml` | System tray | — |
-| `BatteryWidget.qml` | Battery charge (hides itself on desktops) | upower |
+| `BatteryWidget.qml` | Battery charge (hides itself on desktops) | BatteryService |
 | `KdeConnectWidget.qml` | Phone (kcd) battery + reachable | KdeConnectService, KdeConnectPopup |
 
 ### Popups (`popups/`)
@@ -139,7 +139,7 @@
 |------|--------------|------|
 | `LauncherPopup.qml` | Application launcher | LauncherUsage.js |
 | `CalendarPopup.qml` | Calendar | `scripts/CalendarTasks.js` |
-| `MprisPopup.qml` | Media player shell (player election, section heights, dropdown overlay, cava strip) | CavaMonitor, TrackListService, `mpris/*` sections below |
+| `MprisPopup.qml` | Media player shell (shared player, section heights, dropdown overlay, cava strip) | CavaMonitor, TrackListService, `mpris/*` sections below |
 | `popups/mpris/TrackHeader.qml` | Cover + player pill + track meta (`playerSelOpen` toggled via signal, overlay stays in root) | Mpris (players) |
 | `popups/mpris/PlaybackControls.qml` | Prev/play/next, volume drag, shuffle/loop, section toggles, progress seek | Mpris (`MprisLoopState`) |
 | `popups/mpris/PlaylistSection.qml` | Track queue around current (`_scrollPlaylistToCurrent` local, `playlistTarget` computed in root) | TrackListService |
@@ -222,6 +222,8 @@
 | `qs-bt-agent` | Python | BlueZ pairing agent (systemd user service) |
 | `qs-bt-agent.service` | systemd | Unit for qs-bt-agent |
 | `cava-vis.conf` | config | cava config |
+| `MprisService.qml` | QML | Shared reactive preferred-player selection |
+| `BatteryService.qml` | QML | Shared UPower polling, low-battery notifications and automatic power-profile recovery |
 | `TrackListService.qml` | QML | MPRIS TrackList service (dbus-monitor + live queue) |
 | `PowerProfileService.qml` | QML | Power profiles via `powerprofilesctl` (active/set, manual restore after auto) |
 | `PacmanService.qml` | QML | Pacman/AUR updates (cached `checkupdates` + `yay/paru -Qua`, 24h auto-check, upgrade state via sentinel file, `data/updates.json` cache) |
