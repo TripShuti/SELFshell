@@ -38,6 +38,14 @@ Item {
   property var pinned: ([])
 
   // внутрішнє
+  property bool _relinkPending: false
+  readonly property int _graphEqNodeId: {
+    var nodes = Pipewire.nodes.values
+    for (var i = 0; i < nodes.length; i++) {
+      if (nodes[i].name === root.sinkName) return nodes[i].id
+    }
+    return -1
+  }
   property int _eqNodeId: -1      // pw-node id EQ-sink (для set-param)
   property string _savedSink: ""  // default sink до увімкнення
   property bool _applyingAll: false
@@ -57,7 +65,27 @@ Item {
   }
 
   onEnabledChanged: {
-    if (enabled && _eqNodeId >= 0) _relinkProc.running = true
+    if (enabled) root.scheduleRelink()
+    else root._relinkPending = false
+  }
+  on_GraphEqNodeIdChanged: root.syncEqNode()
+  onBusyChanged: {
+    if (!busy) {
+      root.syncEqNode()
+      if (root._relinkPending) root.scheduleRelink()
+    }
+  }
+
+  // Після рестарту PipeWire старий числовий ID може належати іншому вузлу.
+  // Відновлюємо смуги та маршрутизацію тільки після появи нового EQ sink.
+  function syncEqNode() {
+    if (!root.enabled) return
+    if (root._graphEqNodeId < 0) { root._eqNodeId = -1; return }
+    if (root.busy || root._eqNodeId === root._graphEqNodeId) return
+    root._eqNodeId = root._graphEqNodeId
+    root.error = ""
+    root.busy = true
+    _getDefaultSinkProc.running = true
   }
 
   // Ініціалізація: читаємо eq.json (async) → забезпечуємо конфіг → dump
@@ -437,6 +465,7 @@ Item {
     command: ["pw-dump"]
     stdout: StdioCollector {
       onStreamFinished: {
+        root._eqNodeId = -1
         try {
           var objs = JSON.parse(text)
           for (var i = 0; i < objs.length; i++) {
@@ -572,7 +601,15 @@ Item {
   // якщо підключено Bluetooth — лінкує ексклюзивно на нього, інакше — на всі доступні sinks.
   // Перебудовує зв'язки тільки за потреби, щоб не рвати аудіобуфер.
   function scheduleRelink() {
-    if (root.enabled && !root.busy) relinkDelay.restart()
+    if (!root.enabled) return
+    root._relinkPending = true
+    if (!root.busy) relinkDelay.restart()
+  }
+  function runRelink() {
+    if (!root.enabled) { root._relinkPending = false; return }
+    if (root.busy || _relinkProc.running) return
+    root._relinkPending = false
+    _relinkProc.running = true
   }
   Connections {
     target: Pipewire.nodes
@@ -585,9 +622,7 @@ Item {
   Timer {
     id: relinkDelay
     interval: 500
-    onTriggered: {
-      if (root.enabled && !root.busy && !_relinkProc.running) _relinkProc.running = true
-    }
+    onTriggered: root.runRelink()
   }
   // Рідка страховка на випадок пропущеної події аудіографа.
   Timer {
@@ -595,11 +630,14 @@ Item {
     interval: 60000
     running: root.enabled && !root.busy && root._eqNodeId >= 0
     repeat: true
-    onTriggered: _relinkProc.running = true
+    onTriggered: root.scheduleRelink()
   }
 
   Process {
     id: _relinkProc
+    onExited: {
+      if (root._relinkPending) root.scheduleRelink()
+    }
     command: ["bash", "-c",
       "SRC=$(pw-link -o 2>/dev/null | grep 'output.filter-chain' | head -1 | cut -d: -f1); " +
       "[ -z \"$SRC\" ] && exit 0; " +

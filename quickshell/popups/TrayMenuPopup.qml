@@ -26,8 +26,8 @@ AnimatedPopup {
   anchorTarget: anchorItem
   positionOnShow: true
 
-  implicitWidth: 220
-  implicitHeight: stack.implicitHeight
+  preferredWidth: 220
+  preferredHeight: stack.implicitHeight
 
   Component.onCompleted: {
     anchor.window = window

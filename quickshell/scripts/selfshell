@@ -674,7 +674,12 @@ doctor() {
     error "shell.qml is missing"
     problems=$((problems + 1))
   fi
-  [ -f "$QS_CONFIG_DIR/Bar.qml" ] && ok "Bar.qml" || { error "Bar.qml is missing"; problems=$((problems + 1)); }
+  if [ -f "$QS_CONFIG_DIR/Bar.qml" ]; then
+    ok "Bar.qml"
+  else
+    error "Bar.qml is missing"
+    problems=$((problems + 1))
+  fi
   if [ -f "$QS_CONFIG_DIR/data/config.json" ]; then
     if python3 -m json.tool "$QS_CONFIG_DIR/data/config.json" >/dev/null 2>&1; then
       ok "data/config.json (valid JSON)"

@@ -16,8 +16,8 @@ AnimatedPopup {
   palette: window.palette
   appConfig: window.appConfig
 
-  implicitWidth: 380
-  implicitHeight: layout.implicitHeight + 16
+  preferredWidth: 380
+  preferredHeight: layout.implicitHeight + 16
   enterScale: 0.75
   slideDistance: 6
   transformOrigin: Item.Center
@@ -31,31 +31,18 @@ AnimatedPopup {
   readonly property string devName: svc ? svc.primaryDeviceName : ""
   readonly property string devId: svc ? svc.primaryDeviceId : ""
 
-  // центрування як у SettingsPopup/PairingPopup/WallpaperPopup — без костиля callLater
-  function recenter() {
-    var scr = window?.screen ?? Quickshell.screens[0]
-    var w = scr ? scr.width : 1920
-    var h = scr ? scr.height : 1080
-    var pw = implicitWidth
-    var ph = implicitHeight
-    if (pw <= 0) pw = 380
-    if (ph <= 0) ph = layout ? layout.implicitHeight + 16 : 200
-    anchor.window = window
-    anchor.edges = PopupAnchor.None
-    anchor.gravity = PopupAnchor.None
-    anchor.rect = Qt.rect((w - pw) / 2, (h - ph) / 2, pw, ph)
-  }
+  centerScreen: window?.screen ?? Quickshell.screens[0]
 
   Component.onCompleted: anchor.window = window
 
   onVisibleChanged: {
     if (visible) {
-      recenter()
+      root.centerOnScreen()
       if (svc) svc.refresh()
     }
   }
-  onImplicitWidthChanged: if (visible) recenter()
-  onImplicitHeightChanged: if (visible) recenter()
+  onImplicitWidthChanged: if (visible) root.centerOnScreen()
+  onImplicitHeightChanged: if (visible) root.centerOnScreen()
 
   // --- Дії: ping / ring / share / clipboard / sftp ---
   // Шлях від телефону (share.complete/sftp) відкриваємо лише всередині

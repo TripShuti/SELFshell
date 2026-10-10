@@ -22,8 +22,8 @@ AnimatedPopup {
   anchorTarget: anchorItem
   positionOnShow: true
 
-  implicitWidth: 400
-  implicitHeight: 340
+  preferredWidth: 400
+  preferredHeight: 340
 
   // Готова модель рядків: [{ id, text }] — id для cliphist decode/delete-index
   property var entries: []

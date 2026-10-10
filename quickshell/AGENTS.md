@@ -52,6 +52,7 @@
 - **Вхідна точка**: `shell.qml`
 - **Головна панель**: `Bar.qml`
 - **Спільний стан**: `window.appConfig` — єдиний екземпляр `core/AppConfig.qml`, створюється в `shell.qml`. Доступний барам через `window.appConfig`.
+- **Розміри попапів**: у нащадках `AnimatedPopup` задавати `preferredWidth`/`preferredHeight`; базовий компонент обмежує вікно екраном і додає прокручування завеликого вмісту.
 - **Комунікація попапів з панеллю**: через `window` (проброшується в `required property QtObject window`). Попапи читають `window.appConfig` для стану, `window.itemRect(item)` для позиціонування.
 - **IpcHandler**: для гарячих клавіш з Hyprland (`qs ipc call <target> <action>`). Визначені в `shell.qml`; виклики попапів спрямовуються на бар активного монітора.
 - **Палітра**: `data/palette.json` генерується `scripts/update-palette.sh`. Читається через `PaletteService.qml` (FileView + reactive properties). Доступна через `window.palette.xxx` або `root.palette.xxx`. Зміни підхоплюються на льоту, без рестарту.

@@ -25,8 +25,8 @@ AnimatedPopup {
 
   enterScale: 0.9
 
-  implicitWidth: 400
-  implicitHeight: 420
+  preferredWidth: 400
+  preferredHeight: 420
   centerScreen: window.screen ?? Quickshell.screens[0]
 
   ScriptModel {

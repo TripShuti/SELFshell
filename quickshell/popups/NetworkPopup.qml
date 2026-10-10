@@ -16,8 +16,8 @@ AnimatedPopup {
   palette: window.palette
   appConfig: window.appConfig
 
-  implicitWidth: 380
-  implicitHeight: layout.implicitHeight + 16
+  preferredWidth: 380
+  preferredHeight: layout.implicitHeight + 16
   enterScale: 0.75
   slideDistance: 6
   transformOrigin: Item.Center

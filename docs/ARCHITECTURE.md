@@ -313,6 +313,9 @@ All popups inherit from `AnimatedPopup.qml` — the base component with:
 - opening animation (scale + fade + slide)
 - closing animation (reverse)
 - shared background (gradient + border)
+- screen bounds with overflow scrolling: subclasses declare `preferredWidth`
+  and `preferredHeight`; the base constrains window dimensions and keeps
+  content at its preferred size, leaving nested lists unchanged at normal sizes
 - Escape handling
 - focus via `HyprlandFocusGrab` (explicit compositor grab): the classic
   xdg keyboard grab needs an input serial from the parent window, which

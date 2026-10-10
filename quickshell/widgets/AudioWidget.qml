@@ -17,7 +17,7 @@ Item {
   implicitHeight: parent?.height ?? 36
 
   property PwNode sink: Pipewire.defaultAudioSink
-  property PwNodeAudio audio: sink ? sink.audio : null
+  property PwNodeAudio audio: sink?.ready ? sink.audio : null
   property bool hovered: false
 
   visible: Pipewire.ready && sink != null

@@ -26,10 +26,10 @@ AnimatedPopup {
   anchorTarget: anchorItem
   positionOnShow: true
 
-  implicitWidth: 330
+  preferredWidth: 330
   // Розмір попапа — від контентного ColumnLayout: його implicitHeight
   // рахує рядки списку через явну height у delegate
-  implicitHeight: layout.implicitHeight + 24
+  preferredHeight: layout.implicitHeight + 24
 
   Component.onCompleted: { anchor.window = window }
 

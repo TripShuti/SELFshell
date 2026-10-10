@@ -18,8 +18,8 @@ AnimatedPopup {
   appConfig: window.appConfig
 
   // Центрований як SettingsPopup, а не під якорем (pavucontrol — окреме вікно)
-  implicitWidth: 480
-  implicitHeight: 480
+  preferredWidth: 480
+  preferredHeight: 480
   enterScale: 0.75
   slideDistance: 6
   transformOrigin: Item.Center

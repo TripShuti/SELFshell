@@ -49,7 +49,7 @@ Item {
       cursorShape: Qt.PointingHandCursor
       onEntered: parent.hovered = true
       onExited: parent.hovered = false
-      onClicked: { if (node && node.audio) node.audio.muted = !node.audio.muted }
+      onClicked: { if (node?.ready && node.audio) node.audio.muted = !node.audio.muted }
     }
   }
 
@@ -101,7 +101,7 @@ Item {
 
     function pick(px) {
       var f = Math.max(0, Math.min(1, px / Math.max(1, bar.width)))
-      if (node && node.audio) node.audio.volume = f
+      if (node?.ready && node.audio) node.audio.volume = f
     }
 
     // Трек фон
@@ -151,7 +151,7 @@ Item {
       onPositionChanged: function(mouse) { if (pressed) bar.pick(mouse.x + volMa.x) }
       onWheel: function(wheel) {
         if (wheel.angleDelta.y === 0) return
-        if (!node || !node.audio) return
+        if (!node?.ready || !node.audio) return
         var s = wheel.angleDelta.y > 0 ? window.appConfig.cfg.audioStep : -window.appConfig.cfg.audioStep
         node.audio.volume = Math.max(0, Math.min(node.audio.volume + s, 1))
       }

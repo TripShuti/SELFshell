@@ -27,6 +27,7 @@ Item {
   property bool loading: false
   property bool _refreshPending: false
   property int _pagesGeneration: 0
+  property string _pendingPageApp: ""
   // Старт видимого оновлення — щоб спінер встиг обернутись хоча б раз,
   // гасіння loading затримуємо до мінімальних 700мс (export локальний
   // і проходить за ~50мс, інакше видно лише смикання)
@@ -78,6 +79,7 @@ Item {
     d.setDate(d.getDate() + days)
     root.dateStr = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0")
     root._pagesGeneration++
+    root._pendingPageApp = ""
     root.pageApp = ""
     root.pagesModel = []
     root.refresh()
@@ -86,6 +88,7 @@ Item {
   function goToday() {
     root.dateStr = root._todayStr()
     root._pagesGeneration++
+    root._pendingPageApp = ""
     root.pageApp = ""
     root.pagesModel = []
     root.refresh()
@@ -119,14 +122,19 @@ Item {
 
   // Підвантаження сторінок застосунку (ліниво, по кліку)
   function refreshPages(app) {
-    if (fetchPagesProc.running) return
+    if (!root.monitorEnabled) return
     root._pagesGeneration++
-    // Повторний клік по розкритому — згорнути
-    if (root.pageApp === app) {
-      root.pageApp = ""
-      root.pagesModel = []
-      return
-    }
+    root.pageApp = root.pageApp === app ? "" : app
+    root.pagesModel = []
+    root._pendingPageApp = root.pageApp
+    root.fetchPendingPages()
+  }
+
+  // Поки процес зайнятий, тримаємо лише останній вибір користувача.
+  function fetchPendingPages() {
+    if (!root.monitorEnabled || fetchPagesProc.running || root._pendingPageApp === "") return
+    var app = root._pendingPageApp
+    root._pendingPageApp = ""
     fetchPagesProc.command = [root.selftrackBin, "export", "--date", root.dateStr, "--app", app]
     fetchPagesProc._wantApp = app
     fetchPagesProc._date = root.dateStr
@@ -247,7 +255,7 @@ Item {
           // тільки якщо збігається з запитаним
           if (root.monitorEnabled && fetchPagesProc._date === root.dateStr &&
               fetchPagesProc._generation === root._pagesGeneration &&
-              obj.page_app === fetchPagesProc._wantApp) {
+              root.pageApp === fetchPagesProc._wantApp && obj.page_app === fetchPagesProc._wantApp) {
             root.pageApp = obj.page_app ? obj.page_app : ""
             root.pagesModel = obj.pages ? obj.pages : []
           }
@@ -256,7 +264,9 @@ Item {
         }
       }
     }
-    onExited: running = false
+    onExited: {
+      if (root._pendingPageApp !== "") Qt.callLater(root.fetchPendingPages)
+    }
   }
 
   property bool monitorEnabled: appConfig ? appConfig.cfg.selftrackEnabled : false
@@ -267,6 +277,7 @@ Item {
     } else {
       root._refreshPending = false
       root._pagesGeneration++
+      root._pendingPageApp = ""
       pollTimer.running = false
       fetchProc.running = false
       fetchPagesProc.running = false

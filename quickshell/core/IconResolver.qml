@@ -54,5 +54,4 @@ QtObject {
     return ""
   }
 
-  function clearCache() { _cache = {} }
 }

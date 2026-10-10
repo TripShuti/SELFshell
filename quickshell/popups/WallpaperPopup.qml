@@ -14,8 +14,8 @@ AnimatedPopup {
   palette: window.palette
   appConfig: window.appConfig
 
-  implicitWidth: 780
-  implicitHeight: 210
+  preferredWidth: 780
+  preferredHeight: 210
   transformOrigin: Item.Top
 
   WallpaperController {

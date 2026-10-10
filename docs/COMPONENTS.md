@@ -84,7 +84,7 @@
 |------|------|--------------|--------------|
 | `AppConfig.qml` | state | Shared bar state: visibility, pill order; FileView persistence into `data/config.json`; global animation controls + `anim(ms)` duration helper | Quickshell.Io |
 | `PaletteService.qml` | service | Reactive palette (FileView + IPC updates) | `data/palette.json` |
-| `IconResolver.qml` | util | Icon lookup with LRU cache (`_cache`, `clearCache()`) | Quickshell |
+| `IconResolver.qml` | util | Icon lookup with a bounded insertion-order cache (`_cache`) | Quickshell |
 | `PairingAgent.qml` | service | Bridge between `qs-bt-agent` (`request/response.json`) and `PairingPopup` | `PairingPopup.qml` |
 | `SetButton.qml` | util | Settings button row | — |
 | `SetCard.qml` | util | Settings card container | — |

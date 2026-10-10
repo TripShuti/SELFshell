@@ -25,8 +25,8 @@ AnimatedPopup {
   // Ім'я інтерфейсу (wlan0, enp6s0 тощо)
   property string deviceName: ""
 
-  implicitWidth: 420
-  implicitHeight: 360
+  preferredWidth: 420
+  preferredHeight: 360
   enterScale: 0.75
   slideDistance: 6
   transformOrigin: Item.Center
@@ -40,7 +40,6 @@ AnimatedPopup {
   property bool statusIsError: false
   // true, коли резолвимо профіль за SSID (а не за активним пристроєм) —
   // потрібно, щоб правильно розпарсити вивід resolveConnProcess
-  property bool resolvingBySsid: false
   // Кількість профілів NetworkManager, знайдених з однаковим SSID (дублікати)
   property int duplicateProfileCount: 0
 
@@ -92,7 +91,6 @@ AnimatedPopup {
     activeTab = 0;
     autoconnectPending = false;
     autoconnect = true;
-    resolvingBySsid = false;
     duplicateProfileCount = 0;
     // Без очищення полів налаштувань попередня мережа показувала б свої
     // IP/DNS до завершення fetch (або назавжди, якщо fetch впав) — і їх
@@ -132,7 +130,6 @@ AnimatedPopup {
         resolved = true;
         return;
       }
-      resolvingBySsid = false;
       resolveConnProcess.command = ["nmcli", "-t", "-f", "GENERAL.CONNECTION", "dev", "show", deviceName];
       resolveConnProcess.running = true;
       return;
@@ -154,7 +151,6 @@ AnimatedPopup {
     // 3) Вивід "timestamp|name", відсортований за новизною — той самий формат,
     //    який очікує QML-парсер нижче.
     if (network.name) {
-      resolvingBySsid = true;
       resolveConnProcess.bySsid = true;
       resolveConnProcess.command = ["bash", "-c",
         "SSID=" + escapeShell(network.name) + "; " +

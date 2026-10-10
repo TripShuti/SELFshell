@@ -16,8 +16,8 @@ AnimatedPopup {
   palette: window.palette
   appConfig: window.appConfig
 
-  implicitWidth: 400
-  implicitHeight: layout.implicitHeight + 16
+  preferredWidth: 400
+  preferredHeight: layout.implicitHeight + 16
   transformOrigin: Item.Top
 
   // Дані з GenshinMonitor (прокидаються через Bar.qml)

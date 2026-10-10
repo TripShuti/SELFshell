@@ -22,10 +22,10 @@ AnimatedPopup {
   // нема в темі, тоді показуємо літеру-заглушку
   property QtObject iconResolver: null
 
-  implicitWidth: 540
+  preferredWidth: 540
   // Висота за контентом (список розтягує, порожнечі знизу нема),
   // з кепом щоб влізти в екран — далі список скролиться всередині
-  implicitHeight: Math.min(layout.implicitHeight + 20, (root.centerScreen ? root.centerScreen.height : 1080) - 120)
+  preferredHeight: Math.min(layout.implicitHeight + 20, (root.centerScreen ? root.centerScreen.height : 1080) - 120)
   enterScale: 0.75
   slideDistance: 6
   transformOrigin: Item.Center

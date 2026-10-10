@@ -18,8 +18,8 @@ AnimatedPopup {
   readonly property var svc: window ? window.kdeConnect : null
   readonly property var req: window.shellController.phonePairingBar === window && svc ? svc.pendingPairRequest : null
 
-  implicitWidth: 360
-  implicitHeight: contentCol.implicitHeight + 40
+  preferredWidth: 360
+  preferredHeight: contentCol.implicitHeight + 40
   enterScale: 0.75
   slideDistance: 6
   transformOrigin: Item.Center

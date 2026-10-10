@@ -21,8 +21,8 @@ AnimatedPopup {
   anchorTarget: anchorItem
   centerAnchor: true
 
-  implicitWidth: 280
-  implicitHeight: layout.implicitHeight + 16
+  preferredWidth: 280
+  preferredHeight: layout.implicitHeight + 16
 
   // Поточний місяць/рік та параметри календаря
   property int currentMonth: 0

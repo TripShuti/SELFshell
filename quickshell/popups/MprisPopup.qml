@@ -17,8 +17,8 @@ AnimatedPopup {
   palette: window.palette
   appConfig: window.appConfig
 
-  implicitWidth: 400
-  implicitHeight: layout.implicitHeight + 4
+  preferredWidth: 400
+  preferredHeight: layout.implicitHeight + 4
   transformOrigin: Item.Top
 
   // Улюблений плеєр — спільний з бар-віджетом, персистентний (config.json).

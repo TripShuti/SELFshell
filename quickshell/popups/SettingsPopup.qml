@@ -15,8 +15,8 @@ AnimatedPopup {
 
   // Фіксований розмір вікна: якщо контенту сторінки забагато,
   // він скролиться всередині (pageFlick) замість розтягування вікна
-  implicitWidth: 760
-  implicitHeight: 560
+  preferredWidth: 760
+  preferredHeight: 560
   enterScale: 0.75
   slideDistance: 6
   transformOrigin: Item.Center

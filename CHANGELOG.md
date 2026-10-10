@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Recover EQ node IDs, routing and bands after PipeWire restarts; queue graph changes during relinking.
+- Queue the latest SelfTrack page selection and discard results after collapsing or changing the date.
+- Bound popup windows to the screen while preserving full content through overflow scrolling.
+- Guard volume controls until their PipeWire nodes are ready and make CLI configuration checks explicit.
+
 - Restore initial brightness reads and reject polling results that predate slider writes.
 - Route shell IPC to the focused monitor through one handler per target; share EQ, battery, MPRIS selection, cava and notifications across bars.
 - Reject stale SelfTrack, playlist and network-settings responses; queue refreshes that arrive during an active request.
@@ -17,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Apply UI text scaling to settings controls and explicitly target blinking widgets.
 
 ### Changed
+
+- Remove unused network resolution state and the unused icon-cache reset API.
 
 - React to audio graph changes with debounced EQ relinking and retain a one-minute fallback check.
 - Load audio mixer delegates only for the visible tab, defer initial pactl queries until opening, and cache launcher sorting between search edits.

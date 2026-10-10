@@ -22,7 +22,8 @@ AnimatedPopup {
   anchorTarget: anchorItem
   positionOnShow: true
 
-  implicitWidth: 170
+  preferredWidth: 170
+  preferredHeight: menuLayout.implicitHeight + 20
 
   KeyboardLayoutState {
     id: kbState
@@ -38,6 +39,7 @@ AnimatedPopup {
   }
 
   ColumnLayout {
+    id: menuLayout
     anchors.fill: parent
     anchors.margins: 10
     spacing: 4

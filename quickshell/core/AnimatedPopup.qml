@@ -4,6 +4,7 @@
 import Quickshell
 import Quickshell.Hyprland
 import QtQuick
+import QtQuick.Controls
 
 // Базове анімоване попап-вікно для всіх спливаючих панелей
 PopupWindow {
@@ -31,7 +32,26 @@ PopupWindow {
   property int transformOrigin: Item.Top
   property real slideDistance: 10
 
-  default property alias content: container.data
+  default property alias content: popupContent.data
+
+  property real preferredWidth: 320
+  property real preferredHeight: 200
+  readonly property var boundsScreen: root.centerScreen ?? root.popupWindow?.screen ?? root.screen
+  readonly property real viewportWidth: Math.max(1, Math.min(root.preferredWidth,
+    root.boundsScreen ? root.boundsScreen.width - 20 : root.preferredWidth))
+  readonly property real viewportHeight: Math.max(1, Math.min(root.preferredHeight,
+    root.boundsScreen ? root.boundsScreen.height - 20 -
+      (root.popupWindow && root.anchorTarget ? root.popupWindow.height : 0) : root.preferredHeight))
+  implicitWidth: root.viewportWidth
+  implicitHeight: root.viewportHeight
+
+  function updatePosition() {
+    if (!root.visible) return
+    if (root.popupWindow && root.anchorTarget) root.positionUnderAnchor()
+    else if (root.centerScreen) root.centerOnScreen()
+  }
+  onViewportWidthChanged: Qt.callLater(root.updatePosition)
+  onViewportHeightChanged: Qt.callLater(root.updatePosition)
 
   color: "transparent"
   // xdg-grab НЕ використовуємо: він вимагає serial з інпута батьківського
@@ -97,10 +117,10 @@ PopupWindow {
     anchor.edges = PopupAnchor.None
     anchor.gravity = PopupAnchor.None
     anchor.rect = Qt.rect(
-      (scr.width - root.implicitWidth) / 2,
-      (scr.height - root.implicitHeight) / 2,
-      root.implicitWidth,
-      root.implicitHeight
+      (scr.width - root.viewportWidth) / 2,
+      (scr.height - root.viewportHeight) / 2,
+      root.viewportWidth,
+      root.viewportHeight
     )
   }
 
@@ -111,12 +131,12 @@ PopupWindow {
     var r = root.popupWindow.itemRect(root.anchorTarget)
     var bottom = root.appConfig && root.appConfig.cfg.barPos === "bottom"
     var screenWidth = root.popupWindow.screen?.width ?? root.implicitWidth
-    var x = root.centerAnchor ? r.x + (r.width - root.implicitWidth) / 2 : r.x
-    x = Math.max(0, Math.min(x, screenWidth - root.implicitWidth))
+    var x = root.centerAnchor ? r.x + (r.width - root.viewportWidth) / 2 : r.x
+    x = Math.max(10, Math.min(x, screenWidth - root.viewportWidth - 10))
     root.transformOrigin = bottom ? Item.Bottom : Item.Top
     root.slideDistance = bottom ? -Math.abs(root.slideDistance) : Math.abs(root.slideDistance)
-    root.anchor.rect = Qt.rect(x, bottom ? r.y - root.implicitHeight - 10 : r.y + r.height + 10,
-      root.implicitWidth, root.implicitHeight)
+    root.anchor.rect = Qt.rect(x, bottom ? r.y - root.viewportHeight - 10 : r.y + r.height + 10,
+      root.viewportWidth, root.viewportHeight)
   }
 
   // Контейнер — тільки трансформація (масштаб/зсув/fade) і рамка.
@@ -180,6 +200,26 @@ PopupWindow {
       }
     }
 
+    // Завеликий вміст зберігає свою геометрію; прокручування з'являється
+    // лише коли вікно обмежене екраном, тож вкладені списки працюють як раніше.
+    Flickable {
+      id: viewport
+      anchors.fill: parent
+      clip: true
+      contentWidth: popupContent.width
+      contentHeight: popupContent.height
+      interactive: contentWidth > width || contentHeight > height
+      flickableDirection: Flickable.AutoFlickIfNeeded
+      boundsBehavior: Flickable.StopAtBounds
+      ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+      ScrollBar.horizontal: ScrollBar { policy: ScrollBar.AsNeeded }
+      Item {
+        id: popupContent
+        width: Math.max(viewport.width, root.preferredWidth)
+        height: Math.max(viewport.height, root.preferredHeight)
+      }
+    }
+
     // Невидимий фокус-менеджер для клавіатури
     Item {
       anchors.fill: parent
@@ -237,6 +277,8 @@ PopupWindow {
   // Запуск анімації появи при відкритті
   onVisibleChanged: {
     if (visible) {
+      viewport.contentX = 0
+      viewport.contentY = 0
       if (root.positionOnShow) root.positionUnderAnchor()
       if (exitAnim.running) exitAnim.stop()
       if (enterAnim.running) enterAnim.stop()

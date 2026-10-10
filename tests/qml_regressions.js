@@ -109,4 +109,84 @@ test("Calendar: independent imports retain their own save callback", () => {
   b.setSaveCallback(() => saved++); a.clearSaveCallback(); b.add("2026-10-10", "Task");
   assert.equal(saved, 1); assert.doesNotMatch(source("scripts/CalendarTasks.js"), /\.pragma library/);
 });
+test("EQ: missing node invalidates the old ID and replacement restores routing", () => {
+  const root = { enabled: true, busy: false, _graphEqNodeId: -1, _eqNodeId: 37 };
+  const proc = { running: false };
+  const sync = method("core/AudioEq.qml", "syncEqNode", { root, _getDefaultSinkProc: proc });
+  sync(); assert.equal(root._eqNodeId, -1); assert.equal(proc.running, false);
+  root._graphEqNodeId = 82;
+  sync(); assert.equal(root._eqNodeId, 82); assert.equal(proc.running, true); assert.equal(root.busy, true);
+  proc.running = false; root.busy = false;
+  sync(); assert.equal(proc.running, false);
+  root.enabled = false; root._graphEqNodeId = 90;
+  sync(); assert.equal(proc.running, false);
+});
+
+test("EQ: graph change while relinking queues another run", () => {
+  let scheduled = 0;
+  const root = { enabled: true, busy: false, _relinkPending: false };
+  const ctx = { root, relinkDelay: { restart() { scheduled++; } }, _relinkProc: { running: true } };
+  root.scheduleRelink = method("core/AudioEq.qml", "scheduleRelink", ctx);
+  const run = method("core/AudioEq.qml", "runRelink", ctx);
+  root.scheduleRelink(); run(); assert.equal(root._relinkPending, true);
+  handler("core/AudioEq.qml", "_relinkProc", "onExited", ctx)();
+  assert.equal(scheduled, 2);
+  ctx._relinkProc.running = false; run();
+  assert.equal(ctx._relinkProc.running, true); assert.equal(root._relinkPending, false);
+  root.busy = true; root.scheduleRelink(); run(); assert.equal(root._relinkPending, true);
+  root.enabled = false; run(); assert.equal(root._relinkPending, false);
+});
+
+test("SelfTrack: latest app click is queued; collapse cancels old pages", () => {
+  const root = { monitorEnabled: true, pageApp: "", dateStr: "2026-10-10",
+    _pagesGeneration: 0, _pendingPageApp: "", selftrackBin: "selftrack" };
+  const ctx = { root, fetchPagesProc: { running: false } };
+  root.fetchPendingPages = method("monitors/SelfTrackMonitor.qml", "fetchPendingPages", ctx);
+  const click = method("monitors/SelfTrackMonitor.qml", "refreshPages", ctx);
+  click("Browser"); click("Editor");
+  assert.equal(root._pendingPageApp, "Editor");
+  ctx.pagesCollector = { text: JSON.stringify({ page_app: "Browser", pages: ["old"] }) };
+  const read = handler("monitors/SelfTrackMonitor.qml", "pagesCollector", "onStreamFinished", ctx);
+  read(); assert.deepEqual(root.pagesModel, []);
+  ctx.fetchPagesProc.running = false;
+  handler("monitors/SelfTrackMonitor.qml", "fetchPagesProc", "onExited",
+    { ...ctx, Qt: { callLater(fn) { fn(); } } })();
+  assert.equal(ctx.fetchPagesProc.command.at(-1), "Editor");
+  ctx.pagesCollector.text = JSON.stringify({ page_app: "Editor", pages: ["latest"] });
+  read(); assert.deepEqual(root.pagesModel, ["latest"]);
+  click("Editor"); read();
+  assert.equal(root.pageApp, ""); assert.deepEqual(root.pagesModel, []);
+  assert.equal(root._pendingPageApp, "");
+});
+
+test("Popup: bounded dimensions drive centered and bottom-bar anchors", () => {
+  const root = { centerScreen: { width: 320, height: 240 }, viewportWidth: 300, viewportHeight: 180,
+    anchor: {}, visible: true, centerAnchor: true, slideDistance: 10,
+    appConfig: { cfg: { barPos: "bottom" } }, anchorTarget: {},
+    popupWindow: { screen: { width: 320 }, itemRect() { return { x: 290, y: 4, width: 20, height: 28 }; } } };
+  const ctx = { root, anchor: root.anchor, PopupAnchor: { None: 0 }, Qt: { rect(x, y, w, h) { return { x, y, w, h }; } },
+    Item: { Top: 0, Bottom: 1 } };
+  method("core/AnimatedPopup.qml", "positionUnderAnchor", ctx)();
+  assert.deepEqual(root.anchor.rect, { x: 10, y: -186, w: 300, h: 180 });
+  assert.equal(root.slideDistance, -10);
+  method("core/AnimatedPopup.qml", "centerOnScreen", ctx)();
+  assert.deepEqual(root.anchor.rect, { x: 10, y: 30, w: 300, h: 180 });
+});
+test("Shell: popup routing follows the focused monitor and falls back safely", () => {
+  const first = { screen: { name: "HDMI-A-1" } }, second = { screen: { name: "DP-1" } };
+  const root = { bars: [first, second] }, Hyprland = { focusedMonitor: { name: "DP-1" } };
+  const active = method("shell.qml", "activeBar", { root, Hyprland });
+  assert.equal(active(), second);
+  Hyprland.focusedMonitor.name = "removed"; assert.equal(active(), first);
+  root.bars = []; assert.equal(active(), null);
+});
+
+test("Pairing: disappearing requests stop countdowns and close both popups", () => {
+  for (const file of ["popups/PairingPopup.qml", "popups/KdeConnectPairingPopup.qml"]) {
+    let stopped = 0, closed = 0;
+    const ctx = { req: null, visible: true, countdown: { stop() { stopped++; } }, close() { closed++; } };
+    const sync = method(file, "syncToRequest", ctx);
+    sync(); assert.equal(stopped, 1); assert.equal(closed, 1);
+  }
+});
 console.log("QML regressions: " + checks + " passed");

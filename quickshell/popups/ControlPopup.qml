@@ -22,8 +22,8 @@ AnimatedPopup {
   palette: window.palette
   appConfig: window.appConfig
 
-  implicitWidth: 320
-  implicitHeight: layout.implicitHeight + 20
+  preferredWidth: 320
+  preferredHeight: layout.implicitHeight + 20
   transformOrigin: Item.Top
 
   property var notificationsModel: null
