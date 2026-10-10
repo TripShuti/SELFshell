@@ -23,16 +23,14 @@ DIR="$(cd "$(dirname "$0")" && pwd)"
 EXT="${WALLPAPER##*.}"
 EXT="${EXT,,}"
 [ "$EXT" = "jpeg" ] && EXT="jpg"
-WP_DIR="$HOME/.config/quickshell/wp"
+WP_DIR="$(dirname "$DIR")/wp"
 mkdir -p "$WP_DIR"
-# Паралельні `wallpaper set` з різними EXT затирали один одному current.*:
-# один процес на скрипт через lockdir
-LOCKDIR="$WP_DIR/.wallpaper.lock"
-if ! mkdir "$LOCKDIR" 2>/dev/null; then
+# flock звільняється навіть після SIGKILL; застарілий lockdir не блокує apply.
+exec {wallpaper_fd}>"$WP_DIR/.wallpaper.lockfile"
+if ! flock -n "$wallpaper_fd"; then
   echo "error: another wallpaper switch is in progress" >&2
   exit 1
 fi
-trap 'rmdir "$LOCKDIR" 2>/dev/null || true' EXIT
 CURRENT="$WP_DIR/current.$EXT"
 LOCK_FRAME="$WP_DIR/current-lock.jpg"
 
@@ -66,5 +64,5 @@ if ! $WALLPAPER_ONLY; then
   pkill -USR1 -x foot 2>/dev/null || true
 
   # Повідомляємо quickshell про зміну палітри
-  quickshell ipc call palette-reload reload 2>/dev/null || true
+  quickshell ipc -p "$(dirname "$DIR")" call palette-reload reload 2>/dev/null || true
 fi

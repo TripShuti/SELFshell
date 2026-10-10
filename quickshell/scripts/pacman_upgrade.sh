@@ -2,18 +2,15 @@
 # ============================================================
 # quickshell/scripts/pacman_upgrade.sh — повне оновлення системи в терміналі із сигналом завершення
 # ============================================================
-# USAGE: pacman_upgrade.sh <sentinel-file>
-# Запускається з PacmanService через `kitty -e ...`: той самий хелпер, що
-# знайшов pacman_updates.py (yay/paru вміють і репозиторії, і AUR одним
-# проходом), інакше `sudo pacman -Syu` — пароль питає sudo в цьому ж вікні.
-# По завершенні exit-код пишеться в sentinel-файл (його опитує сервіс і
-# одразу перечитує список), вікно тримається паузою, щоб було видно підсумок.
+# Запускається в незалежному user-unit. flock захищає також ручний запуск.
 set -u
 
-sentinel="${1:?usage: pacman_upgrade.sh <sentinel-file>}"
-mkdir -p "$(dirname "$sentinel")"
-# старі сигнали затираємо, щоб сервіс не сплутав з поточним запуском
-rm -f "$(dirname "$sentinel")"/done-*
+runtime="${XDG_RUNTIME_DIR:?XDG_RUNTIME_DIR is required}"
+exec {upgrade_fd}>"$runtime/selfshell-pacman.lock"
+if ! flock -n "$upgrade_fd"; then
+  echo "Another SELFshell upgrade is already running." >&2
+  exit 1
+fi
 
 helper=""
 for h in yay paru; do
@@ -27,9 +24,6 @@ else
   sudo pacman -Syu || code=$?
 fi
 
-# Атомарний запис: сервіс опитує файл кожні 3с і міг би прочитати напівзапис
-printf '%s\n' "$code" > "$sentinel.tmp"
-mv -f "$sentinel.tmp" "$sentinel"
-
 echo
 read -rp "Done (exit $code). Press Enter to close... " _ || true
+exit "$code"

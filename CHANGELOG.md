@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Make installer failures restore user/system config files, remove fresh targets and return failure; make `--no` a read-only plan and decline replacement before system changes.
+- Enable greetd for the next boot without stopping the active display manager; preserve the selected alias on failure, avoid duplicate Fish startup and use the detected SelfTrack executable.
+- Stage updates for manifest-owned components, preserve personal/generated files, reject conflicting source edits, delete obsolete owned files and roll back failed activation. Serialize updates/reloads and refuse locked or busy shell shutdown.
+- Keep package upgrade terminals alive across QML reload through a detached systemd user unit; reattach on startup and block concurrent upgrades.
+- Share the wallpaper controller across tabs/monitors, release wallpaper locks after crashes through flock, virtualize thumbnails and separate desktop images from lock-screen frames.
+- Route CLI config/theme changes through AppConfig IPC, implement reset and validate offline writes. Generate external app themes only after explicit integration opt-in.
+- Report partial AUR failures without a successful daily cache; validate malformed Hyprland JSON roots/list entries and check the supported compositor minimum (0.56.0) before session startup.
+- Wait for compositor secure-lock acknowledgement before explicit suspend; release logind's delay-inhibitor on acknowledgement and reacquire after resume.
+- Require QML logic and component compilation checks in CI and before releases; correct installation/update, palette and lock-recovery documentation.
+
 - Recover EQ node IDs, routing and bands after PipeWire restarts; queue graph changes during relinking.
 - Queue the latest SelfTrack page selection and discard results after collapsing or changing the date.
 - Bound popup windows to the screen while preserving full content through overflow scrolling.

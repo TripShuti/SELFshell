@@ -67,12 +67,12 @@ input:kb_layout`.
 
 **Fix:**
 1. Make sure `kitty.conf` contains `include current-theme.conf`
-2. Run `selfshell palette reload` (or `selfshell wallpaper set <file>`)
+2. Enable the integration with `selfshell palette enable kitty`, then run `selfshell wallpaper reload`
 
 ## Yazi: icons or colors missing
 **Cause:** `theme.toml` or `flavors/palette.yazi/flavor.toml` is stale.
 
-**Fix:** run `selfshell palette reload`.
+**Fix:** back up custom Yazi themes, run `selfshell palette enable yazi`, then `selfshell wallpaper reload`. `palette reload` only rereads the shell palette.
 
 ## Network does not work after install.sh
 **Cause:** `NetworkManager` is not enabled/started.
@@ -242,19 +242,23 @@ recovers automatically within 15 minutes.
 selfshell reload       # restart (qs kill + qs -d)
 qs log                 # instance logs
 ```
-If the shell crashed while locked, the compositor shows a solid color
-(fail-secure). To recover: switch to a TTY and restart:
-```sh
-killall quickshell && quickshell &
-```
+If the shell crashed while locked, the compositor keeps the session locked
+with a solid color. Restarting Quickshell cannot reliably recover an abandoned
+Wayland lock. Switch to a TTY, log in, identify the affected graphical session
+with `loginctl list-sessions`, then end **that session** with
+`loginctl terminate-session <session-id>` and log in again. This closes its apps.
+Do not kill or reload a working shell while locked.
 
 ## quickshell does not see config.json changes
 **Symptom:** edited `data/config.json` by hand, but the bar did not update.
 
-**Fix:** `selfshell reload`. Changes from the SettingsPopup apply
-immediately; manual file edits — after a restart (FileView live-watching
-is disabled on Quickshell 0.3.0: atomic-rename writes crash the shell due
-to a use-after-free in the file watcher).
+**Fix:** use `selfshell config set <key> <value>` for live changes: the CLI
+updates the running AppConfig through IPC. `config reset` resets that same
+owner. With the shell stopped, these commands validate and write the file
+atomically. Stop the shell before using `config edit` or an external editor;
+editing behind a running AppConfig can be overwritten by its next save.
+File watching remains disabled because atomic-renames crash the watcher in
+Quickshell 0.3.0.
 
 ## Wallpaper set but colors did not change (half-applied palette)
 
@@ -267,7 +271,7 @@ to a use-after-free in the file watcher).
 **Fix:** the scripts now print `error: ...` instead of failing silently —
 check the output of `selfshell wallpaper set <file>` (or `qs log` for the
 Settings path) and fix the reported step, then re-run the same command
-(it is idempotent; parallel runs are serialized via a lockdir).
+(it is idempotent; parallel runs are serialized via flock).
 
 ## Settings → System shows "Up to date" while offline
 
@@ -277,7 +281,9 @@ Settings path) and fix the reported step, then re-run the same command
 into an empty list, indistinguishable from "no updates".
 
 **Fix:** current `pacman_updates.py` reports offline/sync failures through
-`ok:false` + `error` (shown in the Updates card) instead of an empty list.
+`ok:false` + `error` for repository failures. AUR failures return repository
+results with `partial:true` and an error; partial results are not cached as
+a complete daily check and are retried after 15 minutes.
 `checkupdates` exit 2 still means "up to date". `pacman -Si` enrichment is
 forced to `LC_ALL=C` — under a non-English locale repo/description/size
 used to come back empty.
@@ -287,10 +293,10 @@ used to come back empty.
 **Symptom:** two `uwsm start` blocks in `~/.config/fish/config.fish`
 after re-running `install.sh`.
 
-**Cause:** fixed — the installer now guards its block with
-`SELFshell-uwsm-begin/end` markers instead of grepping for `uwsm start`,
-so reruns and rollbacks no longer duplicate it. Remove a stale duplicate
-by hand once (keep one block).
+**Fix:** the installer checks for an existing `uwsm start hyprland.desktop`
+command before appending its marked block. Remove an old duplicate once,
+keeping the guarded tty1 login block. Fish autostart only runs when Fish is
+your login shell; otherwise use `uwsm start hyprland.desktop` from a TTY.
 
 ## Stale `current.*` wallpapers of mixed formats
 
@@ -298,16 +304,35 @@ by hand once (keep one block).
 lock screen shows an old frame.
 
 **Cause:** fixed — both wallpaper scripts write `current.<ext>` via
-tmp+rename under a shared lockdir and delete stale `current.*` of other
+tmp+rename under a shared flock and delete stale `current.*` of other
 formats. If you edited `wp/` by hand, keep a single `current.*` plus
 `current-lock.jpg` (regenerated automatically by the next switch).
 
-## selfshell update fails with a "not a git clone" error
-**Cause:** this was fixed — `selfshell update` now falls back to a GitHub
-archive download when the config was installed via `install.sh` (no `.git`).
+## Update rejected or interrupted
 
-**Fix:** make sure `selfshell` is up to date:
+A source checkout must be updated with Git outside the live config directory.
+For an installed copy, `selfshell update` uses a staged archive and the install
+manifest. Resolve reported local edits to managed files before retrying; settings,
+secrets and wallpapers are preserved. Unlock the screen and wait for wallpaper
+application before update/reload.
+
+After an interrupted transaction, the updater prints its recovery directory:
+`~/.config/.selfshell-update-<id>`. Stop the shell while unlocked, then run:
+
 ```sh
-curl -fsSL https://raw.githubusercontent.com/TripShuti/SELFshell/main/quickshell/scripts/selfshell -o ~/.config/quickshell/scripts/selfshell && chmod +x ~/.config/quickshell/scripts/selfshell
+qs ipc -p ~/.config/quickshell call lockscreen quitIfUnlocked
+python3 ~/.config/quickshell/scripts/update_config.py rollback ~/.config/.selfshell-update-<id>
+selfshell reload
 ```
-Local files (`config.json`, `.env`, wallpapers) are never overwritten.
+
+If the live Quickshell directory is missing, use `update_config.py` from a fresh
+source checkout instead. Keep the recovery directory until rollback succeeds.
+After a power loss, inspect the transaction journal before retrying an update.
+
+## System upgrade terminal and shell reload
+
+Package upgrades run in `selfshell-upgrade.service`, independently of QML.
+The UI reattaches after reload and waits until the terminal closes before allowing
+a new upgrade. For launch failures, check `journalctl --user -u selfshell-upgrade`.
+Closing the terminal during pacman is still an interruption; reload the shell
+instead if only its UI needs restarting.

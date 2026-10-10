@@ -72,7 +72,7 @@ no separate lock/idle daemons.
 
 | Component | Role |
 |-----------|------|
-| [Hyprland](https://hyprland.org) | Wayland compositor (≥ 0.52 — the config is Lua-based) |
+| [Hyprland](https://hyprland.org) | Wayland compositor (≥ 0.56.0 — supported Lua API) |
 | [Quickshell](https://github.com/Quickshell/Quickshell) | QML-based shell/panel 
 | [Kitty](https://sw.kovidgoyal.net/kitty/) | Terminal
 | [Fish](https://fishshell.com) | Shell 
@@ -83,7 +83,7 @@ no separate lock/idle daemons.
 | [selftrack](https://github.com/TripShuti/SELFtrack) | Focus-based time tracker (time tracking widget, optional, `cargo install --git`) |
 
 ## Quick start for fresh installed Arch
-I haven't tested it on an existing setup, but I assume everything works fine there too.
+The installer targets Arch Linux. Back up an existing desktop configuration before replacing it. Installer failure paths are tested with isolated system-command stubs; hardware setup still depends on your machine.
 
 ```sh
 git clone https://github.com/TripShuti/SELFshell
@@ -92,23 +92,25 @@ cd SELFshell
 # follow the prompts, then reboot
 ```
 
-The script installs all dependencies, copies configs, sets up Bluetooth
-and asks whether to install **greetd** with the **tuigreet** TUI login
-screen (starts Hyprland via **uwsm** after login). If greetd is declined,
-it adds automatic Hyprland startup via uwsm (fish login →
-`exec uwsm start hyprland.desktop`) instead. The theme colors and
-background are refreshed automatically by `update-palette.sh` on every
-wallpaper change. The script finishes with a `selfshell doctor --preboot`
-check so you can see any missing pieces before the reboot.
+The script installs dependencies, copies configs and optionally sets up
+**greetd + tuigreet** for an **uwsm** session. It enables greetd for the next
+boot without stopping the current display manager. If declined, start the
+session from a TTY with `uwsm start hyprland.desktop`; Fish login autostart
+is added only when a Fish config exists, and does not change your login shell.
+Dotfiles are optional: installing only Quickshell does not configure Hyprland
+startup. The final `selfshell doctor --preboot` checks dependencies and the
+installed compositor version before services are enabled.
 
 ### Manual setup (without install.sh)
 
-Clone and copy the component dirs into `~/.config/` (each repo subdir maps
+For a fresh configuration directory, clone and copy the component dirs into `~/.config/` (each repo subdir maps
 to `~/.config/<name>`, mirroring what `install.sh` copies):
 
 ```sh
 git clone https://github.com/TripShuti/SELFshell
+mkdir -p ~/.config
 cp -r SELFshell/{quickshell,hypr,fish,kitty,starship,yazi,fastfetch} ~/.config/
+python3 SELFshell/quickshell/scripts/update_config.py record SELFshell ~/.config/quickshell quickshell hypr fish kitty starship yazi fastfetch
 ```
 
 Then:
@@ -120,33 +122,44 @@ Then:
 
 ## Updating an existing setup
 
-Re-running `./install.sh` does not touch anything without confirmation:
+Use `selfshell update` for an installed copy. It downloads `main`, prepares
+and validates a separate tree, preserves settings/secrets/wallpapers and
+updates the components recorded by the installer. Previously owned files
+removed upstream are removed; conflicting edits to managed source files
+stop the update. Backups remain until the new shell answers IPC. Failure
+rolls files back and restarts the previous shell. Updates/reloads are
+serialized and require an unlocked screen with no wallpaper apply running.
 
-- If `~/.config/quickshell` is a git clone of the repo, the installer
-  offers `git pull` (keeps your local settings and `.env`)
-- Otherwise it asks to back up the existing config and reinstall the repo
-  defaults — the default answer is **no**, and declining aborts the script
-  with nothing changed
-- Already-installed packages and services are skipped; the optional steps
-  (dotfiles, yay, Breeze cursor, greetd) default to **no**
+The installation manifest is `~/.config/quickshell/.selfshell-install.json`.
+Older installs without it update Quickshell only; optional component
+ownership and palette integration must be recorded explicitly. Keep the Git
+checkout outside `~/.config`: the repository contains several component
+directories and is not itself a runnable Quickshell configuration. Source
+checkouts are updated with Git and reviewed before installation.
 
-Non-interactive runs: `./install.sh --yes` answers yes to every prompt,
-`./install.sh --no` answers no (both are useful for CI / scripts).
+Re-running `./install.sh` is a replacement with backups, not a settings-preserving
+update. Existing Quickshell configs require confirmation (default **no**);
+declining exits before package or service changes. `--yes` accepts every
+optional step; `--no` prints a plan and exits without changing anything.
+On failure the installer restores backed-up files and removes fresh targets.
+Package installations and external system settings are not rolled back.
 
-To sync a config from a fresh clone of the repository without the installer:
+Palette integration is enabled for the optional configs selected at install.
+For a manually managed application, opt in explicitly, for example:
 
 ```sh
-cp -r quickshell/. ~/.config/quickshell/
-selfshell reload
+selfshell palette enable yazi
+selfshell palette enable kitty
+selfshell wallpaper reload
 ```
 
-If you keep `~/.config/quickshell` as a git clone of the repository,
-`selfshell update` (git pull + shell restart) is the shortest path.
-
-The lock screen uses the generated `current-lock.jpg` (static first frame of
-the wallpaper); on a fresh clone it falls back to the tracked `wp1.jpg` /
-`black.png` until you pick a wallpaper (via the Wallpaper Picker or
-`selfshell palette reload`).
+Available integrations: `kitty`, `fish`, `starship`, `yazi`, `foot`, `qt6ct`.
+`palette disable <app>` stops subsequent writes. Enabling Yazi delegates its
+`theme.toml` and generated `palette` flavor to SELFshell; back up custom themes.
+`palette reload` only rereads `palette.json`; it does not regenerate app themes
+or lock-screen frames. Use `wallpaper reload` or `theme set black` to regenerate.
+`wallpaper current` returns the desktop image, including GIF; the lock screen
+uses a separate generated static frame.
 
 ## CLI
 
@@ -166,11 +179,11 @@ selfshell audio          # toggle audio mixer
 selfshell osd <volume|brightness> # show OSD overlay
 selfshell theme [list|status|set <black|matugen>] # manage theme
 selfshell wallpaper <list|current|set <file>|random> # manage wallpapers
-selfshell palette <reload|show|path> # palette operations
+selfshell palette <reload|show|path|enable|disable> # palette operations
 selfshell config <get|set|edit|reset> <key> [value] # manage config.json
 selfshell ipc [call] <target> <function> [args...]
 selfshell reload         # restart quickshell
-selfshell update         # update config (git pull, or GitHub archive download) + reload
+selfshell update         # staged update of managed components, with rollback
 selfshell version        # show version
 selfshell list           # list running quickshell instances
 selfshell status         # quick status summary

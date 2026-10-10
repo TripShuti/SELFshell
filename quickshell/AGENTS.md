@@ -69,7 +69,7 @@
 - **ddcutil brightness**: одна DDC-транзакція йде секунди, тому слайдер оптимістичний (дисплей одразу) і шле на шину один запис за драг (debounce + `_flushSet()` в `popups/control/BrightnessSection.qml`), відповіді опитувань старші за останній запис ігноруються.
 
 ## Валідація
-- `quickshell` не має `--check`. Тестувати через `quickshell kill default && timeout 5 quickshell 2>&1` (перевірити наявність "Configuration Loaded" в логах).
+- `quickshell` не має `--check`. Компіляція всіх компонентів без їх створення: `python3 quickshell/scripts/update_config.py check quickshell` (потрібен Wayland; CI запускає headless Weston). Не зупиняти живий shell для перевірки, особливо під час блокування.
 - Bash/Python/JSON/TOML/Lua-синтаксис перевіряє GitHub Actions (`.github/workflows/ci.yml`): `bash -n`, `py_compile`, парсинг json/toml/jsonc, `loadfile` для Lua, shellcheck, luajit-unit-тести, Python-unittest, схеми конфігів, markdown-посилання, тести інсталера (`tests/`).
 - Локальний прогін усієї валідації: `bash tests/run.sh` (непотребні інструменти пропускаються).
 - Системна діагностика: `selfshell doctor` (або `doctor --preboot` для pre-boot стану).

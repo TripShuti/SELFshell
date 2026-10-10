@@ -7,23 +7,22 @@
 # yazi/starship/fastfetch конфіги з бекапами.
 # Також пропонує AUR helper (yay). Екран входу — greetd + tuigreet,
 # який запускає Hyprland через uwsm після логіну
-# (fallback без greetd: автозапуск Hyprland через uwsm у fish login).
+# (без greetd: явний запуск uwsm або автозапуск у наявному Fish login).
 # Фінал: selfshell doctor --preboot.
 #
 # Опції:
 #   --yes / -y   — автоматично «y» на кожен промпт
-#   --no / -n    — автоматично «n» на кожен промпт (нічого не встановлює
-#                  поза межами дефолтів; корисний для огляду)
+#   --no / -n    — показати план без запису файлів та системних змін
 #   --help       — цей текст
 #
 # Гарантії:
-#   - Якщо будь-який крок падає — всі бекапи, зняті цим запуском,
-#     автоматично відновлюються (rollback), старі конфіги не губляться.
-#   - Якщо ~/.config/quickshell — git-клон цього репозиторію, запуск
-#     оновлює його через git pull замість перезапису (зберігаються
-#     налаштування, .env та git-workflow із README).
+#   - Помилка зупиняє інсталяцію; змінені користувацькі файли
+#     відновлюються, створені цим запуском конфіги видаляються.
+#   - Встановлені пакети не видаляються при відкаті. Системні сервіси
+#     застосовуються після перевірки конфігів; поточна сесія не зупиняється.
+#   - Git-клон тримати поза ~/.config/quickshell; для оновлень — selfshell update.
 # ============================================================
-set -Euo pipefail
+set -Eeuo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 QS_CONFIG_DIR="$HOME/.config/quickshell"
@@ -133,53 +132,110 @@ run_retry() {
   return 1
 }
 
-# --- Rollback: якщо будь-який крок падає (set -e → ERR), всі бекапи,
-# зняті ЦИМ запуском, повертаються на місце. ---
-_FAILED=0
+# Режим огляду завершується до sudo, сервісів і файлових операцій.
+if [ "$ASSUME_YES" = "n" ]; then
+  info "Review only: no files, packages, groups or services will be changed."
+  info "Required packages: ${PACMAN_DEPS[*]}"
+  info "Config destination: $QS_CONFIG_DIR"
+  info "Optional: desktop configs, yay, Breeze cursors, kcd, selftrack, greetd."
+  exit 0
+fi
+
+# Відкат у зворотному порядку: вкладений файл відновлюється до батьківської теки.
 _BACKED_UP=()   # пари "target|backup"
+_SYSTEM_BACKUPS=()
+ts="$(date +%Y%m%d-%H%M%S)-$$"
+
+backup_target() {
+  local target="$1" backup=""
+  mkdir -p "$(dirname "$target")"
+  if [ -e "$target" ] || [ -L "$target" ]; then
+    backup="$target.bak-$ts"
+    mv -- "$target" "$backup"
+    warn "Existing $target backed up to $backup"
+  fi
+  _BACKED_UP+=("$target|$backup")
+}
 
 backup_and_replace() {
   local target="$1" src="$2"
-  # Батьківська тека може бути відсутня на свіжому юзері/chroot
-  # (напр. ~/.config) — без mkdir -p cp впаде через set -e
-  mkdir -p "$(dirname "$target")"
-  if [ -e "$target" ]; then
-    local backup="$target.bak-$ts"
-    mv "$target" "$backup"
-    _BACKED_UP+=("$target|$backup")
-    warn "Existing $target backed up to $backup"
+  backup_target "$target"
+  cp -r -- "$src" "$target"
+}
+
+backup_system_file() {
+  local target="$1" backup=""
+  if sudo test -e "$target" || sudo test -L "$target"; then
+    backup="$target.bak-$ts"
+    sudo cp -a -- "$target" "$backup"
   fi
-  cp -r "$src" "$target"
+  _SYSTEM_BACKUPS+=("$target|$backup")
 }
 
 restore_backups() {
-  local entry target backup
-  for entry in "${_BACKED_UP[@]}"; do
+  local entry target backup i failed=0
+  for ((i=${#_BACKED_UP[@]}-1; i>=0; i--)); do
+    entry="${_BACKED_UP[i]}"
     target="${entry%%|*}"
     backup="${entry#*|}"
-    if [ -e "$backup" ]; then
-      rm -rf "$target" 2>/dev/null || true
-      mv "$backup" "$target" 2>/dev/null || true
+    if ! rm -rf -- "$target"; then
+      error "Could not remove incomplete config: $target"
+      failed=1
+      continue
+    fi
+    if [ -n "$backup" ]; then
+      if ! mv -- "$backup" "$target"; then
+        error "Could not restore $target; backup kept at $backup"
+        failed=1
+        continue
+      fi
       warn "Restored $target from $backup"
     fi
   done
   _BACKED_UP=()
+  return "$failed"
 }
 
-trap '_FAILED=1' ERR
-trap '
-  if [ "$_FAILED" -eq 1 ]; then
-    echo
-    error "Installation failed — restoring backups..."
-    restore_backups
-    echo
-    error "Rerun the installer (it is safe to retry)."
+installer_exit() {
+  local status="$1" entry target backup i
+  trap - EXIT
+  if [ "$status" -ne 0 ]; then
+    error "Installation failed — restoring user configuration..."
+    restore_backups || error "Rollback incomplete — inspect the retained backups above."
+    for ((i=${#_SYSTEM_BACKUPS[@]}-1; i>=0; i--)); do
+      entry="${_SYSTEM_BACKUPS[i]}"
+      target="${entry%%|*}"; backup="${entry#*|}"
+      if ! sudo rm -f -- "$target"; then
+        error "Could not remove incomplete system config: $target"
+      elif [ -n "$backup" ] && ! sudo mv -- "$backup" "$target"; then
+        error "Could not restore system config; backup kept at $backup"
+      fi
+    done
+    systemctl --user daemon-reload 2>/dev/null || true
+    error "Installed packages are kept. Fix the error before retrying."
   fi
-' EXIT
+  exit "$status"
+}
+trap 'installer_exit $?' EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 if ! command -v pacman &>/dev/null; then
   error "pacman not found. This script is for Arch Linux only."
   exit 1
+fi
+
+# Відмова від перевстановлення має передувати будь-яким системним змінам.
+if [ -e "$QS_CONFIG_DIR/.git" ] || [ -L "$QS_CONFIG_DIR" ]; then
+  error "Keep the repository outside $QS_CONFIG_DIR. Use selfshell update for linked checkouts."
+  exit 1
+fi
+if [ -e "$QS_CONFIG_DIR" ]; then
+  warn "$QS_CONFIG_DIR already exists."
+  if ! confirm "Back it up and reinstall with repo defaults?" n; then
+    info "Installation cancelled; no changes made."
+    exit 0
+  fi
 fi
 
 # --- sudo перевірка: діагностуємо права на старті, а не в середині ---
@@ -215,7 +271,7 @@ fi
 svc_start() {
   local svc="$1"
   info "Enabling $svc..."
-  sudo systemctl enable "$svc" 2>/dev/null || sudo systemctl enable "$svc"
+  if ! sudo systemctl enable "$svc"; then return 1; fi
   if ! sudo timeout 30 systemctl start "$svc" &>/dev/null; then
     warn "$svc: start timeout/failed — check your hardware, 'systemctl status $svc'"
   fi
@@ -232,63 +288,10 @@ if systemd-detect-virt -q -c; then
   }
 fi
 
-# --no означає огляд без змін: enable/start сервісів пропускаємо
-if [ "$ASSUME_YES" != "n" ]; then
-  svc_start NetworkManager.service
-  svc_start bluetooth.service
-  svc_start power-profiles-daemon.service
-else
-  info "--no: skipping service enable (review mode)."
-fi
-
-# --no означає огляд без змін: сервіси і групи не чіпаємо
-if [ "$ASSUME_YES" != "n" ]; then
-  sudo usermod -aG lp "$USER" 2>/dev/null || true
-fi
-rfkill unblock bluetooth 2>/dev/null || true
-if command -v bluetoothctl &>/dev/null; then
-  if ! timeout 5 bluetoothctl list 2>/dev/null | grep -q .; then
-    warn "No Bluetooth adapter found. This is expected in a VM."
-  fi
-fi
-if ! systemctl is-active --quiet bluetooth.service; then
-  warn "bluetooth.service failed to start. Check 'rfkill list' and kernel."
-  systemctl status bluetooth.service --no-pager 2>&1 || true
-fi
-
 # --- Крок 2: конфіг quickshell ---
-ts="$(date +%Y%m%d-%H%M%S)"
-
-if [ -e "$QS_CONFIG_DIR" ]; then
-  if [ -d "$QS_CONFIG_DIR/.git" ]; then
-    # Git-клон цього репозиторію: оновлюємо через pull, а не будуємо
-    # свіжу копію — інакше загине git-протокол `selfshell update` і
-    # локальні налаштування.
-    warn "$QS_CONFIG_DIR is a git clone of SELFshell."
-    if confirm "Update it in place via 'git pull' (keeps your settings and .env)?" y; then
-      if git -C "$QS_CONFIG_DIR" pull --ff-only; then
-        info "Updated $QS_CONFIG_DIR via git pull."
-      else
-        error "git pull failed. The clone is untouched — fix your remote/branch."
-        exit 1
-      fi
-    else
-      info "Skipping the git clone update (no changes made)."
-    fi
-  else
-    warn "$QS_CONFIG_DIR already exists (not a git clone)."
-    if confirm "Back it up and reinstall with repo defaults?" n; then
-      backup_and_replace "$QS_CONFIG_DIR" "$REPO_DIR/quickshell"
-      info "Copied to $QS_CONFIG_DIR (backup in .bak-$ts)"
-    else
-      error "Aborted by user."
-      exit 1
-    fi
-  fi
-else
-  backup_and_replace "$QS_CONFIG_DIR" "$REPO_DIR/quickshell"
-  info "Copied to $QS_CONFIG_DIR"
-fi
+INSTALLED_COMPONENTS=(quickshell)
+backup_and_replace "$QS_CONFIG_DIR" "$REPO_DIR/quickshell"
+info "Copied to $QS_CONFIG_DIR"
 
 if [ ! -f "$QS_CONFIG_DIR/scripts/.env" ] && [ -f "$QS_CONFIG_DIR/scripts/.env.example" ]; then
   cp "$QS_CONFIG_DIR/scripts/.env.example" "$QS_CONFIG_DIR/scripts/.env"
@@ -314,22 +317,12 @@ fi
 # qs-bt-agent — агент парування BlueZ як systemd user-сервіс
 chmod +x "$QS_CONFIG_DIR/services/qs-bt-agent"
 mkdir -p "$HOME/.config/systemd/user"
-# Старі інсталяції могли мати застарілий unit (напр. шлях без services/):
-# дизаблимо перед заміною, щоб systemd не тримав кешовану версію
-systemctl --user disable --now qs-bt-agent.service 2>/dev/null || true
-cp "$QS_CONFIG_DIR/services/qs-bt-agent.service" "$HOME/.config/systemd/user/qs-bt-agent.service"
-if [ -n "${XDG_RUNTIME_DIR:-}" ] && [ -d "$XDG_RUNTIME_DIR" ]; then
-  systemctl --user daemon-reload 2>/dev/null || warn "systemctl --user daemon-reload failed — qs-bt-agent may not start"
-  systemctl --user enable --now qs-bt-agent.service 2>/dev/null || systemctl --user enable qs-bt-agent.service
-  info "qs-bt-agent installed as systemd user service (systemctl --user status qs-bt-agent)"
-else
-  warn "No user session (XDG_RUNTIME_DIR missing) — skipped qs-bt-agent enable."
-  warn "After login run: systemctl --user enable --now qs-bt-agent"
-fi
+backup_and_replace "$HOME/.config/systemd/user/qs-bt-agent.service" "$QS_CONFIG_DIR/services/qs-bt-agent.service"
 
 # --- CLI selfshell: chmod + symlink у ~/.local/bin ---
 chmod +x "$QS_CONFIG_DIR/scripts/selfshell"
 mkdir -p "$HOME/.local/bin"
+backup_target "$HOME/.local/bin/selfshell"
 ln -sf "$QS_CONFIG_DIR/scripts/selfshell" "$HOME/.local/bin/selfshell"
 info "CLI installed: ~/.local/bin/selfshell (run 'selfshell help')"
 if ! echo "$PATH" | grep -q "$HOME/.local/bin"; then
@@ -344,6 +337,7 @@ if confirm "Copy hypr/kitty/fish/yazi/starship/fastfetch configs too? Existing o
     src="$REPO_DIR/$dir"
     [ -d "$src" ] || continue
     backup_and_replace "$target" "$src"
+    INSTALLED_COMPONENTS+=("$dir")
     info "Installed ~/.config/$dir"
   done
 
@@ -356,7 +350,13 @@ else
 fi
 
 # --- Папка для скріншотів (бінд Print у binds.lua) ---
-mkdir -p "$HOME/Screenshots"
+if [ ! -e "$HOME/Screenshots" ]; then
+  backup_target "$HOME/Screenshots"
+  mkdir -p "$HOME/Screenshots"
+fi
+
+# User-сервіси запускаються лише після успішної перевірки конфігів.
+USER_SERVICES=(qs-bt-agent.service)
 
 # --- Крок 4: AUR helper (yay) ---
 echo
@@ -365,13 +365,13 @@ for h in yay paru; do
   command -v "$h" &>/dev/null && aur_helper="$h" && break
 done
 
-install_yay() {
-  # builddir зачищається навіть при аварії (RETURN trap функції).
+install_yay() (
+  # EXIT trap підоболонки прибирає builddir і при помилці.
   # mktemp замість фіксованого /tmp/yay-build: передбачуваний шлях —
   # symlink/TOCTOU, два паралельні запуски ділили б теку
   local builddir
   builddir="$(mktemp -d /tmp/yay-build-XXXXXX)"
-  trap 'rm -rf "$builddir"' RETURN
+  trap 'rm -rf "$builddir"' EXIT
   if ! run_retry 3 git clone https://aur.archlinux.org/yay.git "$builddir"; then
     error "Failed to clone yay from AUR."
     return 1
@@ -381,7 +381,7 @@ install_yay() {
     return 1
   fi
   rm -rf "$builddir"
-}
+)
 
 if [ -z "$aur_helper" ]; then
   info "No AUR helper (yay/paru) found."
@@ -398,19 +398,16 @@ fi
 # XCURSOR_THEME/HYPRCURSOR_THEME ставить exec.lua; тут додатково
 # застосовуємо тему для GTK (gsettings) і X-додатків без env (index.theme)
 CURSOR_THEME="breeze_cursors"
-if confirm "Install Breeze cursor theme ($CURSOR_THEME, extra)?" n; then
-  if pacman -Qi "$CURSOR_THEME" &>/dev/null; then
+CURSOR_PACKAGE="breeze-cursors"
+if confirm "Install Breeze cursor theme ($CURSOR_PACKAGE, extra)?" n; then
+  if pacman -Qi "$CURSOR_PACKAGE" &>/dev/null; then
     info "Cursor $CURSOR_THEME already installed."
   else
-    sudo pacman -S --needed --noconfirm "$CURSOR_THEME" || warn "Breeze install failed — cursor stays default"
+    sudo pacman -S --needed --noconfirm "$CURSOR_PACKAGE" || warn "Breeze install failed — cursor stays default"
   fi
   if [ -d /usr/share/icons/"$CURSOR_THEME" ]; then
-    sudo mkdir -p /usr/share/icons/default
-    # Бекап системного файла перед перезаписом (rollback його не знає)
-    if [ -f /usr/share/icons/default/index.theme ]; then
-      sudo cp -n /usr/share/icons/default/index.theme "/usr/share/icons/default/index.theme.bak-$ts" 2>/dev/null || true
-    fi
-    printf '[Icon Theme]\nInherits=%s\n' "$CURSOR_THEME" | sudo tee /usr/share/icons/default/index.theme >/dev/null
+    backup_target "$HOME/.icons/default/index.theme"
+    printf '[Icon Theme]\nInherits=%s\n' "$CURSOR_THEME" > "$HOME/.icons/default/index.theme"
     if command -v gsettings &>/dev/null; then
       gsettings set org.gnome.desktop.interface cursor-theme "$CURSOR_THEME" 2>/dev/null || true
       gsettings set org.gnome.desktop.interface cursor-size 24 2>/dev/null || true
@@ -431,13 +428,7 @@ if [ -n "$aur_helper" ]; then
     "$aur_helper" -S --needed --noconfirm kcd-bin || warn "kcd install failed — phone features will stay disabled (yay -S kcd-bin)"
     if command -v kcd &>/dev/null; then
       info "kcd installed: $(kcd --version 2>&1 | head -1)"
-      if [ -n "${XDG_RUNTIME_DIR:-}" ] && [ -d "$XDG_RUNTIME_DIR" ]; then
-        systemctl --user daemon-reload 2>/dev/null || true
-        systemctl --user enable --now kcd 2>/dev/null || systemctl --user enable kcd 2>/dev/null || true
-        info "kcd service: systemctl --user status kcd"
-      else
-        warn "No user session — skipped kcd enable. After login: systemctl --user enable --now kcd"
-      fi
+      USER_SERVICES+=(kcd.service)
       warn "Firewall: allow 1716/udp+tcp and 1739:1764/tcp for phone discovery (ufw allow kcd or manual)"
       if confirm "Install kcd optional deps (sshfs for SFTP, wl-clipboard for clipboard, zenity for Share)?" n; then
         sudo pacman -S --needed --noconfirm sshfs wl-clipboard zenity 2>/dev/null || warn "Optional kcd deps install failed — doctor may warn (pacman -S sshfs wl-clipboard zenity)"
@@ -477,13 +468,18 @@ if [ -n "$SELFTRACK_BIN" ]; then
   svc_file="$HOME/.config/systemd/user/selftrack-daemon.service"
   if [ ! -f "$svc_file" ]; then
     mkdir -p "$HOME/.config/systemd/user"
-    cat > "$svc_file" << 'SVCEOF'
+    backup_target "$svc_file"
+    # systemd потребує екранування %, навіть усередині лапок ExecStart.
+    selftrack_exec="${SELFTRACK_BIN//%/%%}"
+    selftrack_exec="${selftrack_exec//\\/\\\\}"
+    selftrack_exec="${selftrack_exec//\"/\\\"}"
+    cat > "$svc_file" << SVCEOF
 [Unit]
 Description=SELFTrack daemon — focus-based time tracker for Hyprland
 After=graphical-session.target
 
 [Service]
-ExecStart=%h/.cargo/bin/selftrack daemon
+ExecStart="$selftrack_exec" daemon
 Restart=on-failure
 RestartSec=5
 
@@ -492,19 +488,15 @@ WantedBy=default.target
 SVCEOF
     info "selftrack-daemon service written: $svc_file"
   fi
-  if [ -n "${XDG_RUNTIME_DIR:-}" ] && [ -d "$XDG_RUNTIME_DIR" ]; then
-    systemctl --user daemon-reload 2>/dev/null || true
-    systemctl --user enable --now selftrack-daemon 2>/dev/null || systemctl --user enable selftrack-daemon 2>/dev/null || true
-    info "selftrack-daemon service: systemctl --user status selftrack-daemon"
-  else
-    warn "No user session — skipped selftrack-daemon enable. After login: systemctl --user enable --now selftrack-daemon"
-  fi
+  USER_SERVICES+=(selftrack-daemon.service)
 fi
 
 # --- Крок 5: менеджер входу (greetd+tuigreet) / автозапуск ---
 echo
 info "On a bare Arch there is no display manager. After login you get a TTY."
+INSTALL_GREETD=false
 if confirm "Install greetd with the tuigreet login (TUI, starts Hyprland via uwsm)?" n; then
+  INSTALL_GREETD=true
   # greetd уже в PACMAN_DEPS (крок 1) — тут доставляємо лише якщо юзер
   # пропустив крок 1
   if ! pacman -Qi greetd-tuigreet &>/dev/null; then
@@ -516,10 +508,7 @@ if confirm "Install greetd with the tuigreet login (TUI, starts Hyprland via uws
   # команду сесії. mkdir -p обов'язковий: теки може не бути на свіжих
   # системах, а запис без неї вбив би скрипт через set -e
   sudo mkdir -p /etc/greetd
-  # Бекап системного конфіга перед перезаписом (rollback його не знає)
-  if [ -f /etc/greetd/config.toml ]; then
-    sudo cp -n /etc/greetd/config.toml "/etc/greetd/config.toml.bak-$ts" 2>/dev/null || true
-  fi
+  backup_system_file /etc/greetd/config.toml
   printf '[terminal]\nvt = 1\n\n[default_session]\ncommand = "tuigreet --time --remember --cmd '\''/usr/bin/uwsm start hyprland.desktop'\''"\nuser = "greeter"\n' | sudo tee /etc/greetd/config.toml >/dev/null
   if ! sudo test -f /etc/greetd/config.toml; then
     error "Failed to write /etc/greetd/config.toml — manual steps:"
@@ -528,20 +517,16 @@ if confirm "Install greetd with the tuigreet login (TUI, starts Hyprland via uws
   fi
   info "greetd config written: /etc/greetd/config.toml (tuigreet + uwsm)"
 
-  # Старий SDDM забирає alias display-manager.service — disable ПЕРЕД enable
-  sudo systemctl disable --now sddm.service 2>/dev/null || true
-  sudo systemctl enable greetd
-  if ! sudo systemctl is-enabled greetd >/dev/null 2>&1; then
-    error "greetd did not enable — manual step: sudo systemctl enable greetd"
-    exit 1
-  fi
-  info "greetd enabled. Reboot to see the TUI login (greetd-tuigreet)."
 else
-  info "No greetd: adding Hyprland autostart via uwsm (fish login)."
+  info "No greetd: start the desktop from a TTY with: uwsm start hyprland.desktop"
   fish_config="$HOME/.config/fish/config.fish"
   # Маркери замість голого grep "uwsm start": повторний прогін після
   # відкату не задвоює блок, чужий рядок з uwsm не блокує вставку
-  if [ -f "$fish_config" ] && ! grep -q "SELFshell-uwsm-begin" "$fish_config"; then
+  if [ -f "$fish_config" ] && ! grep -q "uwsm start hyprland.desktop" "$fish_config"; then
+    fish_copy="$(mktemp)"
+    cp "$fish_config" "$fish_copy"
+    backup_and_replace "$fish_config" "$fish_copy"
+    rm -f "$fish_copy"
     cat >> "$fish_config" << 'FISHEOF'
 
 # SELFshell-uwsm-begin: autostart Hyprland session via uwsm (no display manager)
@@ -559,6 +544,7 @@ FISHEOF
 fi
 
 # --- Завершення ---
+python3 "$QS_CONFIG_DIR/scripts/update_config.py" record "$REPO_DIR" "$QS_CONFIG_DIR" "${INSTALLED_COMPONENTS[@]}"
 echo
 info "Running final check:"
 if ! "$QS_CONFIG_DIR/scripts/selfshell" doctor --preboot; then
@@ -569,6 +555,23 @@ fi
 echo
 info "Done."
 echo
-info "Reboot now — after login you will have a fully working SELFshell desktop."
+if $INSTALL_GREETD; then
+  # Alias відновлюється при помилці enable; поточний display manager не зупиняємо.
+  backup_system_file /etc/systemd/system/display-manager.service
+  sudo systemctl enable --force greetd
+  info "greetd enabled for the next boot; the current session keeps running."
+fi
+svc_start NetworkManager.service || warn "Enable NetworkManager after login."
+svc_start bluetooth.service || warn "Enable bluetooth.service after login."
+svc_start power-profiles-daemon.service || warn "Enable power-profiles-daemon after login."
+sudo usermod -aG lp "$USER" 2>/dev/null || true
+rfkill unblock bluetooth 2>/dev/null || true
+if [ -n "${XDG_RUNTIME_DIR:-}" ] && [ -d "$XDG_RUNTIME_DIR" ]; then
+  systemctl --user daemon-reload || warn "Reload user units after login."
+  for svc in "${USER_SERVICES[@]}"; do
+    systemctl --user enable --now "$svc" || warn "Start $svc after login: systemctl --user enable --now $svc"
+  done
+fi
+info "Configuration installed. Reboot for a new login manager, or run: uwsm start hyprland.desktop"
 echo
 info "If something is missing, run 'selfshell doctor' or tweak widgets in Settings → Widgets."

@@ -18,7 +18,7 @@ Rectangle {
   property QtObject appConfig: null
 
   // current.<ext> генерується локально (update-palette.sh) і не в git —
-  // шлях шукаємо через update-palette.py current, на свіжому клоні
+  // шлях шукаємо через update-palette.py lock, на свіжому клоні
   // fallback на трековану заглушку wp1.jpg
   readonly property string paletteScriptPath: Qt.resolvedUrl("../scripts/update-palette.py").toString().replace("file://", "")
   readonly property string wallpaperFallback: Qt.resolvedUrl("../wp/wp1.jpg")
@@ -35,7 +35,7 @@ Rectangle {
   Process {
     id: curProc
     stdout: curCollector
-    command: ["python3", root.paletteScriptPath, "current"]
+    command: ["python3", root.paletteScriptPath, "lock"]
   }
 
   StdioCollector {

@@ -18,10 +18,8 @@ AnimatedPopup {
   preferredHeight: 210
   transformOrigin: Item.Top
 
-  WallpaperController {
-    id: wpCtl
-    appConfig: root.appConfig
-  }
+  readonly property var wpCtl: root.window.wallpaperController
+
   centerScreen: window.screen ?? Quickshell.screens[0]
 
   Component.onCompleted: {
@@ -65,52 +63,37 @@ AnimatedPopup {
     GradientSeparator { midColor: window.palette.bg2 }
 
     // Сітка мініатюр (горизонтальний скрол)
-    Flickable {
-      id: flick
+    ListView {
       Layout.fillWidth: true
       Layout.preferredHeight: 148
-      contentWidth: row.width
-      contentHeight: row.height
+      orientation: ListView.Horizontal
+      spacing: 6
       clip: true
-      flickableDirection: Flickable.HorizontalFlick
-      boundsBehavior: Flickable.StopAtBounds
-      interactive: row.width > width
-
-      Row {
-        id: row
-        height: parent.height
-        spacing: 6
-        anchors.verticalCenter: parent.verticalCenter
-
-        Repeater {
-          model: wpCtl.wallpapers
-
-          delegate: Rectangle {
-            width: 200; height: 140; radius: 6
-            color: window.palette.bg1
-            border.width: 1
-            border.color: ma.containsMouse ? window.palette.green : "transparent"
-            Behavior on border.color { ColorAnimation { duration: appConfig.anim(120) } }
-
-            Image {
-              anchors.fill: parent
-              anchors.margins: 2
-              source: "file://" + modelData
-              sourceSize.width: 200
-              sourceSize.height: 140
-              fillMode: Image.PreserveAspectCrop
-              asynchronous: true
-              cache: true
-            }
-
-            MouseArea {
-              id: ma
-              anchors.fill: parent
-              hoverEnabled: true
-              cursorShape: Qt.PointingHandCursor
-              onClicked: wpCtl.setWallpaper(modelData)
-            }
-          }
+      reuseItems: true
+      model: wpCtl.wallpapers
+      delegate: Rectangle {
+        required property string modelData
+        width: 200; height: 140; radius: 6
+        color: window.palette.bg1
+        border.width: 1
+        border.color: ma.containsMouse ? window.palette.green : "transparent"
+        Behavior on border.color { ColorAnimation { duration: appConfig.anim(120) } }
+        Image {
+          anchors.fill: parent
+          anchors.margins: 2
+          source: "file://" + modelData
+          sourceSize.width: 200
+          sourceSize.height: 140
+          fillMode: Image.PreserveAspectCrop
+          asynchronous: true
+          cache: true
+        }
+        MouseArea {
+          id: ma
+          anchors.fill: parent
+          hoverEnabled: true
+          cursorShape: Qt.PointingHandCursor
+          onClicked: wpCtl.setWallpaper(modelData)
         }
       }
     }

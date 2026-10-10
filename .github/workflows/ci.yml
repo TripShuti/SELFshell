@@ -7,6 +7,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_call:
 
 jobs:
   validate:
@@ -21,6 +22,12 @@ jobs:
             echo "ok: $f"
           done
 
+      - name: QML logic regressions
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq nodejs
+          node tests/qml_regressions.js
+
       - name: Python syntax
         run: |
           python3 -m py_compile \
@@ -28,7 +35,10 @@ jobs:
             quickshell/scripts/tracklist.py \
             quickshell/scripts/genshin_stats.py \
             quickshell/scripts/pacman_updates.py \
-            quickshell/scripts/sysinfo.py
+            quickshell/scripts/sysinfo.py \
+            quickshell/scripts/update_config.py \
+            quickshell/scripts/config_ctl.py \
+            quickshell/scripts/sleep_guard.py
           echo "ok: python scripts"
 
       - name: JSON validity
@@ -134,3 +144,26 @@ jobs:
         run: |
           test -f quickshell/wp/wp1.jpg
           echo "ok: fallback wallpaper"
+
+  qml-compile:
+    runs-on: ubuntu-latest
+    container: archlinux:base
+    steps:
+      - name: Install QML runtime and headless compositor
+        run: pacman -Syu --needed --noconfirm git python quickshell qt6-5compat weston
+      - uses: actions/checkout@v5
+      - name: Compile every QML component
+        run: |
+          export XDG_RUNTIME_DIR="$(mktemp -d)"
+          chmod 700 "$XDG_RUNTIME_DIR"
+          export WAYLAND_DISPLAY=wayland-ci
+          weston --backend=headless --renderer=pixman --socket=wayland-ci --idle-time=0 --no-config --log="$XDG_RUNTIME_DIR/weston.log" &
+          compositor_pid=$!
+          trap 'kill "$compositor_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 50); do
+            test ! -S "$XDG_RUNTIME_DIR/wayland-ci" || break
+            sleep 0.1
+          done
+          test -S "$XDG_RUNTIME_DIR/wayland-ci" || { cat "$XDG_RUNTIME_DIR/weston.log"; exit 1; }
+          python3 quickshell/scripts/update_config.py check quickshell
+          python3 tests/qml_smoke.py

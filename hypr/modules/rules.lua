@@ -3,7 +3,8 @@
 -- ============================================================
 local s = require("modules.env")
 local json = require("modules.json")
-local V = json.read(os.getenv("HOME") .. "/.config/hypr/visual.json") or {}
+local V = json.read(os.getenv("HOME") .. "/.config/hypr/visual.json")
+if type(V) ~= "table" then V = {} end
 local function num(v, def) return type(v) == "number" and v or def end
 local function bool(v, def) if type(v) == "boolean" then return v end return def end
 

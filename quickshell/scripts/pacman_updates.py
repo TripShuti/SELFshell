@@ -143,7 +143,7 @@ def collect_aur(helper):
         return ([], "")
     rc, out = run([helper, "-Qua"], timeout=180)
     if rc != 0:
-        return ([], "")  # AUR-недоступність не валить весь чек
+        return ([], f"AUR check failed ({helper}, exit {rc}); repository results are partial")
     pkgs = []
     for line in out.splitlines():
         parsed = parse_update_line(line)
@@ -193,7 +193,7 @@ def collect():
                 "packages": [], "repo_count": 0, "aur_count": 0,
                 "helper": "", "total_download": ""}
     helper = find_helper()
-    aur, _aur_err = collect_aur(helper)
+    aur, aur_err = collect_aur(helper)
     details = enrich_official([n for n, _o, _w in official])
     packages = []
     total = 0
@@ -209,7 +209,7 @@ def collect():
     for name, old, new in aur:
         packages.append({"name": name, "old": old, "new": new,
                          "repo": "aur", "desc": "", "download": ""})
-    return {"ok": True, "missing_checkupdates": False, "error": "",
+    return {"ok": True, "partial": bool(aur_err), "missing_checkupdates": False, "error": aur_err,
             "packages": packages, "repo_count": len(official),
             "aur_count": len(aur), "helper": helper,
             "total_download": human_bytes(total) if total else ""}

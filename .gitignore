@@ -37,3 +37,6 @@ quickshell/data/last-shot.txt
 
 # дефолтні config.json/palette.json трекаються у git: свіжому клону
 # вони потрібні, щоб бар рендерився з сепараторами і робочою палітрою
+
+# локальні метадані інсталяції
+quickshell/.selfshell-install.json

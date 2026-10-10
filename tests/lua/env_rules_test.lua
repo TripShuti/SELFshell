@@ -109,5 +109,16 @@ assert(e.cursorSize == 24, "wrong-typed cursorSize -> default")
 assert(#e.autostart == 0 and #e.devices == 0, "non-list arrays -> empty")
 assert(#e.windowRules == 0, "non-list arrays -> empty")
 
+-- 6) Кореневі скаляри та погані елементи масивів не падають у споживачах.
+for _, body in ipairs({"true", "42", '"text"',
+    '{"autostart":[3,true,{}, {"command":4}, {"command":"ok"}],"windowRules":[3,true,{}],"devices":[3,true,{}]}'}) do
+  f = io.open(custom, "w"); f:write(body); f:close()
+  e = fresh_env(HOME)
+  assert(type(e.autostart) == "table", "scalar root falls back")
+  for _, app in ipairs(e.autostart) do assert(type(app.command) == "string") end
+  for _, rule in ipairs(e.windowRules) do assert(type(rule) == "table") end
+  for _, dev in ipairs(e.devices) do assert(type(dev) == "table") end
+end
+
 os.execute("rm -rf '" .. HOME .. "'")
 print("OK: env.lua defaults, shipped env.json, rules.lua data-driven")

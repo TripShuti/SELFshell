@@ -189,4 +189,47 @@ test("Pairing: disappearing requests stop countdowns and close both popups", () 
     sync(); assert.equal(stopped, 1); assert.equal(closed, 1);
   }
 });
+test("Config: live CLI mutation preserves pending UI values and rejects wrong types", () => {
+  let saves = 0;
+  const root = { numericRanges: { uiScale: [.8, 1.5, false] }, defaultCfg: { themeMode: "black", uiScale: 1, leftOrder: [] },
+    cfg: { themeMode: "black", uiScale: 1.25 }, saveToFile() { saves++; } };
+  const set = method("core/AppConfig.qml", "setValue", { root });
+  assert.equal(set("themeMode", '"matugen"'), true);
+  assert.equal(root.cfg.uiScale, 1.25);
+  assert.equal(saves, 1);
+  assert.equal(set("uiScale", "true"), false);
+  assert.equal(set("leftOrder", "[3]"), false);
+  assert.equal(set("unknown", "3"), false);
+});
+
+test("Suspend: waits for secure acknowledgement and cancels on timeout", () => {
+  const root = { suspendPending: false, sleepPreparing: false };
+  const sessionLock = { secure: false }, lockContext = { locked: false };
+  const suspendProc = { running: false };
+  const ctx = { root, sessionLock, lockContext, suspendProc,
+    sleepMonitor: { write() {} }, suspendTimeout: { restart() {}, stop() {} }, console: { warn() {} } };
+  root.continueSuspend = method("shell.qml", "continueSuspend", ctx);
+  const request = method("shell.qml", "requestSuspend", ctx);
+  request(); assert.equal(lockContext.locked, true); assert.equal(suspendProc.running, false);
+  sessionLock.secure = true;
+  root.continueSuspend(); assert.equal(suspendProc.running, true);
+  suspendProc.running = false; sessionLock.secure = false;
+  request();
+  handler("shell.qml", "suspendTimeout", "onTriggered", ctx)();
+  sessionLock.secure = true; root.continueSuspend();
+  assert.equal(suspendProc.running, false);
+});
+
+test("Upgrade: detached unit survives QML ownership and duplicate clicks are ignored", () => {
+  const commands = [];
+  const root = { upgrading: false, available: true, count: 1, upgradeScript: "/upgrade.sh" };
+  const start = method("services/PacmanService.qml", "startUpgrade", { root,
+    Quickshell: { env() { return ""; }, execDetached(cmd) { commands.push(cmd); } },
+    upgradeTimeout: { restart() {} }, focusTimer: { restart() {} } });
+  start(); start();
+  assert.equal(commands.length, 1);
+  assert.ok(commands[0].includes("--unit=selfshell-upgrade"));
+  assert.ok(commands[0].includes("/upgrade.sh"));
+});
+
 console.log("QML regressions: " + checks + " passed");

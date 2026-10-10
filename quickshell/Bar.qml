@@ -27,6 +27,7 @@ PanelWindow {
   required property QtObject powerProfiles
   // сервіс оновлень пакетів (синглтон з shell.qml) — читає SystemSection
   required property QtObject pacmanUpdates
+  required property QtObject wallpaperController
   // менеджер бездіяльності (синглтон з shell.qml) — прокидається в ControlPopup
   // для подієвого оновлення caffeine (без вотчера control-state.json через UAF)
   required property QtObject shellController

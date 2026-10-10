@@ -182,8 +182,17 @@ class CurrentWallpaperTest(unittest.TestCase):
             f.write("y")
         os.utime(p, (9999.0, 9999.0))
         with mock.patch.object(up, "WP_DIR", wp), mock.patch("sys.stdout", new_callable=io.StringIO) as out:
-            up.current_wallpaper()
+            up.current_wallpaper(for_lock=True)
         self.assertEqual(out.getvalue(), os.path.join(wp, "current-lock.jpg"))
+
+    def test_desktop_keeps_gif_when_lock_frame_exists(self):
+        with tempfile.TemporaryDirectory(prefix="wp-") as wp:
+            for name in ("current.gif", "current-lock.jpg"):
+                with open(os.path.join(wp, name), "w") as f:
+                    f.write("x")
+            with mock.patch.object(up, "WP_DIR", wp), mock.patch("sys.stdout", new_callable=io.StringIO) as out:
+                up.current_wallpaper()
+            self.assertEqual(out.getvalue(), os.path.join(wp, "current.gif"))
 
     def test_returns_newest_current_file_without_lock_frame(self):
         wp = tempfile.mkdtemp(prefix="wp-")
@@ -230,6 +239,8 @@ class MainEndToEndTest(unittest.TestCase):
         self.home = tempfile.mkdtemp(prefix="palette-home-")
         self.qs_dir = os.path.join(self.home, "qs")
         os.makedirs(os.path.join(self.qs_dir, "data"))
+        with open(os.path.join(self.qs_dir, ".selfshell-install.json"), "w") as f:
+            json.dump({"paletteIntegrations": ["kitty", "fish", "starship", "yazi", "foot", "qt6ct"]}, f)
         os.makedirs(os.path.join(self.home, ".config", "starship"))
         starship = os.path.join(self.home, ".config", "starship", "config.toml")
         with open(starship, "w") as f:
@@ -240,7 +251,7 @@ class MainEndToEndTest(unittest.TestCase):
         with open(wp, "w") as f:
             f.write("x")
         self.ctx = [
-            mock.patch.dict(os.environ, {"HOME": self.home}),
+            mock.patch.object(up.os.path, "expanduser", side_effect=lambda p: p.replace("~/", self.home + "/", 1)),
             mock.patch.object(up, "QS_DIR", self.qs_dir),
             mock.patch.object(up.subprocess, "run", return_value=FakeProc()),
             mock.patch.object(sys, "argv", ["update-palette.py", wp]),
@@ -252,6 +263,14 @@ class MainEndToEndTest(unittest.TestCase):
     def _read(self, rel):
         with open(os.path.join(self.home, rel)) as f:
             return f.read()
+
+    def test_declined_integrations_leave_other_apps_untouched(self):
+        os.unlink(os.path.join(self.qs_dir, ".selfshell-install.json"))
+        before = self._read(".config/starship/config.toml")
+        self.assertEqual(up.main(), 0)
+        self.assertEqual(self._read(".config/starship/config.toml"), before)
+        self.assertFalse(os.path.exists(os.path.join(self.home, ".config/yazi")))
+        self.assertFalse(os.path.exists(os.path.join(self.home, ".config/kitty")))
 
     def test_palette_json(self):
         self.assertEqual(up.main(), 0)

@@ -9,7 +9,7 @@ import sys, json, subprocess, re, os, tempfile
 import fcntl
 
 QS_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-WP_DIR = os.path.expanduser("~/.config/quickshell/wp")
+WP_DIR = os.path.join(QS_DIR, "wp")
 
 
 # Список шпалер з директорії wp/ (найновіші першими), без current.*
@@ -30,7 +30,7 @@ def list_wallpapers():
 #  1. current-lock.jpg — статичний кадр (FastBlur не рендерить анімацію);
 #  2. найновіший current.* — якщо magick недоступний;
 #  3. будь-яка статична шпалера, потім будь-яка (включно з gif).
-def current_wallpaper():
+def current_wallpaper(for_lock=False):
     if not os.path.isdir(WP_DIR):
         return
     exts = (".jpg", ".jpeg", ".png", ".gif")
@@ -44,7 +44,7 @@ def current_wallpaper():
         return False
 
     lock = os.path.join(WP_DIR, "current-lock.jpg")
-    if os.path.isfile(lock):
+    if for_lock and os.path.isfile(lock):
         sys.stdout.write(lock)
         return
     current = [
@@ -55,10 +55,24 @@ def current_wallpaper():
         return
     wallpapers = [
         os.path.join(WP_DIR, f) for f in os.listdir(WP_DIR)
-        if f.lower().endswith(exts) and not f.lower().startswith("current.")
+        if f.lower().endswith(exts) and not f.lower().startswith("current")
     ]
     static_only = [p for p in wallpapers if p.lower().endswith(static)]
     pick(static_only) or pick(wallpapers)
+
+
+# Палітра інших програм змінюється лише за явною згодою під час установки
+# або через selfshell palette enable. Відсутній manifest не означає згоду.
+def enabled_integrations():
+    try:
+        with open(os.path.join(QS_DIR, ".selfshell-install.json")) as f:
+            manifest = json.load(f)
+        values = manifest.get("paletteIntegrations", [])
+        if not isinstance(values, list):
+            return set()
+        return {v for v in values if isinstance(v, str)} & {"kitty", "fish", "starship", "yazi", "foot", "qt6ct"}
+    except (OSError, ValueError, TypeError, AttributeError):
+        return set()
 
 
 # Атомарний запис: пише у tmp у тій самій директорії, потім os.replace —
@@ -200,6 +214,10 @@ def _build_and_write_palette(fg, gray, green, red, bg0H, bg1, bg2, muted, light,
     os.makedirs(os.path.dirname(palette_json_path), exist_ok=True)
     atomic_write(palette_json_path, palette_json)
 
+    enabled = enabled_integrations()
+    if not enabled:
+        return
+
     kitty_bg = bg0H
 
     kitty = f"""## Згенеровано update-palette.py
@@ -238,9 +256,10 @@ def _build_and_write_palette(fg, gray, green, red, bg0H, bg1, bg2, muted, light,
     inactive_tab_background {bg0H}
     """
 
-    kitty_path = os.path.expanduser("~/.config/kitty/current-theme.conf")
-    os.makedirs(os.path.dirname(kitty_path), exist_ok=True)
-    atomic_write(kitty_path, kitty)
+    if "kitty" in enabled:
+        kitty_path = os.path.expanduser("~/.config/kitty/current-theme.conf")
+        os.makedirs(os.path.dirname(kitty_path), exist_ok=True)
+        atomic_write(kitty_path, kitty)
 
     fish = f"""# Згенеровано update-palette.py
     set -g fish_color_normal "{fg}"
@@ -264,12 +283,13 @@ def _build_and_write_palette(fg, gray, green, red, bg0H, bg1, bg2, muted, light,
     set -g fish_color_valid_path --underline
     """
 
-    fish_dir = os.path.expanduser("~/.config/fish/conf.d")
-    os.makedirs(fish_dir, exist_ok=True)
-    atomic_write(os.path.join(fish_dir, "99-palette.fish"), fish)
+    if "fish" in enabled:
+        fish_dir = os.path.expanduser("~/.config/fish/conf.d")
+        os.makedirs(fish_dir, exist_ok=True)
+        atomic_write(os.path.join(fish_dir, "99-palette.fish"), fish)
 
     starship_path = os.path.expanduser("~/.config/starship/config.toml")
-    if os.path.isfile(starship_path):
+    if "starship" in enabled and os.path.isfile(starship_path):
         with open(starship_path, "r") as f:
             content = f.read()
 
@@ -364,26 +384,28 @@ def _build_and_write_palette(fg, gray, green, red, bg0H, bg1, bg2, muted, light,
     urls={foot_hex(blue)}
     """
 
-    os.makedirs(FOOT_DIR, exist_ok=True)
-    atomic_write(os.path.join(FOOT_DIR, "colors.ini"), foot)
+    if "foot" in enabled:
+        os.makedirs(FOOT_DIR, exist_ok=True)
+        atomic_write(os.path.join(FOOT_DIR, "colors.ini"), foot)
 
-    foot_ini_path = os.path.join(FOOT_DIR, "foot.ini")
-    include_line = "include=~/.config/foot/colors.ini"
-    if os.path.isfile(foot_ini_path):
-        # flock: паралельні запуски не задвоюють include-рядок
-        with open(foot_ini_path, "r+") as f:
-            fcntl.flock(f, fcntl.LOCK_EX)
-            try:
-                foot_ini = f.read()
-                if "colors.ini" not in foot_ini:
-                    f.write(f"\n{include_line}\n")
-            finally:
-                fcntl.flock(f, fcntl.LOCK_UN)
-    else:
-        atomic_write(foot_ini_path, f"# Згенеровано update-palette.py\n{include_line}\n")
+        foot_ini_path = os.path.join(FOOT_DIR, "foot.ini")
+        include_line = "include=~/.config/foot/colors.ini"
+        if os.path.isfile(foot_ini_path):
+            # flock: паралельні запуски не задвоюють include-рядок
+            with open(foot_ini_path, "r+") as f:
+                fcntl.flock(f, fcntl.LOCK_EX)
+                try:
+                    foot_ini = f.read()
+                    if "colors.ini" not in foot_ini:
+                        f.write(f"\n{include_line}\n")
+                finally:
+                    fcntl.flock(f, fcntl.LOCK_UN)
+        else:
+            atomic_write(foot_ini_path, f"# Згенеровано update-palette.py\n{include_line}\n")
 
     yazi_flavor_dir = os.path.expanduser("~/.config/yazi/flavors/palette.yazi")
-    os.makedirs(yazi_flavor_dir, exist_ok=True)
+    if "yazi" in enabled:
+        os.makedirs(yazi_flavor_dir, exist_ok=True)
 
     yazi_flavor = f"""# Згенеровано update-palette.py
 
@@ -486,7 +508,8 @@ def _build_and_write_palette(fg, gray, green, red, bg0H, bg1, bg2, muted, light,
     ]
     """
 
-    atomic_write(os.path.join(yazi_flavor_dir, "flavor.toml"), yazi_flavor)
+    if "yazi" in enabled:
+        atomic_write(os.path.join(yazi_flavor_dir, "flavor.toml"), yazi_flavor)
 
     yazi_theme = f"""# Згенеровано update-palette.py
 
@@ -511,7 +534,8 @@ def _build_and_write_palette(fg, gray, green, red, bg0H, bg1, bg2, muted, light,
     """
 
     yazi_theme_path = os.path.expanduser("~/.config/yazi/theme.toml")
-    atomic_write(yazi_theme_path, yazi_theme)
+    if "yazi" in enabled:
+        atomic_write(yazi_theme_path, yazi_theme)
 
     qt_roles = [
         fg,        # 0  WindowText
@@ -546,9 +570,10 @@ def _build_and_write_palette(fg, gray, green, red, bg0H, bg1, bg2, muted, light,
     """
 
     qt_scheme_path = os.path.expanduser("~/.config/qt6ct/colors/Quickshell.conf")
-    os.makedirs(os.path.dirname(qt_scheme_path), exist_ok=True)
-    atomic_write(qt_scheme_path, qt_scheme)
-    ensure_qt6ct_palette(qt_scheme_path)
+    if "qt6ct" in enabled:
+        os.makedirs(os.path.dirname(qt_scheme_path), exist_ok=True)
+        atomic_write(qt_scheme_path, qt_scheme)
+        ensure_qt6ct_palette(qt_scheme_path)
 
 
 def main():
@@ -557,8 +582,8 @@ def main():
         list_wallpapers()
         return 0
 
-    if len(sys.argv) >= 2 and sys.argv[1] == "current":
-        current_wallpaper()
+    if len(sys.argv) >= 2 and sys.argv[1] in ("current", "lock"):
+        current_wallpaper(for_lock=sys.argv[1] == "lock")
         return 0
 
     # Статична тема Black — без matugen, без шпалери

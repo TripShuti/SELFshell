@@ -10,8 +10,8 @@ import QtQuick
 // тут — при старті (якщо кеш старший за добу), раз на добу таймером та по
 // кнопці. Секція System лише читає властивості, resync() нічого не запускає.
 // Апгрейд іде у зовнішньому терміналі (sudo питає пароль там же); момент
-// завершення ловимо через sentinel-файл від scripts/pacman_upgrade.sh,
-// закриття вікна — через вихід owned-процеса kitty (покриває раннє закриття).
+// термінал живе в окремому user-unit, тому reload QML не обриває pacman.
+// Стан unit перечитується після reload; повторний запуск блокує systemd.
 Item {
   id: root
   visible: false
@@ -35,11 +35,11 @@ Item {
   readonly property int count: root.packages.length
   readonly property string checkScript: Qt.resolvedUrl("../scripts/pacman_updates.py").toString().replace("file://", "")
   readonly property string upgradeScript: Qt.resolvedUrl("../scripts/pacman_upgrade.sh").toString().replace("file://", "")
-  readonly property string runtimeBase: {
-    var r = String(Quickshell.env("XDG_RUNTIME_DIR") ?? "")
-    return r !== "" ? r : "/tmp"
+  property int _launchGrace: 0
+
+  function pollUpgrade() {
+    if (!upgradeStatus.running) upgradeStatus.running = true
   }
-  property string sentinelPath: ""
 
   function needsRefresh() {
     if (root.lastCheck <= 0) return true
@@ -66,16 +66,17 @@ Item {
 
   function startUpgrade() {
     if (root.upgrading || !root.available || root.count === 0) return
-    // унікальний шлях на запуск — старі sentinel не плутаються з поточним,
-    // чистити нічого не треба (враппер сам тре старі done-* на старті)
-    root.sentinelPath = root.runtimeBase + "/selfshell-upgrade/done-" + Math.floor(Date.now() / 1000)
-    sentinelFile.path = "file://" + root.sentinelPath
     root.upgrading = true
     root.upgradeTimedOut = false
-    // фіксований title ловить windowrule selfshell-upgrade-float
-    // (hypr/modules/rules.lua): вікно пливе по центру, а не тайлиться
-    upgradeProc.command = ["kitty", "--title", "SELFshell Update", "-e", root.upgradeScript, root.sentinelPath]
-    upgradeProc.running = true
+    root._launchGrace = 4
+    // Detached launcher і transient unit переживають знищення QML.
+    var command = ["systemd-run", "--user", "--collect",
+      "--unit=selfshell-upgrade", "--property=ExitType=cgroup"]
+    for (var name of ["WAYLAND_DISPLAY", "DISPLAY", "XDG_RUNTIME_DIR", "DBUS_SESSION_BUS_ADDRESS"]) {
+      var value = Quickshell.env(name)
+      if (value) command.push("--setenv=" + name + "=" + value)
+    }
+    Quickshell.execDetached(command.concat(["kitty", "--title", "SELFshell Update", "-e", root.upgradeScript]))
     upgradeTimeout.restart()
     // вікно мапиться з затримкою, а закриття попапа з grabFocus може
     // повернути фокус старому вікну — тому фокусуємо термінал явно
@@ -104,14 +105,14 @@ Item {
       return
     }
     root.available = true
-    root.error = ""
+    root.error = String(data.error ?? "")
     root.packages = data.packages ?? []
     root.repoCount = data.repo_count ?? 0
     root.aurCount = data.aur_count ?? 0
     root.helper = String(data.helper ?? "")
     root.totalDownload = String(data.total_download ?? "")
-    root.lastCheck = Date.now() / 1000
-    root._saveCache()
+    root.lastCheck = data.partial ? 0 : Date.now() / 1000
+    if (!data.partial) root._saveCache()
   }
 
   function _saveCache() {
@@ -140,17 +141,6 @@ Item {
     root.totalDownload = String(data.totalDownload ?? "")
     root.lastCheck = data.lastCheck ?? 0
     root.available = true
-  }
-
-  // Поява sentinel = враппер допрацював (успіх чи ні — покаже перечек):
-  // гасимо upgrading і один раз перечитуємо список, термінал лишається
-  // відкритим з паузою, щоб було видно підсумок
-  function _onSentinelSeen() {
-    if (!root.upgrading) return
-    root.upgrading = false
-    root.upgradeTimedOut = false
-    upgradeTimeout.stop()
-    root.refresh()
   }
 
   // Завислий чек (мережа) не повинен тримати checking вічно —
@@ -182,16 +172,29 @@ Item {
   }
 
   Process {
-    id: upgradeProc
-    onExited: (code) => {
-      running = false
-      upgradeTimeout.stop()
-      root.upgradeTimedOut = false
-      // раннє закриття вікна (sentinel нема) — теж привід перечитати:
-      // список покаже чесний залишок
-      if (root.upgrading) {
-        root.upgrading = false
-        root.refresh()
+    id: upgradeStatus
+    command: ["systemctl", "--user", "is-active", "selfshell-upgrade.service"]
+    stdout: StdioCollector {
+      waitForEnd: true
+      onStreamFinished: {
+        var state = text.trim()
+        var active = state === "active" || state === "activating" || state === "deactivating"
+        if (active) {
+          root._launchGrace = 0
+          if (!root.upgrading) upgradeTimeout.restart()
+          root.upgrading = true
+        } else if (root._launchGrace > 0) {
+          root._launchGrace--
+          if (root._launchGrace === 0) {
+            root.error = "Update terminal failed to start — check journalctl --user -u selfshell-upgrade"
+            root.upgrading = false
+          }
+        } else if (root.upgrading) {
+          root.upgrading = false
+          root.upgradeTimedOut = false
+          upgradeTimeout.stop()
+          root.refresh()
+        }
       }
     }
   }
@@ -219,44 +222,18 @@ Item {
     onLoadFailed: function() {}
   }
 
-  FileView {
-    id: sentinelFile
-    // реальний шлях підставляє startUpgrade(); до того — нейтральний,
-    // щоб створення компонента не залежало від дефолтного path
-    path: "file:///dev/null"
-    watchChanges: false
-    printErrors: false
-    onLoaded: {
-      if (String(sentinelFile.text() ?? "").trim() !== "") root._onSentinelSeen()
-    }
-    onLoadFailed: function() {}
-  }
-
-  // опитування sentinel — лише поки іде апгрейд (локальний файл, без мережі)
   Timer {
-    id: sentinelTimer
     interval: 3000
     repeat: true
-    running: root.upgrading && root.sentinelPath !== ""
-    onTriggered: sentinelFile.reload()
+    running: root.upgrading
+    onTriggered: root.pollUpgrade()
   }
 
-  // страховка від завислого "Updating…", якщо термінал убили разом із шелом.
-  // Живий процес НЕ гасимо (вбивати kitty в розпал транзакції pacman
-  // небезпечно — db lock): ставимо прапор overtime, upgrading лишається
-  // і блокує повторний старт, поки процес справді не завершиться.
   Timer {
     id: upgradeTimeout
     interval: 30 * 60 * 1000
     onTriggered: {
-      if (upgradeProc.running) {
-        root.upgradeTimedOut = true
-        return
-      }
-      if (root.upgrading) {
-        root.upgrading = false
-        root.refresh()
-      }
+      if (root.upgrading) root.upgradeTimedOut = true
     }
   }
 
@@ -280,5 +257,15 @@ Item {
     }
   }
 
-  Component.onCompleted: startupTimer.start()
+  Timer {
+    interval: 15 * 60 * 1000
+    repeat: true
+    running: root.error !== "" && !root.checking && !root.upgrading
+    onTriggered: root.refresh()
+  }
+
+  Component.onCompleted: {
+    root.pollUpgrade()
+    startupTimer.start()
+  }
 }

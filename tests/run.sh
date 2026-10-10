@@ -70,12 +70,20 @@ else
   skip "QML logic regressions" "node not installed"
 fi
 
+# --- Компіляція та ізольований IPC runtime-контракт (потрібен Wayland) ---
+if have qs && [ -n "${WAYLAND_DISPLAY:-}" ]; then
+  run "QML component compilation" python3 quickshell/scripts/update_config.py check quickshell
+  run "QML runtime IPC contract" python3 tests/qml_smoke.py
+else
+  skip "QML component compilation/runtime" "Quickshell or Wayland unavailable (mandatory in CI)"
+fi
+
 # --- Python — unittest ---
 # stdlib-тести йдуть завжди; genshin потребує requests/dotenv.
 # Раніше відсутність requests/dotenv скіпала ВСІ python-тести, хоча
 # sysinfo/palette/pacman/tracklist — чистий stdlib
 run "python unit tests (stdlib)" bash -c \
-  'for t in test_sysinfo test_update_palette test_pacman_updates test_tracklist; do python3 -m unittest discover -s tests/python -p "$t.py" || exit 1; done'
+  'for t in test_sysinfo test_update_palette test_pacman_updates test_tracklist test_install test_update_config test_shell_contracts; do python3 -m unittest discover -s tests/python -p "$t.py" || exit 1; done'
 if python3 -c "import requests, dotenv" >/dev/null 2>&1; then
   run "python unit tests (needs requests)" python3 -m unittest discover -s tests/python -p "test_genshin.py"
 else

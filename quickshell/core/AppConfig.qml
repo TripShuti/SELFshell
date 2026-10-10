@@ -170,6 +170,63 @@ Item {
   }
   function saveSoon() { _saveTimer.restart() }
 
+  readonly property var numericRanges: ({
+    "idleLockTimeout": [0, 86400, true],
+    "idleDpmsTimeout": [0, 86400, true],
+    "idleSuspendTimeout": [0, 86400, true],
+    "audioStep": [0.0, 1.0, false],
+    "brightnessStep": [0, 100, true],
+    "barHeight": [1, 200, true],
+    "barRadius": [0, 100, true],
+    "edgeMargin": [0, 200, true],
+    "pillPadding": [0, 100, true],
+    "contentSpacing": [0, 100, true],
+    "popupBgOpacity": [0.0, 1.0, false],
+    "popupBgLighten": [1.0, 2.0, false],
+    "popupRadius": [0, 24, true],
+    "popupBorderWidth": [0, 4, true],
+    "toastRadius": [0, 24, true],
+    "toastLighten": [1.0, 2.0, false],
+    "toastBgOpacity": [0.0, 1.0, false],
+    "osdRadius": [0, 24, true],
+    "osdLighten": [1.0, 2.0, false],
+    "osdBgOpacity": [0.0, 1.0, false],
+    "barLighten": [1.0, 2.0, false],
+    "barBgOpacity": [0.0, 1.0, false],
+    "barBorderWidth": [0, 4, true],
+    "barBackOpacity": [0.0, 1.0, false],
+    "barBackLighten": [1.0, 2.0, false],
+    "barBackBorderWidth": [0, 4, true],
+    "separatorOpacity": [0.0, 1.0, false],
+    "separatorGlowOpacity": [0.0, 0.5, false],
+    "uiScale": [0.8, 1.5, false],
+    "animSpeed": [0.5, 2.0, false]
+  })
+
+  function setValue(key, encoded) {
+    if (!Object.prototype.hasOwnProperty.call(root.defaultCfg, key)) return false
+    var value
+    try { value = JSON.parse(encoded) } catch (e) { return false }
+    var expected = root.defaultCfg[key]
+    if (Array.isArray(expected)) {
+      if (!Array.isArray(value) || value.some(v => typeof v !== "string")) return false
+    } else if (typeof value !== typeof expected) return false
+    if (typeof value === "number" && !isFinite(value)) return false
+    if (key === "themeMode" && value !== "black" && value !== "matugen") return false
+    if (key === "barPos" && value !== "top" && value !== "bottom") return false
+    var range = root.numericRanges[key]
+    if (range && (value < range[0] || value > range[1] || (range[2] && !Number.isInteger(value)))) return false
+    if (key === "preferredPlayer" && value === "") return false
+    if (["idleLockTimeout", "idleDpmsTimeout", "idleSuspendTimeout"].includes(key)) {
+      var keys = ["idleLockTimeout", "idleDpmsTimeout", "idleSuspendTimeout"]
+      var active = keys.map(k => k === key ? value : root.cfg[k]).filter(v => v !== 0)
+      for (var i = 1; i < active.length; i++) if (active[i] <= active[i - 1]) return false
+    }
+    root.cfg[key] = value
+    root.saveToFile()
+    return true
+  }
+
   // Масштаб шрифтів/гліфів: усі font.pixelSize у віджетах і попапах
   // домножуються на uiScale через цей хелпер
   function scaled(v) { return v * root.cfg.uiScale }

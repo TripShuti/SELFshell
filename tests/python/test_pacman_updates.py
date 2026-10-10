@@ -117,6 +117,15 @@ class CollectTest(unittest.TestCase):
         self.assertEqual(data["packages"], [])
         self.assertEqual(data["repo_count"], 0)
 
+    def test_failed_aur_is_partial_and_keeps_repository_results(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            env = self._env(tmp, 'printf "fish 4.9.1-1 -> 4.9.2-1\\n"; exit 0', 'exit 1')
+            data = self._run_main(env)
+        self.assertTrue(data["ok"])
+        self.assertTrue(data["partial"])
+        self.assertIn("AUR check failed", data["error"])
+        self.assertEqual(data["repo_count"], 1)
+
     def test_missing_checkupdates(self):
         with tempfile.TemporaryDirectory() as tmp:
             bin_d = os.path.join(tmp, "bin")

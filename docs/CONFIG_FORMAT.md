@@ -135,7 +135,7 @@ hardcoded values).
 | `cursorSize` | `number` | `24` | Cursor size |
 | `kbLayout` | `string` | `"us"` | Comma-separated keyboard layouts (`input:kb_layout`) |
 | `kbOptions` | `string` | `""` | Keyboard options, e.g. `"grp:alt_shift_toggle"` for layout switching |
-| `suspendKey` | `string` | `""` | Extra key that suspends via `systemctl suspend`; `""` — disabled |
+| `suspendKey` | `string` | `""` | Extra key that requests secure-lock-acknowledged suspend; `""` — disabled |
 | `autostart` | `array` | `[]` | Autostarts on Hyprland start |
 | `autostart[].command` | `string` | — | Command |
 | `autostart[].workspace` | `number?` | `null` | Workspace (`[workspace N silent]`) |
@@ -155,7 +155,7 @@ Notes:
 
 ### `windowRules` examples
 
-Every entry is passed to `hl.window_rule()` as-is (Hyprland ≥ 0.52 Lua
+Every entry is passed to `hl.window_rule()` as-is (Hyprland ≥ 0.56.0 Lua
 API). `match` selects the windows, the rest of the entry is the rule
 body — the full windowrule list is documented in the
 [Hyprland wiki](https://wiki.hyprland.org/Configuring/Window-Rules/).
@@ -320,10 +320,11 @@ string; `suspend` is a single bare key:
   "clipboard": "SUPER + SHIFT + V",
   "suspend": "XF86Launch1"
 }
+```
 
 > Example override values — built-in defaults are `SUPER + R` /
 > `SUPER + SHIFT + V` (see `BindsSection.qml`); an absent file means defaults.
-```
+
 
 Action ids: `launcher`, `settings`, `control`, `lock`, `clipboard`,
 `browser`, `terminal`, `files`, `suspend`. Unknown ids and non-string
@@ -416,3 +417,18 @@ Standard Yazi TOML format:
 ## Fastfetch: `config.jsonc`
 
 Standard JSON with comments. Sections: `logo`, `display`, `modules`.
+
+## Installation ownership and palette integration
+
+`quickshell/.selfshell-install.json` is local installation metadata, not a
+source config. Schema 1 records `components`, owned `files` and their `hashes`,
+`userUnit` ownership, and `paletteIntegrations`. Updates preserve personal
+config/palette/EQ/calendar/control/launcher state, `.env`, wallpapers, Hyprland
+JSON overrides, Fish universal variables and generated application themes.
+Only files previously owned by the package may be removed as obsolete.
+Locally edited managed source files block an update rather than being overwritten.
+
+`paletteIntegrations` accepts `kitty`, `fish`, `starship`, `yazi`, `foot`, `qt6ct`.
+Only opted-in applications are written by the palette generator. Installer-selected
+configs opt in automatically; `selfshell palette enable|disable <app>` changes
+that choice. Without a manifest no external application theme is changed.

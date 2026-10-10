@@ -8,7 +8,8 @@ local json = require("modules.json")
 -- Settings → Binds у шеллі). Формат значень — повний рядок бінду
 -- Hyprland, напр. "SUPER + SHIFT + V"; suspend — одиночна клавіша.
 -- Немає файлу/ключа — діє дефолт нижче.
-local overrides = json.read(os.getenv("HOME") .. "/.config/hypr/binds.json") or {}
+local overrides = json.read(os.getenv("HOME") .. "/.config/hypr/binds.json")
+if type(overrides) ~= "table" then overrides = {} end
 local function bindKey(name, default)
     local v = overrides[name]
     if type(v) == "string" and v ~= "" then return v end
@@ -55,13 +56,10 @@ hl.bind(bindKey("files", s.mainMod .. " + E"), hl.dsp.exec_cmd(s.fileManager))
 
 -- Клавіша сну: дефолт — suspendKey з env.json (може бути порожнім),
 -- оверрайд у binds.json має пріоритет.
--- Явний лок до саспенда з паузою на коміт WlSessionLock: голий
--- systemctl suspend покладався лише на пізній пре-лок через
--- PrepareForSleep в sleepMonitor, фріз міг застати лок посеред
--- створення LockSurface.
+-- Єдиний suspend-шлях чекає compositor secure ACK у shell.qml.
 local suspend = bindKey("suspend", s.suspendKey)
 if suspend ~= "" then
-    hl.bind(suspend, hl.dsp.exec_cmd("sh -c 'qs ipc call lockscreen lock; sleep 0.5; systemctl suspend'"))
+    hl.bind(suspend, hl.dsp.exec_cmd("qs ipc call lockscreen suspend"))
 end
 -- SUPER+Escape — центр керування (живлення/налаштування) — див. control вище
 

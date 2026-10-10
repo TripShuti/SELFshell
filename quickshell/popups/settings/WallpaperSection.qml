@@ -11,10 +11,8 @@ Item {
 
   readonly property var window: sys.window
 
-  WallpaperController {
-    id: wpCtl
-    appConfig: root.window.appConfig
-  }
+  readonly property var wpCtl: root.window.wallpaperController
+
 
   implicitWidth: parent?.width ?? 0
   implicitHeight: col.implicitHeight
@@ -71,45 +69,41 @@ Item {
       }
     }
 
-    // Сітка мініатюр: обтікає під ширину сторінки (3 на рядок)
-    Flow {
+    // Віртуалізована сітка не декодує всі шпалери при відкритті Settings.
+    GridView {
       id: grid
       Layout.fillWidth: true
-      spacing: 8
-
-      Repeater {
-        model: wpCtl.wallpapers
-
-        delegate: Rectangle {
-          required property string modelData
-          readonly property real thumbW: Math.max(140, (grid.width - 16) / 3)
-
-          width: thumbW
-          height: 100
-          radius: 6
-          color: window.palette.bg1
-          border.width: 1
-          border.color: ma.containsMouse ? window.palette.green : "transparent"
-          Behavior on border.color { ColorAnimation { duration: window.appConfig.anim(120) } }
-
-          Image {
-            anchors.fill: parent
-            anchors.margins: 2
-            source: "file://" + modelData
-            sourceSize.width: 200
-            sourceSize.height: 100
-            fillMode: Image.PreserveAspectCrop
-            asynchronous: true
-            cache: true
-          }
-
-          MouseArea {
-            id: ma
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: wpCtl.setWallpaper(modelData)
-          }
+      Layout.preferredHeight: Math.min(contentHeight, 330)
+      cellWidth: width / 3
+      cellHeight: 108
+      clip: true
+      reuseItems: true
+      model: wpCtl.wallpapers
+      delegate: Rectangle {
+        required property string modelData
+        width: grid.cellWidth - 8
+        height: 100
+        radius: 6
+        color: window.palette.bg1
+        border.width: 1
+        border.color: ma.containsMouse ? window.palette.green : "transparent"
+        Behavior on border.color { ColorAnimation { duration: window.appConfig.anim(120) } }
+        Image {
+          anchors.fill: parent
+          anchors.margins: 2
+          source: "file://" + modelData
+          sourceSize.width: 200
+          sourceSize.height: 100
+          fillMode: Image.PreserveAspectCrop
+          asynchronous: true
+          cache: true
+        }
+        MouseArea {
+          id: ma
+          anchors.fill: parent
+          hoverEnabled: true
+          cursorShape: Qt.PointingHandCursor
+          onClicked: wpCtl.setWallpaper(modelData)
         }
       }
     }

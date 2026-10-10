@@ -65,6 +65,7 @@ Per layer:
   `visual_test.lua` mock the global `hl`)
 - Python scripts: stdlib tests always
   (`test_sysinfo`/`test_update_palette`/`test_pacman_updates`/`test_tracklist`
+  plus installer entrypoint, staged updater and configuration/sleep contracts
   one by one); `test_genshin.py` only with `requests`+`dotenv` installed
   (CI installs both and runs full `discover`)
 - Config schemas: `python3 tests/check_config_schema.py` validates
@@ -79,9 +80,11 @@ Per layer:
   output contract parsed by `BatteryWidget`
 - QML logic: `node tests/qml_regressions.js` exercises request ordering,
   brightness, battery recovery and related state transitions without system actions
-  (optional Node.js; included in `tests/run.sh` when available).
-- QML: quickshell has no `--check` — `selfshell reload` and check `qs log`
-  for "Configuration Loaded"
+  (Node.js is mandatory in CI; the local harness skips it only if unavailable).
+- QML: `python3 quickshell/scripts/update_config.py check quickshell` compiles
+  every component without creating it. `python3 tests/qml_smoke.py` tests IPC
+  and AppConfig persistence in a temporary configuration. Both need Wayland;
+  CI runs headless Weston and requires these checks before release.
 - After changing hypr configs: `hyprctl reload` + `selfshell doctor`
 
 ## Changelog

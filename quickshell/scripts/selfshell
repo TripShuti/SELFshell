@@ -27,7 +27,7 @@ Usage:
 System:
   doctor [--preboot]             System diagnostics
   reload                         Restart quickshell
-  update [--yes]                 Update the config (git pull or archive) and restart
+  update [--yes]                 Update managed components with rollback
   version [--short]              SELFshell version
   list                           List running quickshell instances
   status                         Quick status summary
@@ -86,7 +86,7 @@ selfshell wallpaper — manage wallpapers
 
 Usage:
   selfshell wallpaper list              List wallpapers in wp/
-  selfshell wallpaper current           Show current wallpaper (for lock screen)
+  selfshell wallpaper current           Show current desktop wallpaper
   selfshell wallpaper set <file>        Set wallpaper (respects themeMode)
   selfshell wallpaper random            Set random wallpaper
   selfshell wallpaper reload            Re-apply current wallpaper
@@ -104,6 +104,8 @@ Usage:
   selfshell palette reload          Re-read palette.json (ipc palette-reload reload)
   selfshell palette show            Show current palette.json path and colors
   selfshell palette path            Print palette.json path
+  selfshell palette enable <app>    Opt in to generated app themes
+  selfshell palette disable <app>   Stop generating themes for that app
 EOF
 }
 
@@ -161,7 +163,7 @@ ipc() {
     error "qs not found — quickshell not in PATH"
     exit 1
   fi
-  qs ipc call "$target" "$fn" "$@"
+  qs ipc -p "$QS_CONFIG_DIR" call "$target" "$fn" "$@"
 }
 
 lock()        { ipc lockscreen lock; }
@@ -183,152 +185,133 @@ osd() {
   ipc osd "$1"
 }
 
-# quickshell у daemonize-режимі перейменовує comm на "qs",
-# тому перевірка лише по "quickshell" дає хибний результат
+# Усі операції стосуються лише вибраного конфігу; flock знімається ядром.
 qs_running() {
-  pgrep -x quickshell &>/dev/null || pgrep -x qs &>/dev/null
+  command -v qs >/dev/null || return 1
+  qs list -p "$QS_CONFIG_DIR" --json 2>/dev/null | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin) else 1)'
 }
 
-# Перезапуск quickshell: kill + новий інстанс у daemonize-режимі.
-# Lockdir: два паралельні reload вбивали один одного
-reload() {
-  local lockdir="${XDG_RUNTIME_DIR:-/tmp}/selfshell-reload.lock"
-  if ! mkdir "$lockdir" 2>/dev/null; then
-    error "Another reload is already in progress."
-    exit 1
-  fi
-  # RETURN чистить при успіху, EXIT — при провалі через exit (RETURN на exit не спрацьовує).
-  # :-заглушка: на EXIT локальна змінна вже недоступна, а set -u свариться на unbound
-  trap 'rmdir "${lockdir:-__none__}" 2>/dev/null || true' RETURN EXIT
-  if ! pgrep -x Hyprland &>/dev/null; then
-    error "Hyprland is not running — nothing to restart quickshell in."
-    exit 1
-  fi
-  if ! command -v qs &>/dev/null; then
-    error "qs not found"
-    exit 1
-  fi
-  if qs_running; then
-    info "Stopping quickshell..."
-    qs kill &>/dev/null || true
-    sleep 1
-    if qs_running; then
-      pkill -f "[q]s -d" 2>/dev/null || true
-      pkill -x qs 2>/dev/null || true
-      pkill -x quickshell 2>/dev/null || true
-      sleep 1
-    fi
-  fi
-  info "Starting quickshell..."
-  setsid qs -d &>/dev/null &
-  sleep 1
-  if qs_running; then
-    ok "quickshell is running."
-  else
-    error "quickshell failed to start. Check: qs log"
-    exit 1
-  fi
+operation_lock() {
+  local runtime="${XDG_RUNTIME_DIR:?XDG_RUNTIME_DIR is required}"
+  exec {operation_fd}>"$runtime/selfshell-update.lock"
+  flock -n "$operation_fd" || { error "Another update/reload is in progress."; return 1; }
 }
 
-# Оновлення конфігу. Git-клон → git pull; конфіг від install.sh (cp, без .git)
-# → завантажуємо архів з GitHub і rsync-имо quickshell/. Локальні файли
-# (LOCAL_FILES — ті самі, що в .gitignore репозиторію) не перезаписуються.
-update() {
-  local auto_yes=false
-  [ "${1:-}" = "--yes" ] && auto_yes=true
-  [ "${1:-}" = "-y" ] && auto_yes=true
-  if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
-    echo "Usage: selfshell update [--yes]"
-    return 0
-  fi
-  if git -C "$QS_CONFIG_DIR" rev-parse --is-inside-work-tree &>/dev/null; then
-    if ! command -v git &>/dev/null; then error "git not found"; exit 1; fi
-    info "Updating $QS_CONFIG_DIR (git pull)..."
-    git -C "$QS_CONFIG_DIR" pull --ff-only || { error "git pull failed."; exit 1; }
-  else
-    update_from_archive "$auto_yes"
-  fi
-  reload
+require_unlocked() {
+  local state
+  state="$(qs ipc -p "$QS_CONFIG_DIR" call lockscreen isLocked 2>/dev/null)" || {
+    error "Cannot check lock state. Unlock and restart the older shell before updating."
+    return 1
+  }
+  [ "$state" = false ] || { error "Unlock the screen before updating/reloading."; return 1; }
 }
 
-# Персональні/згенеровані файли, які не чіпаємо при оновленні з архіву
-LOCAL_FILES=(
-  data/config.json          # налаштування з Settings
-  data/palette.json         # генерується update-palette
-  data/eq.json              # EQ пресети
-  data/calendar-tasks.json  # задачі календаря
-  data/control-state.json   # стан центру керування
-  data/launcher-usage.json  # статистика лаунчера
-  data/updates.json         # кеш списку оновлень (Settings → System)
-  data/last-shot.txt        # скріншоти
-  scripts/.env              # секрети (HoYoLAB)
-  scripts/.genshin_state.json
-  scripts/.genshin_requests.log
-  scripts/__pycache__/
-  services/__pycache__/
-  wp/                       # персональні шпалери + current.* + current-lock.jpg
-  .qmlls.ini
-  .opencode/
+start_shell() {
+  # Daemon не має успадковувати flock, інакше наступний reload буде заблоковано.
+  ( exec {operation_fd}>&-; qs -p "$QS_CONFIG_DIR" -d ) >/dev/null 2>&1 || return 1
+  local i
+  # Лічильник обмежує час очікування.
+  # shellcheck disable=SC2034
+  for i in {1..20}; do
+    if qs_running && qs ipc -p "$QS_CONFIG_DIR" call lockscreen isLocked >/dev/null 2>&1; then return 0; fi
+    sleep 0.25
+  done
+  error "Quickshell failed to start. Check: qs log -p $QS_CONFIG_DIR"
+  return 1
+}
+
+stop_shell() {
+  require_unlocked || return 1
+  qs ipc -p "$QS_CONFIG_DIR" call lockscreen quitIfUnlocked >/dev/null 2>&1 || true
+  local i
+  # Лічильник обмежує час очікування.
+  # shellcheck disable=SC2034
+  for i in {1..20}; do
+    if ! qs_running; then return 0; fi
+    sleep 0.1
+  done
+  error "Quickshell did not stop; unlock it and wait for wallpaper changes to finish."
+  return 1
+}
+
+reload() (
+  operation_lock || exit 1
+  if qs_running; then stop_shell || exit 1; fi
+  start_shell || exit 1
+  ok "Quickshell is running."
 )
 
-update_from_archive() {
-  local auto_yes="${1:-false}"
-  command -v curl &>/dev/null || { error "curl not found (package: curl)."; exit 1; }
-  command -v tar &>/dev/null || { error "tar not found"; exit 1; }
-  local tmp url
+# Checkout розробника не є інсталяцією: updater не змінює його історію.
+update() (
+  if [ "${1:-}" = --help ] || [ "${1:-}" = -h ]; then
+    echo "Usage: selfshell update [--yes]"
+    exit 0
+  fi
+  local auto_yes=false
+  case "${1:-}" in --yes|-y) auto_yes=true ;; "") ;; *) error "Unknown update option: $1"; exit 1 ;; esac
+  if [ -e "$QS_CONFIG_DIR/.git" ] || [ -e "$QS_CONFIG_DIR/../.git" ] || git -C "$QS_CONFIG_DIR" rev-parse --is-inside-work-tree &>/dev/null; then
+    error "This is a source checkout. Update it with git, review changes, then install from that checkout."
+    exit 1
+  fi
+  command -v curl >/dev/null || { error "curl not found"; exit 1; }
+  operation_lock || exit 1
+  local tmp transaction="" was_running=false stopped=false applied=false
   tmp="$(mktemp -d)"
-  trap 'rm -rf "$tmp"' EXIT
-  url="$REPO_URL/archive/refs/heads/main.tar.gz"
-  info "Downloading archive: $url"
-  if ! curl -fsSL --retry 3 --retry-delay 5 "$url" -o "$tmp/selfshell.tar.gz"; then
-    rm -rf "$tmp"; trap - EXIT
-    error "Failed to download the archive — check your internet connection and the repository name."
-    exit 1
-  fi
-  # --strip-components=1: ім'я кореневої теки архіву не фіксоване
-  if ! tar -xzf "$tmp/selfshell.tar.gz" -C "$tmp" --strip-components=1; then
-    rm -rf "$tmp"; trap - EXIT
-    error "Archive is corrupt — extraction failed."
-    exit 1
-  fi
-  local src="$tmp/quickshell"
-  if [ ! -d "$src" ]; then
-    rm -rf "$tmp"; trap - EXIT
-    error "Archive is corrupt — quickshell/ not found."
-    exit 1
-  fi
-  # Guard проти розсинхрону: архів старіший за встановлену версію майже
-  # завжди означає помилку (stale кеш, відкат), тож питаємо дозвіл
+  cp "$QS_CONFIG_DIR/scripts/update_config.py" "$tmp/updater.py"
+  # Викликається EXIT trap.
+  # shellcheck disable=SC2329
+  update_cleanup() {
+    local status=$?
+    trap - EXIT INT TERM
+    if [ "$status" -ne 0 ]; then
+      if $applied; then
+        if qs_running && ! stop_shell; then
+          error "Rollback deferred while the shell is locked or busy. Recovery files: $transaction"
+          rm -rf "$tmp"
+          exit "$status"
+        fi
+        if ! python3 "$tmp/updater.py" rollback "$transaction"; then
+          error "Rollback failed. Recovery files: $transaction"
+          rm -rf "$tmp"
+          exit "$status"
+        fi
+      fi
+      if $stopped && $was_running; then start_shell || true; fi
+      if [ -n "$transaction" ]; then python3 "$tmp/updater.py" discard "$transaction" || true; fi
+    fi
+    rm -rf "$tmp"
+    exit "$status"
+  }
+  trap update_cleanup EXIT
+  trap 'exit 130' INT
+  trap 'exit 143' TERM
+  local url="$REPO_URL/archive/refs/heads/main.tar.gz"
+  info "Downloading $url"
+  curl -fsSL --retry 3 --retry-delay 5 "$url" -o "$tmp/update.tar.gz"
+  transaction="$(python3 "$tmp/updater.py" prepare "$tmp/update.tar.gz" "$QS_CONFIG_DIR")"
   local old_v new_v
-  old_v="$(tr -d '\n\r' < "$QS_CONFIG_DIR/VERSION" 2>/dev/null || true)"
-  new_v="$(tr -d '\n\r' < "$src/VERSION" 2>/dev/null || true)"
-  if [ -n "$old_v" ] && [ -n "$new_v" ] && [ "$old_v" != "$new_v" ] \
-     && [ "$(printf '%s\n%s' "$old_v" "$new_v" | sort -V | head -1)" = "$new_v" ]; then
-    warn "Downgrade detected: installed $old_v, archive has $new_v."
-    warn "This usually means a stale archive — update anyway?"
-    if [ "$auto_yes" = true ]; then
-      info "Auto-yes: proceeding"
-    else
-      local ans
-      if ! read -r -t 10 -p "[y/N] " ans; then ans=""; fi
-      case "$ans" in
-        y|Y|yes) ;;
-        *) rm -rf "$tmp"; trap - EXIT; error "Update aborted."; exit 1 ;;
-      esac
+  old_v="$(cat "$QS_CONFIG_DIR/VERSION")"
+  new_v="$(cat "$transaction/stage-quickshell/VERSION")"
+  if [ "$old_v" != "$new_v" ] && [ "$(printf '%s\n%s' "$old_v" "$new_v" | sort -V | head -1)" = "$new_v" ]; then
+    warn "Downgrade: $old_v → $new_v."
+    if ! $auto_yes; then
+      local answer
+      read -r -p "Proceed? [y/N] " answer || answer=""
+      case "$answer" in y|Y|yes) ;; *) error "Update aborted."; exit 1 ;; esac
     fi
   fi
-  # Копіюємо через tar: виключення не пропустять локальні файли
-  local excludes=()
-  for f in "${LOCAL_FILES[@]}"; do excludes+=(--exclude="./$f" --exclude="$f"); done
-  info "Extracting into $QS_CONFIG_DIR (local files are kept)..."
-  if ! tar -C "$src" -cf - . | tar -C "$QS_CONFIG_DIR" -xf - "${excludes[@]}"; then
-    rm -rf "$tmp"; trap - EXIT
-    error "Update failed."
-    exit 1
+  if qs_running; then was_running=true; stop_shell; stopped=true; fi
+  applied=true
+  python3 "$tmp/updater.py" apply "$transaction"
+  if $was_running; then start_shell; fi
+  python3 "$tmp/updater.py" commit "$transaction"
+  applied=false
+  stopped=false
+  if [ -d "$QS_CONFIG_DIR/../systemd/user" ]; then
+    systemctl --user daemon-reload || warn "Reload user units after login."
   fi
-  rm -rf "$tmp"; trap - EXIT
-  ok "Config updated."
-}
+  ok "Managed components updated; personal files preserved."
+)
 
 # --- Theme / Wallpaper helpers ---
 get_theme_mode() {
@@ -360,31 +343,13 @@ theme_cmd() {
         exit 1
       fi
       info "Switching theme to $name..."
-      # Update config.json themeMode via python (keep other keys, atomic tmp+mv)
-      python3 - "$QS_CONFIG_DIR/data/config.json" "$name" <<'PY'
-import json, os, sys, tempfile
-path, name = sys.argv[1], sys.argv[2]
-with open(path) as f:
-    data=json.load(f)
-data["themeMode"]=name
-fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path), suffix=".tmp")
-try:
-    with os.fdopen(fd, "w") as f:
-        json.dump(data,f,indent=2)
-    os.replace(tmp, path)
-except BaseException:
-    try:
-        os.unlink(tmp)
-    except OSError:
-        pass
-    raise
-PY
+      config_cmd set themeMode "$name"
       if [ "$name" = "black" ]; then
         "$QS_CONFIG_DIR/scripts/update-palette.py" --theme black || { error "palette generation failed"; exit 1; }
         if [ -f "$QS_CONFIG_DIR/wp/black.png" ]; then
           "$QS_CONFIG_DIR/scripts/update-wallpaper-only.sh" "$QS_CONFIG_DIR/wp/black.png" || true
         fi
-        qs ipc call palette-reload reload 2>/dev/null || true
+        qs ipc -p "$QS_CONFIG_DIR" call palette-reload reload 2>/dev/null || true
         pkill -USR1 -x foot 2>/dev/null || true
         ok "Theme black applied (wallpaper black.png)"
       else
@@ -394,7 +359,7 @@ PY
         if [ -n "$cur" ] && [ -f "$cur" ]; then
           "$QS_CONFIG_DIR/scripts/update-palette.sh" "$cur" || true
         else
-          qs ipc call palette-reload reload 2>/dev/null || true
+          qs ipc -p "$QS_CONFIG_DIR" call palette-reload reload 2>/dev/null || true
           warn "No current wallpaper — pick one: selfshell wallpaper list"
         fi
         ok "Theme matugen active"
@@ -453,6 +418,10 @@ palette_cmd() {
   if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then usage_palette; return 0; fi
   local sub="${1:-reload}"
   case "$sub" in
+    enable|disable)
+      operation_lock
+      python3 "$QS_CONFIG_DIR/scripts/update_config.py" "$sub" "$QS_CONFIG_DIR" "${1:?Usage: selfshell palette enable|disable <app>}"
+      ;;
     reload) palette ;;
     path) echo "$QS_CONFIG_DIR/data/palette.json" ;;
     show)
@@ -473,7 +442,7 @@ config_cmd() {
   case "$sub" in
     path) echo "$QS_CONFIG_DIR/data/config.json" ;;
     check)
-      python3 "$QS_CONFIG_DIR/../tests/check_config_schema.py" 2>&1 || python3 -m json.tool "$QS_CONFIG_DIR/data/config.json" >/dev/null
+      python3 "$QS_CONFIG_DIR/scripts/config_ctl.py" check "$QS_CONFIG_DIR/data/config.json"
       ;;
     get)
       local key="${1:-}"
@@ -487,39 +456,28 @@ PY
     set)
       local key="${1:-}"; local val="${2:-}"
       [ -z "$key" ] || [ -z "$val" ] && { error "Usage: selfshell config set <key> <value>"; exit 1; }
-      python3 - "$QS_CONFIG_DIR/data/config.json" "$key" "$val" <<'PY'
-import json, os, sys, tempfile
-path, key, val = sys.argv[1], sys.argv[2], sys.argv[3]
-# try to parse as json, else string
-try:
-    parsed=json.loads(val)
-except:
-    parsed=val
-with open(path) as f:
-    data=json.load(f)
-data[key]=parsed
-fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path), suffix=".tmp")
-try:
-    with os.fdopen(fd, "w") as f:
-        json.dump(data,f,indent=2)
-    os.replace(tmp, path)
-except BaseException:
-    try:
-        os.unlink(tmp)
-    except OSError:
-        pass
-    raise
-PY
+      local encoded result
+      encoded="$(python3 "$QS_CONFIG_DIR/scripts/config_ctl.py" encode "$QS_CONFIG_DIR/data/config.json" "$key" "$val")"
+      if qs_running; then
+        result="$(ipc configuration set "$key" "$encoded")"
+        [ "$result" = true ] || { error "Running shell rejected configuration change."; exit 1; }
+      else
+        python3 "$QS_CONFIG_DIR/scripts/config_ctl.py" set "$QS_CONFIG_DIR/data/config.json" "$key" "$val"
+      fi
       ok "config $key = $val"
       ;;
     edit)
+      if qs_running; then error "Stop the shell before editing config.json; use config set for live changes."; exit 1; fi
       local ed="${EDITOR:-nano}"
       "$ed" "$QS_CONFIG_DIR/data/config.json"
       ;;
     reset)
-      warn "Reset config to defaults via quickshell — use Settings > Behavior > Reset or qs ipc call"
-      error "Not implemented via CLI (use GUI)"
-      exit 1
+      if qs_running; then
+        ipc configuration reset
+      else
+        python3 "$QS_CONFIG_DIR/scripts/config_ctl.py" reset "$QS_CONFIG_DIR/data/config.json"
+      fi
+      ok "Configuration reset."
       ;;
     *) error "Unknown config subcommand: $sub"; usage_config; exit 1 ;;
   esac
@@ -618,6 +576,30 @@ doctor() {
     fi
   done
 
+  echo
+  echo "== Compositor version =="
+  local hver hver_num
+  hver="$(hyprland --version 2>/dev/null | head -1 || true)"
+  hver_num="$(printf '%s' "$hver" | sed -nE 's/^Hyprland ([0-9]+\.[0-9]+\.[0-9]+).*/\1/p')"
+  if [ -n "$hver_num" ] && [ "$(printf '%s\n0.56.0' "$hver_num" | sort -V | head -1)" = 0.56.0 ]; then
+    ok "Hyprland $hver_num (>= 0.56.0 supported)"
+  else
+    error "Hyprland >= 0.56.0 is required; installed version: ${hver_num:-unknown}"
+    problems=$((problems + 1))
+  fi
+  local browser
+  browser="$(python3 - "$HOME/.config/hypr/env.json" <<'PYBROWSER'
+import json, shlex, sys
+try:
+    data = json.load(open(sys.argv[1]))
+    command = data.get('browser', 'chromium') if isinstance(data, dict) else 'chromium'
+    print(shlex.split(command)[0])
+except (OSError, ValueError, TypeError, IndexError):
+    print('chromium')
+PYBROWSER
+)"
+  command -v "$browser" >/dev/null || warn "Browser '$browser' not installed — install it or change hypr/env.json browser."
+
   if ! $preboot; then
     echo
     echo "== Session =="
@@ -626,24 +608,6 @@ doctor() {
     else
       error "Hyprland is not running"
       problems=$((problems + 1))
-    fi
-    # Lua-конфіг вимагає Hyprland >= 0.52 (Lua API в конфігах)
-    local hver=""
-    if command -v hyprctl &>/dev/null; then
-      hver="$(hyprctl version 2>/dev/null | grep -oE 'Hyprland [0-9]+\.[0-9]+' | head -1 || true)"
-    fi
-    if [ -n "$hver" ]; then
-      # hver має вигляд "Hyprland 0.52" — порівнюємо лише числову частину,
-      # sort -V по рядку з префіксом давав хибний результат
-      hver_num="${hver#Hyprland }"
-      if [ "$(printf '%s\n0.52' "$hver_num" | sort -V | head -1)" = "0.52" ]; then
-        ok "Hyprland $hver (>= 0.52 required)"
-      else
-        error "Hyprland $hver — too old, Lua config requires >= 0.52"
-        problems=$((problems + 1))
-      fi
-    else
-      warn "cannot read Hyprland version (hyprctl failed)"
     fi
     if qs_running; then
       ok "quickshell is running"

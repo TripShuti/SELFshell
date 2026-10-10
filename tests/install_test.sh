@@ -30,8 +30,8 @@ export SB_TS="20260808-120000"
 
 TMPH="$(mktemp)"
 {
-  echo 'set -eo pipefail'
-  echo 'HOME="$SB_HOME"'
+  sed -n '/^set -/p' "$SHELLSH" | head -1
+  echo 'INSTALL_TEST_HOME="$SB_HOME"'
   echo 'REPO_DIR="$SB_REPO"'
   echo 'ts="$SB_TS"'
   printf '%s\n' \
@@ -40,6 +40,7 @@ TMPH="$(mktemp)"
     'warn() { echo "[!] $*"; }' \
     'error() { echo "[x] $*" >&2; }' \
     '_FAILED=0' '_BACKED_UP=()'
+  extract backup_target
   extract backup_and_replace
   extract restore_backups
   extract confirm
@@ -47,18 +48,18 @@ TMPH="$(mktemp)"
   cat << 'BODY'
 
 # --- T1: replace keeps a backup ---
-mkdir -p "$HOME/target1" && echo old > "$HOME/target1/old.txt"
-backup_and_replace "$HOME/target1" "$REPO_DIR/quickshell"
-[ -f "$HOME/target1/marker" ] || { echo "FAIL T1: copy missing"; exit 1; }
-[ -f "$HOME/target1.bak-$ts/old.txt" ] || { echo "FAIL T1: backup missing"; exit 1; }
+mkdir -p "$INSTALL_TEST_HOME/target1" && echo old > "$INSTALL_TEST_HOME/target1/old.txt"
+backup_and_replace "$INSTALL_TEST_HOME/target1" "$REPO_DIR/quickshell"
+[ -f "$INSTALL_TEST_HOME/target1/marker" ] || { echo "FAIL T1: copy missing"; exit 1; }
+[ -f "$INSTALL_TEST_HOME/target1.bak-$ts/old.txt" ] || { echo "FAIL T1: backup missing"; exit 1; }
 echo "T1 replace+backup OK"
 
 # --- T2: failure -> restore_backups puts the old config back ---
-mkdir -p "$HOME/t2" && echo original > "$HOME/t2/original.txt"
-backup_and_replace "$HOME/t2" "$REPO_DIR/quickshell"
-rm -rf "$HOME/t2"                      # simulated disaster
+mkdir -p "$INSTALL_TEST_HOME/t2" && echo original > "$INSTALL_TEST_HOME/t2/original.txt"
+backup_and_replace "$INSTALL_TEST_HOME/t2" "$REPO_DIR/quickshell"
+rm -rf "$INSTALL_TEST_HOME/t2"                      # simulated disaster
 restore_backups
-[ -f "$HOME/t2/original.txt" ] || { echo "FAIL T2: rollback did not restore"; exit 1; }
+[ -f "$INSTALL_TEST_HOME/t2/original.txt" ] || { echo "FAIL T2: rollback did not restore"; exit 1; }
 echo "T2 rollback OK"
 
 # T3: prompts don't abort on EOF (CI), defaults used
@@ -91,9 +92,9 @@ if run_retry 2 never; then echo "FAIL T7"; exit 1; fi
 echo "T7 retry exhaustion OK"
 
 # T8: missing parent dir (fresh user/chroot, ~/.config не існує) — створюється
-if [ -e "$HOME/.config" ]; then echo "FAIL T8: sandbox .config already exists"; exit 1; fi
-backup_and_replace "$HOME/.config/quickshell" "$REPO_DIR/quickshell"
-[ -f "$HOME/.config/quickshell/marker" ] || { echo "FAIL T8: copy missing"; exit 1; }
+if [ -e "$INSTALL_TEST_HOME/.config" ]; then echo "FAIL T8: sandbox .config already exists"; exit 1; fi
+backup_and_replace "$INSTALL_TEST_HOME/.config/quickshell" "$REPO_DIR/quickshell"
+[ -f "$INSTALL_TEST_HOME/.config/quickshell/marker" ] || { echo "FAIL T8: copy missing"; exit 1; }
 echo "T8 missing parent OK"
 
 echo "ALL INSTALL-SH FUNCTION TESTS PASSED"

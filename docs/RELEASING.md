@@ -49,7 +49,8 @@ milestone:
    git push origin vX.Y.Z
    ```
 
-6. `.github/workflows/release.yml` runs and:
+6. `.github/workflows/release.yml` first runs the reusable CI workflow
+   (including QML logic and headless QML compilation), then:
    - fails if `quickshell/VERSION` != the tag version;
    - fails if `CHANGELOG.md` has no `## [X.Y.Z]` section;
    - extracts that section as the release notes;

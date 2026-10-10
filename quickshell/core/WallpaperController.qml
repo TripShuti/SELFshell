@@ -15,11 +15,9 @@ Item {
 
   required property QtObject appConfig
 
+  readonly property bool applying: applyProc.running
   property var wallpapers: []
   property string statusText: ""
-  // StdioCollector не чиститься між запусками — порожній список
-  // відрізняємо від застарілого тексту прапором свіжих даних
-  property bool _listGotData: false
 
   readonly property string paletteScriptPath: Qt.resolvedUrl("../scripts/update-palette.sh").toString().replace("file://", "")
   readonly property string wallpaperOnlyPath: Qt.resolvedUrl("../scripts/update-wallpaper-only.sh").toString().replace("file://", "")
@@ -42,21 +40,17 @@ Item {
     id: listProc
     stdout: listCollector
     command: ["python3", root.listScriptPath, "list"]
-    onStarted: root._listGotData = false
-    onExited: {
+    onExited: (code) => {
       running = false
-      if (!root._listGotData) root.wallpapers = []
+      if (code !== 0) root.wallpapers = []
     }
   }
 
   StdioCollector {
     id: listCollector
     waitForEnd: true
-    onDataChanged: {
-      root._listGotData = true
-      if (listCollector.text) {
-        root.wallpapers = listCollector.text.trim().split("\n").filter(p => p.trim() !== "")
-      }
+    onStreamFinished: {
+      root.wallpapers = String(listCollector.text ?? "").trim().split("\n").filter(p => p.trim() !== "")
     }
   }
 

@@ -122,9 +122,8 @@ assert(not find("SUPER + R"), "override: old SUPER+R gone")
 assert(find("SUPER + ALT + H") and find("SUPER + ALT + H").action == "qs ipc call clipboard toggle",
   "override: clipboard rebound")
 assert(not find("SUPER + SHIFT + V"), "override: old clipboard combo gone")
-assert(find("XF86Launch1") and find("XF86Launch1").action:find("lockscreen lock", 1, true)
-  and find("XF86Launch1").action:find("systemctl suspend", 1, true),
-  "override: suspend bound to XF86Launch1 with pre-lock")
+assert(find("XF86Launch1") and find("XF86Launch1").action == "qs ipc call lockscreen suspend",
+  "override: suspend bound to XF86Launch1 through secure suspend IPC")
 -- некоректні значення (число/порожній рядок) ігноруються — діє дефолт
 assert(find("SUPER + L"), "invalid override values fall back to defaults")
 -- решта дефолтів не постраждала

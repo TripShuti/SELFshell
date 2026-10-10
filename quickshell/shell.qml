@@ -14,6 +14,30 @@ import QtQuick
 ShellRoot {
   id: root
 
+  property bool suspendPending: false
+  property bool sleepPreparing: false
+  property int sleepCycle: 0
+
+  Binding { target: Quickshell; property: "watchFiles"; value: !lockContext.locked && !wallpaperSvc.applying }
+
+  function requestSuspend() {
+    if (root.suspendPending || suspendProc.running) return
+    root.suspendPending = true
+    lockContext.locked = true
+    suspendTimeout.restart()
+    root.continueSuspend()
+  }
+
+  function continueSuspend() {
+    if (!sessionLock.secure) return
+    if (root.sleepPreparing) sleepMonitor.write("secure " + root.sleepCycle + "\n")
+    if (!root.suspendPending) return
+    root.suspendPending = false
+    suspendTimeout.stop()
+    suspendProc.command = ["/usr/bin/systemctl", "suspend"]
+    suspendProc.running = true
+  }
+
   property var bars: []
   function registerBar(bar) { root.bars = root.bars.concat([bar]) }
   function unregisterBar(bar) {
@@ -31,6 +55,7 @@ ShellRoot {
   function isActiveBar(bar) { return root.activeBar() === bar }
   function togglePopup(name) { root.activeBar()?.invokePopup(name) }
 
+  WallpaperController { id: wallpaperSvc; appConfig: rootAppConfig }
   AudioEq { id: audioEqSvc }
   MprisService { id: mediaPlayerSvc; appConfig: rootAppConfig }
   property var pairingBar: null
@@ -63,6 +88,11 @@ ShellRoot {
     onNotification: notif => root.activeBar()?.handleSystemNotification(notif)
   }
   IpcHandler { target: "settings"; function toggle(): void { root.togglePopup("settings") } }
+  IpcHandler {
+    target: "configuration"
+    function set(key: string, value: string): bool { return rootAppConfig.setValue(key, value) }
+    function reset(): void { rootAppConfig.resetCfg() }
+  }
   IpcHandler { target: "launcher"; function toggle(): void { root.togglePopup("launcher") } }
   IpcHandler { target: "control"; function toggle(): void { root.togglePopup("control") } }
   IpcHandler { target: "clipboard"; function toggle(): void { root.togglePopup("clipboard") } }
@@ -109,6 +139,7 @@ ShellRoot {
   WlSessionLock {
     id: sessionLock
     locked: lockContext.locked
+    onSecureChanged: root.continueSuspend()
 
     WlSessionLockSurface {
       LockSurface {
@@ -139,22 +170,15 @@ ShellRoot {
     function onLockRequested() {
       lockContext.locked = true
     }
-    function onSuspendRequested() {
-      // повторний запит під час біжучого suspend не перезаписує
-      // command живого процесу (другий запит губився)
-      if (suspendProc.running) return
-      lockContext.locked = true
-      suspendDelay.restart()
-    }
+    function onSuspendRequested() { root.requestSuspend() }
   }
 
   Timer {
-    id: suspendDelay
-    interval: 400
+    id: suspendTimeout
+    interval: 5000
     onTriggered: {
-      if (!lockContext.locked) lockContext.locked = true
-      suspendProc.command = ["/usr/bin/systemctl", "suspend"]
-      suspendProc.running = true
+      root.suspendPending = false
+      console.warn("Suspend cancelled: compositor has not confirmed the screen lock")
     }
   }
 
@@ -165,6 +189,11 @@ ShellRoot {
 
   IpcHandler {
     target: "lockscreen"
+    function suspend(): void { root.requestSuspend() }
+    function isLocked(): bool { return lockContext.locked }
+    // Перевірка і вихід виконуються в одному виклику: лок не може
+    // увімкнутися між перевіркою CLI та зупинкою процеса.
+    function quitIfUnlocked(): void { if (!lockContext.locked && !wallpaperSvc.applying) Qt.quit() }
 
     function lock(): void {
       lockContext.locked = true
@@ -178,28 +207,26 @@ ShellRoot {
     }
   }
 
-  // Лочимо екран ПЕРЕД сном (для lid close, power button — шляхів,
-  // які ми не контролюємо). Слухаємо PrepareForSleep(true) від logind.
-  // Використовуємо SplitParser замість grep — без sh -c пайплайну та без
-  // накопичення тексту в StdioCollector (ротація після обробки).
+  // Helper тримає delay-FD між циклами сну й закриває його після secure.
   SplitParser {
     id: sleepParser
     splitMarker: "\n"
     onRead: data => {
-      if (String(data ?? "").includes("boolean true"))
+      var event
+      try { event = JSON.parse(String(data)) } catch (e) { return }
+      root.sleepPreparing = event.sleeping === true
+      root.sleepCycle = event.cycle ?? 0
+      if (root.sleepPreparing) {
         lockContext.locked = true
+        root.continueSuspend()
+      }
     }
   }
 
   Process {
     id: sleepMonitor
-    command: ["systemd-inhibit",
-      "--what=sleep",
-      "--mode=delay",
-      "--who=quickshell-lockscreen",
-      "--why=Lock screen before suspend",
-      "dbus-monitor", "--system",
-      "type=signal,sender=org.freedesktop.login1,interface=org.freedesktop.login1.Manager,member=PrepareForSleep"]
+    command: ["python3", Qt.resolvedUrl("scripts/sleep_guard.py").toString().replace("file://", "")]
+    stdinEnabled: true
     stdout: sleepParser
     running: true
 
@@ -242,6 +269,7 @@ ShellRoot {
       selftrackMonitor: selftrackMonitorSvc
       powerProfiles: powerProfileService
       pacmanUpdates: pacmanService
+      wallpaperController: wallpaperSvc
       idleManager: idleManagerSvc
     }
   }
