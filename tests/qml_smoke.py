@@ -49,6 +49,18 @@ ShellRoot {
     def ipc(*args):
         return subprocess.run(['qs','ipc','-p',str(base),'call','test',*args], env=env,
                               capture_output=True, text=True, timeout=3)
+    def diagnostics():
+        paths = [base/'qs.log', *(base/'runtime').rglob('log.log')]
+        return '\n'.join(str(path) + '\n' + path.read_text(errors='replace') for path in paths)
+    def wait_for_stop():
+        for _ in range(50):
+            listed = subprocess.run(['qs','list','-p',str(base),'--json'], env=env,
+                                    capture_output=True, text=True, timeout=3)
+            assert listed.returncode == 0, listed.stderr
+            if listed.stdout.startswith('No running instances for ') or listed.stdout.strip() == '[]':
+                return
+            time.sleep(.1)
+        raise AssertionError('Test shell did not stop:\n' + listed.stdout + diagnostics())
     try:
         result = None
         for _ in range(50):
@@ -72,13 +84,21 @@ ShellRoot {
         assert data['themeMode'] == 'matugen', data
         assert data['uiScale'] == 1.25, data
         assert ipc('set','uiScale','true').stdout.strip() == 'false'
-        for _ in range(2):
+        for attempt in range(2):
             reload = subprocess.run(['bash', str(base/'scripts/selfshell'), 'reload'], env=env,
                                     capture_output=True, text=True, timeout=10)
-            assert reload.returncode == 0, reload.stdout + reload.stderr
+            assert reload.returncode == 0, f'Reload {attempt + 1}:\n' + reload.stdout + reload.stderr + diagnostics()
+            assert not reload.stderr, reload.stderr
         ipc('stop')
+        wait_for_stop()
+        started = subprocess.run(['bash', str(base/'scripts/selfshell'), 'reload'], env=env,
+                                 capture_output=True, text=True, timeout=10)
+        assert started.returncode == 0, started.stdout + started.stderr + diagnostics()
+        assert not started.stderr, started.stderr
+        ipc('stop')
+        wait_for_stop()
         proc.wait(timeout=3)
-        print('QML runtime: scoped IPC, AppConfig persistence and consecutive reloads passed')
+        print('QML runtime: scoped IPC, AppConfig persistence, consecutive reloads and stopped startup passed')
     finally:
         try:
             ipc('stop')

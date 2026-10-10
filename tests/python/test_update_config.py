@@ -156,6 +156,9 @@ class UpdateCliTest(UpdateFixture):
         for name in ('selfshell', 'update_config.py', 'config_ctl.py', 'sleep_guard.py'):
             for base in (self.config, self.source/'quickshell'):
                 shutil.copy2(ROOT/'quickshell/scripts'/name, base/'scripts'/name)
+        for base in (self.config, self.source/'quickshell'):
+            (base/'core').mkdir()
+            shutil.copy2(ROOT/'quickshell/core/AppConfig.qml', base/'core/AppConfig.qml')
         # Фіксуємо власність до зміни пакета; helper тепер справжній.
         (self.source/'quickshell/shell.qml').write_text('old')
         u.record_install(self.source, self.config, ['quickshell', 'hypr'])
@@ -178,9 +181,18 @@ if name=='qs':
     config=Path(args[args.index('-p')+1])
     state=root/'running'
     if '--json' in args:
-        print('[{}]' if state.exists() else '[]');sys.exit(0)
+        bad=os.getenv('BAD_LIST')
+        if bad and (not os.getenv('BAD_LIST_AFTER_STOP') or not state.exists()) and (not os.getenv('BAD_LIST_AFTER_START') or (root/'started-new').exists()):
+            if bad=='command':
+                print('injected list failure',file=sys.stderr);sys.exit(1)
+            print({'empty':'', 'invalid':'invalid', 'object':'{}', 'string':'"running"'}[bad]);sys.exit(0)
+        if state.exists():print('[{}]')
+        elif os.getenv('EMPTY_LIST_JSON'):print('[]')
+        else:print(f'No running instances for "{config.resolve()}/shell.qml"\nUse --all to list all instances.')
+        sys.exit(0)
     if '-d' in args:
         if os.getenv('FAIL_NEW') and (config/'shell.qml').read_text()=='new':sys.exit(1)
+        if (config/'shell.qml').read_text()=='new':(root/'started-new').touch()
         state.write_text('running');sys.exit(0)
     if 'isLocked' in args:
         print('true' if os.getenv('LOCKED') else 'false');sys.exit(0)
@@ -213,6 +225,7 @@ sys.exit(1)
         self.assertTrue((self.root/'running').exists())
         self.assertFalse((self.config.parent/'hypr').exists())
         self.assertFalse(list(self.config.parent.glob('.selfshell-update-*')))
+        self.assertNotIn('Traceback', result.stderr)
 
     def test_cli_locked_update_never_stops_or_mutates_active_tree(self):
         result = self.run_update(LOCKED='1')
@@ -226,6 +239,7 @@ sys.exit(1)
     def test_cli_success_commits_and_only_addresses_selected_config(self):
         result = self.run_update()
         self.assertEqual(result.returncode, 0, result.stdout+result.stderr)
+        self.assertEqual(result.stderr, '')
         self.assertEqual((self.config/'shell.qml').read_text(), 'new')
         self.assertTrue((self.root/'running').exists())
         self.assertFalse(list(self.config.parent.glob('.selfshell-update-*')))
@@ -234,3 +248,54 @@ sys.exit(1)
             if call[0] == 'qs':
                 self.assertIn('-p', call)
                 self.assertEqual(call[call.index('-p')+1], str(self.config))
+
+    def test_cli_update_while_stopped_accepts_text_and_json_empty_lists(self):
+        (self.root/'running').unlink()
+        for empty_json in ('', '1'):
+            with self.subTest(empty_json=empty_json):
+                result = self.run_update(EMPTY_LIST_JSON=empty_json)
+                self.assertEqual(result.returncode, 0, result.stdout+result.stderr)
+                self.assertEqual(result.stderr, '')
+                self.assertFalse((self.root/'running').exists())
+
+    def test_cli_failed_or_malformed_list_aborts_before_stop_or_apply(self):
+        for bad in ('command', 'empty', 'invalid', 'object', 'string'):
+            with self.subTest(bad=bad):
+                result = self.run_update(BAD_LIST=bad)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertNotIn('Traceback', result.stderr)
+                self.assertNotIn('Managed components updated', result.stdout)
+                self.assertEqual((self.config/'shell.qml').read_text(), 'old')
+                self.assertTrue((self.root/'running').exists())
+                self.assertFalse(list(self.config.parent.glob('.selfshell-update-*')))
+        calls = [json.loads(line) for line in (self.root/'calls').read_text().splitlines()]
+        self.assertFalse(any('quitIfUnlocked' in call for call in calls))
+
+    def test_cli_list_failure_after_quit_does_not_apply_new_files(self):
+        result = self.run_update(BAD_LIST='command', BAD_LIST_AFTER_STOP='1')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual((self.config/'shell.qml').read_text(), 'old')
+        self.assertFalse(list(self.config.parent.glob('.selfshell-update-*')))
+
+    def test_cli_unknown_shell_state_blocks_offline_config_mutations(self):
+        import subprocess
+        original = (self.config/'data/config.json').read_text()
+        for args in (['set', 'themeMode', 'black'], ['reset'], ['edit']):
+            with self.subTest(args=args):
+                result = subprocess.run(['bash', str(self.config/'scripts/selfshell'), 'config', *args],
+                                        env=dict(self.env, BAD_LIST='command', EDITOR='false'),
+                                        capture_output=True, text=True, timeout=5)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn('Cannot list Quickshell', result.stderr)
+                self.assertEqual((self.config/'data/config.json').read_text(), original)
+
+    def test_cli_unknown_state_after_activation_retains_recovery_files(self):
+        result = self.run_update(BAD_LIST='command', BAD_LIST_AFTER_START='1')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('Rollback deferred', result.stderr)
+        self.assertNotIn('Traceback', result.stderr)
+        self.assertEqual((self.config/'shell.qml').read_text(), 'new')
+        self.assertTrue((self.root/'running').exists())
+        transactions = list(self.config.parent.glob('.selfshell-update-*'))
+        self.assertEqual(len(transactions), 1)
+        self.assertEqual((transactions[0]/'backup-quickshell/shell.qml').read_text(), 'old')

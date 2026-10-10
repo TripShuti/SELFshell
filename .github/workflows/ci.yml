@@ -157,6 +157,7 @@ jobs:
           export XDG_RUNTIME_DIR="$(mktemp -d)"
           chmod 700 "$XDG_RUNTIME_DIR"
           export WAYLAND_DISPLAY=wayland-ci
+          export XDG_CURRENT_DESKTOP=Weston
           weston --backend=headless --renderer=pixman --socket=wayland-ci --idle-time=0 --no-config --log="$XDG_RUNTIME_DIR/weston.log" &
           compositor_pid=$!
           trap 'kill "$compositor_pid" 2>/dev/null || true' EXIT

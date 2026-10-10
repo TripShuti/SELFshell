@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Handle Quickshell's plain-text empty instance list without a JSON traceback; abort mutations when instance detection fails and configure the Weston desktop environment for headless reload tests.
 - Make installer failures restore user/system config files, remove fresh targets and return failure; make `--no` a read-only plan and decline replacement before system changes.
 - Enable greetd for the next boot without stopping the active display manager; preserve the selected alias on failure, avoid duplicate Fish startup and use the detected SelfTrack executable.
 - Stage updates for manifest-owned components, preserve personal/generated files, reject conflicting source edits, delete obsolete owned files and roll back failed activation. Serialize updates/reloads and refuse locked or busy shell shutdown.

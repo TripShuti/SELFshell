@@ -186,9 +186,34 @@ osd() {
 }
 
 # Усі операції стосуються лише вибраного конфігу; flock знімається ядром.
-qs_running() {
-  command -v qs >/dev/null || return 1
-  qs list -p "$QS_CONFIG_DIR" --json 2>/dev/null | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin) else 1)'
+query_shell() {
+  local instances
+  command -v qs >/dev/null || { error "qs not found; cannot check shell state."; return 1; }
+  instances="$(qs list -p "$QS_CONFIG_DIR" --json)" || {
+    error "Cannot list Quickshell instances; operation aborted."
+    return 1
+  }
+  # Quickshell 0.3.2 повертає текст замість JSON, коли список порожній.
+  # Невідомий вивід не означає, що shell зупинено.
+  shell_running="$(printf '%s\n' "$instances" | python3 -c '
+import json, sys
+from pathlib import Path
+text = sys.stdin.read().strip()
+empty = "No running instances for " + json.dumps(str(Path(sys.argv[1]).resolve()), ensure_ascii=False) + "\nUse --all to list all instances."
+if text == empty:
+    print("false")
+else:
+    try:
+        instances = json.loads(text)
+        if not isinstance(instances, list) or not all(isinstance(item, dict) for item in instances):
+            raise ValueError("Expected an instance list")
+    except ValueError:
+        sys.exit(1)
+    print("true" if instances else "false")
+' "$QS_CONFIG_DIR/shell.qml")" || {
+    error "Unexpected output from qs list; cannot safely check shell state."
+    return 1
+  }
 }
 
 operation_lock() {
@@ -213,7 +238,8 @@ start_shell() {
   # Лічильник обмежує час очікування.
   # shellcheck disable=SC2034
   for i in {1..20}; do
-    if qs_running && qs ipc -p "$QS_CONFIG_DIR" call lockscreen isLocked >/dev/null 2>&1; then return 0; fi
+    query_shell || return 1
+    if $shell_running && qs ipc -p "$QS_CONFIG_DIR" call lockscreen isLocked >/dev/null 2>&1; then return 0; fi
     sleep 0.25
   done
   error "Quickshell failed to start. Check: qs log -p $QS_CONFIG_DIR"
@@ -222,12 +248,16 @@ start_shell() {
 
 stop_shell() {
   require_unlocked || return 1
-  qs ipc -p "$QS_CONFIG_DIR" call lockscreen quitIfUnlocked >/dev/null 2>&1 || true
+  qs ipc -p "$QS_CONFIG_DIR" call lockscreen quitIfUnlocked >/dev/null || {
+    error "Cannot request Quickshell shutdown."
+    return 1
+  }
   local i
   # Лічильник обмежує час очікування.
   # shellcheck disable=SC2034
   for i in {1..20}; do
-    if ! qs_running; then return 0; fi
+    query_shell || return 1
+    if ! $shell_running; then return 0; fi
     sleep 0.1
   done
   error "Quickshell did not stop; unlock it and wait for wallpaper changes to finish."
@@ -236,7 +266,8 @@ stop_shell() {
 
 reload() (
   operation_lock || exit 1
-  if qs_running; then stop_shell || exit 1; fi
+  query_shell || exit 1
+  if $shell_running; then stop_shell || exit 1; fi
   start_shell || exit 1
   ok "Quickshell is running."
 )
@@ -265,8 +296,8 @@ update() (
     trap - EXIT INT TERM
     if [ "$status" -ne 0 ]; then
       if $applied; then
-        if qs_running && ! stop_shell; then
-          error "Rollback deferred while the shell is locked or busy. Recovery files: $transaction"
+        if ! query_shell || { $shell_running && ! stop_shell; }; then
+          error "Rollback deferred: shell state is unknown, locked or busy. Recovery files: $transaction"
           rm -rf "$tmp"
           exit "$status"
         fi
@@ -300,7 +331,8 @@ update() (
       case "$answer" in y|Y|yes) ;; *) error "Update aborted."; exit 1 ;; esac
     fi
   fi
-  if qs_running; then was_running=true; stop_shell; stopped=true; fi
+  query_shell || exit 1
+  if $shell_running; then was_running=true; stop_shell; stopped=true; fi
   applied=true
   python3 "$tmp/updater.py" apply "$transaction"
   if $was_running; then start_shell; fi
@@ -458,7 +490,8 @@ PY
       [ -z "$key" ] || [ -z "$val" ] && { error "Usage: selfshell config set <key> <value>"; exit 1; }
       local encoded result
       encoded="$(python3 "$QS_CONFIG_DIR/scripts/config_ctl.py" encode "$QS_CONFIG_DIR/data/config.json" "$key" "$val")"
-      if qs_running; then
+      query_shell || exit 1
+      if $shell_running; then
         result="$(ipc configuration set "$key" "$encoded")"
         [ "$result" = true ] || { error "Running shell rejected configuration change."; exit 1; }
       else
@@ -467,12 +500,14 @@ PY
       ok "config $key = $val"
       ;;
     edit)
-      if qs_running; then error "Stop the shell before editing config.json; use config set for live changes."; exit 1; fi
+      query_shell || exit 1
+      if $shell_running; then error "Stop the shell before editing config.json; use config set for live changes."; exit 1; fi
       local ed="${EDITOR:-nano}"
       "$ed" "$QS_CONFIG_DIR/data/config.json"
       ;;
     reset)
-      if qs_running; then
+      query_shell || exit 1
+      if $shell_running; then
         ipc configuration reset
       else
         python3 "$QS_CONFIG_DIR/scripts/config_ctl.py" reset "$QS_CONFIG_DIR/data/config.json"
@@ -488,7 +523,10 @@ status_cmd() {
   local theme; theme="$(get_theme_mode)"
   local cur; cur="$(python3 "$QS_CONFIG_DIR/scripts/update-palette.py" current 2>/dev/null | tr -d '\n' || echo "none")"
   local hypr; hypr="$(hyprctl version 2>/dev/null | grep -oE 'Hyprland [0-9]+\.[0-9]+' | head -1 || echo "unknown")"
-  local qsst; qs_running && qsst="running" || qsst="not running"
+  local qsst="unknown"
+  if query_shell; then
+    if $shell_running; then qsst="running"; else qsst="not running"; fi
+  fi
   echo "selfshell $v ($QS_CONFIG_DIR)"
   echo "themeMode: $theme"
   echo "wallpaper: $cur"
@@ -609,7 +647,9 @@ PYBROWSER
       error "Hyprland is not running"
       problems=$((problems + 1))
     fi
-    if qs_running; then
+    if ! query_shell; then
+      problems=$((problems + 1))
+    elif $shell_running; then
       ok "quickshell is running"
     else
       error "quickshell is not running"
