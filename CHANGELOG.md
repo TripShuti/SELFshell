@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Adopt existing installed components only after checking managed files; preserve personal Hyprland hooks and Yazi settings, and resolve audio routing through matching PipeWire IDs before using pactl indices.
+- Flush pending settings before a controlled restart and refresh personal files immediately before applying a staged update.
 - Handle Quickshell's plain-text empty instance list without a JSON traceback; abort mutations when instance detection fails and configure the Weston desktop environment for headless reload tests.
 - Make installer failures restore user/system config files, remove fresh targets and return failure; make `--no` a read-only plan and decline replacement before system changes.
 - Enable greetd for the next boot without stopping the active display manager; preserve the selected alias on failure, avoid duplicate Fish startup and use the detected SelfTrack executable.

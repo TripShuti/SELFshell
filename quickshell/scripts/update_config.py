@@ -20,15 +20,37 @@ LOCAL = ('data/config.json', 'data/palette.json', 'data/eq.json',
          'data/launcher-usage.json', 'data/updates.json', 'data/last-shot.txt',
          'scripts/.env', 'scripts/.genshin_state.json', 'scripts/.genshin_requests.log',
          'wp', '.qmlls.ini', '.opencode', '.selfshell-install.json')
-HYPR_LOCAL = ('env.json', 'binds.json', 'visual.json')
+HYPR_LOCAL = ('env.json', 'binds.json', 'visual.json', 'local.lua')
 GENERATED = {'kitty': ('current-theme.conf',), 'fish': ('conf.d/99-palette.fish', 'fish_variables'),
-             'yazi': ('theme.toml', 'flavors/palette.yazi'), 'starship': ('config.toml',)}
+             'yazi': ('yazi.toml', 'keymap.toml', 'theme.toml', 'flavors/palette.yazi'), 'starship': ('config.toml',)}
 MANIFEST = '.selfshell-install.json'
 
 
 def personal(component, name):
     local = LOCAL if component == 'quickshell' else HYPR_LOCAL if component == 'hypr' else GENERATED.get(component, ())
     return any(name == p or name.startswith(p + '/') for p in local) or '__pycache__' in Path(name).parts
+
+
+def refresh_personal(entry):
+    component = entry.get('component')
+    paths = LOCAL if component == 'quickshell' else HYPR_LOCAL if component == 'hypr' else GENERATED.get(component, ())
+    for name in paths:
+        if name == MANIFEST:
+            continue
+        live, staged = Path(entry['target'])/name, Path(entry['stage'])/name
+        exists = live.exists() or live.is_symlink()
+        if not exists and name not in entry.get('personalExisted', []):
+            continue
+        if staged.is_symlink() or staged.is_file():
+            staged.unlink()
+        elif staged.is_dir():
+            shutil.rmtree(staged)
+        if exists:
+            staged.parent.mkdir(parents=True, exist_ok=True)
+            if live.is_dir() and not live.is_symlink():
+                shutil.copytree(live, staged, symlinks=True)
+            else:
+                shutil.copy2(live, staged, follow_symlinks=False)
 
 
 def owned_files(directory, component):
@@ -73,6 +95,36 @@ def record_install(source, config, components):
     if data['userUnit']:
         data['unitHash'] = hashlib.sha256((config.parent/'systemd/user/qs-bt-agent.service').read_bytes()).hexdigest()
     atomic_json(config / MANIFEST, data)
+
+
+def adopt_install(source, config, components):
+    # Реєстрація наявної інсталяції не має приховувати локальні зміни
+    # чи вмикати генерацію тем без попереднього вибору користувача.
+    data = read_manifest(config)
+    selected = list(dict.fromkeys([*data['components'], *components]))
+    if any(c not in COMPONENTS for c in selected):
+        raise ValueError('Unknown managed component')
+    for component in selected:
+        target = config if component == 'quickshell' else config.parent/component
+        if not target.is_dir() or target.is_symlink():
+            raise ValueError('Not an installed component directory: ' + str(target))
+        names = owned_files(source/component, component)
+        if not (source/component).is_dir():
+            raise ValueError('Missing source component: ' + component)
+        for name in names:
+            path = target/name
+            if path.is_symlink() or not path.is_file() or path.read_bytes() != (source/component/name).read_bytes():
+                raise ValueError('Installed source differs; merge before adopting: ' + str(path))
+        previous = [n for n in data.get('files', {}).get(component, []) if not personal(component, n)]
+        data.setdefault('files', {})[component] = sorted(set(previous + names))
+        previous_hashes = {n: h for n, h in data.get('hashes', {}).get(component, {}).items() if n in previous}
+        data.setdefault('hashes', {})[component] = {**previous_hashes, **hashes(source/component, names)}
+    data['components'] = selected
+    unit = config.parent/'systemd/user/qs-bt-agent.service'
+    if unit.is_file() and not unit.is_symlink() and unit.read_bytes() == (source/'quickshell/services/qs-bt-agent.service').read_bytes():
+        data['userUnit'] = True
+        data['unitHash'] = hashlib.sha256(unit.read_bytes()).hexdigest()
+    atomic_json(config/MANIFEST, data)
 
 
 def atomic_json(path, data):
@@ -160,7 +212,9 @@ def prepare(archive, config):
                     shutil.copy2(path, out)
             manifest.setdefault('files', {})[component] = owned_files(new, component)
             manifest.setdefault('hashes', {})[component] = hashes(new, manifest['files'][component])
-            entries.append({'target': str(target), 'stage': str(stage),
+            local = LOCAL if component == 'quickshell' else HYPR_LOCAL if component == 'hypr' else GENERATED.get(component, ())
+            entries.append({'target': str(target), 'stage': str(stage), 'component': component,
+                            'personalExisted': [n for n in local if (target/n).exists() or (target/n).is_symlink()],
                             'backup': str(transaction/('backup-' + component))})
         atomic_json(transaction/'stage-quickshell'/MANIFEST, manifest)
         if manifest.get('userUnit'):
@@ -263,6 +317,10 @@ def apply(transaction):
     if data.get('complete') or data.get('applied') or data.get('pending'):
         raise ValueError('Transaction already applied or interrupted; recover before retrying')
     try:
+        # Shell зупинено CLI перед apply; підхоплюємо зміни, зроблені
+        # користувачем під час завантаження й перевірки пакета.
+        for entry in data['entries']:
+            refresh_personal(entry)
         for entry in data['entries']:
             target, stage, backup = (Path(entry[k]) for k in ('target', 'stage', 'backup'))
             entry['existed'] = target.exists() or target.is_symlink()
@@ -300,7 +358,7 @@ def discard(transaction):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('action', choices=('prepare', 'apply', 'record', 'check', 'commit', 'rollback', 'discard', 'enable', 'disable'))
+    parser.add_argument('action', choices=('prepare', 'apply', 'record', 'adopt', 'check', 'commit', 'rollback', 'discard', 'enable', 'disable'))
     parser.add_argument('path', type=Path)
     parser.add_argument('config', nargs='?', type=Path)
     parser.add_argument('components', nargs='*')
@@ -327,6 +385,11 @@ def main():
             compile_qml(args.path)
         elif args.action == 'record':
             record_install(args.path, args.config, args.components)
+        elif args.action == 'adopt':
+            import fcntl
+            with (Path(os.environ['XDG_RUNTIME_DIR'])/'selfshell-update.lock').open('a') as lock:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                adopt_install(args.path, args.config, args.components)
         elif args.action == 'prepare':
             print(prepare(args.path, args.config))
         elif args.action == 'commit':

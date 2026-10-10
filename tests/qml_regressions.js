@@ -232,4 +232,31 @@ test("Upgrade: detached unit survives QML ownership and duplicate clicks are ign
   assert.ok(commands[0].includes("/upgrade.sh"));
 });
 
+test("Audio routing: distinct ID domains cannot alias another stream or device", () => {
+  const vm = require("node:vm");
+  const utils = {};
+  vm.createContext(utils);
+  vm.runInContext(source("scripts/AudioMixerUtils.js").replace(/^\.pragma library\s*$/m, ""), utils);
+  const node = { properties: { "object.serial": "900", "object.id": "42" } };
+  const entries = [
+    { index: 900, sink: 3, properties: { "object.serial": "600", "object.id": "12" } },
+    { index: 7, sink: 4, properties: { "object.serial": "900", "object.id": "42" } }
+  ];
+  const ports = { wrong: { index: 3 }, correct: { index: "4" } };
+  assert.equal(utils.sinkNameForStream(node, entries, ports), "correct");
+  assert.equal(utils.streamIndex(node, entries), "7");
+  const names = utils.streamNameMap(entries, ports, "sink");
+  assert.equal(names["900"], "correct");
+  assert.equal(names["7"], undefined);
+  assert.equal(utils.sinkNameForStream(node, entries.slice(0, 1), ports), "");
+  assert.equal(utils.streamIndex(node, [{ index: 9, properties: { "object.serial": "901", "object.id": "42" } }]), "");
+  assert.equal(utils.streamIndex(node, [{ index: 0, properties: { "object.id": "42" } }]), "0");
+  assert.equal(utils.sourceNameForStream(node,
+    [{ index: 8, source: 4, properties: { "object.serial": "900" } }],
+    { "device.monitor": { index: 4 } }), "device.monitor");
+  assert.equal(utils.streamIndex(node, [null, { index: 900 }]), "");
+  assert.equal(utils.streamIndex({ properties: { "object.serial": null } },
+    [{ index: 9, properties: { "object.serial": null } }]), "");
+});
+
 console.log("QML regressions: " + checks + " passed");

@@ -30,11 +30,12 @@ ShellRoot {
   IpcHandler {
     target: "lockscreen"
     function isLocked(): bool { return false }
-    function quitIfUnlocked(): void { Qt.quit() }
+    function quitIfUnlocked(): void { if (config.flushSave()) Qt.quit() }
   }
   IpcHandler {
     target: "test"
     function set(key: string, value: string): bool { return config.setValue(key, value) }
+    function pendingScale(): void { config.cfg.uiScale = 1.3; config.saveSoon() }
     function stop(): void { Qt.quit() }
   }
 }
@@ -85,10 +86,12 @@ ShellRoot {
         assert data['uiScale'] == 1.25, data
         assert ipc('set','uiScale','true').stdout.strip() == 'false'
         for attempt in range(2):
+            assert ipc('pendingScale').returncode == 0
             reload = subprocess.run(['bash', str(base/'scripts/selfshell'), 'reload'], env=env,
                                     capture_output=True, text=True, timeout=10)
             assert reload.returncode == 0, f'Reload {attempt + 1}:\n' + reload.stdout + reload.stderr + diagnostics()
             assert not reload.stderr, reload.stderr
+            assert json.loads((base/'data/config.json').read_text())['uiScale'] == 1.3
         ipc('stop')
         wait_for_stop()
         started = subprocess.run(['bash', str(base/'scripts/selfshell'), 'reload'], env=env,

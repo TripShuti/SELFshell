@@ -27,6 +27,8 @@ Item {
     // Вотчер вимкнено явно (див. коментар вище) — дефолт FileView його
     // вмикає, а атомарний rename крашить шел на Quickshell 0.3.0
     watchChanges: false
+    onSaved: root._saveFailed = false
+    onSaveFailed: root._saveFailed = true
 
     // Типізовані дефолти адаптера — те, що буде записано у файл,
     // якщо ключ відсутній. Назви властивостей = ключі config.json.
@@ -158,7 +160,16 @@ Item {
 
   // Єдина точка правди — адаптер config.json
   readonly property var cfg: cfgAdapter
+  property bool _saveFailed: false
   function saveToFile() { configFile.writeAdapter() }
+
+  function flushSave() {
+    _saveTimer.stop()
+    // Лише перед виходом: звичайні зміни лишаються асинхронними.
+    configFile.writeAdapter()
+    configFile.waitForJob()
+    return !root._saveFailed
+  }
 
   // Дебаунс запису для слайдерів: драг робив атомарний rename на кожен
   // тік (IO-шторм + зайвий шанс UAF). onMoved → saveSoon(), разові

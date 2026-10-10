@@ -29,7 +29,7 @@ Item {
   property var sinkDevices: []
   property var sourceDevices: []
 
-  signal moveStream(string serial, string targetName)
+  signal moveStream(string streamIndex, string targetName)
   signal destroyStream(string objectId)
 
   Layout.fillWidth: true
@@ -171,12 +171,12 @@ Item {
                 var serial = streamNode.properties ? String(streamNode.properties["object.serial"] || "") : ""
                 var cur = ""
                 if (root.isPlayback) {
-                  cur = (serial && root.sinkNameMap[serial]) ? root.sinkNameMap[serial] : AudioUtils.sinkNameForStream(streamNode, root.sinkInputsInfo, root.sinkPortMap, Pipewire.nodes ? Pipewire.nodes.values : null)
+                  cur = (serial && root.sinkNameMap[serial]) ? root.sinkNameMap[serial] : AudioUtils.sinkNameForStream(streamNode, root.sinkInputsInfo, root.sinkPortMap)
                   if (cur !== "") return (cur && root.sinkDescMap[cur]) ? root.sinkDescMap[cur] : AudioUtils.sinkDescription(cur, root.sinkPortMap, Pipewire.nodes ? Pipewire.nodes.values : null)
                   if (Pipewire.defaultAudioSink) return Pipewire.defaultAudioSink.description || Pipewire.defaultAudioSink.name
                   return "Unknown device"
                 } else {
-                  cur = (serial && root.sourceNameMap[serial]) ? root.sourceNameMap[serial] : AudioUtils.sourceNameForStream(streamNode, root.sourceOutputsInfo, root.sourcePortMap, Pipewire.nodes ? Pipewire.nodes.values : null)
+                  cur = (serial && root.sourceNameMap[serial]) ? root.sourceNameMap[serial] : AudioUtils.sourceNameForStream(streamNode, root.sourceOutputsInfo, root.sourcePortMap)
                   if (cur !== "") return (cur && root.sourceDescMap[cur]) ? root.sourceDescMap[cur] : AudioUtils.sourceDescription(cur, root.sourcePortMap, Pipewire.nodes ? Pipewire.nodes.values : null)
                   if (Pipewire.defaultAudioSource) return Pipewire.defaultAudioSource.description || Pipewire.defaultAudioSource.name
                   return "Unknown source"
@@ -214,8 +214,8 @@ Item {
               color: {
                 var serial2 = root.streamNode.properties ? String(root.streamNode.properties["object.serial"] || "") : ""
                 var cur2 = root.isPlayback
-                  ? ((serial2 && root.sinkNameMap[serial2]) ? root.sinkNameMap[serial2] : AudioUtils.sinkNameForStream(root.streamNode, root.sinkInputsInfo, root.sinkPortMap, Pipewire.nodes ? Pipewire.nodes.values : null))
-                  : ((serial2 && root.sourceNameMap[serial2]) ? root.sourceNameMap[serial2] : AudioUtils.sourceNameForStream(root.streamNode, root.sourceOutputsInfo, root.sourcePortMap, Pipewire.nodes ? Pipewire.nodes.values : null))
+                  ? ((serial2 && root.sinkNameMap[serial2]) ? root.sinkNameMap[serial2] : AudioUtils.sinkNameForStream(root.streamNode, root.sinkInputsInfo, root.sinkPortMap))
+                  : ((serial2 && root.sourceNameMap[serial2]) ? root.sourceNameMap[serial2] : AudioUtils.sourceNameForStream(root.streamNode, root.sourceOutputsInfo, root.sourcePortMap))
                 if (cur2 === modelData.name) return window.palette.green
                 if (devMa.containsMouse) return window.palette.bg2
                 return window.palette.bgAlpha
@@ -228,8 +228,8 @@ Item {
                 color: {
                   var serial3 = root.streamNode.properties ? String(root.streamNode.properties["object.serial"] || "") : ""
                   var cur3 = root.isPlayback
-                    ? ((serial3 && root.sinkNameMap[serial3]) ? root.sinkNameMap[serial3] : AudioUtils.sinkNameForStream(root.streamNode, root.sinkInputsInfo, root.sinkPortMap, Pipewire.nodes ? Pipewire.nodes.values : null))
-                    : ((serial3 && root.sourceNameMap[serial3]) ? root.sourceNameMap[serial3] : AudioUtils.sourceNameForStream(root.streamNode, root.sourceOutputsInfo, root.sourcePortMap, Pipewire.nodes ? Pipewire.nodes.values : null))
+                    ? ((serial3 && root.sinkNameMap[serial3]) ? root.sinkNameMap[serial3] : AudioUtils.sinkNameForStream(root.streamNode, root.sinkInputsInfo, root.sinkPortMap))
+                    : ((serial3 && root.sourceNameMap[serial3]) ? root.sourceNameMap[serial3] : AudioUtils.sourceNameForStream(root.streamNode, root.sourceOutputsInfo, root.sourcePortMap))
                   if (cur3 === modelData.name) return window.palette.baseOverlay
                   return window.palette.fg
                 }
@@ -242,9 +242,9 @@ Item {
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
-                  var serial = root.streamNode.properties["object.serial"]
-                  if (!serial) return
-                  root.moveStream(String(serial), modelData.name)
+                  var index = AudioUtils.streamIndex(root.streamNode, root.isPlayback ? root.sinkInputsInfo : root.sourceOutputsInfo)
+                  if (index === "") return
+                  root.moveStream(index, modelData.name)
                   root.devMenuOpen = false
                 }
               }

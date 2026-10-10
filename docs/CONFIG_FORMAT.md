@@ -424,7 +424,9 @@ Standard JSON with comments. Sections: `logo`, `display`, `modules`.
 source config. Schema 1 records `components`, owned `files` and their `hashes`,
 `userUnit` ownership, and `paletteIntegrations`. Updates preserve personal
 config/palette/EQ/calendar/control/launcher state, `.env`, wallpapers, Hyprland
-JSON overrides, Fish universal variables and generated application themes.
+JSON overrides and `local.lua`, Yazi `yazi.toml`/`keymap.toml`, Fish universal
+variables and generated application themes. Optional `hypr/local.lua` runs after
+the shared modules and can define personal Lua hooks without editing managed code.
 Only files previously owned by the package may be removed as obsolete.
 Locally edited managed source files block an update rather than being overwritten.
 

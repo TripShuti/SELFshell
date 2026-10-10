@@ -137,6 +137,17 @@ checkout outside `~/.config`: the repository contains several component
 directories and is not itself a runnable Quickshell configuration. Source
 checkouts are updated with Git and reviewed before installation.
 
+To register additional components in an existing installation, first merge
+their managed source files with the checkout, then run:
+
+```sh
+python3 quickshell/scripts/update_config.py adopt . ~/.config/quickshell hypr fish kitty starship yazi fastfetch
+```
+
+Adoption refuses missing or differing managed files and preserves palette opt-in.
+Hyprland `local.lua` (loaded after the shared modules), its JSON overrides,
+and Yazi `yazi.toml`/`keymap.toml` remain personal across updates.
+
 Re-running `./install.sh` is a replacement with backups, not a settings-preserving
 update. Existing Quickshell configs require confirmation (default **no**);
 declining exits before package or service changes. `--yes` accepts every

@@ -120,5 +120,18 @@ for _, body in ipairs({"true", "42", '"text"',
   for _, dev in ipairs(e.devices) do assert(type(dev) == "table") end
 end
 
+-- Кореневий конфіг виконує персональний hook після керованих модулів.
+for _, name in ipairs({"env", "general", "exec", "binds", "animation", "rules"}) do
+  package.loaded["modules." .. name] = {}
+end
+home_override = HOME
+dofile(root .. "/hypr/hyprland.lua")
+assert(_G.localHookRan == nil, "missing personal hook is optional")
+f = io.open(HOME .. "/.config/hypr/local.lua", "w")
+f:write("localHookRan = true")
+f:close()
+dofile(root .. "/hypr/hyprland.lua")
+assert(_G.localHookRan == true, "personal hook executes")
+home_override = nil
 os.execute("rm -rf '" .. HOME .. "'")
 print("OK: env.lua defaults, shipped env.json, rules.lua data-driven")

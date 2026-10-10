@@ -48,6 +48,51 @@ class UpdateFixture(unittest.TestCase):
 
 
 class UpdateTest(UpdateFixture):
+    def test_apply_keeps_personal_changes_made_after_preparation(self):
+        (self.config/'data/calendar-tasks.json').write_text('old tasks')
+        transaction = self.prepare()
+        (self.config/'data/config.json').write_text('{"latest":true}')
+        (self.config/'data/calendar-tasks.json').unlink()
+        (self.config/'wp').mkdir()
+        (self.config/'wp/personal.jpg').write_bytes(b'latest wallpaper')
+        u.apply(transaction)
+        self.assertEqual((self.config/'data/config.json').read_text(), '{"latest":true}')
+        self.assertFalse((self.config/'data/calendar-tasks.json').exists())
+        self.assertEqual((self.config/'wp/personal.jpg').read_bytes(), b'latest wallpaper')
+        self.assertEqual(u.read_manifest(self.config)['hashes']['quickshell']['shell.qml'],
+                         u.hashlib.sha256(b'new').hexdigest())
+        u.commit(transaction)
+
+    def test_adoption_rejects_unmerged_source_and_preserves_manifest(self):
+        before = (self.config/u.MANIFEST).read_bytes()
+        with self.assertRaisesRegex(ValueError, 'merge before adopting'):
+            u.adopt_install(self.source, self.config, ['hypr'])
+        self.assertEqual((self.config/u.MANIFEST).read_bytes(), before)
+
+    def test_adoption_preserves_personal_files_and_palette_choices(self):
+        (self.source/'quickshell/shell.qml').write_text('old')
+        for component in ('hypr', 'yazi'):
+            (self.source/component).mkdir(exist_ok=True)
+            (self.config.parent/component).mkdir()
+            (self.source/component/'managed.conf').write_text('managed')
+            (self.config.parent/component/'managed.conf').write_text('managed')
+        (self.config.parent/'hypr/hyprland.lua').write_text('new hypr')
+        for component, name in [('hypr','local.lua'), ('yazi','yazi.toml'), ('yazi','keymap.toml')]:
+            (self.source/component/name).write_text('package')
+            (self.config.parent/component/name).write_text('personal')
+        manifest = u.read_manifest(self.config)
+        manifest['paletteIntegrations'] = ['kitty']
+        u.atomic_json(self.config/u.MANIFEST, manifest)
+        u.adopt_install(self.source, self.config, ['hypr', 'yazi'])
+        adopted = u.read_manifest(self.config)
+        self.assertEqual(adopted['components'], ['quickshell', 'hypr', 'yazi'])
+        self.assertEqual(adopted['paletteIntegrations'], ['kitty'])
+        transaction = self.prepare()
+        u.apply(transaction)
+        for component, name in [('hypr','local.lua'), ('yazi','yazi.toml'), ('yazi','keymap.toml')]:
+            self.assertEqual((self.config.parent/component/name).read_text(), 'personal')
+        u.commit(transaction)
+
     def test_stages_preserves_state_and_updates_all_managed_components(self):
         (self.config/'data/config.json').write_text('{"custom":true}')
         (self.config/'user.txt').write_text('personal')

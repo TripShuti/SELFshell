@@ -193,7 +193,14 @@ ShellRoot {
     function isLocked(): bool { return lockContext.locked }
     // Перевірка і вихід виконуються в одному виклику: лок не може
     // увімкнутися між перевіркою CLI та зупинкою процеса.
-    function quitIfUnlocked(): void { if (!lockContext.locked && !wallpaperSvc.applying) Qt.quit() }
+    function quitIfUnlocked(): void {
+      if (lockContext.locked || wallpaperSvc.applying) return
+      if (!rootAppConfig.flushSave()) {
+        console.warn("Cannot restart: configuration has not been saved")
+        return
+      }
+      Qt.quit()
+    }
 
     function lock(): void {
       lockContext.locked = true

@@ -17,62 +17,68 @@ function formatDb(v) {
   return db.toFixed(2) + " dB"
 }
 
-// Мапінг sink-input → sink name через pactl sinkInputsInfo + sinkPortMap
-// + fallback у Pipewire.nodes. Зберігає існуючу семантику AudioMixerPopup,
-// але як чиста функція (без доступу до root) — легше тестувати.
-// FIXME: pactl index vs PipeWire object.serial — різні домени ID,
-// збіг можливий випадково; потребує перевірки на pipewire-pulse 1.2
-function sinkNameForStream(streamNode, sinkInputsInfo, sinkPortMap, pipewireValues) {
-  if (!streamNode || !streamNode.properties) return ""
-  var serial = streamNode.properties["object.serial"]
-  if (serial === undefined || serial === null) return ""
-  var sserial = String(serial)
-  for (var i = 0; i < (sinkInputsInfo ? sinkInputsInfo.length : 0); i++) {
-    var si = sinkInputsInfo[i]
-    var siSerial = String(si.properties ? si.properties["object.serial"] : si.index)
-    if (siSerial === sserial || String(si.index) === sserial) {
-      var sinkIdx = si.sink
-      for (var name in sinkPortMap) {
-        if (sinkPortMap[name].index === sinkIdx) return name
-      }
-      if (pipewireValues) {
-        for (var j = 0; j < pipewireValues.length; j++) {
-          var n = pipewireValues[j]
-          if (n.properties["object.serial"] && String(n.properties["object.serial"]) === String(sinkIdx)) return n.name
-          // Енум PwNodeType недоступний з .js-імпорту (ReferenceError),
-          // той самий сенс дає bool-властивість isSink — так читає і QML-сторона
-          if (n.isSink && n.properties["object.id"] && String(n.properties["object.id"]) === String(sinkIdx)) return n.name
-        }
-      }
-      return ""
+// Порівнюємо ID лише в одному просторі: serial із serial, object.id із object.id.
+// Pulse index застосовується до pactl тільки після знаходження відповідного запису.
+function idKey(value) {
+  return value !== undefined && value !== null && /^\d+$/.test(String(value)) ? String(value) : ""
+}
+
+function streamInfo(streamNode, entries) {
+  if (!streamNode || !streamNode.properties) return null
+  var props = streamNode.properties
+  for (var i = 0; i < (entries ? entries.length : 0); i++) {
+    var entry = entries[i]
+    if (!entry || !entry.properties) continue
+    var other = entry.properties
+    var serial = idKey(props["object.serial"])
+    var otherSerial = idKey(other["object.serial"])
+    if (serial && otherSerial) {
+      if (serial === otherSerial) return entry
+      continue
     }
+    var objectId = idKey(props["object.id"])
+    if (objectId && objectId === idKey(other["object.id"])) return entry
+  }
+  return null
+}
+
+function streamIndex(streamNode, entries) {
+  var entry = streamInfo(streamNode, entries)
+  return entry ? idKey(entry.index) : ""
+}
+
+function streamNameMap(entries, portMap, targetKey) {
+  var devices = {}
+  var result = {}
+  for (var name in portMap) {
+    var device = portMap[name]
+    if (device && idKey(device.index)) devices[idKey(device.index)] = name
+  }
+  for (var i = 0; i < (entries ? entries.length : 0); i++) {
+    var entry = entries[i]
+    if (!entry || !entry.properties) continue
+    var serial = idKey(entry.properties["object.serial"])
+    var target = devices[idKey(entry[targetKey])]
+    if (serial && target) result[serial] = target
+  }
+  return result
+}
+
+function streamDeviceName(streamNode, entries, portMap, targetKey) {
+  var entry = streamInfo(streamNode, entries)
+  if (!entry) return ""
+  for (var name in portMap) {
+    if (portMap[name] && idKey(portMap[name].index) && idKey(portMap[name].index) === idKey(entry[targetKey])) return name
   }
   return ""
 }
 
-function sourceNameForStream(streamNode, sourceOutputsInfo, sourcePortMap, pipewireValues) {
-  if (!streamNode || !streamNode.properties) return ""
-  var serial = streamNode.properties["object.serial"]
-  if (serial === undefined || serial === null) return ""
-  var sserial = String(serial)
-  for (var i = 0; i < (sourceOutputsInfo ? sourceOutputsInfo.length : 0); i++) {
-    var si = sourceOutputsInfo[i]
-    var siSerial = String(si.properties ? si.properties["object.serial"] : si.index)
-    if (siSerial === sserial || String(si.index) === sserial) {
-      var srcIdx = si.source
-      for (var name in sourcePortMap) {
-        if (sourcePortMap[name].index === srcIdx) return name
-      }
-      if (pipewireValues) {
-        for (var j = 0; j < pipewireValues.length; j++) {
-          var n = pipewireValues[j]
-          if (n.properties["object.serial"] && String(n.properties["object.serial"]) === String(srcIdx)) return n.name
-        }
-      }
-      return ""
-    }
-  }
-  return ""
+function sinkNameForStream(streamNode, sinkInputsInfo, sinkPortMap) {
+  return streamDeviceName(streamNode, sinkInputsInfo, sinkPortMap, "sink")
+}
+
+function sourceNameForStream(streamNode, sourceOutputsInfo, sourcePortMap) {
+  return streamDeviceName(streamNode, sourceOutputsInfo, sourcePortMap, "source")
 }
 
 function sinkDescription(name, sinkPortMap, pipewireValues) {

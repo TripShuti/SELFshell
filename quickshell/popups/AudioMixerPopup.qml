@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Pipewire
 import "../core"
+import "../scripts/AudioMixerUtils.js" as AudioUtils
 import "audio"
 import QtQuick
 import QtQuick.Layouts
@@ -103,55 +104,8 @@ AnimatedPopup {
   readonly property int inputVisibleCount: inputNodes.length
 
   // Кеш sink/source імен для O(1) lookup в StreamCard (замість O(N*M) в біндингах)
-  readonly property var sinkNameMap: {
-    var map = {}
-    var pVals = Pipewire.nodes ? Pipewire.nodes.values : null
-    for (var s = 0; s < root.sinkInputsInfo.length; s++) {
-      var si = root.sinkInputsInfo[s]
-      if (!si) continue
-      var siSerial = String(si.properties ? si.properties["object.serial"] : si.index)
-      var sinkIdx = si.sink
-      var name = ""
-      for (var n in root.sinkPortMap) if (root.sinkPortMap[n].index === sinkIdx) { name = n; break }
-      if (!name && pVals) {
-        for (var j = 0; j < pVals.length; j++) {
-          var pn = pVals[j]
-          if (!pn || !pn.properties) continue
-          if (pn.properties["object.serial"] && String(pn.properties["object.serial"]) === String(sinkIdx)) { name = pn.name; break }
-          if (pn.type === PwNodeType.AudioSink && pn.properties["object.id"] && String(pn.properties["object.id"]) === String(sinkIdx)) { name = pn.name; break }
-        }
-      }
-      if (name) {
-        map[siSerial] = name
-        map[String(si.index)] = name
-      }
-    }
-    return map
-  }
-  readonly property var sourceNameMap: {
-    var map = {}
-    var pVals2 = Pipewire.nodes ? Pipewire.nodes.values : null
-    for (var s2 = 0; s2 < root.sourceOutputsInfo.length; s2++) {
-      var so = root.sourceOutputsInfo[s2]
-      if (!so) continue
-      var soSerial = String(so.properties ? so.properties["object.serial"] : so.index)
-      var srcIdx = so.source
-      var sname = ""
-      for (var nn in root.sourcePortMap) if (root.sourcePortMap[nn].index === srcIdx) { sname = nn; break }
-      if (!sname && pVals2) {
-        for (var k = 0; k < pVals2.length; k++) {
-          var pk = pVals2[k]
-          if (!pk || !pk.properties) continue
-          if (pk.properties["object.serial"] && String(pk.properties["object.serial"]) === String(srcIdx)) { sname = pk.name; break }
-        }
-      }
-      if (sname) {
-        map[soSerial] = sname
-        map[String(so.index)] = sname
-      }
-    }
-    return map
-  }
+  readonly property var sinkNameMap: AudioUtils.streamNameMap(root.sinkInputsInfo, root.sinkPortMap, "sink")
+  readonly property var sourceNameMap: AudioUtils.streamNameMap(root.sourceOutputsInfo, root.sourcePortMap, "source")
 
   // Кеш описів пристроїв для O(1) lookup
   readonly property var sinkDescMap: {
@@ -338,8 +292,8 @@ AnimatedPopup {
                 sourceDescMap: root.sourceDescMap
                 sinkDevices: root.outputNodes
                 sourceDevices: root.inputNodes
-                onMoveStream: (serial, targetName) => {
-                  _moveStreamsProc.command = ["pactl", "move-sink-input", serial, targetName]
+                onMoveStream: (streamIndex, targetName) => {
+                  _moveStreamsProc.command = ["pactl", "move-sink-input", streamIndex, targetName]
                   _moveStreamsProc.running = true
                 }
                 onDestroyStream: objectId => {
@@ -416,8 +370,8 @@ AnimatedPopup {
                 sourceDescMap: root.sourceDescMap
                 sinkDevices: root.outputNodes
                 sourceDevices: root.inputNodes
-                onMoveStream: (serial, targetName) => {
-                  _moveStreamsProc.command = ["pactl", "move-source-output", serial, targetName]
+                onMoveStream: (streamIndex, targetName) => {
+                  _moveStreamsProc.command = ["pactl", "move-source-output", streamIndex, targetName]
                   _moveStreamsProc.running = true
                 }
                 onDestroyStream: objectId => {
