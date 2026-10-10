@@ -6,9 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-10-10
+
+### Added
+
+- Add `selfshell palette enable|disable <app>` to explicitly control generated application themes.
+- Add an existing-installation adoption command that verifies managed source files before registering additional components and preserves palette opt-in.
+
 ### Fixed
 
-- Adopt existing installed components only after checking managed files; preserve personal Hyprland hooks and Yazi settings, and resolve audio routing through matching PipeWire IDs before using pactl indices.
+- Preserve personal Hyprland hooks and Yazi settings, and resolve audio routing through matching PipeWire IDs before using pactl indices.
+- Keep Genshin API sync active at the resin cap and derive recovery estimates when the API reports zero recovery time below the cap.
 - Flush pending settings before a controlled restart and refresh personal files immediately before applying a staged update.
 - Handle Quickshell's plain-text empty instance list without a JSON traceback; abort mutations when instance detection fails and configure the Weston desktop environment for headless reload tests.
 - Make installer failures restore user/system config files, remove fresh targets and return failure; make `--no` a read-only plan and decline replacement before system changes.
@@ -36,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Use a monochrome Black palette with a muted steel accent for readable prompts and bundled application themes.
 - Remove unused network resolution state and the unused icon-cache reset API.
 
 - React to audio graph changes with debounced EQ relinking and retain a one-minute fallback check.
