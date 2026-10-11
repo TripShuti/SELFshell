@@ -14,9 +14,9 @@ function method(file, name, ctx) {
 function handler(file, id, event, ctx) {
   const section = source(file).split("id: " + id)[1];
   assert.ok(section, id);
-  const match = section.match(new RegExp("^( +)" + event + ": \\{\\n([\\s\\S]*?)^\\1\\}", "m"));
+  const match = section.match(new RegExp("^( +)" + event + ":(?: \\(([^)]*)\\) =>)? \\{\\n([\\s\\S]*?)^\\1\\}", "m"));
   assert.ok(match, id + ": " + event);
-  return new Function("ctx", "with (ctx) {" + match[2] + "}").bind(null, ctx);
+  return new Function("ctx", ...(match[2] ? match[2].split(",") : []), "with (ctx) {" + match[3] + "}").bind(null, ctx);
 }
 let checks = 0;
 function test(name, fn) { fn(); checks++; console.log("PASS: " + name); }
@@ -125,7 +125,8 @@ test("EQ: missing node invalidates the old ID and replacement restores routing",
 test("EQ: graph change while relinking queues another run", () => {
   let scheduled = 0;
   const root = { enabled: true, busy: false, _relinkPending: false };
-  const ctx = { root, relinkDelay: { restart() { scheduled++; } }, _relinkProc: { running: true } };
+  const ctx = { root, relinkDelay: { restart() { scheduled++; } },
+    _relinkProc: { running: true }, _routeInputsProc: { running: false } };
   root.scheduleRelink = method("core/AudioEq.qml", "scheduleRelink", ctx);
   const run = method("core/AudioEq.qml", "runRelink", ctx);
   root.scheduleRelink(); run(); assert.equal(root._relinkPending, true);
@@ -133,8 +134,93 @@ test("EQ: graph change while relinking queues another run", () => {
   assert.equal(scheduled, 2);
   ctx._relinkProc.running = false; run();
   assert.equal(ctx._relinkProc.running, true); assert.equal(root._relinkPending, false);
+  assert.equal(ctx._routeInputsProc.running, true);
+  ctx._relinkProc.running = false; root.scheduleRelink(); run();
+  assert.equal(ctx._relinkProc.running, false); assert.equal(root._relinkPending, true);
   root.busy = true; root.scheduleRelink(); run(); assert.equal(root._relinkPending, true);
   root.enabled = false; run(); assert.equal(root._relinkPending, false);
+});
+
+function disableContext() {
+  const root = { enabled: true, busy: false, _savedSink: "hdmi", routingScriptPath: "route.py",
+    _disableRequested: false, _disableApplied: false, _disableTarget: "", _relinkPending: true,
+    saves: 0, relinks: 0, saveState() { this.saves++; }, scheduleRelink() { this.relinks++; } };
+  const ctx = { root, Pipewire: { defaultAudioSink: { name: "SELFshell_EQ" } },
+    relinkDelay: { stops: 0, stop() { this.stops++; } }, _routeInputsProc: { running: false },
+    _moveInputsProc: { running: false },
+    disableConfirmTimeout: { running: false, stop() { this.running = false; }, restart() { this.running = true; } },
+    console: { warn() {} } };
+  for (const name of ["disable", "startDisable", "finishDisable", "failDisable"])
+    root[name] = method("core/AudioEq.qml", name, ctx);
+  return ctx;
+}
+
+test("EQ: disable clicked during automatic routing is queued and serialized", () => {
+  const ctx = disableContext();
+  ctx._routeInputsProc.running = true;
+  ctx.root.disable();
+  assert.equal(ctx.root.busy, true);
+  assert.equal(ctx.root._disableRequested, true);
+  assert.equal(ctx.root._relinkPending, false);
+  assert.equal(ctx._moveInputsProc.running, false);
+  ctx._routeInputsProc.running = false;
+  handler("core/AudioEq.qml", "_routeInputsProc", "onExited", ctx)(0);
+  assert.equal(ctx._moveInputsProc.running, true);
+  assert.equal(ctx._moveInputsProc.command[2], "hdmi");
+});
+
+test("EQ: disable waits until the default sink used by the bar is confirmed", () => {
+  const ctx = disableContext();
+  ctx.root.disable();
+  ctx.root._disableTarget = "hdmi";
+  handler("core/AudioEq.qml", "_moveInputsProc", "onExited", ctx)(0);
+  assert.equal(ctx.root.enabled, true);
+  assert.equal(ctx.root.busy, true);
+  assert.equal(ctx.root.saves, 0);
+  ctx.Pipewire.defaultAudioSink = null;
+  ctx.root.finishDisable();
+  assert.equal(ctx.root.enabled, true);
+  ctx.Pipewire.defaultAudioSink = { name: "hdmi", ready: false, audio: {} };
+  ctx.root.finishDisable();
+  assert.equal(ctx.root.enabled, true);
+  assert.equal(ctx.root.busy, true);
+  ctx.Pipewire.defaultAudioSink.ready = true;
+  ctx.root.finishDisable();
+  assert.equal(ctx.root.enabled, false);
+  assert.equal(ctx.root.busy, false);
+  assert.equal(ctx.root.saves, 1);
+  assert.equal(ctx.disableConfirmTimeout.running, false);
+  ctx.root.finishDisable();
+  assert.equal(ctx.root.saves, 1);
+});
+
+test("EQ: failed application move cannot silently save disabled state", () => {
+  const ctx = disableContext();
+  ctx.root.disable();
+  ctx.root._disableTarget = "hdmi";
+  ctx.Pipewire.defaultAudioSink = { name: "hdmi", ready: true, audio: {} };
+  handler("core/AudioEq.qml", "_moveInputsProc", "onExited", ctx)(1);
+  assert.equal(ctx.root.enabled, true);
+  assert.equal(ctx.root.busy, false);
+  assert.equal(ctx.root.saves, 0);
+  assert.match(ctx.root.error, /Failed to restore/);
+  assert.equal(ctx.root.relinks, 1);
+});
+
+test("EQ: unconfirmed output change times out with an error and permits retry", () => {
+  const ctx = disableContext();
+  ctx.root.disable();
+  ctx.root._disableTarget = "hdmi";
+  handler("core/AudioEq.qml", "_moveInputsProc", "onExited", ctx)(0);
+  ctx.root.failDisable("Audio output switch was not confirmed");
+  assert.equal(ctx.root.enabled, true);
+  assert.equal(ctx.root.busy, false);
+  assert.equal(ctx.root._disableRequested, false);
+  assert.equal(ctx.root.saves, 0);
+  ctx._moveInputsProc.running = false;
+  ctx.root.disable();
+  assert.equal(ctx._moveInputsProc.running, true);
+  assert.equal(ctx.root.error, "");
 });
 
 test("SelfTrack: latest app click is queued; collapse cancels old pages", () => {

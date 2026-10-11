@@ -83,7 +83,7 @@ fi
 # Раніше відсутність requests/dotenv скіпала ВСІ python-тести, хоча
 # sysinfo/palette/pacman/tracklist — чистий stdlib
 run "python unit tests (stdlib)" bash -c \
-  'for t in test_sysinfo test_update_palette test_pacman_updates test_tracklist test_install test_update_config test_shell_contracts; do python3 -m unittest discover -s tests/python -p "$t.py" || exit 1; done'
+  'for t in test_sysinfo test_update_palette test_pacman_updates test_tracklist test_install test_update_config test_shell_contracts test_eq_routing; do python3 -m unittest discover -s tests/python -p "$t.py" || exit 1; done'
 if python3 -c "import requests, dotenv" >/dev/null 2>&1; then
   run "python unit tests (needs requests)" python3 -m unittest discover -s tests/python -p "test_genshin.py"
 else

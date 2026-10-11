@@ -15,6 +15,7 @@ Item {
   readonly property string confPath: Quickshell.env("HOME") +
       "/.config/pipewire/pipewire.conf.d/10-selfshell-eq.conf"
   readonly property string pluginPath: "/usr/lib/ladspa/mbeq_1197.so"
+  readonly property string routingScriptPath: Qt.resolvedUrl("../scripts/eq_routing.py").toString().replace("file://", "")
   // Базові назви контрольних портів mbeq_1197 (порядок 0..14)
   readonly property var portNames: [
     "50Hz gain (low shelving)", "100Hz gain", "156Hz gain", "220Hz gain",
@@ -48,6 +49,9 @@ Item {
   }
   property int _eqNodeId: -1      // pw-node id EQ-sink (для set-param)
   property string _savedSink: ""  // default sink до увімкнення
+  property bool _disableRequested: false
+  property bool _disableApplied: false
+  property string _disableTarget: ""
   property bool _applyingAll: false
   property bool _restoreEnabled: false
   property bool _stateLoaded: false
@@ -152,9 +156,8 @@ Item {
     return "'" + String(s).replace(/'/g, "'\\''") + "'"
   }
 
-  // ID першого не-EQ sink-у як shell-підстановка $(...): з флагом —
-  // лише RUNNING, без — перший зі списку. Єдине місце sink-резолву
-  // для enable/disable-ланцюгів (раніше три копії pactl-пайплайна).
+  // ID першого не-EQ sink-у для збереження виходу перед увімкненням:
+  // з флагом — лише RUNNING, без — перший зі списку.
   function _firstNonEqSinkIdQ(running) {
     var list = "pactl list short sinks | grep -v -F " + _shellQuote(root.sinkName)
     if (running) list += " | grep RUNNING"
@@ -394,27 +397,48 @@ Item {
   }
 
   function disable() {
-    if (busy || !enabled) return
-    error = ""
-    busy = true
-    // Резолв fallback-у: 1) збережений sink з моменту увімкнення (якщо
-    // досі існує), 2) поточний default якщо не EQ, 3) перший RUNNING не-EQ,
-    // 4) перший не-EQ. Без збереженого — fallback ставав мертвим S/PDIF
-    var _sq = _shellQuote(root._savedSink)
-    var _eqQ = _shellQuote(root.sinkName)
-    _moveInputsProc.command = ["bash", "-c",
-      "SAVED=" + _sq + "; " +
-      "T=''; " +
-      "if [ -n \"$SAVED\" ] && pactl list short sinks | grep -F -q \"$SAVED\"; then " +
-      "T=$(pactl list short sinks | grep -F \"$SAVED\" | head -1 | cut -f1); fi; " +
-      "if [ -z \"$T\" ]; then T=$(pactl get-default-sink); [ \"$T\" = " + _eqQ + " ] && T=''; fi; " +
-      "if [ -z \"$T\" ]; then T=" + _firstNonEqSinkIdQ(true) + "; fi; " +
-      "if [ -z \"$T\" ]; then T=" + _firstNonEqSinkIdQ(false) + "; fi; " +
-      "[ -z \"$T\" ] && exit 0; " +
-      "pactl list short sink-inputs | cut -f1 | " +
-      "xargs -r -n1 -I{} pactl move-sink-input {} \"$T\"; " +
-      "pactl set-default-sink \"$T\""]
+    if (root.busy || !root.enabled) return
+    root.error = ""
+    root.busy = true
+    root._disableRequested = true
+    root._disableApplied = false
+    root._disableTarget = ""
+    root._relinkPending = false
+    relinkDelay.stop()
+    root.startDisable()
+  }
+
+  function startDisable() {
+    // Чекаємо завершення попереднього записувача default, щоб він не
+    // повернув EQ після початку вимкнення. Сам запит при цьому не губиться.
+    if (!root._disableRequested || _routeInputsProc.running || _moveInputsProc.running) return
+    _moveInputsProc.command = ["python3", root.routingScriptPath, root._savedSink,
+      "--fallback", "--default", "--print-target"]
     _moveInputsProc.running = true
+  }
+
+  function finishDisable() {
+    if (!root._disableRequested || !root._disableApplied || !root._disableTarget) return
+    // Саме цей singleton читає смужка бару. Відповідь pactl ще не означає,
+    // що Quickshell вже отримав зміну default через PipeWire metadata.
+    var sink = Pipewire.defaultAudioSink
+    if (sink?.name !== root._disableTarget || !sink.ready || !sink.audio) return
+    disableConfirmTimeout.stop()
+    root._disableRequested = false
+    root._disableApplied = false
+    root.enabled = false
+    root.busy = false
+    root.saveState()
+  }
+
+  function failDisable(message) {
+    disableConfirmTimeout.stop()
+    root._disableRequested = false
+    root._disableApplied = false
+    root.error = message
+    root.busy = false
+    console.warn("[AudioEq]", message)
+    root.scheduleRelink()
   }
 
   // ---------- ланцюг увімкнення ----------
@@ -431,11 +455,8 @@ Item {
     stdout: StdioCollector {
       onStreamFinished: {
         root._savedSink = text.trim()
-        // переносимо граючі потоки в EQ ще ДО перемикання default
-        // sinkName екрановано — та сама _shellQuote-гігієна що й скрізь у файлі
-        _moveInputsOnProc.command = ["bash", "-c",
-          "pactl list short sink-inputs | cut -f1 | " +
-          "xargs -r -n1 -I{} pactl move-sink-input {} " + _shellQuote(root.sinkName)]
+        // Переносимо тільки програми: вихід самого filter-chain лишається на залізі.
+        _moveInputsOnProc.command = ["python3", root.routingScriptPath, root.sinkName, "--default"]
         _moveInputsOnProc.running = true
       }
     }
@@ -443,18 +464,14 @@ Item {
 
   Process {
     id: _moveInputsOnProc
-    onExited: {
+    onExited: (code) => {
+      if (code !== 0) {
+        root.error = "Failed to route application audio through EQ"
+        root.busy = false
+        return
+      }
       // прапор: після set-param смуг enabled = true (див. _setParamProc)
       root._applyingAll = true
-      _setDefaultProc.running = true
-    }
-  }
-
-  Process {
-    id: _setDefaultProc
-    command: ["pactl", "set-default-sink", root.sinkName]
-    onExited: (code) => {
-      if (code !== 0) { root.error = "failed to switch default sink"; root.busy = false; return }
       _findNodeProc.running = true
     }
   }
@@ -492,28 +509,24 @@ Item {
   // ---------- вимкнення ----------
   Process {
     id: _moveInputsProc
+    stdout: StdioCollector {
+      onStreamFinished: root._disableTarget = text.trim()
+    }
     onExited: (code) => {
-      // default повертаємо навіть якщо move впав (може, потоків не було)
-      var _eqQ2 = _shellQuote(root.sinkName)
-      _restoreDefaultProc.command = ["bash", "-c",
-        "T=$(pactl get-default-sink); " +
-        "[ \"$T\" = " + _eqQ2 + " ] && " +
-        "T=$(pactl list short sinks | grep -v -F " + _eqQ2 + " | grep RUNNING | head -1 | cut -f1); " +
-        "[ \"$T\" = " + _eqQ2 + " ] && " +
-        "T=$(pactl list short sinks | grep -v -F " + _eqQ2 + " | head -1 | cut -f1); " +
-        "[ -z \"$T\" ] && exit 0; " +
-        "pactl set-default-sink \"$T\""]
-      _restoreDefaultProc.running = true
+      if (code !== 0 || !root._disableTarget) {
+        root.failDisable("Failed to restore application audio output")
+        return
+      }
+      root._disableApplied = true
+      disableConfirmTimeout.restart()
+      root.finishDisable()
     }
   }
 
-  Process {
-    id: _restoreDefaultProc
-    onExited: {
-      root.enabled = false
-      root.busy = false
-      root.saveState()
-    }
+  Timer {
+    id: disableConfirmTimeout
+    interval: 3000
+    onTriggered: root.failDisable("Audio output switch was not confirmed")
   }
 
   // ---------- виконавці ----------
@@ -607,9 +620,10 @@ Item {
   }
   function runRelink() {
     if (!root.enabled) { root._relinkPending = false; return }
-    if (root.busy || _relinkProc.running) return
+    if (root.busy || _relinkProc.running || _routeInputsProc.running) return
     root._relinkPending = false
     _relinkProc.running = true
+    _routeInputsProc.running = true
   }
   Connections {
     target: Pipewire.nodes
@@ -618,6 +632,20 @@ Item {
   Connections {
     target: Pipewire.linkGroups
     function onValuesChanged() { root.scheduleRelink() }
+  }
+  Connections {
+    target: Pipewire
+    function onDefaultAudioSinkChanged() {
+      root.finishDisable()
+      root.scheduleRelink()
+    }
+  }
+  PwObjectTracker {
+    objects: root._disableRequested ? [Pipewire.defaultAudioSink] : []
+  }
+  Connections {
+    target: root._disableRequested ? Pipewire.defaultAudioSink : null
+    function onReadyChanged() { root.finishDisable() }
   }
   Timer {
     id: relinkDelay
@@ -631,6 +659,18 @@ Item {
     running: root.enabled && !root.busy && root._eqNodeId >= 0
     repeat: true
     onTriggered: root.scheduleRelink()
+  }
+
+  // Відновлений WirePlumber маршрут програми може обходити default sink.
+  // Поки EQ увімкнений, нові потоки й перенесені після hotplug повертаємо в EQ.
+  Process {
+    id: _routeInputsProc
+    command: ["python3", root.routingScriptPath, root.sinkName, "--default"]
+    onExited: (code) => {
+      if (root._disableRequested) { root.startDisable(); return }
+      if (code !== 0) console.warn("[AudioEq] Application routing failed", code)
+      if (root._relinkPending) root.scheduleRelink()
+    }
   }
 
   Process {
