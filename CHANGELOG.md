@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Update official repository packages before AUR packages so an AUR failure cannot block the repository upgrade; report AUR failures separately.
+- Remove the phone popup's Browse button, which only requested a storage list without displaying it; retain Mount and Unmount.
 - Match popup outlines to bar pills with a single antialiased border and remove the persistent inner outline so zero border width disables the frame.
 - Keep application playback routed through the system EQ after new streams and output changes, including browser streams with restored device targets. Exclude internal filter outputs from application moves to avoid routing the EQ back into itself.
 - Serialize EQ disable with automatic routing, change the default before collecting application streams, verify their final routes, and wait for Quickshell to confirm the output used by the bar. Report failed transitions instead of silently saving EQ as disabled.

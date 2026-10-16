@@ -143,11 +143,6 @@ AnimatedPopup {
     sftpUnmountProc.command = ["kcd", "sftp", "unmount", root.devId]
     sftpUnmountProc.running = true
   }
-  function doSftpBrowse() {
-    if (!root.devId || sftpMountProc.running) return
-    sftpMountProc.command = ["kcd", "sftp", "browse", root.devId]
-    sftpMountProc.running = true
-  }
 
   ColumnLayout {
     id: layout
@@ -473,18 +468,6 @@ AnimatedPopup {
         color: window.palette.accent
         font.family: window.palette.font; font.pixelSize: appConfig.scaled(11); font.bold: true
         Layout.fillWidth: true
-      }
-      HoverButton {
-        width: 56; height: 22
-        palette: window.palette; appConfig: root.appConfig
-        icon: "Browse"; iconSize: 10
-        hoverBg: window.palette.accent
-        normalFg: window.palette.textLight
-        hoverFg: window.palette.bg0H
-        borderWidth: 1; borderColor: window.palette.bg2
-        enabled: root.reachable
-        opacity: root.reachable ? 1 : 0.5
-        onClicked: root.doSftpBrowse()
       }
       HoverButton {
         width: 56; height: 22

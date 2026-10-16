@@ -158,5 +158,57 @@ class CollectTest(unittest.TestCase):
         self.assertEqual(data["aur_count"], 0)
 
 
+class UpgradeTest(unittest.TestCase):
+    def _run_upgrade(self, repo_code=0, aur_code=0, helper="yay"):
+        with tempfile.TemporaryDirectory() as tmp:
+            bin_d = os.path.join(tmp, "bin")
+            os.makedirs(bin_d)
+            # Ізольований PATH не допускає справжнього sudo чи AUR-хелпера.
+            os.symlink("/usr/bin/flock", os.path.join(bin_d, "flock"))
+            _stub_bin(bin_d, "sudo", 'exec "$@"')
+            _stub_bin(bin_d, "pacman",
+                      'echo "pacman $*" >> "$UPGRADE_TRACE"\n'
+                      f'exit {repo_code}')
+            if helper:
+                _stub_bin(bin_d, helper,
+                          f'echo "{helper} $*" >> "$UPGRADE_TRACE"\n'
+                          f'exit {aur_code}')
+            trace = os.path.join(tmp, "trace")
+            env = dict(os.environ, PATH=bin_d, XDG_RUNTIME_DIR=tmp,
+                       UPGRADE_TRACE=trace)
+            result = subprocess.run(
+                ["/usr/bin/bash", os.path.join(ROOT, "quickshell", "scripts",
+                                              "pacman_upgrade.sh")],
+                input="\n", capture_output=True, text=True, env=env, timeout=10)
+            with open(trace) as f:
+                commands = f.read().splitlines()
+        return result, commands
+
+    def test_repository_update_precedes_aur_only_update(self):
+        for helper in ("yay", "paru"):
+            with self.subTest(helper=helper):
+                result, commands = self._run_upgrade(helper=helper)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(commands, ["pacman -Syu", f"{helper} -Sua"])
+
+    def test_aur_failure_preserves_successful_repository_update(self):
+        result, commands = self._run_upgrade(aur_code=7)
+        self.assertEqual(commands, ["pacman -Syu", "yay -Sua"])
+        self.assertEqual(result.returncode, 7)
+        self.assertIn("Official repository update completed, but AUR update failed",
+                      result.stderr)
+
+    def test_repository_failure_skips_aur(self):
+        result, commands = self._run_upgrade(repo_code=3)
+        self.assertEqual(commands, ["pacman -Syu"])
+        self.assertEqual(result.returncode, 3)
+        self.assertIn("AUR update skipped", result.stderr)
+
+    def test_no_helper_updates_repository_only(self):
+        result, commands = self._run_upgrade(helper="")
+        self.assertEqual(commands, ["pacman -Syu"])
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()

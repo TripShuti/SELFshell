@@ -18,10 +18,19 @@ for h in yay paru; do
 done
 
 code=0
-if [ -n "$helper" ]; then
-  "$helper" -Syu || code=$?
-else
-  sudo pacman -Syu || code=$?
+echo "Updating official repository packages..."
+sudo pacman -Syu || code=$?
+
+# Збій AUR не блокує офіційні пакети; після помилки pacman AUR не запускаємо.
+if [ "$code" -ne 0 ]; then
+  echo "Official repository update failed (exit $code). AUR update skipped." >&2
+elif [ -n "$helper" ]; then
+  echo
+  echo "Official repository update completed. Updating AUR packages..."
+  "$helper" -Sua || code=$?
+  if [ "$code" -ne 0 ]; then
+    echo "Official repository update completed, but AUR update failed (exit $code)." >&2
+  fi
 fi
 
 echo
