@@ -21,7 +21,7 @@ PopupWindow {
   property real bgOpacity: appConfig ? appConfig.cfg.popupBgOpacity : 0.90
   property real bgLighten: appConfig ? appConfig.cfg.popupBgLighten : 1.5
   property real cornerRadius: appConfig ? appConfig.cfg.popupRadius : 10
-  property color borderColor: palette ? palette.bg2 : "#57514b"
+  property color borderColor: palette ? palette.outlineVariant : "#57514b"
   property real borderWidth: appConfig ? appConfig.cfg.popupBorderWidth : 1
   property real enterScale: 0.85
   // Стриманий overshoot (2.5 раніше давав помітне "пружинне" переміщення)
@@ -139,7 +139,7 @@ PopupWindow {
       root.viewportWidth, root.viewportHeight)
   }
 
-  // Контейнер — тільки трансформація (масштаб/зсув/fade) і рамка.
+  // Контейнер — тільки трансформація (масштаб/зсув/fade).
   // Сам по собі прозорий: реальний фон живе в окремому bgRect нижче,
   // щоб анімація входу/виходу не конфліктувала зі стабільною
   // непрозорістю фону (раніше обидві боролись за container.opacity).
@@ -148,8 +148,6 @@ PopupWindow {
     anchors.fill: parent
     radius: root.cornerRadius
     color: "transparent"
-    border.width: root.borderWidth
-    border.color: root.borderColor
     opacity: 0
     scale: root.enterScale
     transformOrigin: root.transformOrigin
@@ -167,6 +165,10 @@ PopupWindow {
       id: bgRect
       anchors.fill: parent
       radius: parent.radius
+      border.width: root.borderWidth
+      border.color: root.borderColor
+      antialiasing: true
+      smooth: true
       // opacity лишаємо 1 — альфа в кольорах нижче
       property color _base: root.bgColor
       property color _top: Qt.lighter(root.bgColor, root.bgLighten)
@@ -175,17 +177,6 @@ PopupWindow {
         GradientStop { position: 0.0; color: Qt.rgba(bgRect._top.r, bgRect._top.g, bgRect._top.b, root.bgOpacity) }
         GradientStop { position: 1.0; color: Qt.rgba(bgRect._base.r, bgRect._base.g, bgRect._base.b, root.bgOpacity) }
       }
-    }
-
-    // Внутрішній border (тонка обводка всередині контейнера)
-    Rectangle {
-      anchors.fill: parent
-      anchors.margins: 1
-      radius: parent.radius - 1
-      color: "transparent"
-      border.width: 1
-      border.color: root.borderColor
-      opacity: 0.55 * 0.35
     }
 
     // Підсвітка верхнього краю
