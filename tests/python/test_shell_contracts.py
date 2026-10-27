@@ -3,7 +3,9 @@
 # та циклу delay-inhibitor без доступу до logind чи живої сесії.
 # ============================================================
 import json
+import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -38,6 +40,35 @@ class ConfigTest(unittest.TestCase):
             self.assertEqual(json.loads(target.read_text()), {'themeMode': 'matugen', 'uiScale': 1.2})
             subprocess.run([*base, 'reset', str(target)], check=True)
             self.assertEqual(json.loads(target.read_text()), config_ctl.defaults())
+
+
+class PaletteCliTest(unittest.TestCase):
+    def test_enable_disable_and_invalid_arguments(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            config = Path(tmp)/'quickshell'
+            scripts = config/'scripts'
+            scripts.mkdir(parents=True)
+            for name in ('selfshell', 'update_config.py'):
+                shutil.copy2(ROOT/'quickshell/scripts'/name, scripts/name)
+            manifest = config/'.selfshell-install.json'
+            manifest.write_text(json.dumps({'schema': 1, 'components': ['quickshell']}))
+            env = dict(os.environ, XDG_RUNTIME_DIR=tmp)
+            command = ['bash', str(scripts/'selfshell'), 'palette']
+
+            for action, app, expected in [('enable', 'kitty', ['kitty']),
+                                          ('enable', 'yazi', ['kitty', 'yazi']),
+                                          ('disable', 'kitty', ['yazi'])]:
+                result = subprocess.run([*command, action, app], env=env,
+                                        capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(json.loads(manifest.read_text())['paletteIntegrations'], expected)
+
+            previous = manifest.read_text()
+            for arguments in [('enable',), ('disable',), ('enable', 'unknown')]:
+                result = subprocess.run([*command, *arguments], env=env,
+                                        capture_output=True, text=True)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(manifest.read_text(), previous)
 
 
 class SleepGuardTest(unittest.TestCase):

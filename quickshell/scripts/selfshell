@@ -452,7 +452,7 @@ palette_cmd() {
   case "$sub" in
     enable|disable)
       operation_lock
-      python3 "$QS_CONFIG_DIR/scripts/update_config.py" "$sub" "$QS_CONFIG_DIR" "${1:?Usage: selfshell palette enable|disable <app>}"
+      python3 "$QS_CONFIG_DIR/scripts/update_config.py" "$sub" "$QS_CONFIG_DIR" "${2:?Usage: selfshell palette enable|disable <app>}"
       ;;
     reload) palette ;;
     path) echo "$QS_CONFIG_DIR/data/palette.json" ;;
