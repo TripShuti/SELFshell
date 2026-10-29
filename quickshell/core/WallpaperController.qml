@@ -15,6 +15,8 @@ Item {
 
   required property QtObject appConfig
 
+  property bool themeApplying: false
+
   readonly property bool applying: applyProc.running
   property var wallpapers: []
   property string statusText: ""
@@ -28,8 +30,8 @@ Item {
   function setWallpaper(path) {
     // повторний клік під час apply губиться б мовчки, а статус
     // "Setting wallpaper..." застрягав назавжди (onExited не приходить)
-    if (applyProc.running) return
-    var isStatic = root.appConfig.cfg.themeMode === "black"
+    if (applyProc.running || themeApplying) return
+    var isStatic = root.appConfig.cfg.themeMode !== "matugen"
     root.statusText = isStatic ? "\uF002 Setting wallpaper (palette stays)..." : "\uF002 Setting wallpaper..."
     applyProc.command = isStatic ? [root.wallpaperOnlyPath, path] : [root.paletteScriptPath, path]
     applyProc.running = true

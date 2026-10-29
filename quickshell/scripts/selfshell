@@ -44,7 +44,7 @@ Bar / Popups:
   osd <volume|brightness>         Show OSD overlay
 
 Theme / Wallpaper / Palette:
-  theme [list|status|set <black|matugen>]  Manage theme
+  theme [list|status|set <black|matugen|custom>]  Manage theme
   wallpaper <list|current|set <file>|random> Manage wallpapers
   palette <list|reload|show|path|enable <app>|disable <app>>  Palette operations
 
@@ -72,11 +72,11 @@ selfshell theme — manage theme
 
 Usage:
   selfshell theme [list|status]
-  selfshell theme set <black|matugen>
+  selfshell theme set <black|matugen|custom>
 
-  list          List available themes (black, matugen)
+  list          List available modes (black, matugen, custom)
   status        Show current themeMode from data/config.json
-  set <name>    Switch theme (writes palette + wallpaper)
+  set <name>    Switch theme (custom keeps current colors; edit saved themes in Settings)
 EOF
 }
 
@@ -379,7 +379,7 @@ theme_cmd() {
   local sub="${1:-status}"
   case "$sub" in
     list)
-      echo "Available themes: black, matugen"
+      echo "Available themes: black, matugen, custom"
       ;;
     status)
       local m; m="$(get_theme_mode)"
@@ -391,8 +391,8 @@ theme_cmd() {
       ;;
     set)
       local name="${2:-}"
-      if [ "$name" != "black" ] && [ "$name" != "matugen" ]; then
-        error "Usage: selfshell theme set <black|matugen>"
+      if [ "$name" != "black" ] && [ "$name" != "matugen" ] && [ "$name" != "custom" ]; then
+        error "Usage: selfshell theme set <black|matugen|custom>"
         exit 1
       fi
       info "Switching theme to $name..."
@@ -405,6 +405,8 @@ theme_cmd() {
         qs ipc -p "$QS_CONFIG_DIR" call palette-reload reload 2>/dev/null || true
         pkill -USR1 -x foot 2>/dev/null || true
         ok "Theme black applied (wallpaper black.png)"
+      elif [ "$name" = "custom" ]; then
+        ok "Custom mode active; current colors are fixed. Edit and save themes in Settings > Appearance."
       else
         # matugen: regenerate from current wallpaper if exists
         local cur
@@ -439,9 +441,9 @@ wallpaper_cmd() {
       if [ -z "$file" ]; then error "Usage: selfshell wallpaper set <file>"; exit 1; fi
       if [ ! -f "$file" ]; then error "file not found: $file"; exit 1; fi
       local mode; mode="$(get_theme_mode)"
-      if [ "$mode" = "black" ]; then
+      if [ "$mode" != "matugen" ]; then
         "$QS_CONFIG_DIR/scripts/update-wallpaper-only.sh" "$file"
-        ok "Wallpaper set (palette stays, Black theme): $file"
+        ok "Wallpaper set (palette stays, fixed theme): $file"
       else
         "$QS_CONFIG_DIR/scripts/update-palette.sh" "$file"
         ok "Wallpaper set (palette regenerated, Matugen): $file"
@@ -982,8 +984,8 @@ complete -c selfshell -n "__fish_seen_subcommand_from palette; and test (count (
 complete -c selfshell -n "__fish_seen_subcommand_from palette; and __fish_seen_subcommand_from enable disable; and test (count (commandline -opc)) -eq 3" -a "kitty fish starship yazi foot qt6ct"
 complete -c selfshell -n "__fish_seen_subcommand_from config; and test (count (commandline -opc)) -eq 2" -a "list describe get set edit reset path check"
 complete -c selfshell -n "__fish_seen_subcommand_from config; and __fish_seen_subcommand_from describe get set; and test (count (commandline -opc)) -eq 3" -a "(selfshell config list | string match -rv '^KEY ' | string replace -r ' .*' '')"
-complete -c selfshell -n "__fish_seen_subcommand_from config; and __fish_seen_subcommand_from set; and test (count (commandline -opc)) -eq 4" -a "(set -l key (commandline -opc)[4]; switch \$key; case themeMode; echo black; echo matugen; case barPos; echo top; echo bottom; case '*Enabled' autoPowerSaver barAutoHide; echo true; echo false; end)"
-complete -c selfshell -n "__fish_seen_subcommand_from theme; and __fish_seen_subcommand_from set; and test (count (commandline -opc)) -eq 3" -a "black matugen"
+complete -c selfshell -n "__fish_seen_subcommand_from config; and __fish_seen_subcommand_from set; and test (count (commandline -opc)) -eq 4" -a "(set -l key (commandline -opc)[4]; switch \$key; case themeMode; echo black; echo matugen; echo custom; case barPos; echo top; echo bottom; case '*Enabled' autoPowerSaver barAutoHide; echo true; echo false; end)"
+complete -c selfshell -n "__fish_seen_subcommand_from theme; and __fish_seen_subcommand_from set; and test (count (commandline -opc)) -eq 3" -a "black matugen custom"
 COMP
     ;;
   *) error "Unknown command: ${1:-}"; usage; exit 1 ;;

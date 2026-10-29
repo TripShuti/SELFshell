@@ -40,3 +40,5 @@ quickshell/data/last-shot.txt
 
 # локальні метадані інсталяції
 quickshell/.selfshell-install.json
+
+quickshell/data/custom-themes.json

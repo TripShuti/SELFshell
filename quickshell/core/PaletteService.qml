@@ -40,6 +40,8 @@ Item {
     paletteFile.path = p
   }
 
+  readonly property var colorKeys: ["fg", "gray", "green", "red", "bg0H", "bg1", "bg2", "muted", "light", "bright", "yellow", "blue", "purple", "orange", "aqua", "widgetFg", "audioVolume", "hoverOverlay", "pressOverlay", "bgAlpha", "hoverBg", "baseOverlay", "softOverlay", "accent", "textLight", "mutedAlt", "danger", "bgLayer", "sepBg", "outlineVariant"]
+
   property string font: "JetBrainsMonoNL Nerd Font"
 
   property string fg: "#ede0d4"

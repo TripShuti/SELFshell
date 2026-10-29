@@ -15,7 +15,7 @@ import tempfile
 import subprocess
 
 COMPONENTS = ('quickshell', 'hypr', 'fish', 'kitty', 'starship', 'yazi', 'fastfetch')
-LOCAL = ('data/config.json', 'data/palette.json', 'data/eq.json',
+LOCAL = ('data/config.json', 'data/palette.json', 'data/custom-themes.json', 'data/eq.json',
          'data/calendar-tasks.json', 'data/control-state.json',
          'data/launcher-usage.json', 'data/updates.json', 'data/last-shot.txt',
          'scripts/.env', 'scripts/.genshin_state.json', 'scripts/.genshin_requests.log',

@@ -36,8 +36,8 @@ Item {
       Text {
         text: {
           if (wpCtl.statusText !== "") return wpCtl.statusText
-          if (window.appConfig.cfg.themeMode === "black")
-            return "Pick a wallpaper — palette stays fixed (black theme, wallpaper-only)"
+          if (window.appConfig.cfg.themeMode !== "matugen")
+            return "Pick a wallpaper — palette stays fixed (wallpaper-only)"
           return "Pick a wallpaper — the palette regenerates automatically (Matugen)"
         }
         color: wpCtl.statusText !== "" ? window.palette.green : window.palette.gray
@@ -109,8 +109,8 @@ Item {
     }
 
     Text {
-      text: window.appConfig.cfg.themeMode === "black"
-            ? "Note: in Black theme the palette is static — only the wallpaper image changes."
+      text: window.appConfig.cfg.themeMode !== "matugen"
+            ? "Note: in a fixed theme the palette is static — only the wallpaper image changes."
             : "Note: applying a wallpaper re-runs the palette generator — bar and popup colors update live."
       color: window.palette.mutedAlt
       font.family: window.palette.font

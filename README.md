@@ -44,6 +44,8 @@ no separate lock/idle daemons.
 - MPRIS/media, volume and lock work via `kcd` plugins automatically (no extra UI)
 
 **Dynamic Theming**
+- Custom mode: edit all 30 palette colors (HEX or RGBA) in Settings → Appearance
+- Save, duplicate, rename and delete personal themes; wallpaper changes keep custom colors fixed
 - Wallpaper-based palette generation via `matugen`
 - Live reload — terminal (Kitty), prompt (Starship), file manager (Yazi) all update
 - No restart required
@@ -188,7 +190,7 @@ selfshell clipboard      # toggle clipboard history
 selfshell kcd            # toggle phone (kcd) popup
 selfshell audio          # toggle audio mixer
 selfshell osd <volume|brightness> # show OSD overlay
-selfshell theme [list|status|set <black|matugen>] # manage theme
+selfshell theme [list|status|set <black|matugen|custom>] # manage theme
 selfshell wallpaper <list|current|set <file>|random> # manage wallpapers
 selfshell palette <list|reload|show|path|enable <app>|disable <app>> # palette operations
 selfshell config <list [filter]|describe <key>|get <key>|set <key> <value>|edit|reset|path|check> # manage config.json
@@ -219,6 +221,15 @@ selfshell config set barPos bottom
 `set` validates values and applies them live when the shell is running.
 Use `theme set` to apply a theme: setting `themeMode` alone only changes the key.
 `config reset` resets all settings; `config edit` requires a stopped shell.
+
+Custom themes are edited in **Settings → Appearance → Custom**. Start from current
+colors, edit any palette field (including transparent overlays), and use **Save and
+apply** to activate the theme and regenerate opted-in application themes. **Save**
+only stores the preset. The preview updates while editing; shell colors change on
+apply. HEX accepts `#RRGGBB` or Qt's `#AARRGGBB` (alpha first). External application
+colors use the RGB channels because those integrations do not support these alpha values.
+Personal themes live in `quickshell/data/custom-themes.json` and survive updates.
+`selfshell theme set custom` freezes current colors; select saved themes in Settings.
 
 ## Dependencies
 

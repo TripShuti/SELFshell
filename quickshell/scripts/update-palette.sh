@@ -20,6 +20,11 @@ case "${WALLPAPER,,}" in
   *) echo "error: unsupported wallpaper format (jpg/png/gif expected): $WALLPAPER" >&2; exit 1 ;;
 esac
 DIR="$(cd "$(dirname "$0")" && pwd)"
+# Власна палітра захищена і при прямому виклику скрипта зміни шпалер.
+if [ -f "$DIR/../data/config.json" ]; then
+  THEME_MODE="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("themeMode", "matugen"))' "$DIR/../data/config.json")"
+  if [ "$THEME_MODE" = custom ]; then WALLPAPER_ONLY=true; fi
+fi
 EXT="${WALLPAPER##*.}"
 EXT="${EXT,,}"
 [ "$EXT" = "jpeg" ] && EXT="jpg"

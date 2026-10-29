@@ -168,3 +168,4 @@ jobs:
           test -S "$XDG_RUNTIME_DIR/wayland-ci" || { cat "$XDG_RUNTIME_DIR/weston.log"; exit 1; }
           python3 quickshell/scripts/update_config.py check quickshell
           python3 tests/qml_smoke.py
+          python3 tests/theme_smoke.py

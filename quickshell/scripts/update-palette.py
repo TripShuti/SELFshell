@@ -10,6 +10,7 @@ import fcntl
 
 QS_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WP_DIR = os.path.join(QS_DIR, "wp")
+COLOR_KEYS = ('fg', 'gray', 'green', 'red', 'bg0H', 'bg1', 'bg2', 'muted', 'light', 'bright', 'yellow', 'blue', 'purple', 'orange', 'aqua', 'widgetFg', 'audioVolume', 'hoverOverlay', 'pressOverlay', 'bgAlpha', 'hoverBg', 'baseOverlay', 'softOverlay', 'accent', 'textLight', 'mutedAlt', 'danger', 'bgLayer', 'sepBg', 'outlineVariant')
 
 
 # Список шпалер з директорії wp/ (найновіші першими), без current.*
@@ -187,7 +188,7 @@ STATIC_PALETTES = {
 def _build_and_write_palette(fg, gray, green, red, bg0H, bg1, bg2, muted, light, bright,
                               yellow, blue, purple, orange, aqua,
                               widgetFg, audioVolume, accent, textLight, mutedAlt,
-                              danger, bgLayer, sepBg, outlineVariant, on_primary):
+                              danger, bgLayer, sepBg, outlineVariant, on_primary, overrides=None):
     # Для світлого фону hover має бути темним, для темного — світлим
     r, g, b = parse_hex(bg0H)
     is_light = (r + g + b) / 3 > 128
@@ -208,14 +209,15 @@ def _build_and_write_palette(fg, gray, green, red, bg0H, bg1, bg2, muted, light,
         "danger": danger, "bgLayer": bgLayer, "sepBg": sepBg, "outlineVariant": outlineVariant,
     }
 
+    if overrides is not None:
+        palette_values.update(overrides)
     palette_json = json.dumps(palette_values, indent=2)
     qs_dir = QS_DIR
     palette_json_path = os.path.join(qs_dir, "data", "palette.json")
     os.makedirs(os.path.dirname(palette_json_path), exist_ok=True)
-    atomic_write(palette_json_path, palette_json)
-
     enabled = enabled_integrations()
     if not enabled:
+        atomic_write(palette_json_path, palette_json)
         return
 
     kitty_bg = bg0H
@@ -575,8 +577,48 @@ def _build_and_write_palette(fg, gray, green, red, bg0H, bg1, bg2, muted, light,
         atomic_write(qt_scheme_path, qt_scheme)
         ensure_qt6ct_palette(qt_scheme_path)
 
+    atomic_write(palette_json_path, palette_json)
+
+
+def validate_custom_palette(colors):
+    if not isinstance(colors, dict) or set(colors) != set(COLOR_KEYS):
+        raise ValueError('Custom theme must contain every palette color: ' + ', '.join(COLOR_KEYS))
+    for key, value in colors.items():
+        if not isinstance(value, str) or not re.fullmatch(r'#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?', value):
+            raise ValueError('Invalid color for ' + key + ': expected #RRGGBB or #AARRGGBB')
+    return colors
+
+
+def apply_custom_theme(theme_id):
+    with open(os.path.join(QS_DIR, 'data', 'custom-themes.json')) as stream:
+        library = json.load(stream)
+    theme = next((t for t in library['themes'] if t['id'] == theme_id), None)
+    if theme is None:
+        raise ValueError('Unknown custom theme: ' + theme_id)
+    colors = validate_custom_palette(theme['colors'])
+    # Зовнішні застосунки мають непрозорі кольори; alpha зберігаємо точно для QML.
+    opaque = {key: '#' + value[-6:] for key, value in colors.items()}
+    args = [opaque[key] for key in ('fg', 'gray', 'green', 'red', 'bg0H', 'bg1', 'bg2',
+            'muted', 'light', 'bright', 'yellow', 'blue', 'purple', 'orange', 'aqua',
+            'widgetFg', 'audioVolume', 'accent', 'textLight', 'mutedAlt', 'danger',
+            'bgLayer', 'sepBg', 'outlineVariant')]
+    # Та сама блокіровка, що у зміни шпалер, не дає двом генераторам змішати теми.
+    os.makedirs(WP_DIR, exist_ok=True)
+    with open(os.path.join(WP_DIR, '.wallpaper.lockfile'), 'a') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        _build_and_write_palette(*args, opaque['bg0H'], overrides=colors)
+
 
 def main():
+    if len(sys.argv) >= 2 and sys.argv[1] == '--custom':
+        try:
+            if len(sys.argv) != 3:
+                raise ValueError('usage: update-palette.py --custom <theme-id>')
+            apply_custom_theme(sys.argv[2])
+            return 0
+        except (ValueError, KeyError, TypeError, OSError) as error:
+            print('error: ' + str(error), file=sys.stderr)
+            return 1
 
     if len(sys.argv) >= 2 and sys.argv[1] == "list":
         list_wallpapers()

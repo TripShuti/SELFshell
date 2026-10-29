@@ -143,6 +143,7 @@ AnimatedPopup {
       // прокрутка. Патерн той самий, що в ControlPopup (notifFlick).
       Flickable {
         id: pageFlick
+        objectName: "settingsPageFlick"
         Layout.fillWidth: true
         Layout.fillHeight: true
         clip: true
@@ -155,6 +156,7 @@ AnimatedPopup {
         // не будувалась із порожньою прив'язкою до палітри
         Loader {
           id: sectionLoader
+          objectName: "settingsSectionLoader"
           width: pageFlick.width
           asynchronous: true
 

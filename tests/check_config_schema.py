@@ -82,8 +82,8 @@ if cfg is not None:
               f"config barPos: expected top/bottom, got {cfg['barPos']!r}")
     if "themeMode" in cfg:
         # white видалено повністю (без міграції): допустимі лише black/matugen
-        check(cfg["themeMode"] in ("black", "matugen"),
-              f"config themeMode: expected black/matugen, got {cfg['themeMode']!r}")
+        check(cfg["themeMode"] in ("black", "matugen", "custom"),
+              f"config themeMode: expected black/matugen/custom, got {cfg['themeMode']!r}")
     for field in ORDER_FIELDS:
         if field in cfg:
             check(isinstance(cfg[field], list) and all(isinstance(x, str) for x in cfg[field]),

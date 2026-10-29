@@ -74,7 +74,7 @@ DESCRIPTIONS = {'launcherEnabled': 'Launcher',
  'animSpeed': 'Multiplier for every animation duration; e.g. 1.5 = 50% slower, 0.5 = 2× faster (0.5–2.0)',
  'preferredPlayer': 'Favorite media player identity substring (spotify, chromium …), shared by bar widget '
                     'and popup',
- 'themeMode': 'Theming mode: black (static mono #121212 + one steel accent via update-palette.py --theme '
+ 'themeMode': 'Custom preserves manually edited colors independently of wallpaper. Theming mode: black (static mono #121212 + one steel accent via update-palette.py --theme '
               'black, wallpapers switch without regeneration) or matugen (dynamic palette from wallpaper via '
               'update-palette.sh)'}
 
@@ -113,8 +113,8 @@ def validate(key, value):
         valid = type(value) is type(expected)
     if not valid:
         raise ValueError('Invalid value type for ' + key)
-    if key == 'themeMode' and value not in ('black', 'matugen'):
-        raise ValueError('themeMode must be black or matugen')
+    if key == 'themeMode' and value not in ('black', 'matugen', 'custom'):
+        raise ValueError('themeMode must be black, matugen or custom')
     if key == 'barPos' and value not in ('top', 'bottom'):
         raise ValueError('barPos must be top or bottom')
     if key == 'preferredPlayer' and not value:
@@ -174,7 +174,7 @@ def main():
         if bounds:
             print(f'Range: {bounds[0]}–{bounds[1]}')
         if key in ('themeMode', 'barPos'):
-            print('Choices: ' + ('black, matugen' if key == 'themeMode' else 'top, bottom'))
+            print('Choices: ' + ('black, matugen, custom' if key == 'themeMode' else 'top, bottom'))
         print('Default: ' + json.dumps(value))
         print('Current: ' + json.dumps(current[key]))
         if key.startswith('idle'):

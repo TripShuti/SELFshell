@@ -36,7 +36,12 @@ Item {
 
   // Застосовує статичну тему + ставить відповідну шпалеру без matugen
   function applyTheme(id) {
-    if (themeBusy) return
+    if (themeBusy || window.customThemes.blocked) return
+    if (id === "custom") {
+      root.cfg.themeMode = "custom"
+      root.ac.saveToFile()
+      return
+    }
     themeBusy = true
     root.cfg.themeMode = id
     root.ac.saveToFile()
@@ -147,7 +152,8 @@ Item {
       SetSelect {
         sys: root.sys
         label: "Theme mode"
-        options: [{ id: "black", text: "Black" }, { id: "matugen", text: "Matugen" }]
+        enabled: !root.themeBusy && !window.customThemes.blocked
+        options: [{ id: "black", text: "Black" }, { id: "matugen", text: "Matugen" }, { id: "custom", text: "Custom" }]
         value: root.cfg.themeMode
         onPicked: id => root.applyTheme(id)
       }
@@ -164,6 +170,7 @@ Item {
         visible: root.themeStatus === ""
         text: {
           if (root.cfg.themeMode === "black") return "Black — mono with one steel accent, wallpaper changes without regeneration."
+          if (root.cfg.themeMode === "custom") return "Custom — your own colors, independent of wallpaper."
           return "Matugen — dynamic palette from wallpaper (awww + matugen + palette reload)."
         }
         color: window.palette.gray
@@ -181,6 +188,25 @@ Item {
         wrapMode: Text.WordWrap
         Layout.fillWidth: true
       }
+    }
+
+    Loader {
+      id: customEditorLoader
+      objectName: "customThemeEditorLoader"
+      Layout.fillWidth: true
+      active: root.cfg.themeMode === "custom"
+      visible: active
+      enabled: !root.themeBusy
+      Component.onCompleted: setSource(Qt.resolvedUrl("CustomThemeEditor.qml"), { sys: root.sys })
+    }
+
+    Loader {
+      objectName: "themePreview"
+      Layout.fillWidth: true
+      active: root.cfg.themeMode === "custom"
+      visible: active
+      enabled: !root.themeBusy
+      Component.onCompleted: setSource(Qt.resolvedUrl("ThemePreview.qml"), { sys: root.sys })
     }
 
     SetCard {

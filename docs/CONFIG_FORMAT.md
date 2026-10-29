@@ -70,7 +70,7 @@ Edited through SettingsPopup (UI) or manually.
 | `animationsEnabled` | `boolean` | `true` | Master switch for all shell animations (hover, popups, sliders, lock screen) |
 | `animSpeed` | `number` | `1.0` | Multiplier for every animation duration; e.g. `1.5` = 50% slower, `0.5` = 2× faster (0.5–2.0) |
 | `preferredPlayer` | `string` | `"selfsonic"` | Favorite media player identity substring (`spotify`, `chromium` …), shared by bar widget and popup |
-| `themeMode` | `string` | `"black"` | Theming mode: `black` (static mono `#121212` + one steel accent via `update-palette.py --theme black`, wallpapers switch without regeneration) or `matugen` (dynamic palette from wallpaper via `update-palette.sh`) |
+| `themeMode` | `string` | `"black"` | Theming mode: `black` (static mono `#121212` + one steel accent via `update-palette.py --theme black`, wallpapers switch without regeneration) , `matugen` (dynamic palette from wallpaper via `update-palette.sh`), or `custom` (manually edited colors, independent of wallpaper) |
 
 Separators look like `sep-N`, where N is a unique numeric ID.
 Generated automatically by `addSep()` in AppConfig.
@@ -434,3 +434,16 @@ Locally edited managed source files block an update rather than being overwritte
 Only opted-in applications are written by the palette generator. Installer-selected
 configs opt in automatically; `selfshell palette enable|disable <app>` changes
 that choice. Without a manifest no external application theme is changed.
+
+## Quickshell: data/custom-themes.json
+
+Personal theme library, managed by Settings → Appearance → Custom and preserved
+across updates. Schema: `version: 1`, `activeId` (last applied saved preset), and
+`themes` (array of `{id, name, colors}`). Each `colors` object contains all 30
+color fields from `data/palette.json`; `font` is not a color and is not included.
+Values accept `#RRGGBB` and `#AARRGGBB` (alpha first). Invalid or incomplete themes
+are rejected. The editor previews draft colors locally; Save stores the preset,
+and Save and apply also activates Custom mode and updates opted-in app themes.
+External app integrations receive opaque RGB channels. Deleting a preset leaves
+the currently applied palette unchanged. Wallpaper changes in Custom mode only
+update the image and lock-screen frame; they never run Matugen.

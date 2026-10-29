@@ -223,7 +223,7 @@ Item {
       if (!Array.isArray(value) || value.some(v => typeof v !== "string")) return false
     } else if (typeof value !== typeof expected) return false
     if (typeof value === "number" && !isFinite(value)) return false
-    if (key === "themeMode" && value !== "black" && value !== "matugen") return false
+    if (key === "themeMode" && value !== "black" && value !== "matugen" && value !== "custom") return false
     if (key === "barPos" && value !== "top" && value !== "bottom") return false
     var range = root.numericRanges[key]
     if (range && (value < range[0] || value > range[1] || (range[2] && !Number.isInteger(value)))) return false

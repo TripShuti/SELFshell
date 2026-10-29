@@ -74,6 +74,7 @@ fi
 if have qs && [ -n "${WAYLAND_DISPLAY:-}" ]; then
   run "QML component compilation" python3 quickshell/scripts/update_config.py check quickshell
   run "QML runtime IPC contract" python3 tests/qml_smoke.py
+  run "Custom theme editor runtime" python3 tests/theme_smoke.py
 else
   skip "QML component compilation/runtime" "Quickshell or Wayland unavailable (mandatory in CI)"
 fi

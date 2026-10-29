@@ -7,9 +7,11 @@ import io
 import json
 import os
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 from unittest import mock
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -353,6 +355,71 @@ class MainEndToEndTest(unittest.TestCase):
     def test_missing_wallpaper_errors(self):
         with mock.patch.object(sys, "argv", ["update-palette.py", os.path.join(self.home, "nope.jpg")]):
             self.assertEqual(up.main(), 1)
+
+
+
+class CustomThemeTest(unittest.TestCase):
+    def test_custom_palette_roundtrip_keeps_every_color_and_alpha(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            data = os.path.join(tmp, 'data')
+            os.makedirs(data)
+            colors = {key: '#123456' for key in up.COLOR_KEYS}
+            colors['hoverOverlay'] = '#37123456'
+            colors['accent'] = '#874321'
+            with open(os.path.join(data, 'custom-themes.json'), 'w') as stream:
+                json.dump({'version': 1, 'themes': [{'id': 'test', 'name': 'Test', 'colors': colors}]}, stream)
+            with mock.patch.object(up, 'QS_DIR', tmp), mock.patch.object(up, 'WP_DIR', os.path.join(tmp, 'wp')), mock.patch.object(up, 'enabled_integrations', return_value=set()):
+                up.apply_custom_theme('test')
+            with open(os.path.join(data, 'palette.json')) as stream:
+                result = json.load(stream)
+            self.assertEqual({key: result[key] for key in up.COLOR_KEYS}, colors)
+
+    def test_custom_validation_rejects_incomplete_and_injected_colors(self):
+        colors = {key: '#123456' for key in up.COLOR_KEYS}
+        for bad in ({}, colors | {'accent': 'red\ninclude evil'}, colors | {'accent': '#12345'}, colors | {'unknown': '#123456'}):
+            with self.subTest(bad=bad), self.assertRaises(ValueError):
+                up.validate_custom_palette(bad)
+
+    def test_custom_colors_reach_external_application_themes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            os.makedirs(os.path.join(tmp, 'data'))
+            colors = {key: '#123456' for key in up.COLOR_KEYS}
+            colors['accent'] = '#abcdef'
+            colors['bg0H'] = '#99102030'
+            with open(os.path.join(tmp, 'data/custom-themes.json'), 'w') as stream:
+                json.dump({'themes': [{'id': 'test', 'colors': colors}]}, stream)
+            with mock.patch.dict(os.environ, HOME=tmp), mock.patch.object(up, 'QS_DIR', tmp), mock.patch.object(up, 'WP_DIR', os.path.join(tmp, 'wp')), mock.patch.object(up, 'enabled_integrations', return_value={'kitty', 'fish', 'yazi', 'foot', 'qt6ct'}):
+                up.apply_custom_theme('test')
+            with open(os.path.join(tmp, '.config/kitty/current-theme.conf')) as stream:
+                self.assertIn('#102030', stream.read())
+            with open(os.path.join(tmp, 'data/palette.json')) as stream:
+                self.assertEqual(json.load(stream)['bg0H'], '#99102030')
+
+    def test_wallpaper_script_never_generates_colors_in_custom_mode(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            (base/'scripts').mkdir()
+            (base/'data').mkdir()
+            (base/'bin').mkdir()
+            (base/'data/config.json').write_text('{"themeMode":"custom"}')
+            (base/'data/palette.json').write_text('{"accent":"#abcdef"}')
+            shutil.copy2(os.path.join(SCRIPTS, 'update-palette.sh'), base/'scripts/update-palette.sh')
+            (base/'scripts/update-palette.py').write_text('raise RuntimeError("Palette regeneration is forbidden")')
+            for name in ('awww', 'hyprctl', 'magick', 'quickshell'):
+                stub = base/'bin'/name
+                stub.write_text('#!/bin/sh\nexit 0\n')
+                stub.chmod(0o755)
+            wallpaper = base/'test.png'
+            wallpaper.write_bytes(b'image')
+            env = dict(os.environ, PATH=str(base/'bin') + ':' + os.environ['PATH'])
+            result = subprocess.run(['bash', str(base/'scripts/update-palette.sh'), str(wallpaper)], env=env, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual((base/'data/palette.json').read_text(), '{"accent":"#abcdef"}')
+            self.assertEqual((base/'wp/current.png').read_bytes(), b'image')
+
+    def test_custom_library_is_personal_update_state(self):
+        import update_config
+        self.assertTrue(update_config.personal('quickshell', 'data/custom-themes.json'))
 
 
 if __name__ == "__main__":

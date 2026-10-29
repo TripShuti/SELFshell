@@ -18,7 +18,7 @@ ShellRoot {
   property bool sleepPreparing: false
   property int sleepCycle: 0
 
-  Binding { target: Quickshell; property: "watchFiles"; value: !lockContext.locked && !wallpaperSvc.applying }
+  Binding { target: Quickshell; property: "watchFiles"; value: !lockContext.locked && !wallpaperSvc.applying && !customThemesSvc.busy }
 
   function requestSuspend() {
     if (root.suspendPending || suspendProc.running) return
@@ -56,6 +56,8 @@ ShellRoot {
   function togglePopup(name) { root.activeBar()?.invokePopup(name) }
 
   WallpaperController { id: wallpaperSvc; appConfig: rootAppConfig }
+  CustomThemes { id: customThemesSvc; palette: paletteService; appConfig: rootAppConfig; wallpapers: wallpaperSvc }
+  Binding { target: wallpaperSvc; property: "themeApplying"; value: customThemesSvc.busy }
   AudioEq { id: audioEqSvc }
   MprisService { id: mediaPlayerSvc; appConfig: rootAppConfig }
   property var pairingBar: null
@@ -194,7 +196,7 @@ ShellRoot {
     // Перевірка і вихід виконуються в одному виклику: лок не може
     // увімкнутися між перевіркою CLI та зупинкою процеса.
     function quitIfUnlocked(): void {
-      if (lockContext.locked || wallpaperSvc.applying) return
+      if (lockContext.locked || wallpaperSvc.applying || customThemesSvc.busy) return
       if (!rootAppConfig.flushSave()) {
         console.warn("Cannot restart: configuration has not been saved")
         return
@@ -276,6 +278,7 @@ ShellRoot {
       selftrackMonitor: selftrackMonitorSvc
       powerProfiles: powerProfileService
       pacmanUpdates: pacmanService
+      customThemes: customThemesSvc
       wallpaperController: wallpaperSvc
       idleManager: idleManagerSvc
     }
