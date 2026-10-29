@@ -40,7 +40,6 @@ hl.config({
         new_status  = str(V.new_status, "slave"), -- "master" "inherit" "slave"
         always_keep_position = bool(V.always_keep_position, false),
         allow_small_split = false,
-        special_scale_factor = 1,
         new_on_top = true,
         new_on_active = "none", --"after" "before" "none"
         slave_count_for_center_master = 2,
@@ -55,7 +54,6 @@ hl.config({
         smart_split                  = false,
         smart_resizing               = true,
         permanent_direction_override = false,
-        special_scale_factor         = 1,
         split_width_multiplier       = 1.0,
         use_active_for_splits        = true,
         default_split_ratio          = 1.0,
