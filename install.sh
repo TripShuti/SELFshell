@@ -56,6 +56,7 @@ PACMAN_DEPS=(
   fish
   starship
   yazi
+  code
   playerctl
   cava
   swh-plugins
@@ -66,7 +67,14 @@ PACMAN_DEPS=(
   python-gobject
   matugen
   imagemagick
+
+  # шрифти: Nerd Font дає гліфи для бару, базові шрифти — читабельний
+  # текст у системі (без них fontconfig віддає FreeSans/FreeMono)
   ttf-jetbrains-mono-nerd
+  ttf-dejavu
+  ttf-liberation
+  noto-fonts
+  noto-fonts-emoji
 
   # додаткові пакунки, необхідні для конфігів
   hyprsunset
@@ -262,6 +270,12 @@ if [ ${#missing[@]} -gt 0 ]; then
   fi
 else
   info "All pacman dependencies are already installed."
+fi
+
+# Пакети шрифтів кладуть файли в /usr/share/fonts, але вже запущені
+# застосунки тримають старий кеш fontconfig — оновлюємо його одразу.
+if command -v fc-cache &>/dev/null; then
+  fc-cache -f &>/dev/null || warn "fc-cache failed — log out and back in to refresh fonts"
 fi
 
 # --- Увімкнення системних сервісів (NetworkManager, Bluetooth) ---

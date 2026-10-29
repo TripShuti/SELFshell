@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Treat an inactive NetworkManager as a warning in `selfshell doctor --preboot` so a fresh install is not rolled back before the installer enables system services.
+- Install base fonts (DejaVu, Liberation, Noto with emoji) so a fresh system stops falling back to FreeSans/FreeMono; set Kitty's font family to JetBrains Mono Nerd Font and make the doctor font check detect a missing family instead of always passing.
+- Open text files from Yazi in VS Code on Linux: the previous `code` openers were Windows-only, leaving Enter to fall back to `$EDITOR`/`vi`, which is not installed on a clean system.
 - Update official repository packages before AUR packages so an AUR failure cannot block the repository upgrade; report AUR failures separately.
 - Remove the phone popup's Browse button, which only requested a storage list without displaying it; retain Mount and Unmount.
 - Match popup outlines to bar pills with a single antialiased border and remove the persistent inner outline so zero border width disables the frame.

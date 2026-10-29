@@ -585,11 +585,21 @@ doctor() {
       warn "$dep — not found (audio)"
     fi
   done
-  if pacman -Q ttf-jetbrains-mono-nerd &>/dev/null 2>&1 || command -v ttf-jetbrains-mono-nerd &>/dev/null || fc-match "JetBrainsMonoNL Nerd Font" &>/dev/null 2>&1; then
+  local font_family mono_family
+  font_family="$(fc-match -f '%{family}' 'JetBrainsMonoNL Nerd Font' 2>/dev/null || true)"
+  if printf '%s' "$font_family" | grep -qi 'JetBrainsMonoNL Nerd Font'; then
     ok "ttf-jetbrains-mono-nerd (JetBrainsMonoNL Nerd Font)"
   else
     warn "ttf-jetbrains-mono-nerd not found — bar glyphs may be missing (pacman -S ttf-jetbrains-mono-nerd)"
   fi
+  # fc-match завжди повертає якийсь fallback, тому перевіряємо саме сімейство:
+  # FreeSans/FreeMono означають, що базові шрифти не встановлені.
+  mono_family="$(fc-match -f '%{family}' monospace 2>/dev/null || true)"
+  case "$mono_family" in
+    Free*) warn "monospace resolves to $mono_family — install ttf-dejavu and ttf-jetbrains-mono-nerd" ;;
+    "")    warn "fontconfig not available — text rendering may fall back to built-in fonts" ;;
+    *)     ok "monospace → $mono_family" ;;
+  esac
   # swh-plugins — LADSPA mbeq для аудіо-еквалайзера (без нього EQ вимкнений)
   if [ -f /usr/lib/ladspa/mbeq_1197.so ] || [ -f /usr/lib64/ladspa/mbeq_1197.so ]; then
     ok "swh-plugins (audio equalizer)"
@@ -803,6 +813,10 @@ PY
   echo "== Services =="
   if systemctl is-active --quiet NetworkManager 2>/dev/null; then
     ok "NetworkManager is active"
+  elif $preboot; then
+    # Installer запускає doctor до enable/start сервісів: на свіжій системі
+    # NetworkManager ще неактивний, і це не має валити встановлення.
+    warn "NetworkManager is not active yet (the installer enables it after this check)"
   else
     error "NetworkManager is not active"
     problems=$((problems + 1))
