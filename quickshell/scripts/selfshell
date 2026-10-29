@@ -46,10 +46,10 @@ Bar / Popups:
 Theme / Wallpaper / Palette:
   theme [list|status|set <black|matugen>]  Manage theme
   wallpaper <list|current|set <file>|random> Manage wallpapers
-  palette <reload|show|path>     Palette operations
+  palette <list|reload|show|path|enable <app>|disable <app>>  Palette operations
 
 Config / IPC:
-  config <get <key>|set <key> <value>|edit|reset>  Manage config.json
+  config <list|describe|get|set|edit|reset|path|check>  Manage config.json
   ipc [call] <target> <fn> [args...]               Call a quickshell IPC function
 
 Options:
@@ -101,11 +101,19 @@ usage_palette() {
 selfshell palette — palette operations
 
 Usage:
+  selfshell palette list            List supported apps and enabled integrations
   selfshell palette reload          Re-read palette.json (ipc palette-reload reload)
-  selfshell palette show            Show current palette.json path and colors
+  selfshell palette show            Show current palette.json contents
   selfshell palette path            Print palette.json path
   selfshell palette enable <app>    Opt in to generated app themes
   selfshell palette disable <app>   Stop generating themes for that app
+
+Supported apps: kitty, fish, starship, yazi, foot, qt6ct.
+Enable opts in to future generation; it does not install the application.
+Run 'selfshell wallpaper reload' after enabling to generate its theme.
+Disable stops future writes; it does not restore an earlier theme.
+Reload only re-reads the shell palette; it does not generate application themes.
+Enabling yazi delegates theme.toml and the generated palette flavor to SELFshell.
 EOF
 }
 
@@ -114,14 +122,27 @@ usage_config() {
 selfshell config — manage data/config.json
 
 Usage:
-  selfshell config get <key>          Get config value (python json)
+  selfshell config list [filter]      List keys and current values
+  selfshell config describe <key>     Show description, type, range and default
+  selfshell config get <key>          Print a value (JSON for non-strings)
   selfshell config set <key> <value>  Set value (string; use JSON for numbers/bool)
-  selfshell config edit               Open config in $EDITOR
-  selfshell config reset              Reset to defaults (via quickshell resetCfg)
+  selfshell config edit               Open config in $EDITOR (shell must be stopped)
+  selfshell config reset              Reset ALL configuration keys to factory defaults
   selfshell config path               Print config path
   selfshell config check              Validate config.json
 
-Keys: themeMode, uiScale, barHeight, etc. See docs/CONFIG_FORMAT.md
+Set validates types and ranges, applies live when running, otherwise writes the file.
+Values: true/false, numbers, plain strings, or quoted JSON arrays.
+Use 'selfshell theme set' to apply a theme; setting themeMode only changes the key.
+
+Examples:
+  selfshell config list idle
+  selfshell config describe barHeight
+  selfshell config set barHeight 40
+  selfshell config set dndEnabled true
+  selfshell config set barPos bottom
+
+Full reference: docs/CONFIG_FORMAT.md
 EOF
 }
 
@@ -450,9 +471,12 @@ palette_cmd() {
   if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then usage_palette; return 0; fi
   local sub="${1:-reload}"
   case "$sub" in
+    list) python3 "$QS_CONFIG_DIR/scripts/config_ctl.py" palette-list "$QS_CONFIG_DIR/data/config.json" ;;
     enable|disable)
       operation_lock
       python3 "$QS_CONFIG_DIR/scripts/update_config.py" "$sub" "$QS_CONFIG_DIR" "${2:?Usage: selfshell palette enable|disable <app>}"
+      ok "Palette integration $sub: $2"
+      if [ "$sub" = enable ]; then info "Run 'selfshell wallpaper reload' to apply."; fi
       ;;
     reload) palette ;;
     path) echo "$QS_CONFIG_DIR/data/palette.json" ;;
@@ -476,18 +500,15 @@ config_cmd() {
     check)
       python3 "$QS_CONFIG_DIR/scripts/config_ctl.py" check "$QS_CONFIG_DIR/data/config.json"
       ;;
-    get)
-      local key="${1:-}"
-      [ -z "$key" ] && { error "Usage: selfshell config get <key>"; exit 1; }
-      python3 - "$QS_CONFIG_DIR/data/config.json" "$key" <<'PY' 2>/dev/null || error "failed to read config"
-import json, sys
-path, key = sys.argv[1], sys.argv[2]
-print(json.load(open(path)).get(key,''))
-PY
+    list|describe|get)
+      if [ "$sub" != list ] && [ -z "${1:-}" ]; then
+        error "Usage: selfshell config $sub <key>"; return 1
+      fi
+      python3 "$QS_CONFIG_DIR/scripts/config_ctl.py" "$sub" "$QS_CONFIG_DIR/data/config.json" "${1:-}"
       ;;
     set)
       local key="${1:-}"; local val="${2:-}"
-      [ -z "$key" ] || [ -z "$val" ] && { error "Usage: selfshell config set <key> <value>"; exit 1; }
+      [ -z "$key" ] || [ "$#" -ne 2 ] && { error "Usage: selfshell config set <key> <value>"; exit 1; }
       local encoded result
       encoded="$(python3 "$QS_CONFIG_DIR/scripts/config_ctl.py" encode "$QS_CONFIG_DIR/data/config.json" "$key" "$val")"
       query_shell || exit 1
@@ -506,6 +527,7 @@ PY
       "$ed" "$QS_CONFIG_DIR/data/config.json"
       ;;
     reset)
+      [ "$#" -eq 0 ] || { error "config reset takes no key; it resets ALL settings."; return 1; }
       query_shell || exit 1
       if $shell_running; then
         ipc configuration reset
@@ -954,9 +976,14 @@ case "${1:-help}" in
 # selfshell fish completion
 complete -c selfshell -f
 complete -c selfshell -n "__fish_use_subcommand" -a "help version status theme wallpaper palette config doctor reload update lock toggle-lock launcher settings control clipboard kcd audio osd ipc list services completion" -d "command"
-complete -c selfshell -n "__fish_seen_subcommand_from theme" -a "list status set" -d "theme"
+complete -c selfshell -n "__fish_seen_subcommand_from theme; and test (count (commandline -opc)) -eq 2" -a "list status set" -d "theme"
 complete -c selfshell -n "__fish_seen_subcommand_from wallpaper" -a "list current set random reload" -d "wallpaper"
-complete -c selfshell -n "__fish_seen_subcommand_from palette" -a "reload show path" -d "palette"
+complete -c selfshell -n "__fish_seen_subcommand_from palette; and test (count (commandline -opc)) -eq 2" -a "list reload show path enable disable" -d "palette"
+complete -c selfshell -n "__fish_seen_subcommand_from palette; and __fish_seen_subcommand_from enable disable; and test (count (commandline -opc)) -eq 3" -a "kitty fish starship yazi foot qt6ct"
+complete -c selfshell -n "__fish_seen_subcommand_from config; and test (count (commandline -opc)) -eq 2" -a "list describe get set edit reset path check"
+complete -c selfshell -n "__fish_seen_subcommand_from config; and __fish_seen_subcommand_from describe get set; and test (count (commandline -opc)) -eq 3" -a "(selfshell config list | string match -rv '^KEY ' | string replace -r ' .*' '')"
+complete -c selfshell -n "__fish_seen_subcommand_from config; and __fish_seen_subcommand_from set; and test (count (commandline -opc)) -eq 4" -a "(set -l key (commandline -opc)[4]; switch \$key; case themeMode; echo black; echo matugen; case barPos; echo top; echo bottom; case '*Enabled' autoPowerSaver barAutoHide; echo true; echo false; end)"
+complete -c selfshell -n "__fish_seen_subcommand_from theme; and __fish_seen_subcommand_from set; and test (count (commandline -opc)) -eq 3" -a "black matugen"
 COMP
     ;;
   *) error "Unknown command: ${1:-}"; usage; exit 1 ;;

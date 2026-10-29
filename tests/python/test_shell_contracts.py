@@ -18,6 +18,34 @@ from sleep_guard import SleepGuard
 
 
 class ConfigTest(unittest.TestCase):
+    def test_discovery_and_get_use_defaults_without_mutating_file(self):
+        self.assertEqual(set(config_ctl.DESCRIPTIONS), set(config_ctl.defaults()))
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp)/'config.json'
+            path.write_text('{"barHeight":40}')
+            base = [sys.executable, str(ROOT/'quickshell/scripts/config_ctl.py')]
+            def run(*args):
+                return subprocess.run([*base, args[0], str(path), *args[1:]], capture_output=True, text=True)
+            self.assertEqual(run('get', 'barHeight').stdout.strip(), '40')
+            self.assertEqual(run('get', 'dndEnabled').stdout.strip(), 'false')
+            self.assertNotEqual(run('get', 'unknown').returncode, 0)
+            listing = run('list', 'idle').stdout
+            self.assertIn('idleLockTimeout', listing)
+            self.assertNotIn('barHeight', listing)
+            description = run('describe', 'barHeight').stdout
+            self.assertIn('Current: 40', description)
+            self.assertIn('Default: 36', description)
+            self.assertIn('Range: 1–200', description)
+            self.assertEqual(path.read_text(), '{"barHeight":40}')
+
+    def test_palette_list_reads_manifest(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp)/'data/config.json'
+            (Path(tmp)/'.selfshell-install.json').write_text('{"paletteIntegrations":["kitty"]}')
+            result = subprocess.run([sys.executable, str(ROOT/'quickshell/scripts/config_ctl.py'), 'palette-list', str(path)], capture_output=True, text=True, check=True)
+            self.assertRegex(result.stdout, r'kitty\s+yes')
+            self.assertRegex(result.stdout, r'yazi\s+no')
+
     def test_defaults_match_all_shipped_configuration_keys(self):
         current = json.loads((ROOT/'quickshell/data/config.json').read_text())
         self.assertEqual(set(config_ctl.defaults()), set(current))

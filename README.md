@@ -190,8 +190,8 @@ selfshell audio          # toggle audio mixer
 selfshell osd <volume|brightness> # show OSD overlay
 selfshell theme [list|status|set <black|matugen>] # manage theme
 selfshell wallpaper <list|current|set <file>|random> # manage wallpapers
-selfshell palette <reload|show|path|enable|disable> # palette operations
-selfshell config <get|set|edit|reset> <key> [value] # manage config.json
+selfshell palette <list|reload|show|path|enable <app>|disable <app>> # palette operations
+selfshell config <list [filter]|describe <key>|get <key>|set <key> <value>|edit|reset|path|check> # manage config.json
 selfshell ipc [call] <target> <function> [args...]
 selfshell reload         # restart quickshell
 selfshell update         # staged update of managed components, with rollback
@@ -200,6 +200,25 @@ selfshell list           # list running quickshell instances
 selfshell status         # quick status summary
 selfshell services       # list services
 ```
+
+Use `selfshell palette list` to see supported applications and their opt-in state.
+`palette enable <app>` enables future theme generation; run `selfshell wallpaper reload`
+to apply it. `palette reload` only re-reads the shell palette.
+
+Discover configuration keys with `selfshell config list` (or `config list idle`).
+`selfshell config describe barHeight` shows the description, type, allowed range,
+default and current value. For example:
+
+```sh
+selfshell config get barHeight
+selfshell config set barHeight 40
+selfshell config set dndEnabled true
+selfshell config set barPos bottom
+```
+
+`set` validates values and applies them live when the shell is running.
+Use `theme set` to apply a theme: setting `themeMode` alone only changes the key.
+`config reset` resets all settings; `config edit` requires a stopped shell.
 
 ## Dependencies
 
