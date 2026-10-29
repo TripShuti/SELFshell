@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Custom themes in Settings → Appearance: edit all 30 palette colors through an interactive preview with HEX input, RGBA sliders and a checkerboard transparency sample. Preview examples include the bar, audio level, notification text, primary/secondary actions and Default/Hover/Pressed states.
+- Personal theme library: create from current colors, save, duplicate, rename, apply saved presets with one click and delete with inline confirmation. Library and naming controls appear above the preview; color editing and save actions are inside it.
+- Wallpaper-independent Custom mode across the picker, CLI set/random/reload and wallpaper script. Applying custom colors also regenerates opted-in Kitty, Fish, Starship, Yazi, Foot and qt6ct themes; personal presets survive managed updates.
+- CLI discovery: `palette list` shows supported applications and opt-in state; `config list [filter]` and `config describe <key>` expose keys, current/default values, types and ranges. Expanded help and Fish completion cover palette integrations and configuration values.
+
 ### Fixed
 
 - Treat an inactive NetworkManager as a warning in `selfshell doctor --preboot` so a fresh install is not rolled back before the installer enables system services.

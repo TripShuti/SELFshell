@@ -1,7 +1,7 @@
 # SELFshell
 
 A feature-complete Hyprland desktop shell built with **Quickshell**.
-Includes a custom lock screen, a built-in idle manager, dynamic
+Includes a custom lock screen, a built-in idle manager, custom and
 wallpaper-based theming, and a fully configurable top bar — no external bar,
 no separate lock/idle daemons.
 
@@ -43,9 +43,11 @@ no separate lock/idle daemons.
 - Phone popup: battery bar, Ping / Ring, Share file, Clipboard push, SFTP browse/mount/unmount, recent notifications + Clear, firewall hint. Pairing is phone-initiated only (Accept/Decline popup); terminal flow (`kcd pair`, `kcd connect`) unchanged. `kcdDndEnabled` toggle (header bell `F0F3`/`F1F6` + widget badge)
 - MPRIS/media, volume and lock work via `kcd` plugins automatically (no extra UI)
 
-**Dynamic Theming**
-- Custom mode: edit all 30 palette colors (HEX or RGBA) in Settings → Appearance
-- Save, duplicate, rename and delete personal themes; wallpaper changes keep custom colors fixed
+**Themes & Colors**
+- Three modes: Black (built-in fixed palette), Matugen (wallpaper-derived), Custom (your own colors)
+- Edit all 30 palette colors through an interactive preview, HEX input and RGBA sliders
+- Save personal themes, apply saved themes with one click, rename, duplicate and delete presets
+- Custom themes stay independent of wallpaper changes and survive updates
 - Wallpaper-based palette generation via `matugen`
 - Live reload — terminal (Kitty), prompt (Starship), file manager (Yazi) all update
 - No restart required
@@ -163,14 +165,17 @@ For a manually managed application, opt in explicitly, for example:
 ```sh
 selfshell palette enable yazi
 selfshell palette enable kitty
+# Matugen: regenerate from the current wallpaper
 selfshell wallpaper reload
+# Custom: use Save and apply in Settings → Appearance instead
 ```
 
 Available integrations: `kitty`, `fish`, `starship`, `yazi`, `foot`, `qt6ct`.
 `palette disable <app>` stops subsequent writes. Enabling Yazi delegates its
 `theme.toml` and generated `palette` flavor to SELFshell; back up custom themes.
 `palette reload` only rereads `palette.json`; it does not regenerate app themes
-or lock-screen frames. Use `wallpaper reload` or `theme set black` to regenerate.
+or lock-screen frames. To regenerate application themes, use `wallpaper reload`
+in Matugen, `theme set black` in Black, or **Save and apply** in Custom.
 `wallpaper current` returns the desktop image, including GIF; the lock screen
 uses a separate generated static frame.
 
@@ -191,7 +196,7 @@ selfshell kcd            # toggle phone (kcd) popup
 selfshell audio          # toggle audio mixer
 selfshell osd <volume|brightness> # show OSD overlay
 selfshell theme [list|status|set <black|matugen|custom>] # manage theme
-selfshell wallpaper <list|current|set <file>|random> # manage wallpapers
+selfshell wallpaper <list|current|set <file>|random|reload> # manage wallpapers
 selfshell palette <list|reload|show|path|enable <app>|disable <app>> # palette operations
 selfshell config <list [filter]|describe <key>|get <key>|set <key> <value>|edit|reset|path|check> # manage config.json
 selfshell ipc [call] <target> <function> [args...]
@@ -204,8 +209,8 @@ selfshell services       # list services
 ```
 
 Use `selfshell palette list` to see supported applications and their opt-in state.
-`palette enable <app>` enables future theme generation; run `selfshell wallpaper reload`
-to apply it. `palette reload` only re-reads the shell palette.
+`palette enable <app>` enables future theme generation. Apply it using the action
+for your theme mode described above; `palette reload` only re-reads the shell palette.
 
 Discover configuration keys with `selfshell config list` (or `config list idle`).
 `selfshell config describe barHeight` shows the description, type, allowed range,
@@ -222,14 +227,70 @@ selfshell config set barPos bottom
 Use `theme set` to apply a theme: setting `themeMode` alone only changes the key.
 `config reset` resets all settings; `config edit` requires a stopped shell.
 
-Custom themes are edited in **Settings → Appearance → Custom**. Start from current
-colors, edit any palette field (including transparent overlays), and use **Save and
-apply** to activate the theme and regenerate opted-in application themes. **Save**
-only stores the preset. The preview updates while editing; shell colors change on
-apply. HEX accepts `#RRGGBB` or Qt's `#AARRGGBB` (alpha first). External application
-colors use the RGB channels because those integrations do not support these alpha values.
-Personal themes live in `quickshell/data/custom-themes.json` and survive updates.
-`selfshell theme set custom` freezes current colors; select saved themes in Settings.
+## Themes and the custom palette editor
+
+Choose a mode in **Settings → Appearance → Theme mode**:
+
+| Mode | Colors | When the wallpaper changes |
+|---|---|---|
+| **Black** | Built-in fixed palette | Only the wallpaper and lock-screen frame change |
+| **Matugen** | Generated from the wallpaper | Shell colors and opted-in application themes regenerate |
+| **Custom** | Your manually edited palette | Only the wallpaper and lock-screen frame change; colors stay fixed |
+
+<details>
+<summary>Custom theme editor preview</summary>
+
+![Custom theme preview with 30 swatches, HEX input, RGBA sliders and save actions](docs/screenshots/custom-theme-preview.png)
+
+</details>
+
+### Create and edit a theme
+
+1. Select **Custom**. Switching modes keeps the current colors, so a Matugen
+   palette can become the starting point for a personal theme.
+2. Click **New theme from current colors** and enter a name. The saved-theme
+   list, creation button and name field sit above the preview.
+3. Select any of the **30 color swatches** in the preview. The selected field's
+   name, HEX value and transparency sample appear below the swatches.
+4. Edit the HEX value or use the **R / G / B / A** sliders. The preview updates
+   immediately and shows a bar, volume indicator, notification text, primary and
+   secondary actions, and Default / Hover / Pressed states. The checkerboard
+   sample shows transparency. Color selection and editing are in the preview;
+   there is no separate long color list.
+5. Choose **Save**, **Save as copy**, or **Save and apply**:
+
+| Action | Result |
+|---|---|
+| **Save** | Stores the name and colors without changing the active shell palette |
+| **Save as copy** | Creates a separate preset from the current draft |
+| **Save and apply** | Saves the draft, activates Custom mode and updates the shell and opted-in application themes |
+| Click a saved theme | Immediately applies the saved palette and opens it for editing |
+| Rename | Change the name field and use Save |
+| **Delete** beside a saved theme | Click again when it reads **Delete?** to confirm; applied colors stay unchanged |
+
+Draft edits affect the preview until applied. HEX accepts `#RRGGBB` or Qt's
+`#AARRGGBB` (**alpha first**); for example, `#80ffffff` is approximately 50% opaque
+white. All 30 fields, including derived colors and overlays, are independently
+editable. `font` is not a color and is not part of the custom theme editor.
+
+### Storage and application integrations
+
+Personal presets live in `~/.config/quickshell/data/custom-themes.json`, separate
+from the active `palette.json`. They survive `selfshell update`. Preset deletion
+never restores a different palette or switches the current wallpaper.
+
+Supported integrations: **Kitty, Fish, Starship, Yazi, Foot and qt6ct**. Use
+`selfshell palette list` to inspect opt-in state and `palette enable <app>` to
+opt in. In Custom mode, use **Save and apply** (or select a saved theme) after
+opting in. `wallpaper reload` deliberately keeps Custom colors and does not
+regenerate application themes. External application color values use the RGB
+channels; alpha is preserved in the shell palette.
+
+`selfshell theme set custom` freezes the current palette; it does not select a
+saved preset by name. Saved presets are selected in Settings. See the
+[configuration reference](docs/CONFIG_FORMAT.md#quickshell-datacustom-themesjson)
+for the library format and [troubleshooting](docs/TROUBLESHOOTING.md#custom-themes)
+for recovery and application-theme issues.
 
 ## Dependencies
 

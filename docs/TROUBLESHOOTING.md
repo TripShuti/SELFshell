@@ -57,22 +57,32 @@ input:kb_layout`.
 ## Fish: terminal colors do not refresh
 **Cause:** `99-palette.fish` was not generated or is stale.
 
-**Fix:**
-```sh
-~/.config/quickshell/scripts/update-palette.sh ~/.config/quickshell/wp/wp1.jpg
-```
+**Fix:** enable Fish generation with `selfshell palette enable fish`, then apply
+colors using the action for your current mode:
+
+- **Matugen:** `selfshell wallpaper reload`.
+- **Black:** `selfshell theme set black` (also selects the Black wallpaper).
+- **Custom:** **Save and apply** in Settings → Appearance, or click a saved theme.
+
+`selfshell palette reload` only rereads the shell palette; it does not regenerate
+Fish colors.
 
 ## Kitty: theme not applied
 **Cause:** `current-theme.conf` does not exist or is not included.
 
 **Fix:**
 1. Make sure `kitty.conf` contains `include current-theme.conf`
-2. Enable the integration with `selfshell palette enable kitty`, then run `selfshell wallpaper reload`
+2. Enable it with `selfshell palette enable kitty` and check `selfshell palette list`.
+3. Apply using the appropriate action above: wallpaper reload in Matugen, theme
+   set black in Black, or Save and apply / a saved-theme click in Custom.
 
 ## Yazi: icons or colors missing
 **Cause:** `theme.toml` or `flavors/palette.yazi/flavor.toml` is stale.
 
-**Fix:** back up custom Yazi themes, run `selfshell palette enable yazi`, then `selfshell wallpaper reload`. `palette reload` only rereads the shell palette.
+**Fix:** back up custom Yazi themes and run `selfshell palette enable yazi`. Then
+apply the current mode using the actions above. In Custom, use Save and apply or
+click a saved theme; wallpaper reload keeps colors fixed. `palette reload` only
+rereads the shell palette.
 
 ## Network does not work after install.sh
 **Cause:** `NetworkManager` is not enabled/started.
@@ -260,9 +270,49 @@ editing behind a running AppConfig can be overwritten by its next save.
 File watching remains disabled because atomic-renames crash the watcher in
 Quickshell 0.3.0.
 
-## Wallpaper set but colors did not change (half-applied palette)
+## Custom themes
 
-**Symptom:** new wallpaper on screen, old colors in bar/popups.
+### Wallpaper changes do not change colors
+
+This is expected in **Custom** and **Black**. To generate colors from wallpaper,
+select **Matugen** in Appearance or run `selfshell theme set matugen`.
+Custom wallpaper set/random/reload only change the image and lock-screen frame.
+
+### Preview changed, but the shell did not
+
+Draft changes are local to the preview. **Save** stores them without applying.
+Use **Save and apply** to activate the draft. Clicking a saved entry applies its
+stored colors immediately; it discards unsaved draft edits.
+
+### An enabled application still has its old colors
+
+Check `selfshell palette list`. After `palette enable <app>`, use **Save and
+apply** or click the desired saved theme. Neither `palette reload` nor
+`wallpaper reload` regenerates app themes in Custom. HEX alpha is intentionally
+kept only in the shell palette; app integrations use RGB channels.
+
+### A theme was deleted, but the desktop still uses its colors
+
+Deletion removes the preset, not the active palette. Select another saved theme,
+apply a new draft, or choose Black/Matugen to change the active colors.
+
+### The library cannot be read or saved
+
+The editor reports malformed data without replacing the file. Back up
+`~/.config/quickshell/data/custom-themes.json`, check its JSON syntax and the
+[complete schema](CONFIG_FORMAT.md#quickshell-datacustom-themesjson). Every preset
+needs a unique nonempty ID, a nonempty name and all 30 valid color fields.
+
+Close Settings before repairing/restoring a library, then run `selfshell reload`
+before using the theme controls again; the library does not watch external edits.
+For save failures, check available disk space and file permissions. For apply
+failures, use the editor's error text and `qs log -p ~/.config/quickshell` to
+identify a failing application integration. Some external files may already have
+changed if a later integration failed; correct the issue and apply the theme again.
+
+## Wallpaper set but colors did not change in Matugen (half-applied palette)
+
+**Symptom:** Matugen is selected, but a new wallpaper appears with old bar/popup colors.
 
 **Cause:** `update-palette.sh` applies the wallpaper (`awww img` + `current.*`)
 *before* `update-palette.py` regenerates the palette. If `matugen` fails

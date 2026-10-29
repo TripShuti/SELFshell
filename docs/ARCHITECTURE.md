@@ -373,9 +373,9 @@ each loaded as a separate file via `Loader` (`settings/*.qml`, each gets
 - **Hyprland** — `Windows` (gaps, border, rounding, opacity, dim, shadows,
   border colors, dwindle/master layout) and `Blur` (size, passes, vibrancy,
   xray, layer blur)
-- **Appearance** — `Theme` (`black`/`matugen`), `Scale` (`uiScale`) and
+- **Appearance** — `Theme` (`black`/`matugen`/`custom`), custom presets and interactive palette editor, `Scale` (`uiScale`) and
   `Animations` (`animationsEnabled` master switch, `animSpeed` multiplier)
-- **Wallpaper** — picker and palette regeneration
+- **Wallpaper** — picker; palette regeneration only in Matugen mode
 - **Behavior** — Do not disturb, idle timeouts (lock/dpms/suspend with
   ordering constraints), wheel steps (volume/brightness), resetting all
   settings to factory defaults
@@ -643,11 +643,11 @@ terminal title is matched by the floating-window rule and focused after launch.
 | `launcher` / `settings` | `qs ipc call launcher/settings toggle` |
 | `control` / `clipboard` / `kcd` / `audio` | `qs ipc call <target> toggle` (control center, clipboard history, phone popup, audio mixer) |
 | `osd volume\|brightness` | `qs ipc call osd volume|brightness` (media-key overlay) |
-| `theme list\|status\|set <black\|matugen>` | Theming mode in `data/config.json` (`--theme black` static palette vs `update-palette.sh` regen) |
-| `wallpaper list\|current\|set <file>\|random` | Wallpaper picker (respects `themeMode`: wallpaper-only in Black, regen in Matugen) |
-| `palette reload\|show\|path` | `qs ipc call palette-reload reload`, dump `palette.json`, print its path |
+| `theme list\|status\|set <black\|matugen\|custom>` | Theming mode in `data/config.json` (Black fixed palette, Matugen generation, Custom keeps current colors; saved presets selected in Settings) |
+| `wallpaper list\|current\|set <file>\|random\|reload` | Wallpaper picker (respects `themeMode`: wallpaper-only in Black/Custom, regen in Matugen) |
+| `palette list\|reload\|show\|path\|enable <app>\|disable <app>` | Inspect integration opt-in, reread/dump/locate the active palette, or enable/disable application theme generation |
 | `status` | One-line overview: version, `themeMode`, wallpaper, Hyprland, quickshell |
-| `config get\|set\|edit\|reset` | Validate and mutate the live AppConfig via IPC, or atomically write while stopped; reset to defaults |
+| `config list [filter]\|describe <key>\|get\|set\|edit\|reset\|path\|check` | Validate and mutate the live AppConfig via IPC, or atomically write while stopped; reset to defaults |
 | `services` | `systemctl --user` status of shell services (qs-bt-agent, kcd, pipewire) |
 | `doctor` | Diagnostics: dependencies, python modules, session, configs, services, ddcutil. Exit 1 on critical problems |
 | `reload` | Guarded exit and `qs -p <config> -d`; serialized with update, refused while locked/busy |
@@ -667,3 +667,44 @@ reload is paused while applying; guarded CLI reload/update waits until it finish
 `update-palette.sh` uses kernel flock, so a killed process cannot leave a stale
 lock directory. Picker delegates use ListView/GridView virtualization rather than
 instantiating and decoding the entire wallpaper collection. `update-palette.py current` selects the desktop source; `lock` selects its static lock-screen frame.
+
+
+### Custom theme lifecycle
+
+One `core/CustomThemes.qml` instance in `shell.qml` is passed to every Bar and
+Settings window. It owns the shared draft, selected color and saved library;
+closing a popup does not destroy an in-flight apply. Appearance loads
+`CustomThemeEditor.qml` and `ThemePreview.qml` by explicit file URLs. The library
+and name controls appear above the preview; the preview contains the swatches,
+HEX/RGBA controls and save actions in the normal Settings page flow.
+
+The draft contains all 30 keys exposed by `PaletteService.colorKeys`, independently
+including derived colors and alpha overlays. Edits update only the preview.
+Save writes the preset library through FileView, Save as copy creates a new ID,
+and Save and apply saves then launches `update-palette.py --custom <id>`.
+Selecting a saved preset applies it directly without saving the previous draft.
+Renaming changes the preset name while keeping its ID. Delete requires a second
+click and removes the preset without changing the applied palette.
+
+`data/custom-themes.json` contains schema version 1, `activeId` and an array of
+`{id, name, colors}` entries. The library validates unique IDs, names and all color
+fields before allowing writes; malformed data is not silently replaced. The
+`activeId` marker is cleared when an active preset's saved colors are edited or
+the preset is deleted. The updater treats this file as personal state.
+
+The generator validates complete `#RRGGBB`/`#AARRGGBB` palettes before generation,
+uses the same wallpaper flock to avoid concurrent writes, and preserves exact
+custom color values in `palette.json`. Enabled app integrations use opaque RGB
+channels. On success the owner records Custom mode, persists the active preset
+ID and reloads PaletteService through its explicit reload path; file watching
+stays disabled. Application-write failures can leave partial external theme
+updates and are reported in the editor; the shell palette is written only after
+the requested integrations finish.
+
+WallpaperController uses wallpaper-only operations whenever the mode is not
+Matugen. CLI wallpaper set/random/reload follow the same rule, and
+`update-palette.sh` additionally forces wallpaper-only when it reads Custom mode.
+Only image/current-file/lock-frame work is performed; a wallpaper change cannot
+regenerate a custom palette. The rule does not intercept an explicit direct
+invocation of the lower-level Python generator. Automatic QML reload and guarded
+CLI shutdown are blocked while a custom theme is applying.

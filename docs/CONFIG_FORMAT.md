@@ -70,7 +70,7 @@ Edited through SettingsPopup (UI) or manually.
 | `animationsEnabled` | `boolean` | `true` | Master switch for all shell animations (hover, popups, sliders, lock screen) |
 | `animSpeed` | `number` | `1.0` | Multiplier for every animation duration; e.g. `1.5` = 50% slower, `0.5` = 2× faster (0.5–2.0) |
 | `preferredPlayer` | `string` | `"selfsonic"` | Favorite media player identity substring (`spotify`, `chromium` …), shared by bar widget and popup |
-| `themeMode` | `string` | `"black"` | Theming mode: `black` (static mono `#121212` + one steel accent via `update-palette.py --theme black`, wallpapers switch without regeneration) , `matugen` (dynamic palette from wallpaper via `update-palette.sh`), or `custom` (manually edited colors, independent of wallpaper) |
+| `themeMode` | `string` | `"black"` | Theming mode: `black` (static mono `#121212` + one steel accent via `update-palette.py --theme black`, wallpapers switch without regeneration), `matugen` (dynamic palette from wallpaper via `update-palette.sh`), or `custom` (manually edited colors, independent of wallpaper) |
 
 Separators look like `sep-N`, where N is a unique numeric ID.
 Generated automatically by `addSep()` in AppConfig.
@@ -437,13 +437,101 @@ that choice. Without a manifest no external application theme is changed.
 
 ## Quickshell: data/custom-themes.json
 
-Personal theme library, managed by Settings → Appearance → Custom and preserved
-across updates. Schema: `version: 1`, `activeId` (last applied saved preset), and
-`themes` (array of `{id, name, colors}`). Each `colors` object contains all 30
-color fields from `data/palette.json`; `font` is not a color and is not included.
-Values accept `#RRGGBB` and `#AARRGGBB` (alpha first). Invalid or incomplete themes
-are rejected. The editor previews draft colors locally; Save stores the preset,
-and Save and apply also activates Custom mode and updates opted-in app themes.
-External app integrations receive opaque RGB channels. Deleting a preset leaves
-the currently applied palette unchanged. Wallpaper changes in Custom mode only
-update the image and lock-screen frame; they never run Matugen.
+Personal library at `~/.config/quickshell/data/custom-themes.json`, managed by
+**Settings → Appearance → Custom**. This runtime file is git-ignored and preserved
+by `selfshell update`; it is separate from the active `data/palette.json`.
+
+| Field | Type | Meaning |
+|---|---|---|
+| `version` | integer | Library schema version; currently `1` |
+| `activeId` | string | Applied saved preset ID, or `""` when no saved preset is marked active |
+| `themes` | array | Saved entries, each containing `id`, `name` and `colors` |
+| `themes[].id` | string | Unique, nonempty stable ID; created by the editor |
+| `themes[].name` | string | Nonempty display name; the editor allows up to 80 characters |
+| `themes[].colors` | object | Exactly the 30 fields below, each a HEX color string |
+
+### Editable palette fields
+
+Every field is independently editable; changing a base color does not implicitly
+recompute the other fields in Custom mode. The generator normally derives some
+of these values in Black/Matugen mode, but Custom preserves the chosen values.
+
+| Group | Fields |
+|---|---|
+| Backgrounds and surfaces | `bg0H`, `bg1`, `bg2`, `bgLayer` |
+| Text and widget foregrounds | `fg`, `gray`, `muted`, `light`, `bright`, `widgetFg`, `textLight`, `mutedAlt` |
+| Accents and status colors | `green`, `red`, `yellow`, `blue`, `purple`, `orange`, `aqua`, `accent`, `danger` |
+| Audio | `audioVolume` |
+| Overlays, borders and separators | `hoverOverlay`, `pressOverlay`, `bgAlpha`, `hoverBg`, `baseOverlay`, `softOverlay`, `sepBg`, `outlineVariant` |
+
+`font` is not a color and is not included in saved custom palettes. Colors accept
+`#RRGGBB` or Qt's `#AARRGGBB` (**alpha first**). For example, `#80ffffff` is white
+with approximately 50% opacity. External application integrations use the RGB
+channels; the shell retains the full alpha value.
+
+A complete library example:
+
+```json
+{
+  "version": 1,
+  "activeId": "theme-example",
+  "themes": [
+    {
+      "id": "theme-example",
+      "name": "My theme",
+      "colors": {
+        "fg": "#e8e8eb",
+        "gray": "#7a7a7a",
+        "green": "#9ab3c0",
+        "red": "#b5a3a3",
+        "bg0H": "#121212",
+        "bg1": "#1e1e1e",
+        "bg2": "#2c2c2e",
+        "muted": "#9a9a9a",
+        "light": "#d0d0d0",
+        "bright": "#f5f5f5",
+        "yellow": "#c8c8c8",
+        "blue": "#b0b0b0",
+        "purple": "#b0b0b0",
+        "orange": "#a8a8a8",
+        "aqua": "#9ab3c0",
+        "widgetFg": "#c9d3da",
+        "audioVolume": "#9ab3c0",
+        "hoverOverlay": "#14ffffff",
+        "pressOverlay": "#1fffffff",
+        "bgAlpha": "#99121212",
+        "hoverBg": "#99222222",
+        "baseOverlay": "#99121212",
+        "softOverlay": "#a6121212",
+        "accent": "#9ab3c0",
+        "textLight": "#f5f5f5",
+        "mutedAlt": "#acacad",
+        "danger": "#b5a3a3",
+        "bgLayer": "#99323233",
+        "sepBg": "#999ab3c0",
+        "outlineVariant": "#662c2c2e"
+      }
+    }
+  ]
+}
+```
+
+### Save and apply behavior
+
+- Draft edits update the preview only. Select a swatch, then edit HEX or RGBA in
+  that same preview; a checkerboard sample shows alpha.
+- **Save** stores the name and colors. **Save as copy** creates another entry.
+- **Save and apply** stores the draft, activates Custom mode, reloads the shell
+  palette and generates themes for opted-in applications.
+- Clicking a saved entry applies that saved palette immediately and opens it for
+  editing; it does not save the previous draft.
+- Rename by changing the name field and saving. **Delete → Delete?** confirms
+  removal beside the saved entry. Applied colors remain unchanged after deletion.
+- `activeId` is cleared when its preset is deleted or saved with changed colors
+  without applying. Saving a renamed preset keeps its ID.
+
+Malformed libraries, duplicate IDs, missing fields and invalid HEX values are
+rejected rather than silently overwritten. See [Custom themes troubleshooting](TROUBLESHOOTING.md#custom-themes)
+for recovery. Wallpaper set/random/reload in Custom only update the desktop image
+and lock-screen frame. `selfshell theme set custom` preserves current colors;
+it does not choose a stored ID. Selecting presets is handled in Settings.
