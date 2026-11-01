@@ -9,6 +9,7 @@ Item {
   id: root
 
   required property QtObject appConfig
+  property bool popupActive: false
 
   property string resinText: "\uF737 0/200"
   property string tooltip: "Loading..."
@@ -266,7 +267,7 @@ Item {
     onTriggered: { root.refreshStatus = "idle"; root.refreshMessage = "" }
   }
 
-  property bool monitorEnabled: appConfig ? appConfig.cfg.genshinEnabled : false
+  readonly property bool monitorEnabled: popupActive || (appConfig ? appConfig.cfg.genshinEnabled : false)
   onMonitorEnabledChanged: {
     if (monitorEnabled) _doSync()
     else {

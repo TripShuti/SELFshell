@@ -121,7 +121,16 @@ ShellRoot {
   // HoYoLAB rate-limit, N× selftrack export. Імена з Svc-суфіксом навмисно:
   // в делегаті Variants нижче Bar має однойменні required-властивості, і
   // `genshinMonitor: genshinMonitor` замкнулось би саме на себе (binding loop).
-  GenshinMonitor { id: genshinMonitorSvc; appConfig: rootAppConfig }
+  GenshinMonitor {
+    id: genshinMonitorSvc
+    appConfig: rootAppConfig
+    popupActive: {
+      for (var i = 0; i < root.bars.length; i++) {
+        if (root.bars[i].genshinPopupVisible) return true
+      }
+      return false
+    }
+  }
   SelfTrackMonitor { id: selftrackMonitorSvc; appConfig: rootAppConfig }
 
   PowerProfileService { id: powerProfileService }

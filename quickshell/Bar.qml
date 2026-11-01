@@ -22,6 +22,7 @@ PanelWindow {
   // процес замість N на N моніторів). Імена збігаються зі старими id,
   // тому всі біндинги нижче працюють без змін.
   required property QtObject genshinMonitor
+  readonly property bool genshinPopupVisible: genshinPopup.visible
   required property QtObject selftrackMonitor
   // сервіс профілів живлення (синглтон з shell.qml) — читають SystemSection і BatteryWidget
   required property QtObject powerProfiles
