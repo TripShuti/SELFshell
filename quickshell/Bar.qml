@@ -111,7 +111,7 @@ PanelWindow {
   // тому прихований бар залишається на місці, але вміст (barContent)
   // анімовано виїжджає за кромку і гасне, а вся площа стає click-through
   // (mask обмежує input region лише смужкою-тригером). Лишається лише
-  // 6px-смужка (revealStrip) біля кромки з "ручкою"-підказкою —
+  // невидима 6px-смужка біля кромки —
   // наведенням на неї бар повертається. exclusiveZone при цьому 0 —
   // вікна отримують весь екран.
   property bool barHidden: false
@@ -165,8 +165,7 @@ PanelWindow {
   onAutoHideOnChanged: _updateAutoHide()
 
   // Смужка-тригер біля кромки: hover над нею (у прихованому стані це
-  // єдина точка вводу — mask) ловить revealWatch. Вона ж малює ручку-
-  // підказку — єдине видиме при прихованому барі.
+  // єдина точка вводу — mask) ловить revealWatch.
   MouseArea {
     id: revealWatch
     visible: root.autoHideOn
@@ -180,18 +179,6 @@ PanelWindow {
     anchors.bottom: root.appConfig.cfg.barPos === "bottom" ? parent.bottom : undefined
     onEntered: { if (root.barHidden) root.barHidden = false }
 
-    Rectangle {
-      visible: root.barHidden
-      width: 36
-      height: 3
-      radius: 1.5
-      color: root.palette.fg
-      opacity: 0.3
-      anchors.horizontalCenter: parent.horizontalCenter
-      anchors.top: root.appConfig.cfg.barPos === "top" ? parent.top : undefined
-      anchors.bottom: root.appConfig.cfg.barPos === "bottom" ? parent.bottom : undefined
-      anchors.margins: 2
-    }
   }
 
   // --- Шаблони компонентів для динамічного рендеру пігулок ---
