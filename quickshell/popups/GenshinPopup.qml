@@ -63,8 +63,24 @@ AnimatedPopup {
   property var detailsModel: []
 
   popupWindow: window
-  anchorTarget: anchorItem
-  positionOnShow: true
+  // IPC центрує попап незалежно від наявності віджета в барі.
+  property bool openedFromIpc: false
+  anchorTarget: openedFromIpc ? null : anchorItem
+  centerScreen: openedFromIpc ? (window?.screen ?? Quickshell.screens[0]) : null
+  positionOnShow: !openedFromIpc
+
+  function toggleFromSource(fromIpc) {
+    if (visible) {
+      visible = false
+      return
+    }
+    openedFromIpc = fromIpc
+    if (openedFromIpc) {
+      transformOrigin = Item.Center
+      centerOnScreen()
+    }
+    toggle()
+  }
 
   Component.onCompleted: {
     root.anchor.window = root.window

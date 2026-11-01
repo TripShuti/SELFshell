@@ -100,6 +100,7 @@ ShellRoot {
   IpcHandler { target: "clipboard"; function toggle(): void { root.togglePopup("clipboard") } }
   IpcHandler { target: "kcd"; function toggle(): void { root.togglePopup("kcd") } }
   IpcHandler { target: "audio"; function toggle(): void { root.togglePopup("audio") } }
+  IpcHandler { target: "genshin"; function toggle(): void { root.togglePopup("genshin") } }
   IpcHandler { target: "selftrack"; function toggle(): void { root.togglePopup("selftrack") } }
   IpcHandler {
     target: "osd"

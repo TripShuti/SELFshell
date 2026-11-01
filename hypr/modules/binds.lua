@@ -49,6 +49,10 @@ hl.bind(bindKey("control",  s.mainMod .. " + Escape"), hl.dsp.exec_cmd("qs ipc c
 hl.bind(bindKey("lock",     s.mainMod .. " + L"), hl.dsp.exec_cmd("qs ipc call lockscreen toggle"))
 hl.bind(bindKey("clipboard", s.mainMod .. " + SHIFT + V"), hl.dsp.exec_cmd("qs ipc call clipboard toggle"))
 
+hl.bind(bindKey("kcd", s.mainMod .. " + ALT + K"), hl.dsp.exec_cmd("qs ipc call kcd toggle"))
+hl.bind(bindKey("selftrack", s.mainMod .. " + ALT + T"), hl.dsp.exec_cmd("qs ipc call selftrack toggle"))
+hl.bind(bindKey("genshin", s.mainMod .. " + ALT + G"), hl.dsp.exec_cmd("qs ipc call genshin toggle"))
+
 -- Додатки
 hl.bind(bindKey("browser", s.mainMod .. " + W"), hl.dsp.exec_cmd(s.browser))
 hl.bind(bindKey("terminal", s.mainMod .. " + Q"), hl.dsp.exec_cmd(s.terminal))

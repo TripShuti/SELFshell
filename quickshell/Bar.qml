@@ -49,6 +49,7 @@ PanelWindow {
       case "clipboard": clipboardPopup.toggle(); break
       case "kcd": kcdPopup.toggle(); break
       case "audio": audioPopup.toggle(); break
+      case "genshin": genshinPopup.toggleFromSource(true); break
       case "selftrack": selftrackPopup.toggle(); break
     }
   }
@@ -693,7 +694,7 @@ PanelWindow {
   }
   Connections { target: audioWidget; enabled: target !== null; function onClicked() { audioPopup.toggle() } }
   Connections { target: mprisWidget; enabled: target !== null; function onClicked() { mprisPopup.toggle() } }
-  Connections { target: genshinWidget; enabled: target !== null; function onClicked() { genshinPopup.toggle() } }
+  Connections { target: genshinWidget; enabled: target !== null; function onClicked() { genshinPopup.toggleFromSource(false) } }
   Connections { target: selftrackWidget; enabled: target !== null; function onClicked() { selftrackPopup.toggle() } }
   Connections { target: controlWidget; enabled: target !== null; function onClicked() { controlPopup.toggle() } }
   Connections { target: btWidget; enabled: target !== null; function onClicked() { btPopup.toggle() } }
