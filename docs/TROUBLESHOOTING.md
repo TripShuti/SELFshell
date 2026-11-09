@@ -134,15 +134,15 @@ Verify: `systemctl --user status qs-bt-agent` (active) and
 
 **Symptom:** `KdeConnectPopup` shows `Offline` or `No paired device`, widget dot grey, `kcd devices --json` empty or `connected:false`.
 
-**Cause:** `kcd` daemon not running, firewall blocks `1716/udp+tcp` `1739:1764/tcp`, or phone/PC not on same Wi-Fi.
+**Cause:** `kcd` daemon not running, firewall blocks `1716/udp` `1716:1764/tcp`, or phone/PC not on same Wi-Fi.
 
 **Fix:**
 ```sh
-systemctl --user enable --now kcd
+systemctl --user enable --now kcd.socket
 kcd devices --json   # should list phone with connected:true
 ss -tulpn | grep 1716   # should show kcd listening
 # firewall (ufw)
-sudo ufw allow 1716/udp && sudo ufw allow 1716/tcp && sudo ufw allow 1739:1764/tcp
+sudo ufw allow 1716/udp && sudo ufw allow 1716:1764/tcp
 # or firewalld
 sudo firewall-cmd --permanent --add-service=kdeconnect && sudo firewall-cmd --reload
 # pair
@@ -153,7 +153,7 @@ kcd connect <pc-ip>   # phone: KDE Connect → Add device by IP
 
 **SFTP mount shows `/storage/emulated/0` but folder elsewhere**
 
-**Cause:** `Mount: /storage/emulated/0` is the phone's storage path. Local mount is `sftp.mount_dir` from `~/.config/kcd/kcd.toml` (read live by the popup — no hardcoded default) via `sshfs`. Popup shows `Local: <mount_dir> → Phone: /storage/emulated/0`.
+**Cause:** `Mount: /storage/emulated/0` is the phone's storage path. Local mount is under `SFTP.MountDir` from `kcd config show --json` (`$XDG_RUNTIME_DIR/kcd/mnt` by default in KCD 2; honors `sftp.mount_dir` and config drop-ins) via `sshfs`. Popup shows `Local: <mount_dir> → Phone: /storage/emulated/0`.
 
 **Fix:** `kcd sftp browse <id>` opens local mount via `xdg-open`. Check `mount | grep kcd` and `kcd sftp info <id>`. Needs `sshfs` (`sudo pacman -S sshfs`).
 

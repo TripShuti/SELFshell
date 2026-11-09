@@ -38,8 +38,8 @@ no separate lock/idle daemons.
   is on, and both flags drop together on timeout
 
 **Phone — KDE Connect via [kcd](https://github.com/bethropolis/kcd)**
-- Optional headless Go daemon [kcd](https://github.com/bethropolis/kcd) (`AUR kcd-bin`, `systemctl --user enable --now kcd`), LAN-only `1716/udp+tcp` `1739:1764/tcp`, no KDE stack, no telemetry
-- Battery + reachable dot, Ping / Ring (FindMyPhone), Share file (`zenity`/`kdialog` → `kcd share`), Clipboard push (`kcd clipboard`), SFTP browse/mount/unmount (`kcd sftp` → `~/Downloads/kcd/mnt` ↔ `/storage/emulated/0`), notifications (`Phone • App` in toast + phone popup history, deduplicated, `kcdDndEnabled` — only popup when DND on)
+- Optional headless Go daemon [kcd](https://github.com/bethropolis/kcd) (`AUR kcd-bin`, `systemctl --user enable --now kcd.socket`), LAN-only `1716/udp` `1716:1764/tcp`, no KDE stack, no telemetry
+- Battery + reachable dot, Ping / Ring (FindMyPhone), Share file (`zenity`/`kdialog` → `kcd share`), Clipboard push (`kcd clipboard`), SFTP browse/mount/unmount (`kcd sftp` → `$XDG_RUNTIME_DIR/kcd/mnt` by default in KCD 2 ↔ `/storage/emulated/0`), notifications (`Phone • App` in toast + phone popup history, deduplicated, `kcdDndEnabled` — only popup when DND on)
 - Phone popup: battery bar, Ping / Ring, Share file, Clipboard push, SFTP browse/mount/unmount, recent notifications + Clear, firewall hint. Pairing is phone-initiated only (Accept/Decline popup); terminal flow (`kcd pair`, `kcd connect`) unchanged. `kcdDndEnabled` toggle (header bell `F0F3`/`F1F6` + widget badge)
 - MPRIS/media, volume and lock work via `kcd` plugins automatically (no extra UI)
 
@@ -314,7 +314,7 @@ array in the script for the complete list. Key packages:
 | `greetd greetd-tuigreet` | TUI login screen (starts Hyprland via uwsm) |
 | `uwsm` | User session manager (session start from greetd / fallback autostart) |
 | `python-requests python-dotenv` | Genshin Impact widget (Hoyolab API) |
-| `kcd` ([kcd](https://github.com/bethropolis/kcd), AUR `kcd-bin`) | Phone — KDE Connect without KDE stack (optional, `systemctl --user enable --now kcd`, `sshfs` for SFTP, `zenity`/`kdialog` for Share) |
+| `kcd` ([kcd](https://github.com/bethropolis/kcd), AUR `kcd-bin`) | Phone — KDE Connect without KDE stack (optional, `systemctl --user enable --now kcd.socket`, `sshfs` for SFTP, `zenity`/`kdialog` for Share) |
 | `selftrack` ([SELFtrack](https://github.com/TripShuti/SELFtrack), cargo) | Time tracking widget (optional, `systemctl --user enable --now selftrack-daemon`; the shell uses only `daemon` + `export`, the TUI is a standalone fallback) |
 
 ## Structure

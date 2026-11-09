@@ -275,6 +275,54 @@ test("Pairing: disappearing requests stop countdowns and close both popups", () 
     sync(); assert.equal(stopped, 1); assert.equal(closed, 1);
   }
 });
+test("KCD 2: effective config, snapshot battery, device filtering and unmount", () => {
+  const file = "services/KdeConnectService.qml";
+  const root = { devices: [], primaryDeviceId: "", recentNotifications: [], _notifSeen: {},
+    maxNotifications: 10, dnd: false, notificationReceived() { throw Error("unexpected toast"); } };
+  const ctx = { root, devicesProc: { running: true } };
+  root._updatePrimary = method(file, "_updatePrimary", ctx);
+  const event = method(file, "_handleEvent", ctx);
+  method(file, "_applyConfig", ctx)({ DownloadDir: "/data/files", SFTP: { MountDir: "/run/user/1000/kcd/mnt" }, Pairing: { TimeoutSecs: 30 } });
+  assert.equal(root.sftpMountDir, "/run/user/1000/kcd/mnt");
+  assert.equal(root.downloadDir, "/data/files");
+  assert.equal(root.pairingWindowMs, 24000);
+  method(file, "_applyConfig", ctx)({ Pairing: { TimeoutSecs: 10 } });
+  assert.equal(root.pairingWindowMs, 9000);
+  event({ type: "state.snapshot", payload: { devices: [{ id: "phone", state: "Paired", connected: true,
+    battery: { charge: 0, charging: false }, sftp: { mounted: true, mountPoint: "/run/user/1000/kcd/mnt/phone" } }] } });
+  assert.equal(root.isReachable, true);
+  assert.equal(root.batteryCharge, 0);
+  event({ type: "battery.update", deviceId: "other", payload: { charge: 99, charging: true } });
+  assert.equal(root.batteryCharge, 0);
+  event({ type: "sftp.unmounted", deviceId: "phone", payload: { mountPoint: root.sftpMountPoint } });
+  assert.equal(root.sftpMountPoint, "");
+  assert.equal(root.sftpInfo, "");
+  root.devices = [];
+  root._updatePrimary();
+  assert.equal(root.batteryCharge, -1);
+});
+
+test("KCD 2: silent notifications stay in history without a toast", () => {
+  const root = { recentNotifications: [], _notifSeen: {}, maxNotifications: 10, dnd: false,
+    allowedIconPath() { return false; }, notificationReceived() { throw Error("silent toast"); } };
+  const event = method("services/KdeConnectService.qml", "_handleEvent", {
+    root, SafePath: { norm(s) { return String(s).trim().replace(/\s+/g, " "); } }
+  });
+  event({ type: "notification", deviceId: "phone", payload: { id: "42", appName: "Chat", text: "Message", silent: true } });
+  assert.equal(root.recentNotifications.length, 1);
+});
+
+test("KCD 2: expired pairing cannot send a new outbound request", () => {
+  let closed = false;
+  const svc = { pendingPairRequest: {} }, pairAcceptProc = { running: false };
+  method("popups/KdeConnectPairingPopup.qml", "decide", {
+    req: { expiresAt: Date.now() - 1 }, svc, pairAcceptProc, close() { closed = true; }
+  })(true);
+  assert.equal(pairAcceptProc.running, false);
+  assert.equal(svc.pendingPairRequest, null);
+  assert.equal(closed, true);
+});
+
 test("Config: live CLI mutation preserves pending UI values and rejects wrong types", () => {
   let saves = 0;
   const root = { numericRanges: { uiScale: [.8, 1.5, false] }, defaultCfg: { themeMode: "black", uiScale: 1, leftOrder: [] },

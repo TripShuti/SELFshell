@@ -231,7 +231,7 @@ AnimatedPopup {
           Layout.alignment: Qt.AlignHCenter
         }
         Text {
-          text: "yay -S kcd-bin  →  systemctl --user enable --now kcd"
+          text: "yay -S kcd-bin  →  systemctl --user enable --now kcd.socket"
           color: window.palette.mutedAlt
           font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
           wrapMode: Text.WordWrap
@@ -498,7 +498,7 @@ AnimatedPopup {
       visible: root.installed && root.isPaired && root.devId !== "" && svc && (svc.sftpMountPoint !== "" || svc.sftpInfo !== "")
       text: {
         // sftpMountPoint з watch — це шлях на телефоні (/storage/...), sftpMountDir — локальний з kcd.toml
-        var localDisplay = svc ? (svc.sftpMountDirDisplay || "~/Downloads/kcd/mnt") : "~/Downloads/kcd/mnt"
+        var localDisplay = svc ? svc.sftpMountDirDisplay : ""
         var remote = svc.sftpMountPoint
         if (remote.startsWith("/tmp") || remote.startsWith("/home") || remote.startsWith("/run")) return "Local: " + remote
         if (remote !== "" && svc.sftpInfo !== "") return "Local: " + localDisplay + " → Phone: " + remote
@@ -513,7 +513,9 @@ AnimatedPopup {
         anchors.fill: parent
         cursorShape: Qt.PointingHandCursor
         onClicked: {
-          var dir = svc ? (svc.sftpMountDir || "") : ""
+          var dir = svc ? String(svc.sftpMountPoint || "") : ""
+          if (!svc) return
+          if (!SafePath.isWithinAnyDir(dir, [svc.sftpMountDir])) dir = svc.sftpMountDir
           // sftpMountDir — з локального kcd.toml через сервіс, не з payload телефону
           if (dir !== "") root._safeOpenPath(dir)
         }
@@ -614,7 +616,7 @@ AnimatedPopup {
     // Підказка firewall
     Text {
       visible: root.installed && root.isPaired && !root.reachable && root.devId !== ""
-      text: "Phone offline — check same Wi-Fi / firewall 1716, 1739:1764"
+      text: "Phone offline — check same Wi-Fi / firewall UDP 1716 / TCP 1716–1764"
       color: window.palette.mutedAlt
       font.family: window.palette.font; font.pixelSize: appConfig.scaled(10)
       wrapMode: Text.WordWrap

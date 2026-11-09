@@ -39,11 +39,9 @@ Item {
 
   Timer {
     id: _pairTimeout
-    // Демон відхиляє запит за [pairing] timeout_secs (30s за замовчуванням):
-    // тримати pending довше небезпечно — пізній Accept вже не прийме запит,
-    // а надішле НОВИЙ (kcd 1.18+ додзвонюється on-demand). Невеликий запас
-    // 5s на рендер/клік.
-    interval: 35000
+    // Закриваємо раніше за 25-секундне вікно KCD 2, щоб пізній
+    // Accept не перетворився на новий вихідний запит.
+    interval: root.pairingWindowMs
     repeat: false
     onTriggered: {
       if (root.pendingPairRequest) {
@@ -70,6 +68,25 @@ Item {
     if (home !== "") dirs.push(home + "/.cache/kcd")
     return SafePath.isWithinAnyDir(p, dirs)
   }
+  // CLI враховує defaults, XDG_CONFIG_HOME та kcd.toml.d; regex нижче — fallback для KCD 1.
+  Process {
+    id: configProc
+    command: ["kcd", "config", "show", "--json"]
+    stdout: StdioCollector {
+      waitForEnd: true
+      onStreamFinished: {
+        try { root._applyConfig(JSON.parse(text)) }
+        catch (e) { /* KCD 1 не підтримує config show. */ }
+      }
+    }
+  }
+  property int pairingWindowMs: 24000
+  function _applyConfig(cfg) {
+    if (cfg.DownloadDir) root.downloadDir = String(cfg.DownloadDir)
+    if (cfg.SFTP && cfg.SFTP.MountDir) root.sftpMountDir = String(cfg.SFTP.MountDir)
+    var secs = Number(cfg.Pairing ? cfg.Pairing.TimeoutSecs : 30)
+    root.pairingWindowMs = Math.max(1000, Math.min(secs > 0 ? secs : 30, 25) * 1000 - 1000)
+  }
   property string downloadDir: ""
   // SFTP mount dir — читаємо з kcd.toml, без хардкоду ~/Downloads/kcd/mnt
   property string sftpMountDir: ""
@@ -81,7 +98,7 @@ Item {
   }
   FileView {
     id: kcdConfigFile
-    path: (String(Quickshell.env("HOME") ?? "") !== "" ? String(Quickshell.env("HOME")) : "/home/trip") + "/.config/kcd/kcd.toml"
+    path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/kcd/kcd.toml"
     blockLoading: true
     onLoaded: root._parseSftpMountDir()
     onLoadFailed: function(err) {
@@ -158,6 +175,7 @@ Item {
     onExited: (code) => {
       root.installed = (code === 0)
       if (root.installed && root.enabled) {
+        configProc.running = true
         devicesProc.command = ["kcd", "devices", "--json"]
         devicesProc.running = true
         watchRestartTimer.stop()
@@ -303,6 +321,8 @@ Item {
     }
     if (!primary && devs.length > 0) primary = devs[0]
     root.connectedDevice = primary
+    root.batteryCharge = -1
+    root.batteryCharging = false
     if (primary) {
       root.primaryDeviceId = String(primary.ID ?? primary.Id ?? primary.id ?? primary.deviceId ?? "")
       root.primaryDeviceName = String(primary.Name ?? primary.name ?? primary.deviceName ?? primary.DeviceName ?? root.primaryDeviceId)
@@ -314,6 +334,10 @@ Item {
       if (st === "" && !isPa) isPa = !!(primary.Paired ?? primary.paired)
       root.isPaired = isPa
       root.isReachable = isPa && isConn
+      if (primary.sftp) {
+        root.sftpMountPoint = primary.sftp.mounted ? String(primary.sftp.mountPoint ?? "") : ""
+        if (!primary.sftp.mounted) root.sftpInfo = ""
+      }
       // батарея може бути в самому device об'єкті
       var ch = primary.Battery ?? primary.battery
       if (ch !== undefined && ch !== null) {
@@ -337,10 +361,19 @@ Item {
     var t = String(ev.type)
     var payload = ev.payload ?? ev.data ?? {}
     var devId = String(ev.deviceId ?? ev.deviceID ?? payload.deviceId ?? payload.id ?? "")
+    if (t === "state.snapshot" && Array.isArray(payload.devices)) {
+      root.devices = payload.devices
+      root._updatePrimary()
+      return
+    }
+    if (t === "stream.gap") {
+      root.refresh()
+      return
+    }
     // Запит на парування з телефону — показуємо попап (phone-initiated pairing)
     if (t === "pair.requested" && devId) {
       var reqName = String(payload.name ?? payload.deviceName ?? payload.appName ?? devId)
-      root.pendingPairRequest = { deviceId: devId, deviceName: reqName, timestamp: ev.timestamp ?? new Date().toISOString() }
+      root.pendingPairRequest = { deviceId: devId, deviceName: reqName, timestamp: ev.timestamp ?? new Date().toISOString(), expiresAt: Date.now() + root.pairingWindowMs, verificationKey: String(payload.verificationKey ?? "") }
       root.pairRequested(root.pendingPairRequest)
       if (!devicesProc.running) {
         devicesProc.command = ["kcd", "devices", "--json"]
@@ -399,7 +432,8 @@ Item {
       return
     }
     if (t === "battery.update" || t === "battery.threshold") {
-      var charge = payload.charge ?? payload.level ?? payload.percentage
+      if (devId && root.primaryDeviceId && devId !== root.primaryDeviceId) return
+      var charge = payload.charge ?? payload.currentCharge ?? payload.level ?? payload.percentage
       var charging = payload.charging ?? payload.isCharging ?? false
       if (charge !== undefined && charge !== null) root.batteryCharge = Math.round(Number(charge))
       root.batteryCharging = !!charging
@@ -508,7 +542,7 @@ Item {
         // console.log("[kcd] dup suppressed", _n.appName, _n.title.slice(0,20), "key", stableKey.slice(0,20))
       }
       // DND: тільки попап, нікуди більше (тост/звук/ControlCenter) — recent вже додано
-      if (root.dnd) return
+      if (root.dnd || payload.silent === true) return
       if (isDup) return
       // показати тост через Bar (сигнал) — тільки для нових і не в DND
       root.notificationReceived(_n)
@@ -540,13 +574,20 @@ Item {
     }
     // SFTP — томи / монтування / інфо
     if (t.indexOf("sftp") !== -1) {
+      if (devId && root.primaryDeviceId && devId !== root.primaryDeviceId) return
+      if (t === "sftp.unmounted") {
+        root.sftpMountPoint = ""
+        root.sftpInfo = ""
+        root.sftpVolumes = []
+        return
+      }
       if (payload.volumes && Array.isArray(payload.volumes)) root.sftpVolumes = payload.volumes
       else if (payload.volume) root.sftpVolumes = [payload.volume]
       else if (Array.isArray(payload)) root.sftpVolumes = payload
       if (payload.mountPoint) root.sftpMountPoint = String(payload.mountPoint)
       if (payload.path) root.sftpMountPoint = String(payload.path)
       if (payload.info) root.sftpInfo = String(payload.info)
-      else root.sftpInfo = JSON.stringify(payload).slice(0, 200)
+      else root.sftpInfo = String(payload.error ?? "")
       return
     }
     // Notification dismissed on phone — прибираємо з історії
@@ -639,6 +680,7 @@ Item {
   // Process-и живуть в попапі, щоб не множити логіку помилок тут.
   // Лишаємо для сумісності, якщо хтось викличе напряму.
   function refresh() {
+    if (!configProc.running) configProc.running = true
     if (!devicesProc.running) {
       devicesProc.command = ["kcd", "devices", "--json"]
       devicesProc.running = true

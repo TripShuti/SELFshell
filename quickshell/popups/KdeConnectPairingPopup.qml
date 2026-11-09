@@ -24,8 +24,8 @@ AnimatedPopup {
   slideDistance: 6
   transformOrigin: Item.Center
 
-  // Таймаут має збігатися з [pairing] timeout_secs у kcd.toml (30s)
-  readonly property int timeoutSeconds: 30
+  // Залишаємо запас до завершення вікна приймання KCD.
+  readonly property int timeoutSeconds: svc ? Math.floor(svc.pairingWindowMs / 1000) : 24
   property int secondsLeft: timeoutSeconds
   centerScreen: window?.screen ?? Quickshell.screens[0]
 
@@ -38,6 +38,11 @@ AnimatedPopup {
 
   function decide(accepted) {
     if (!req) return
+    if (Date.now() >= req.expiresAt) {
+      if (svc) svc.pendingPairRequest = null
+      close()
+      return
+    }
     countdown.stop()
     if (accepted) {
       // Прийняти: kcd pair <id> — як в терміналі `kcd pair <id>` коли телефон вже надіслав запит
@@ -57,7 +62,7 @@ AnimatedPopup {
   }
 
   function openFor(req) {
-    secondsLeft = timeoutSeconds
+    secondsLeft = Math.max(0, Math.ceil((req.expiresAt - Date.now()) / 1000))
     countdown.restart()
     root.centerOnScreen()
     if (!visible) visible = true
@@ -86,7 +91,7 @@ AnimatedPopup {
     interval: 1000
     repeat: true
     onTriggered: {
-      root.secondsLeft--
+      root.secondsLeft = root.req ? Math.max(0, Math.ceil((root.req.expiresAt - Date.now()) / 1000)) : 0
       if (root.secondsLeft <= 0) root.decide(false)
     }
   }
@@ -118,6 +123,15 @@ AnimatedPopup {
       text: "The device wants to pair with this computer. Accept to allow battery, notifications, file sharing and clipboard sync."
       color: window.palette.muted
       font.family: window.palette.font; font.pixelSize: appConfig.scaled(11)
+      wrapMode: Text.WordWrap
+      Layout.fillWidth: true
+    }
+
+    Text {
+      visible: !!(root.req && root.req.verificationKey)
+      text: "Verification code: " + (root.req ? root.req.verificationKey : "") + "\nCompare with the code on your phone before accepting."
+      color: window.palette.textLight
+      font.family: window.palette.font; font.pixelSize: appConfig.scaled(12)
       wrapMode: Text.WordWrap
       Layout.fillWidth: true
     }

@@ -442,8 +442,8 @@ if [ -n "$aur_helper" ]; then
     "$aur_helper" -S --needed --noconfirm kcd-bin || warn "kcd install failed — phone features will stay disabled (yay -S kcd-bin)"
     if command -v kcd &>/dev/null; then
       info "kcd installed: $(kcd --version 2>&1 | head -1)"
-      USER_SERVICES+=(kcd.service)
-      warn "Firewall: allow 1716/udp+tcp and 1739:1764/tcp for phone discovery (ufw allow kcd or manual)"
+      USER_SERVICES+=(kcd.socket)
+      warn "Firewall: allow 1716/udp and 1716:1764/tcp for phone discovery (ufw allow kcd or manual)"
       if confirm "Install kcd optional deps (sshfs for SFTP, wl-clipboard for clipboard, zenity for Share)?" n; then
         sudo pacman -S --needed --noconfirm sshfs wl-clipboard zenity 2>/dev/null || warn "Optional kcd deps install failed — doctor may warn (pacman -S sshfs wl-clipboard zenity)"
       fi
