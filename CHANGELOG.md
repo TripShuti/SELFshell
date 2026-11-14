@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.1] - 2026-11-14
+
 ### Added
 
 - Custom themes in Settings → Appearance: edit all 30 palette colors through an interactive preview with HEX input, RGBA sliders and a checkerboard transparency sample. Preview examples include the bar, audio level, notification text, primary/secondary actions and Default/Hover/Pressed states.
