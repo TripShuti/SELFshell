@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Wallpaper-independent Custom mode across the picker, CLI set/random/reload and wallpaper script. Applying custom colors also regenerates opted-in Kitty, Fish, Starship, Yazi, Foot and qt6ct themes; personal presets survive managed updates.
 - CLI discovery: `palette list` shows supported applications and opt-in state; `config list [filter]` and `config describe <key>` expose keys, current/default values, types and ranges. Expanded help and Fish completion cover palette integrations and configuration values.
 
+### Changed
+
+- Choose saturated wallpaper colors and use Matugen's expressive scheme for more varied, wallpaper-derived palettes.
+
 ### Fixed
 
 - Treat an inactive NetworkManager as a warning in `selfshell doctor --preboot` so a fresh install is not rolled back before the installer enables system services.
@@ -23,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Match popup outlines to bar pills with a single antialiased border and remove the persistent inner outline so zero border width disables the frame.
 - Keep application playback routed through the system EQ after new streams and output changes, including browser streams with restored device targets. Exclude internal filter outputs from application moves to avoid routing the EQ back into itself.
 - Serialize EQ disable with automatic routing, change the default before collecting application streams, verify their final routes, and wait for Quickshell to confirm the output used by the bar. Report failed transitions instead of silently saving EQ as disabled.
+- Reload generated palettes through `qs ipc` and report reload failures; stop reporting Matugen theme activation after palette generation fails.
 
 ## [0.14.0] - 2026-10-10
 

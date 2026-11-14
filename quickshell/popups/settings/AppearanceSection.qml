@@ -171,7 +171,7 @@ Item {
         text: {
           if (root.cfg.themeMode === "black") return "Black — mono with one steel accent, wallpaper changes without regeneration."
           if (root.cfg.themeMode === "custom") return "Custom — your own colors, independent of wallpaper."
-          return "Matugen — dynamic palette from wallpaper (awww + matugen + palette reload)."
+          return "Matugen — dynamic palette from vivid wallpaper colors (expressive scheme)."
         }
         color: window.palette.gray
         font.family: window.palette.font

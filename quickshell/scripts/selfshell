@@ -45,7 +45,7 @@ Bar / Popups:
 
 Theme / Wallpaper / Palette:
   theme [list|status|set <black|matugen|custom>]  Manage theme
-  wallpaper <list|current|set <file>|random> Manage wallpapers
+  wallpaper <list|current|set <file>|random|reload> Manage wallpapers
   palette <list|reload|show|path|enable <app>|disable <app>>  Palette operations
 
 Config / IPC:
@@ -412,7 +412,7 @@ theme_cmd() {
         local cur
         cur="$(python3 "$QS_CONFIG_DIR/scripts/update-palette.py" current 2>/dev/null | tr -d '\n' || true)"
         if [ -n "$cur" ] && [ -f "$cur" ]; then
-          "$QS_CONFIG_DIR/scripts/update-palette.sh" "$cur" || true
+          "$QS_CONFIG_DIR/scripts/update-palette.sh" "$cur" || { error "Matugen palette generation failed"; exit 1; }
         else
           qs ipc -p "$QS_CONFIG_DIR" call palette-reload reload 2>/dev/null || true
           warn "No current wallpaper — pick one: selfshell wallpaper list"

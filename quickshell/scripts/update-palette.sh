@@ -68,6 +68,12 @@ if ! $WALLPAPER_ONLY; then
   # Перефарбовуємо живі foot-термінали без рестарту (foot перечитує colors-dark)
   pkill -USR1 -x foot 2>/dev/null || true
 
-  # Повідомляємо quickshell про зміну палітри
-  quickshell ipc -p "$(dirname "$DIR")" call palette-reload reload 2>/dev/null || true
+  # Повідомляємо запущений quickshell про атомарну заміну palette.json.
+  QS_BIN="$(command -v qs || command -v quickshell || true)"
+  if [ -n "$QS_BIN" ]; then
+    "$QS_BIN" ipc -p "$(dirname "$DIR")" call palette-reload reload \
+      || echo "warning: palette generated, but live shell reload failed; run 'selfshell palette reload'" >&2
+  else
+    echo "warning: palette generated, but qs was not found; run 'selfshell palette reload'" >&2
+  fi
 fi

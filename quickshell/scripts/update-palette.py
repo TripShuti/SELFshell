@@ -666,7 +666,7 @@ def main():
 
     try:
         result = subprocess.run(
-            ["matugen", "image", wallpaper, "--source-color-index", "0", "--mode", "dark", "-j", "hex"],
+            ["matugen", "image", wallpaper, "--prefer", "saturation", "--type", "scheme-expressive", "--mode", "dark", "-j", "hex"],
             capture_output=True, text=True, check=True
         )
     except FileNotFoundError:
